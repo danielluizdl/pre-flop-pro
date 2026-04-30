@@ -292,6 +292,7 @@ function DrillRangeSelect() {
 /* ── Active drill ──────────────────────────────────────────────────────────── */
 function DrillActive() {
   const activeDrillRange = useStore(s => s.activeDrillRange)
+  const handPerformance  = useStore(s => s.handPerformance)
   const activeHand = useStore(s => s.activeHand)
   const currentHandSuits = useStore(s => s.currentHandSuits)
   const currentRng = useStore(s => s.currentRng)
@@ -418,7 +419,7 @@ function DrillActive() {
                 <h3 className="font-bold text-white text-lg">{activeDrillRange.name}</h3>
                 <button onClick={() => setModalOpen(false)} className="text-gray-400 hover:text-white text-xl">✕</button>
               </div>
-              <HandMatrix readOnly grid={activeDrillRange.grid} />
+              <HandMatrix readOnly grid={activeDrillRange.grid} heatmap={handPerformance[activeDrillRange.id]} />
             </div>
           </div>
         )}

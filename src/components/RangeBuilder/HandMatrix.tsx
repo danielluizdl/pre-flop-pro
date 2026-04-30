@@ -17,12 +17,23 @@ function cellBackground(data: HandData): string {
     transparent ${p3}% 100%)`
 }
 
+type HandPerf = Record<string, { c: number; t: number }>
+
+function heatColor(perf: { c: number; t: number } | undefined): string | null {
+  if (!perf || perf.t === 0) return null
+  const acc = perf.c / perf.t
+  if (acc >= 0.8) return 'rgba(34,197,94,0.38)'
+  if (acc >= 0.5) return 'rgba(234,179,8,0.42)'
+  return 'rgba(239,68,68,0.45)'
+}
+
 interface Props {
   readOnly?: boolean
   grid?: Record<string, HandData>
+  heatmap?: HandPerf
 }
 
-export function HandMatrix({ readOnly = false, grid: externalGrid }: Props) {
+export function HandMatrix({ readOnly = false, grid: externalGrid, heatmap }: Props) {
   const applyBrush = useStore(s => s.applyBrush)
   const clearHand  = useStore(s => s.clearHand)
   const brush      = useStore(s => s.brush)
@@ -113,6 +124,9 @@ export function HandMatrix({ readOnly = false, grid: externalGrid }: Props) {
                 style={{ background: isEmpty ? '#1f2937' : '#111827' }}
               >
                 <div className="absolute inset-0 z-0" style={{ background: bg }} />
+                {heatmap && heatColor(heatmap[hand]) && (
+                  <div className="absolute inset-0 z-[1]" style={{ background: heatColor(heatmap[hand])! }} />
+                )}
                 <span
                   className="relative z-10 text-[0.55rem] font-semibold"
                   style={{

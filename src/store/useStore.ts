@@ -11,8 +11,11 @@ import {
   POS_6MAX, POS_8MAX, SLOTS_6MAX, SLOTS_8MAX,
 } from '../types'
 
-const RANGES_KEY = 'fbr-ranges-v1'
-const HISTORY_KEY = 'fbr-training-history-v1'
+const RANGES_KEY    = 'fbr-ranges-v1'
+const HISTORY_KEY   = 'fbr-training-history-v1'
+const HAND_PERF_KEY = 'pfp-hand-perf-v1'
+
+type HandPerfMap = Record<number, Record<string, { c: number; t: number }>>
 
 function loadRanges(): Range[] {
   try { return JSON.parse(localStorage.getItem(RANGES_KEY) ?? '[]') ?? [] }
@@ -30,6 +33,15 @@ function loadHistory(): TrainingSession[] {
 
 function saveHistory(sessions: TrainingSession[]) {
   localStorage.setItem(HISTORY_KEY, JSON.stringify(sessions))
+}
+
+function loadHandPerf(): HandPerfMap {
+  try { return JSON.parse(localStorage.getItem(HAND_PERF_KEY) ?? '{}') ?? {} }
+  catch { return {} }
+}
+
+function saveHandPerf(perf: HandPerfMap) {
+  localStorage.setItem(HAND_PERF_KEY, JSON.stringify(perf))
 }
 
 interface AppState {
@@ -81,6 +93,10 @@ interface AppState {
   addScenarioToBuffer: (pot: string, summary: string) => void
   removeScenario: (idx: number) => void
   finalizeRange: () => void
+
+  // ── Hand performance (heatmap) ────────────────────────────────────────────────
+  handPerformance: HandPerfMap
+  clearHandPerformance: (rangeId: number) => void
 
   // ── Saved ranges management ──────────────────────────────────────────────────
   deleteRange: (id: number) => void
@@ -401,6 +417,17 @@ export const useStore = create<AppState>()(
         })
       },
 
+      // ── Hand performance (heatmap) ────────────────────────────────────────────
+      handPerformance: loadHandPerf(),
+
+      clearHandPerformance: (rangeId) => {
+        const { handPerformance } = get()
+        const next = { ...handPerformance }
+        delete next[rangeId]
+        saveHandPerf(next)
+        set({ handPerformance: next })
+      },
+
       // ── Saved ranges management ────────────────────────────────────────────────
       deleteRange: (id) => {
         const { ranges } = get()
@@ -534,7 +561,15 @@ export const useStore = create<AppState>()(
           rangeName: activeDrillRange.name,
           raiseSize: d?.size,
         }
-        set({ sessionStats: stats, handHistory: [...handHistory, entry].slice(-50) })
+        const { handPerformance } = get()
+        const rid = activeDrillRange.id
+        const prev = handPerformance[rid]?.[activeHand] ?? { c: 0, t: 0 }
+        const newPerf: HandPerfMap = {
+          ...handPerformance,
+          [rid]: { ...handPerformance[rid], [activeHand]: { c: prev.c + (correct ? 1 : 0), t: prev.t + 1 } },
+        }
+        saveHandPerf(newPerf)
+        set({ sessionStats: stats, handHistory: [...handHistory, entry].slice(-50), handPerformance: newPerf })
 
         const { useRngForFrequency } = get()
         const rngTag = useRngForFrequency ? ` (RNG: ${currentRng})` : ''
