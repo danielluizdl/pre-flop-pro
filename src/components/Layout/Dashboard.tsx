@@ -18,7 +18,7 @@ export function Dashboard() {
       {/* Hero */}
       <div className="bg-gradient-to-br from-brand-900/40 to-gray-800/60 border border-brand-800/50 rounded-2xl p-6">
         <h1 className="text-3xl font-black text-white mb-1">
-          Free<span className="text-brand-400">Bet</span>Range
+          Pre-Flop<span className="text-brand-400">Pro</span>
         </h1>
         <p className="text-gray-400 mb-5">Treine seus ranges pré-flop e melhore suas decisões na mesa.</p>
         <div className="flex flex-wrap gap-3">

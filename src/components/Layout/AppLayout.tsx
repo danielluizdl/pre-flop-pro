@@ -50,7 +50,7 @@ export function AppLayout() {
             >
               <Menu size={18} />
             </button>
-            <h1 className="font-semibold text-white text-sm">{PAGE_TITLES[page] ?? 'FreeBetRange'}</h1>
+            <h1 className="font-semibold text-white text-sm">{PAGE_TITLES[page] ?? 'Pre-Flop Pro'}</h1>
           </header>
 
           <main className="flex-1 overflow-auto p-5 lg:p-6">

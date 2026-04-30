@@ -29,12 +29,12 @@ export function Sidebar({ collapsed }: Props) {
         collapsed && 'justify-center',
       )}>
         <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center flex-shrink-0 font-black text-white text-sm">
-          FB
+          PF
         </div>
         {!collapsed && (
           <span className="font-bold text-white text-sm leading-tight">
-            Free<span className="text-brand-400">Bet</span><br />
-            <span className="font-normal text-gray-400 text-xs">Range</span>
+            Pre-Flop<br />
+            <span className="text-brand-400 font-black">Pro</span>
           </span>
         )}
       </div>
