@@ -146,7 +146,7 @@ export function TableEditorPage() {
                     {data.isHero && <div className="text-[8px] text-amber-500 font-bold">HERO</div>}
                   </div>
                   <select
-                    className="p-1 rounded border border-gray-600 text-xs bg-gray-900 text-gray-200"
+                    className="w-full p-1 rounded border border-gray-600 text-xs bg-gray-900 text-gray-200 cursor-pointer"
                     value={data.role}
                     onChange={e => updateRole(pos.id, e.target.value)}
                   >
@@ -196,11 +196,11 @@ export function TableEditorPage() {
 
         {/* Right: table visual + scenario buffer */}
         <div className="flex-1 space-y-4">
-          {/* Table — reduced to ~50% */}
+          {/* Table */}
           <div className="flex justify-center">
-            <div className="w-full" style={{ maxWidth: 400 }}>
+            <div className="w-full" style={{ maxWidth: 500 }}>
               <div
-                className="rounded-2xl border border-gray-800 p-4"
+                className="rounded-2xl border border-gray-800 px-10 pt-8 pb-16"
                 style={{ background: '#030712', boxShadow: 'inset 0 0 50px rgba(0,0,0,0.8)' }}
               >
                 <PokerTableEditor />

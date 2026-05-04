@@ -1,6 +1,7 @@
 import { useStore } from '../../store/useStore'
 import { HandMatrix } from './HandMatrix'
 import { BrushControls } from './BrushControls'
+import { HandQuickSelect } from '../ui/HandQuickSelect'
 
 export function RangeEditorPage() {
   const activePositions    = useStore(s => s.activePositions)
@@ -24,25 +25,26 @@ export function RangeEditorPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Header */}
       <div>
         <h1 className="text-xl font-bold text-white">
           {rangeData.id !== null ? 'Editar Range' : 'Criar Range'}
         </h1>
-        <p className="text-xs text-gray-400 mt-0.5">
-          Pinte as mãos com as frequências de cada ação, depois configure os cenários de mesa.
+        <p className="text-xs text-gray-500 mt-0.5">
+          Pinte as mãos com as frequências de cada ação, depois configure os cenários.
         </p>
       </div>
 
-      <div className="flex flex-col xl:flex-row gap-6">
+      <div className="flex flex-col xl:flex-row gap-5">
         {/* Left: positions + name + matrix */}
-        <div className="flex-1 min-w-0 space-y-4">
-          {/* Positions */}
+        <div className="flex-1 min-w-0 space-y-3">
+          {/* Posição do HERO — single select */}
           <div>
-            <label className="block text-sm font-semibold text-gray-300 mb-2">
-              1. Posições onde este range se aplica
+            <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">
+              Posição do HERO
             </label>
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-1.5 flex-wrap">
               {activePositions.map(p => (
                 <button
                   key={p.id}
@@ -60,14 +62,14 @@ export function RangeEditorPage() {
             </div>
           </div>
 
-          {/* Name */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-300 mb-2">
-              2. Nome do Range / Situação
+          {/* Nome */}
+          <div className="flex items-center gap-2 max-w-xs">
+            <label className="text-xs font-semibold text-gray-400 whitespace-nowrap flex-shrink-0">
+              Nome:
             </label>
             <input
               type="text"
-              className="w-full p-2.5 border border-gray-600 rounded-lg text-sm bg-gray-800 text-white placeholder-gray-500 focus:border-brand-500 focus:outline-none"
+              className="flex-1 min-w-0 px-2.5 py-1.5 border border-gray-600 rounded-lg text-sm bg-gray-800 text-white placeholder-gray-500 focus:border-brand-500 focus:outline-none"
               placeholder="Ex: Defesa BB vs UTG"
               value={rangeData.name}
               onChange={e => setRangeName(e.target.value)}
@@ -76,25 +78,32 @@ export function RangeEditorPage() {
 
           {/* Matrix */}
           <div>
-            <label className="block text-sm font-semibold text-gray-300 mb-2">
-              3. Grade de Mãos
+            <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">
+              Grade de Mãos
             </label>
             <HandMatrix />
           </div>
         </div>
 
-        {/* Right: brush + actions */}
-        <div className="xl:w-72 space-y-3">
-          <div className="bg-gray-800/60 rounded-xl p-4 border border-gray-700">
-            <h3 className="font-bold text-sm text-gray-300 mb-3 uppercase tracking-wider">
-              4. Ações & Frequências
-            </h3>
+        {/* Right: ações + frequências (mais largo) */}
+        <div className="xl:w-80 space-y-3 flex-shrink-0">
+          <div className="bg-gray-800/60 rounded-xl p-4 border border-gray-700 space-y-3">
+            {/* Cabeçalho do card com quick-select inline */}
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <h3 className="font-bold text-xs text-gray-400 uppercase tracking-wider whitespace-nowrap">
+                Ações &amp; Frequências
+              </h3>
+              <HandQuickSelect mode="brush" />
+            </div>
+
+            <div className="border-t border-gray-700/60" />
+
             <BrushControls />
           </div>
 
           <button
             onClick={() => { if (confirm('Limpar todo o grid?')) resetGrid() }}
-            className="w-full py-2.5 bg-gray-800 text-red-400 border border-red-900/50 rounded-lg font-semibold text-sm hover:bg-red-900/20 transition-colors"
+            className="w-full py-2 bg-gray-800 text-red-400 border border-red-900/50 rounded-lg font-semibold text-sm hover:bg-red-900/20 transition-colors"
           >
             Limpar Grid
           </button>

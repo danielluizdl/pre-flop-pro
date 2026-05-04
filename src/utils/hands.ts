@@ -50,3 +50,72 @@ export function getHighestFrequencyAction(data: HandData): string {
 export function countNonFoldHands(grid: Record<string, HandData>): number {
   return Object.values(grid).filter(d => d.fold < 100).length
 }
+
+// ── Hand group helpers ─────────────────────────────────────────────────────
+
+/** Todos os 13 pares (AA, KK, ... 22) */
+export function getAllPairs(): string[] {
+  return RANKS.map(r => r + r)
+}
+
+/** Todas as 78 mãos suited (AKs … 32s) */
+export function getAllSuited(): string[] {
+  const h: string[] = []
+  for (let i = 0; i < 13; i++)
+    for (let j = i + 1; j < 13; j++)
+      h.push(RANKS[i] + RANKS[j] + 's')
+  return h
+}
+
+/** Todas as 78 mãos offsuit (AKo … 32o) */
+export function getAllOffsuit(): string[] {
+  const h: string[] = []
+  for (let i = 0; i < 13; i++)
+    for (let j = i + 1; j < 13; j++)
+      h.push(RANKS[i] + RANKS[j] + 'o')
+  return h
+}
+
+/** Connectors suited: diferença de índice = 1 (KQs, QJs, JTs … 32s) */
+export function getConnectorsSuited(): string[] {
+  const h: string[] = []
+  for (let i = 0; i < 12; i++)
+    h.push(RANKS[i] + RANKS[i + 1] + 's')
+  return h
+}
+
+/** Connectors offsuit: diferença de índice = 1 (KQo, QJo … 32o) */
+export function getConnectorsOffsuit(): string[] {
+  const h: string[] = []
+  for (let i = 0; i < 12; i++)
+    h.push(RANKS[i] + RANKS[i + 1] + 'o')
+  return h
+}
+
+/** One-gappers suited: diferença de índice = 2 (KJs, QTs … 42s) */
+export function getOneGappersSuited(): string[] {
+  const h: string[] = []
+  for (let i = 0; i < 11; i++)
+    h.push(RANKS[i] + RANKS[i + 2] + 's')
+  return h
+}
+
+/** Broadways suited (duas cartas T+, suited): AKs, AQs … KQs, KJs, KTs, QJs, QTs, JTs */
+export function getBroadwaysSuited(): string[] {
+  const broadways = ['A','K','Q','J','T']
+  const h: string[] = []
+  for (let i = 0; i < broadways.length; i++)
+    for (let j = i + 1; j < broadways.length; j++)
+      h.push(broadways[i] + broadways[j] + 's')
+  return h
+}
+
+/** Broadways offsuit */
+export function getBroadwaysOffsuit(): string[] {
+  const broadways = ['A','K','Q','J','T']
+  const h: string[] = []
+  for (let i = 0; i < broadways.length; i++)
+    for (let j = i + 1; j < broadways.length; j++)
+      h.push(broadways[i] + broadways[j] + 'o')
+  return h
+}

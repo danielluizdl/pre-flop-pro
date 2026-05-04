@@ -22,9 +22,9 @@ type HandPerf = Record<string, { c: number; t: number }>
 function heatColor(perf: { c: number; t: number } | undefined): string | null {
   if (!perf || perf.t === 0) return null
   const acc = perf.c / perf.t
-  if (acc >= 0.8) return 'rgba(34,197,94,0.38)'
-  if (acc >= 0.5) return 'rgba(234,179,8,0.42)'
-  return 'rgba(239,68,68,0.45)'
+  if (acc >= 0.8) return 'rgba(34,197,94,0.55)'
+  if (acc >= 0.5) return 'rgba(234,179,8,0.55)'
+  return 'rgba(239,68,68,0.58)'
 }
 
 interface Props {
@@ -32,6 +32,8 @@ interface Props {
   grid?: Record<string, HandData>
   heatmap?: HandPerf
 }
+
+type ViewMode = 'actions' | 'heatmap'
 
 export function HandMatrix({ readOnly = false, grid: externalGrid, heatmap }: Props) {
   const applyBrush = useStore(s => s.applyBrush)
@@ -43,7 +45,12 @@ export function HandMatrix({ readOnly = false, grid: externalGrid, heatmap }: Pr
   const isDrawing  = useRef(false)
   const drawMode   = useRef<'apply' | 'clear'>('apply')
   const [showWarning, setShowWarning] = useState(false)
+  const [viewMode, setViewMode]       = useState<ViewMode>('heatmap')
+  const [hoveredHand, setHoveredHand] = useState<string | null>(null)
+  const [mousePos, setMousePos]       = useState({ x: 0, y: 0 })
   const warnTimer  = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const isHeatmapMode = !!heatmap && viewMode === 'heatmap'
 
   function triggerWarning() {
     setShowWarning(true)
@@ -93,11 +100,46 @@ export function HandMatrix({ readOnly = false, grid: externalGrid, heatmap }: Pr
         </div>
       )}
 
+      {heatmap && (
+        <div className="flex gap-1 mb-2">
+          {(['actions', 'heatmap'] as ViewMode[]).map(mode => (
+            <button
+              key={mode}
+              onClick={() => setViewMode(mode)}
+              className={[
+                'px-3 py-1 rounded-full text-xs font-semibold border transition-colors',
+                viewMode === mode
+                  ? 'bg-brand-600 border-brand-500 text-white'
+                  : 'bg-gray-800 border-gray-600 text-gray-400 hover:text-gray-200',
+              ].join(' ')}
+            >
+              {mode === 'actions' ? 'Ações' : 'Erro / Acerto'}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {isHeatmapMode && hoveredHand && heatmap && (() => {
+        const perf = heatmap[hoveredHand]
+        const text = perf && perf.t > 0
+          ? `${perf.c}/${perf.t}  ${Math.round((perf.c / perf.t) * 100)}%`
+          : 'Não treinado'
+        return (
+          <div
+            className="fixed z-50 pointer-events-none px-2 py-1 rounded bg-gray-900 border border-gray-600 text-xs text-white shadow-lg whitespace-nowrap"
+            style={{ left: mousePos.x + 14, top: mousePos.y - 28 }}
+          >
+            <span className="font-bold text-gray-300 mr-1">{hoveredHand}</span>{text}
+          </div>
+        )
+      })()}
+
       <div
         className="grid gap-0.5 select-none mx-auto"
         style={{ gridTemplateColumns: 'repeat(13, 1fr)', maxWidth: 650 }}
         onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onMouseLeave={() => { handleMouseUp(); setHoveredHand(null) }}
+        onMouseMove={e => setMousePos({ x: e.clientX, y: e.clientY })}
       >
         {Array.from({ length: 13 }, (_, i) =>
           Array.from({ length: 13 }, (_, j) => {
@@ -106,26 +148,37 @@ export function HandMatrix({ readOnly = false, grid: externalGrid, heatmap }: Pr
               : i < j
                 ? RANKS[i] + RANKS[j] + 's'
                 : RANKS[j] + RANKS[i] + 'o'
-            const data = grid[hand] ?? { fold: 100, call: 0, raise: 0, allin: 0 }
-            const bg = cellBackground(data)
+            const data    = grid[hand] ?? { fold: 100, call: 0, raise: 0, allin: 0 }
             const isEmpty = data.fold >= 100
+
+            const showActions  = !heatmap || viewMode === 'actions'
+            const showHeatmap  = !!heatmap && viewMode === 'heatmap'
+
+            const bg    = showActions ? cellBackground(data) : 'transparent'
+            const heat  = showHeatmap ? heatColor(heatmap[hand]) : null
+
+            // In heatmap mode: in-range but untrained cells get a distinct base color
+            const baseBg = showHeatmap && !isEmpty && !heat
+              ? '#2a3444'
+              : isEmpty ? '#1f2937' : '#111827'
 
             return (
               <div
                 key={hand}
                 data-hand={hand}
                 onMouseDown={() => handleMouseDown(hand)}
-                onMouseEnter={() => handleMouseEnter(hand)}
+                onMouseEnter={() => { handleMouseEnter(hand); if (isHeatmapMode) setHoveredHand(hand) }}
+                onMouseLeave={() => { if (isHeatmapMode) setHoveredHand(null) }}
                 className={[
                   'relative aspect-square rounded-sm border flex items-center justify-center text-[0.6rem] font-semibold overflow-hidden',
                   readOnly ? '' : 'cursor-pointer hover:border-gray-400',
                   isEmpty ? 'border-gray-700/50' : 'border-gray-600/50',
                 ].join(' ')}
-                style={{ background: isEmpty ? '#1f2937' : '#111827' }}
+                style={{ background: baseBg }}
               >
                 <div className="absolute inset-0 z-0" style={{ background: bg }} />
-                {heatmap && heatColor(heatmap[hand]) && (
-                  <div className="absolute inset-0 z-[1]" style={{ background: heatColor(heatmap[hand])! }} />
+                {heat && (
+                  <div className="absolute inset-0 z-[1]" style={{ background: heat }} />
                 )}
                 <span
                   className="relative z-10 text-[0.55rem] font-semibold"

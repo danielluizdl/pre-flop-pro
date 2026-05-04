@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { countNonFoldHands } from '../../utils/hands'
-import { Edit3, Trash2, PlayCircle, BarChart2 } from 'lucide-react'
+import { Edit3, Trash2, PlayCircle, BarChart2, ChevronLeft } from 'lucide-react'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
-import type { Range } from '../../types'
+import { POS_6MAX, POS_8MAX, SLOTS_6MAX, SLOTS_8MAX } from '../../types'
+import type { Range, TableSize } from '../../types'
 
 interface CardProps {
   r: Range
@@ -84,49 +85,34 @@ function RangeCard({ r, onViewHeatmap }: CardProps) {
   )
 }
 
-function RangeSection({ title, ranges, onCreateNew, onViewHeatmap }: {
-  title: string
-  ranges: Range[]
-  onCreateNew: () => void
-  onViewHeatmap: (id: number) => void
-}) {
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-3">
-        <h2 className="font-bold text-sm text-gray-300">{title}</h2>
-        <div className="flex-1 h-px bg-gray-700" />
-        <span className="text-xs text-gray-500">{ranges.length} range(s)</span>
-      </div>
-
-      {ranges.length === 0 ? (
-        <div className="bg-gray-800/30 border border-dashed border-gray-700 rounded-xl p-8 text-center">
-          <p className="text-gray-500 text-sm mb-3">Nenhum range {title.toLowerCase()} criado.</p>
-          <button
-            onClick={onCreateNew}
-            className="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-semibold"
-          >
-            Criar range {title.toLowerCase()}
-          </button>
-        </div>
-      ) : (
-        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
-          {ranges.map(r => <RangeCard key={r.id} r={r} onViewHeatmap={onViewHeatmap} />)}
-        </div>
-      )}
-    </div>
-  )
-}
+type Step = 'select' | 'list'
 
 export function SituationsPage() {
-  const ranges              = useStore(s => s.ranges)
-  const setPage             = useStore(s => s.setPage)
-  const handPerformance     = useStore(s => s.handPerformance)
+  const ranges               = useStore(s => s.ranges)
+  const setPage              = useStore(s => s.setPage)
+  const handPerformance      = useStore(s => s.handPerformance)
   const clearHandPerformance = useStore(s => s.clearHandPerformance)
 
-  const [heatmapId, setHeatmapId] = useState<number | null>(null)
+  const [step, setStep]                 = useState<Step>('select')
+  const [selectedSize, setSelectedSize] = useState<TableSize | null>(null)
+  const [selectedPos, setSelectedPos]   = useState<string[]>([])
+  const [heatmapId, setHeatmapId]       = useState<number | null>(null)
 
-  const ranges6 = ranges.filter(r => r.tableSize === 6)
-  const ranges8 = ranges.filter(r => r.tableSize === 8)
+  const positions = selectedSize === 6 ? POS_6MAX : POS_8MAX
+  const slots     = selectedSize === 6 ? SLOTS_6MAX : SLOTS_8MAX
+
+  function handleSizeSelect(size: TableSize) {
+    if (selectedSize !== size) setSelectedPos([])
+    setSelectedSize(size)
+  }
+
+  function togglePos(label: string) {
+    setSelectedPos(prev => prev.includes(label) ? prev.filter(p => p !== label) : [...prev, label])
+  }
+
+  const filteredRanges = step === 'list' && selectedSize !== null
+    ? ranges.filter(r => r.tableSize === selectedSize && r.positions.some(p => selectedPos.includes(p)))
+    : []
 
   const heatmapRange = heatmapId !== null ? ranges.find(r => r.id === heatmapId) : null
   const heatmapPerf  = heatmapId !== null ? handPerformance[heatmapId] : undefined
@@ -134,15 +120,116 @@ export function SituationsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-xl font-bold text-white">Meus Ranges</h1>
-        <p className="text-xs text-gray-400">{ranges.length} range(s) criado(s)</p>
+      <div className="flex items-center gap-3">
+        {step === 'list' && (
+          <button onClick={() => setStep('select')} className="text-gray-400 hover:text-white transition-colors">
+            <ChevronLeft size={20} />
+          </button>
+        )}
+        <div>
+          <h1 className="text-xl font-bold text-white">Meus Ranges</h1>
+          <p className="text-xs text-gray-400">{ranges.length} range(s) criado(s)</p>
+        </div>
       </div>
 
-      <RangeSection title="6-max" ranges={ranges6} onCreateNew={() => setPage('range-setup')} onViewHeatmap={setHeatmapId} />
-      <RangeSection title="8-max" ranges={ranges8} onCreateNew={() => setPage('range-setup')} onViewHeatmap={setHeatmapId} />
+      {step === 'select' && (
+        <div className="flex flex-col items-center gap-6">
+          <div className="flex gap-6">
+            {([6, 8] as TableSize[]).map(size => (
+              <button
+                key={size}
+                onClick={() => handleSizeSelect(size)}
+                className={[
+                  'w-36 h-24 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-1',
+                  selectedSize === size
+                    ? 'border-brand-500 bg-brand-700/30 text-white'
+                    : 'border-gray-600 bg-gray-800 hover:border-gray-400 text-gray-300',
+                ].join(' ')}
+              >
+                <span className="text-2xl font-bold">{size}-max</span>
+                <span className="text-xs text-gray-400">{ranges.filter(r => r.tableSize === size).length} range(s)</span>
+              </button>
+            ))}
+          </div>
 
-      {/* Heatmap modal */}
+          {selectedSize !== null && (
+            <div className="flex flex-col items-center gap-4 w-full max-w-sm">
+              <p className="text-gray-300 text-sm">Selecione uma ou mais posições para o HERO.</p>
+
+              {/* Poker table */}
+              <div className="w-full" style={{ maxWidth: 320 }}>
+                <div
+                  className="relative w-full"
+                  style={{
+                    paddingBottom: '63%',
+                    background: 'radial-gradient(ellipse at 40% 35%, #35654d 0%, #244a36 100%)',
+                    borderRadius: '50%',
+                    border: '10px solid #2e2e2e',
+                    boxShadow: 'inset 0 0 20px rgba(0,0,0,0.5), 0 0 0 4px #111',
+                  }}
+                >
+                  {positions.map((pos, i) => {
+                    const slot   = slots[i]
+                    const active = selectedPos.includes(pos.label)
+                    return (
+                      <button
+                        key={pos.id}
+                        onClick={() => togglePos(pos.label)}
+                        style={{ top: `${slot.t}%`, left: `${slot.l}%`, transform: 'translate(-50%,-50%)' }}
+                        className={[
+                          'absolute w-[46px] h-[46px] rounded-full border-2 font-bold text-xs flex items-center justify-center transition-all z-10',
+                          active
+                            ? 'bg-brand-600 border-white text-white shadow-[0_0_12px_rgba(99,102,241,0.8)]'
+                            : 'bg-gray-800 border-gray-500 text-gray-300 hover:border-gray-200 hover:text-white',
+                        ].join(' ')}
+                      >
+                        {pos.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <button
+                onClick={() => setStep('list')}
+                disabled={selectedPos.length === 0}
+                className="px-8 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-sm transition-colors"
+              >
+                OK
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {step === 'list' && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <h2 className="font-bold text-sm text-gray-300">
+              {selectedSize}-max · {selectedPos.join(', ')}
+            </h2>
+            <div className="flex-1 h-px bg-gray-700" />
+            <span className="text-xs text-gray-500">{filteredRanges.length} range(s)</span>
+          </div>
+
+          {filteredRanges.length === 0 ? (
+            <div className="bg-gray-800/30 border border-dashed border-gray-700 rounded-xl p-8 text-center">
+              <p className="text-gray-500 text-sm mb-3">Nenhum range encontrado para as posições selecionadas.</p>
+              <button
+                onClick={() => setPage('range-setup')}
+                className="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-semibold"
+              >
+                Criar novo range
+              </button>
+            </div>
+          ) : (
+            <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
+              {filteredRanges.map(r => <RangeCard key={r.id} r={r} onViewHeatmap={setHeatmapId} />)}
+            </div>
+          )}
+        </div>
+      )}
+
       {heatmapRange && (
         <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
