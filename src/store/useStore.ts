@@ -10,6 +10,7 @@ import type {
 import {
   POS_6MAX, POS_8MAX, SLOTS_6MAX, SLOTS_8MAX,
 } from '../types'
+import { DEFAULT_RANGES } from '../data/defaultRanges'
 
 const RANGES_KEY    = 'fbr-ranges-v1'
 const HISTORY_KEY   = 'fbr-training-history-v1'
@@ -18,8 +19,17 @@ const HAND_PERF_KEY = 'pfp-hand-perf-v1'
 type HandPerfMap = Record<number, Record<string, { c: number; t: number }>>
 
 function loadRanges(): Range[] {
-  try { return JSON.parse(localStorage.getItem(RANGES_KEY) ?? '[]') ?? [] }
-  catch { return [] }
+  try {
+    const saved: Range[] = JSON.parse(localStorage.getItem(RANGES_KEY) ?? '[]') ?? []
+    const existingIds = new Set(saved.map(r => r.id))
+    const missing = DEFAULT_RANGES.filter(r => !existingIds.has(r.id))
+    if (missing.length > 0) {
+      const merged = [...missing, ...saved]
+      localStorage.setItem(RANGES_KEY, JSON.stringify(merged))
+      return merged
+    }
+    return saved
+  } catch { return [...DEFAULT_RANGES] }
 }
 
 function saveRanges(ranges: Range[]) {
@@ -69,6 +79,8 @@ interface AppState {
 
   setBrush: (field: keyof BrushState, value: number | string) => void
   applyBrush: (hand: string) => void
+  applyBrushToHands: (hands: string[]) => void
+  clearHands: (hands: string[]) => void
   clearHand: (hand: string) => void
   resetGrid: () => void
   setRangeName: (name: string) => void
@@ -222,9 +234,28 @@ export const useStore = create<AppState>()(
         set({ rangeData: { ...rangeData, grid: newGrid } })
       },
 
+      applyBrushToHands: (hands) => {
+        const { brush, rangeData } = get()
+        const total = brush.call + brush.raise + brush.allin
+        if (total > 100) return
+        const fold = 100 - total
+        const newGrid = { ...rangeData.grid }
+        hands.forEach(hand => {
+          newGrid[hand] = { call: brush.call, raise: brush.raise, allin: brush.allin, fold, size: brush.raiseSize }
+        })
+        set({ rangeData: { ...rangeData, grid: newGrid } })
+      },
+
       clearHand: (hand) => {
         const { rangeData } = get()
         const newGrid = { ...rangeData.grid, [hand]: { fold: 100, call: 0, raise: 0, allin: 0, size: '' } }
+        set({ rangeData: { ...rangeData, grid: newGrid } })
+      },
+
+      clearHands: (hands) => {
+        const { rangeData } = get()
+        const newGrid = { ...rangeData.grid }
+        hands.forEach(hand => { newGrid[hand] = { fold: 100, call: 0, raise: 0, allin: 0, size: '' } })
         set({ rangeData: { ...rangeData, grid: newGrid } })
       },
 
@@ -240,9 +271,7 @@ export const useStore = create<AppState>()(
 
       toggleEditorPosition: (label) => {
         const { selectedEditorPositions } = get()
-        const next = selectedEditorPositions.includes(label)
-          ? selectedEditorPositions.filter(p => p !== label)
-          : [...selectedEditorPositions, label]
+        const next = selectedEditorPositions.includes(label) ? [] : [label]
         set({ selectedEditorPositions: next })
       },
 
