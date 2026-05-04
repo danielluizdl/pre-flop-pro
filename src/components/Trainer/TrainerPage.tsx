@@ -1,7 +1,8 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useStore } from '../../store/useStore'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import { PokerTableEditor } from '../ui/PokerTableEditor'
+import { HandQuickSelect } from '../ui/HandQuickSelect'
 import { RANKS, SUIT_ICONS } from '../../types'
 import { ALL_HANDS } from '../../utils/hands'
 import type { HandHistoryEntry } from '../../types'
@@ -109,39 +110,53 @@ function HandFilterGrid() {
 
   return (
     <div className="max-w-xl mx-auto border border-gray-700 p-3 rounded-xl bg-gray-800/60 mb-6">
-      <div className="flex gap-2 justify-center mb-3 flex-wrap">
+      {/* Controles em uma linha compacta */}
+      <div className="flex items-center gap-2 flex-wrap mb-3">
+        {/* Seleção rápida */}
+        <HandQuickSelect
+          mode="filter"
+          excludedHands={excluded}
+          onSetExcluded={setExcluded}
+        />
+
+        <div className="h-4 border-l border-gray-600 mx-0.5" />
+
+        {/* Tudo / Nada */}
         <button
           onClick={() => setExcluded([])}
-          className="px-3 py-1.5 text-xs border border-gray-600 bg-gray-800 rounded hover:bg-gray-700 text-gray-300"
+          className="px-2.5 py-1 text-xs border border-gray-600 bg-gray-800 rounded-md hover:bg-gray-700 text-gray-300 transition-colors"
         >
-          Selecionar Tudo
+          Tudo ✓
         </button>
         <button
           onClick={() => setExcluded([...ALL_HANDS])}
-          className="px-3 py-1.5 text-xs border border-gray-600 bg-gray-800 rounded hover:bg-gray-700 text-gray-300"
+          className="px-2.5 py-1 text-xs border border-gray-600 bg-gray-800 rounded-md hover:bg-gray-700 text-gray-300 transition-colors"
         >
-          Remover Tudo
+          Nada ✗
         </button>
-        <div className="flex items-center gap-1.5 ml-2 border-l border-gray-600 pl-2">
-          <span className="text-xs text-gray-400">Usar RNG?</span>
-          <button
-            onClick={() => setUseRng(true)}
-            className={['px-2.5 py-1 text-xs rounded border font-semibold transition-colors',
-              useRng ? 'bg-brand-600 border-brand-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700',
-            ].join(' ')}
-          >
-            Sim
-          </button>
-          <button
-            onClick={() => setUseRng(false)}
-            className={['px-2.5 py-1 text-xs rounded border font-semibold transition-colors',
-              !useRng ? 'bg-brand-600 border-brand-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700',
-            ].join(' ')}
-          >
-            Não
-          </button>
-        </div>
+
+        <div className="h-4 border-l border-gray-600 mx-0.5" />
+
+        {/* RNG */}
+        <span className="text-xs text-gray-500">RNG:</span>
+        <button
+          onClick={() => setUseRng(true)}
+          className={['px-2.5 py-1 text-xs rounded-md border font-semibold transition-colors',
+            useRng ? 'bg-brand-600 border-brand-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700',
+          ].join(' ')}
+        >
+          Sim
+        </button>
+        <button
+          onClick={() => setUseRng(false)}
+          className={['px-2.5 py-1 text-xs rounded-md border font-semibold transition-colors',
+            !useRng ? 'bg-brand-600 border-brand-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700',
+          ].join(' ')}
+        >
+          Não
+        </button>
       </div>
+
       <div
         className="grid gap-0.5 select-none"
         style={{ gridTemplateColumns: 'repeat(13, 1fr)' }}
@@ -185,6 +200,7 @@ function HandFilterGrid() {
     </div>
   )
 }
+
 
 /* ── Range select screen ────────────────────────────────────────────────────── */
 function DrillRangeSelect() {
@@ -289,6 +305,15 @@ function DrillRangeSelect() {
   )
 }
 
+type PrevSnapshot = {
+  hand: string
+  suits: [string, string]
+  rng: number
+  feedback: string
+  feedbackOk: boolean
+  freqLabel: string
+}
+
 /* ── Active drill ──────────────────────────────────────────────────────────── */
 function DrillActive() {
   const activeDrillRange = useStore(s => s.activeDrillRange)
@@ -306,26 +331,69 @@ function DrillActive() {
 
   const heroStack = Object.values(currentScenario).find(p => p.isHero)?.stack ?? 100
 
-  const [feedback, setFeedback] = useState('')
-  const [feedbackOk, setFeedbackOk] = useState(true)
-  const [modalOpen, setModalOpen] = useState(false)
+  const [feedback, setFeedback]       = useState('')
+  const [feedbackOk, setFeedbackOk]   = useState(true)
+  const [answered, setAnswered]       = useState(false)
+  const [freqLabel, setFreqLabel]     = useState('')
+  const [autoAdvance, setAutoAdvance] = useState(false)
+  const [prevSnapshot, setPrevSnapshot] = useState<PrevSnapshot | null>(null)
+  const [viewingPrev, setViewingPrev] = useState(false)
+  const [modalOpen, setModalOpen]     = useState(false)
+
+  const goNextRef = useRef<() => void>(() => {})
+
+  useEffect(() => {
+    if (!answered || viewingPrev || !autoAdvance) return
+    const t = setTimeout(() => goNextRef.current(), 2000)
+    return () => clearTimeout(t)
+  }, [answered, viewingPrev, autoAdvance])
 
   if (!activeDrillRange || !activeHand) return null
 
-  const r1 = activeHand[0]
-  const r2 = activeHand[1]
-  const [s1, s2] = currentHandSuits
+  function getFreqLabel(hand: string): string {
+    const d = activeDrillRange!.grid[hand]
+    if (!d) return ''
+    const parts: string[] = []
+    if (d.allin > 0) parts.push(`${d.allin}% All-in`)
+    if (d.raise > 0) parts.push(`${d.raise}% Raise`)
+    if (d.call  > 0) parts.push(`${d.call}% Call`)
+    if (parts.length === 0) return '100% Fold'
+    if (d.fold  > 0) parts.push(`${d.fold}% Fold`)
+    return parts.join(' e ')
+  }
 
-  function advanceToNextHand() {
+  const displayHand    = viewingPrev ? prevSnapshot!.hand      : activeHand
+  const displaySuits   = viewingPrev ? prevSnapshot!.suits     : currentHandSuits
+  const displayRng     = viewingPrev ? prevSnapshot!.rng       : currentRng
+  const showFeedback   = viewingPrev ? prevSnapshot!.feedback  : feedback
+  const showFeedbackOk = viewingPrev ? prevSnapshot!.feedbackOk : feedbackOk
+  const showFreqLabel  = viewingPrev ? prevSnapshot!.freqLabel : freqLabel
+  const isAnswered     = viewingPrev || answered
+
+  const r1 = displayHand[0]
+  const r2 = displayHand[1]
+  const [s1, s2] = displaySuits
+
+  function doGoNext() {
+    if (viewingPrev) { setViewingPrev(false); return }
+    if (answered) {
+      setPrevSnapshot({ hand: activeHand, suits: currentHandSuits, rng: currentRng, feedback, feedbackOk, freqLabel })
+    }
+    setAnswered(false)
+    setFeedback('')
+    setFreqLabel('')
     const ok = nextHand()
     if (!ok) { alert('Sem mais mãos!'); stopDrill() }
   }
+  goNextRef.current = doGoNext
 
   function handleAction(act: string) {
+    if (answered || viewingPrev) return
     const { correct, message } = checkAnswer(act)
     setFeedback(message)
     setFeedbackOk(correct)
-    setTimeout(() => { setFeedback(''); advanceToNextHand() }, correct ? 900 : 1500)
+    setFreqLabel(getFreqLabel(activeHand))
+    setAnswered(true)
   }
 
   const actionBtns = [
@@ -362,22 +430,16 @@ function DrillActive() {
             </div>
           </div>
 
-          {/* Bottom strip — cards aligned with table center */}
+          {/* Bottom strip — cards */}
           <div className="px-16 py-5 border-t border-gray-800">
-            <div className="w-full max-w-2xl mx-auto relative flex items-center justify-center gap-4">
+            <div className="w-full max-w-2xl mx-auto flex items-center justify-center gap-4">
               {useRng && (
                 <span className="bg-gray-800 border border-gray-600 text-white px-4 py-2 rounded-full text-sm font-bold tracking-wider flex-shrink-0">
-                  RNG {currentRng}
+                  RNG {displayRng}
                 </span>
               )}
               <PlayingCard rank={r1} suit={s1} />
               <PlayingCard rank={r2} suit={s2} />
-              <button
-                onClick={() => { setFeedback(''); advanceToNextHand() }}
-                className="absolute right-0 px-5 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-bold text-sm transition-colors"
-              >
-                Próxima Mão →
-              </button>
             </div>
           </div>
         </div>
@@ -388,7 +450,8 @@ function DrillActive() {
             <button
               key={action}
               onClick={() => handleAction(action)}
-              className="text-white font-bold px-7 py-4 rounded-lg cursor-pointer min-w-[100px] transition-transform active:scale-95 text-sm"
+              disabled={isAnswered}
+              className="text-white font-bold px-7 py-4 rounded-lg min-w-[100px] transition-all active:scale-95 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
               style={{ backgroundColor: color }}
             >
               {label}
@@ -396,11 +459,57 @@ function DrillActive() {
           ))}
         </div>
 
-        {feedback && (
-          <div className={`mt-4 text-xl font-bold text-center ${feedbackOk ? 'text-emerald-400' : 'text-red-400'}`}>
-            {feedback}
+        {/* Feedback + frequência */}
+        <div className="mt-4 text-center min-h-[52px]">
+          {!!showFeedback && (
+            <>
+              <div className={`text-xl font-bold ${showFeedbackOk ? 'text-emerald-400' : 'text-red-400'}`}>
+                {showFeedback}
+              </div>
+              {!!showFreqLabel && (
+                <div className="text-sm text-gray-400 mt-0.5">{showFreqLabel}</div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Navegação */}
+        <div className="flex flex-col items-center gap-2 mt-2">
+          <button
+            onClick={doGoNext}
+            className={[
+              'px-8 py-3 rounded-xl font-bold text-sm transition-colors w-64',
+              isAnswered
+                ? 'bg-brand-600 hover:bg-brand-500 text-white'
+                : 'bg-gray-700 hover:bg-gray-600 text-white',
+            ].join(' ')}
+          >
+            {viewingPrev ? '← Mão atual' : 'Próxima Mão →'}
+          </button>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => setAutoAdvance(a => !a)}
+              className={[
+                'px-3 py-1.5 text-xs rounded-md border font-semibold transition-colors',
+                autoAdvance
+                  ? 'bg-brand-600/40 border-brand-500 text-brand-300'
+                  : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700',
+              ].join(' ')}
+            >
+              Auto (2s)
+            </button>
+
+            {!!prevSnapshot && !viewingPrev && (
+              <button
+                onClick={() => setViewingPrev(true)}
+                className="px-3 py-1.5 text-xs rounded-md border border-gray-600 bg-gray-800 text-gray-400 hover:bg-gray-700 font-semibold transition-colors"
+              >
+                ← Mão anterior
+              </button>
+            )}
           </div>
-        )}
+        </div>
 
         <div className="flex justify-end mt-5">
           <button
