@@ -103,7 +103,9 @@ interface AppState {
   setHeroRaiseSize: (val: number) => void
   setAllStacks: (val: number) => void
   addScenarioToBuffer: (pot: string, summary: string) => void
+  updateScenarioInBuffer: (idx: number, pot: string, summary: string) => void
   removeScenario: (idx: number) => void
+  loadScenarioFromBuffer: (idx: number) => void
   finalizeRange: () => void
 
   // ── Hand performance (heatmap) ────────────────────────────────────────────────
@@ -311,7 +313,7 @@ export const useStore = create<AppState>()(
           if (pos.id === 'sb') { role = 'post'; bet = 0.5 }
           else if (pos.id === 'bb') { role = 'post'; bet = 1.0 }
           else if (pos.id === 'str' && hasStraddle) { role = 'post'; bet = 2.0 }
-          scenario[pos.id] = { role, bet, isHero: false, stack: 100 }
+          scenario[pos.id] = { role, bet, isHero: false, stack: 250 }
         })
         set({
           currentTableSize: size,
@@ -337,7 +339,7 @@ export const useStore = create<AppState>()(
           if (pos.id === 'sb') { role = 'post'; bet = 0.5 }
           else if (pos.id === 'bb') { role = 'post'; bet = 1.0 }
           else if (pos.id === 'str' && currentHasStraddle) { role = 'post'; bet = 2.0 }
-          scenario[pos.id] = { role, bet, isHero: false, stack: 100 }
+          scenario[pos.id] = { role, bet, isHero: false, stack: 250 }
         })
         set({ currentScenario: scenario, currentAnte })
       },
@@ -359,7 +361,10 @@ export const useStore = create<AppState>()(
           else if (pid === 'bb') bet = 1.0
           else if (pid === 'str') bet = 2.0
         } else if (role === 'fold') {
-          bet = 0
+          if (pid === 'sb') bet = 0.5
+          else if (pid === 'bb') bet = 1.0
+          else if (pid === 'str') bet = 2.0
+          else bet = 0
         } else if (role === 'open') {
           bet = currentTableSize === 8 ? 6 : 2.5
         } else if (role === 'limp') {
@@ -412,9 +417,33 @@ export const useStore = create<AppState>()(
         set({ tempScenarios: [...tempScenarios, scenObj] })
       },
 
+      updateScenarioInBuffer: (idx, pot, summary) => {
+        const { tempScenarios, currentScenario, currentAnte, currentHeroRaiseSize } = get()
+        const updated = tempScenarios.map((s, i) => i !== idx ? s : {
+          ...s,
+          data: JSON.parse(JSON.stringify(currentScenario)),
+          pot,
+          ante: currentAnte,
+          summary,
+          heroRaiseSize: currentHeroRaiseSize > 0 ? currentHeroRaiseSize : undefined,
+        })
+        set({ tempScenarios: updated })
+      },
+
       removeScenario: (idx) => {
         const { tempScenarios } = get()
         set({ tempScenarios: tempScenarios.filter((_, i) => i !== idx) })
+      },
+
+      loadScenarioFromBuffer: (idx) => {
+        const { tempScenarios } = get()
+        const scen = tempScenarios[idx]
+        if (!scen) return
+        set({
+          currentScenario: JSON.parse(JSON.stringify(scen.data)),
+          currentHeroRaiseSize: scen.heroRaiseSize ?? 0,
+          currentAnte: scen.ante,
+        })
       },
 
       finalizeRange: () => {

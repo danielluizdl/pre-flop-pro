@@ -35,9 +35,12 @@ interface SeatProps {
   slot: Slot
 }
 
+const BLIND_BET: Record<string, number> = { SB: 0.5, BB: 1.0, STR: 2.0 }
+
 function Seat({ label, data, slot }: SeatProps) {
   const { role, bet, stack, isHero } = data
   const isFolded = role === 'fold' && !isHero
+  const displayBet = (isFolded && bet === 0 && label in BLIND_BET) ? BLIND_BET[label] : bet
 
   return (
     <>
@@ -71,7 +74,7 @@ function Seat({ label, data, slot }: SeatProps) {
       </div>
 
       {/* Chips toward center */}
-      {bet > 0 && (
+      {displayBet > 0 && (
         <div
           className="absolute z-[15] pointer-events-none"
           style={{
@@ -80,7 +83,7 @@ function Seat({ label, data, slot }: SeatProps) {
             transform: 'translate(-50%,-50%)',
           }}
         >
-          <ChipStack amount={bet} />
+          <ChipStack amount={displayBet} />
         </div>
       )}
     </>
@@ -136,10 +139,14 @@ export function PokerTableEditor() {
         return <Seat key={pos.id} label={pos.label} data={data} slot={slot} />
       })}
 
-      {/* Dealer button */}
-      {activePositions.map((p, i) => {
-        if (p.id !== 'btn') return null
-        const slot = activeSlots[i]
+      {/* Dealer button — follows BTN after rotation */}
+      {(() => {
+        const btnIdx = activePositions.findIndex(p => p.id === 'btn')
+        if (btnIdx === -1) return null
+        const btnVisualSlot = heroPosIndex !== -1
+          ? (btnIdx - heroPosIndex + numPlayers) % numPlayers
+          : btnIdx
+        const slot = activeSlots[btnVisualSlot]
         const dTop  = slot.t < 50 ? slot.t + 10 : slot.t - 10
         const dLeft = slot.l < 50 ? slot.l + 10 : slot.l - 10
         return (
@@ -151,7 +158,7 @@ export function PokerTableEditor() {
             D
           </div>
         )
-      })}
+      })()}
     </div>
   )
 }

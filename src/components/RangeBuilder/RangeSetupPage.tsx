@@ -22,9 +22,9 @@ export function RangeSetupPage() {
   const setPage       = useStore(s => s.setPage)
   const setupNewRange = useStore(s => s.setupNewRange)
 
-  const [tableSize, setTableSize]     = useState<TableSize>(6)
-  const [hasStraddle, setHasStraddle] = useState(false)
-  const [hasAnte, setHasAnte]         = useState(false)
+  const [tableSize, setTableSize]     = useState<TableSize>(8)
+  const [hasStraddle, setHasStraddle] = useState(true)
+  const [hasAnte, setHasAnte]         = useState(true)
   const [anteAmount, setAnteAmount]   = useState(0.5)
 
   function handleStart() {

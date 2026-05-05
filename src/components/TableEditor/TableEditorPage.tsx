@@ -2,6 +2,19 @@ import { useEffect, useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { PokerTableEditor } from '../ui/PokerTableEditor'
 import { SEAT_ROLE_LABELS } from '../../types'
+import type { PositionConfig } from '../../types'
+
+function getStackLabel(data: Record<string, PositionConfig>): string {
+  const stacks = Object.values(data).map(p => p.stack)
+  const unique = [...new Set(stacks)]
+  if (unique.length === 1) return `${unique[0]}bb`
+  const freq: Record<number, number> = {}
+  stacks.forEach(s => { freq[s] = (freq[s] ?? 0) + 1 })
+  const mode = Number(Object.entries(freq).sort((a, b) => b[1] - a[1])[0][0])
+  const outliers = stacks.filter(s => s !== mode)
+  if (outliers.length === 1) return `* ${outliers[0]}bb`
+  return `${mode}bb`
+}
 
 function getScenarioSummary(
   scenario: Record<string, { role: string; bet: number }>,
@@ -30,11 +43,14 @@ export function TableEditorPage() {
   const setHeroRaiseSize     = useStore(s => s.setHeroRaiseSize)
   const setAllStacks         = useStore(s => s.setAllStacks)
   const addScenario          = useStore(s => s.addScenarioToBuffer)
+  const updateScenario       = useStore(s => s.updateScenarioInBuffer)
   const removeScenario       = useStore(s => s.removeScenario)
+  const loadScenario         = useStore(s => s.loadScenarioFromBuffer)
   const finalizeRange        = useStore(s => s.finalizeRange)
   const setPage              = useStore(s => s.setPage)
 
   const [customStack, setCustomStack] = useState(0)
+  const [editingIdx, setEditingIdx]   = useState<number | null>(null)
 
   useEffect(() => {
     if (Object.keys(currentScenario).length === 0) initTableConfig()
@@ -47,6 +63,14 @@ export function TableEditorPage() {
   function handleAddScenario() {
     const summary = getScenarioSummary(currentScenario, activePositions)
     addScenario(pot.toFixed(1), summary)
+    setEditingIdx(null)
+  }
+
+  function handleSaveEdit() {
+    if (editingIdx === null) return
+    const summary = getScenarioSummary(currentScenario, activePositions)
+    updateScenario(editingIdx, pot.toFixed(1), summary)
+    setEditingIdx(null)
   }
 
   function handleFinalize() {
@@ -208,13 +232,30 @@ export function TableEditorPage() {
             </div>
           </div>
 
-          {/* Add scenario */}
-          <button
-            onClick={handleAddScenario}
-            className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold transition-colors"
-          >
-            + Adicionar Cenário à Lista
-          </button>
+          {/* Add / Save buttons */}
+          {editingIdx !== null ? (
+            <div className="flex gap-2">
+              <button
+                onClick={handleSaveEdit}
+                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold transition-colors"
+              >
+                Salvar alterações no #{editingIdx + 1}
+              </button>
+              <button
+                onClick={() => setEditingIdx(null)}
+                className="px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-bold transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleAddScenario}
+              className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold transition-colors"
+            >
+              + Adicionar Cenário à Lista
+            </button>
+          )}
 
           {/* Saved scenarios */}
           {tempScenarios.length > 0 && (
@@ -225,17 +266,24 @@ export function TableEditorPage() {
               {tempScenarios.map((scen, idx) => (
                 <div
                   key={scen.id}
-                  className="bg-gray-800 border border-gray-700 p-2.5 rounded-lg text-sm flex justify-between items-center"
+                  onClick={() => { loadScenario(idx); setEditingIdx(idx) }}
+                  className={[
+                    'border p-2.5 rounded-lg text-sm flex justify-between items-center cursor-pointer transition-colors',
+                    editingIdx === idx
+                      ? 'bg-emerald-900/20 border-emerald-600/60'
+                      : 'bg-gray-800 border-gray-700 hover:border-gray-500',
+                  ].join(' ')}
                 >
                   <span className="text-gray-200">
                     <span className="font-bold text-gray-400">#{idx + 1}</span>{' '}
                     {scen.summary}{' '}
                     <span className="text-gray-500">(Pote: {scen.pot}bb)</span>
-                    {scen.heroRaiseSize ? <span className="text-amber-500"> · Raise: {scen.heroRaiseSize}bb</span> : null}
+                    {!!scen.heroRaiseSize && <span className="text-amber-500"> · Raise: {scen.heroRaiseSize}bb</span>}
+                    <span className="text-blue-400"> · {getStackLabel(scen.data)}</span>
                   </span>
                   <button
-                    onClick={() => removeScenario(idx)}
-                    className="text-red-400 hover:text-red-300 font-bold px-2 ml-2"
+                    onClick={e => { e.stopPropagation(); removeScenario(idx); if (editingIdx === idx) setEditingIdx(null) }}
+                    className="text-red-400 hover:text-red-300 font-bold px-2 ml-2 flex-shrink-0"
                   >
                     ✕
                   </button>
