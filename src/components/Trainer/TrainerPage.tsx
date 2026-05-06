@@ -84,7 +84,7 @@ function HandHistorySidebar() {
   const history = useStore(s => s.handHistory)
   const reversed = [...history].reverse()
   return (
-    <div className="w-48 flex-shrink-0 bg-gray-800 rounded-xl border border-gray-700 p-3 flex flex-col" style={{ maxHeight: 680, minHeight: 400 }}>
+    <div className="flex-1 min-h-0 bg-gray-800 rounded-xl border border-gray-700 p-3 flex flex-col">
       <h3 className="text-xs font-bold text-gray-400 mb-2 flex-shrink-0">
         HISTÓRICO <span className="text-gray-500">({history.length})</span>
       </h3>
@@ -469,58 +469,59 @@ function DrillActive() {
     { label: `ALL IN (${heroStack}bb)`, action: 'Allin', color: '#8b5cf6' },
   ]
 
+  const stats = useStore(s => s.sessionStats)
+
   return (
-    <div className="flex gap-4 items-start">
-      <HandHistorySidebar />
+    <div className="flex gap-3 h-[calc(100vh-90px)] overflow-hidden">
 
-      <div className="flex-1 min-w-0">
-        <StatsBar />
+      {/* LEFT: mesa + cartas + botões + nav */}
+      <div className="flex-1 min-w-0 flex flex-col gap-2 overflow-hidden">
 
-        {/* Range name */}
-        <div className="flex justify-center items-center gap-3 mb-4">
-          <h2 className="font-extrabold text-xl text-white">{activeDrillRange.name}</h2>
-          <button
-            onClick={() => { setModalOpen(true); incrementConsults() }}
-            className="px-3 py-1.5 text-xs border border-gray-600 bg-gray-800 text-gray-300 rounded hover:bg-gray-700"
-          >
-            👁 Ver Range
-          </button>
-        </div>
-
-        {/* Dark table box */}
-        <div className="rounded-2xl border border-gray-800 overflow-visible"
+        {/* Mesa */}
+        <div className="flex-1 min-h-0 rounded-2xl border border-gray-800 overflow-hidden"
           style={{ background: '#030712', boxShadow: 'inset 0 0 60px rgba(0,0,0,0.9)' }}>
-          <div className="flex justify-center pt-8 pb-14 px-16">
-            <div className="w-full max-w-2xl">
+          <div className="w-full h-full flex items-start justify-center" style={{ padding: '16px 44px 36px' }}>
+            <div className="w-full" style={{ maxWidth: 'calc((100vh - 420px) / 0.63)' }}>
               <PokerTableEditor />
             </div>
           </div>
+        </div>
 
-          {/* Bottom strip — cards always centered */}
-          <div className="px-16 py-5 border-t border-gray-800">
-            <div className="w-full max-w-2xl mx-auto flex items-center justify-center gap-4">
-              <div className="w-24 flex justify-end flex-shrink-0">
-                {useRng && (
-                  <span className="bg-gray-800 border border-gray-600 text-white px-4 py-2 rounded-full text-sm font-bold tracking-wider">
-                    RNG {displayRng}
-                  </span>
-                )}
-              </div>
-              <PlayingCard rank={r1} suit={s1} />
-              <PlayingCard rank={r2} suit={s2} />
-              <div className="w-24 flex-shrink-0" />
+        {/* Cartas + Resultado */}
+        <div className="flex-shrink-0 flex items-center gap-4">
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <div className="w-20 flex justify-end">
+              {useRng && (
+                <span className="bg-gray-800 border border-gray-600 text-white px-2.5 py-1.5 rounded-full text-xs font-bold tracking-wider whitespace-nowrap">
+                  RNG {displayRng}
+                </span>
+              )}
             </div>
+            <PlayingCard rank={r1} suit={s1} />
+            <PlayingCard rank={r2} suit={s2} />
+          </div>
+          <div className="flex-1 min-w-0 pl-2 min-h-[52px] flex flex-col justify-center">
+            {!!showFeedback && (
+              <>
+                <div className={`text-lg font-bold leading-tight ${showFeedbackOk ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {showFeedback}
+                </div>
+                {!!showFreqLabel && (
+                  <div className="text-xs text-gray-400 mt-0.5">{showFreqLabel}</div>
+                )}
+              </>
+            )}
           </div>
         </div>
 
-        {/* Action buttons */}
-        <div className="flex gap-3 justify-center mt-5">
+        {/* Botões de ação */}
+        <div className="flex-shrink-0 flex gap-2 flex-wrap">
           {actionBtns.map(({ label, action, color }) => (
             <button
               key={action}
               onClick={() => handleAction(action)}
               disabled={isAnswered}
-              className="text-white font-bold px-7 py-4 rounded-lg min-w-[100px] transition-all active:scale-95 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex-1 text-white font-bold py-3 rounded-lg transition-all active:scale-95 text-sm disabled:opacity-40 disabled:cursor-not-allowed min-w-[80px]"
               style={{ backgroundColor: color }}
             >
               {label}
@@ -528,26 +529,12 @@ function DrillActive() {
           ))}
         </div>
 
-        {/* Feedback + frequência */}
-        <div className="mt-4 text-center min-h-[52px]">
-          {!!showFeedback && (
-            <>
-              <div className={`text-xl font-bold ${showFeedbackOk ? 'text-emerald-400' : 'text-red-400'}`}>
-                {showFeedback}
-              </div>
-              {!!showFreqLabel && (
-                <div className="text-sm text-gray-400 mt-0.5">{showFreqLabel}</div>
-              )}
-            </>
-          )}
-        </div>
-
         {/* Navegação */}
-        <div className="flex flex-col items-center gap-2 mt-2">
+        <div className="flex-shrink-0 flex items-center gap-2">
           <button
             onClick={doGoNext}
             className={[
-              'px-8 py-3 rounded-xl font-bold text-sm transition-colors w-64',
+              'flex-1 py-2.5 rounded-xl font-bold text-sm transition-colors',
               isAnswered
                 ? 'bg-brand-600 hover:bg-brand-500 text-white'
                 : 'bg-gray-700 hover:bg-gray-600 text-white',
@@ -555,53 +542,76 @@ function DrillActive() {
           >
             {viewingPrev ? '← Mão atual' : 'Próxima Mão →'}
           </button>
-
-          <div className="flex gap-2">
-            <button
-              onClick={() => setAutoAdvance(a => !a)}
-              className={[
-                'px-3 py-1.5 text-xs rounded-md border font-semibold transition-colors',
-                autoAdvance
-                  ? 'bg-brand-600/40 border-brand-500 text-brand-300'
-                  : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700',
-              ].join(' ')}
-            >
-              Auto (2s)
-            </button>
-
-            {!!prevSnapshot && !viewingPrev && (
-              <button
-                onClick={() => setViewingPrev(true)}
-                className="px-3 py-1.5 text-xs rounded-md border border-gray-600 bg-gray-800 text-gray-400 hover:bg-gray-700 font-semibold transition-colors"
-              >
-                ← Mão anterior
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="flex justify-end mt-5">
           <button
-            onClick={stopDrill}
-            className="px-4 py-2 border border-gray-700 bg-gray-800 text-gray-400 rounded-lg text-sm font-semibold hover:bg-gray-700 hover:text-gray-200 transition-colors"
+            onClick={() => setAutoAdvance(a => !a)}
+            className={[
+              'px-3 py-2.5 text-xs rounded-xl border font-semibold transition-colors flex-shrink-0',
+              autoAdvance
+                ? 'bg-brand-600/40 border-brand-500 text-brand-300'
+                : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700',
+            ].join(' ')}
           >
-            Encerrar Treino
+            2s
           </button>
+          {!!prevSnapshot && !viewingPrev && (
+            <button
+              onClick={() => setViewingPrev(true)}
+              className="px-3 py-2.5 text-xs rounded-xl border border-gray-600 bg-gray-800 text-gray-400 hover:bg-gray-700 font-semibold transition-colors flex-shrink-0"
+            >
+              ← Anterior
+            </button>
+          )}
         </div>
-
-        {/* Range view modal */}
-        {modalOpen && (
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setModalOpen(false)}>
-            <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-3xl w-full" onClick={e => e.stopPropagation()}>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-bold text-white text-lg">{activeDrillRange.name}</h3>
-                <button onClick={() => setModalOpen(false)} className="text-gray-400 hover:text-white text-xl">✕</button>
-              </div>
-              <HandMatrix readOnly grid={activeDrillRange.grid} heatmap={handPerformance[activeDrillRange.id]} />
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* RIGHT: histórico + stats/info */}
+      <div className="w-52 flex-shrink-0 flex flex-col gap-2">
+        <HandHistorySidebar />
+
+        {/* Stats + info */}
+        <div className="flex-shrink-0 bg-gray-800 border border-gray-700 rounded-xl p-3 space-y-2">
+          <div className="text-xs font-bold text-white leading-tight truncate" title={activeDrillRange.name}>
+            {activeDrillRange.name}
+          </div>
+          <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
+            <span className="text-gray-400">Mãos</span>
+            <span className="text-white font-bold text-right">{stats.hands}</span>
+            <span className="text-emerald-400">Acertos</span>
+            <span className="text-emerald-400 font-bold text-right">{stats.correct}</span>
+            <span className="text-red-400">Erros</span>
+            <span className="text-red-400 font-bold text-right">{stats.errors}</span>
+            <span className="text-gray-400">Consultas</span>
+            <span className="text-white font-bold text-right">{stats.consults}</span>
+          </div>
+          <div className="flex flex-col gap-1.5 pt-1 border-t border-gray-700">
+            <button
+              onClick={() => { setModalOpen(true); incrementConsults() }}
+              className="w-full py-1.5 text-xs border border-gray-600 bg-gray-900 text-gray-300 rounded-lg hover:bg-gray-700 font-semibold transition-colors"
+            >
+              Ver Range
+            </button>
+            <button
+              onClick={stopDrill}
+              className="w-full py-1.5 text-xs border border-gray-700 bg-gray-900 text-gray-500 rounded-lg hover:bg-gray-700 hover:text-gray-200 font-semibold transition-colors"
+            >
+              Encerrar Treino
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal range */}
+      {modalOpen && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setModalOpen(false)}>
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-3xl w-full" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-white text-lg">{activeDrillRange.name}</h3>
+              <button onClick={() => setModalOpen(false)} className="text-gray-400 hover:text-white text-xl">✕</button>
+            </div>
+            <HandMatrix readOnly grid={activeDrillRange.grid} heatmap={handPerformance[activeDrillRange.id]} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
