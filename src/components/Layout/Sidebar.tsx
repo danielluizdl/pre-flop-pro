@@ -2,6 +2,7 @@ import { useStore } from '../../store/useStore'
 import { LayoutDashboard, Layers, Edit3, PlayCircle, Clock, Moon, Sun } from 'lucide-react'
 import { clsx } from 'clsx'
 import type { Page } from '../../types'
+import { AdminPanel } from '../Admin/AdminPanel'
 
 const NAV_ITEMS: { id: Page; label: string; icon: React.ElementType }[] = [
   { id: 'dashboard',   label: 'Dashboard',    icon: LayoutDashboard },
@@ -68,8 +69,8 @@ export function Sidebar({ collapsed }: Props) {
         })}
       </nav>
 
-      {/* Dark mode toggle */}
-      <div className="px-2 py-3 border-t border-gray-700/50">
+      {/* Dark mode toggle + admin */}
+      <div className="px-2 py-3 border-t border-gray-700/50 space-y-0.5">
         <button
           onClick={toggleDarkMode}
           className={clsx(
@@ -81,6 +82,7 @@ export function Sidebar({ collapsed }: Props) {
           {darkMode ? <Sun size={18} /> : <Moon size={18} />}
           {!collapsed && <span>{darkMode ? 'Modo Claro' : 'Modo Escuro'}</span>}
         </button>
+        {!collapsed && <AdminPanel />}
       </div>
     </aside>
   )

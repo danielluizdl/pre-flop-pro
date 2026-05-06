@@ -1,0 +1,9 @@
+name = "preflop-admin"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+# Variáveis de ambiente são configuradas via dashboard ou CLI:
+# wrangler secret put ADMIN_PASSWORD
+# wrangler secret put GITHUB_TOKEN
+# wrangler secret put GITHUB_OWNER
+# wrangler secret put GITHUB_REPO

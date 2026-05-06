@@ -11,25 +11,35 @@ import {
   POS_6MAX, POS_8MAX, SLOTS_6MAX, SLOTS_8MAX,
 } from '../types'
 import { DEFAULT_RANGES } from '../data/defaultRanges'
+import adminRangesRaw from '../data/adminRanges.json'
 
 const RANGES_KEY    = 'fbr-ranges-v1'
 const HISTORY_KEY   = 'fbr-training-history-v1'
 const HAND_PERF_KEY = 'pfp-hand-perf-v1'
+const ADMIN_WORKER_KEY = 'admin-worker-url'
 
 type HandPerfMap = Record<number, Record<string, { c: number; t: number }>>
+
+const ADMIN_RANGES = adminRangesRaw as unknown as Range[]
+
+const SEEDED_DEFAULTS: Range[] = (() => {
+  if (ADMIN_RANGES.length === 0) return DEFAULT_RANGES
+  const adminIds = new Set(ADMIN_RANGES.map(r => r.id))
+  return [...ADMIN_RANGES, ...DEFAULT_RANGES.filter(r => !adminIds.has(r.id))]
+})()
 
 function loadRanges(): Range[] {
   try {
     const saved: Range[] = JSON.parse(localStorage.getItem(RANGES_KEY) ?? '[]') ?? []
     const existingIds = new Set(saved.map(r => r.id))
-    const missing = DEFAULT_RANGES.filter(r => !existingIds.has(r.id))
+    const missing = SEEDED_DEFAULTS.filter(r => !existingIds.has(r.id))
     if (missing.length > 0) {
       const merged = [...missing, ...saved]
       localStorage.setItem(RANGES_KEY, JSON.stringify(merged))
       return merged
     }
     return saved
-  } catch { return [...DEFAULT_RANGES] }
+  } catch { return [...SEEDED_DEFAULTS] }
 }
 
 function saveRanges(ranges: Range[]) {
@@ -142,6 +152,11 @@ interface AppState {
   checkDrillAnswer: (action: string) => { correct: boolean; message: string }
   stopDrill: () => void
   incrementConsults: () => void
+
+  // ── Admin ─────────────────────────────────────────────────────────────────────
+  adminWorkerUrl: string
+  setAdminWorkerUrl: (url: string) => void
+  adminSaveRanges: (password: string) => Promise<'ok' | 'wrong_password' | 'error'>
 }
 
 export const useStore = create<AppState>()(
@@ -668,6 +683,27 @@ export const useStore = create<AppState>()(
       incrementConsults: () => {
         const { sessionStats } = get()
         set({ sessionStats: { ...sessionStats, consults: sessionStats.consults + 1 } })
+      },
+
+      // ── Admin ───────────────────────────────────────────────────────────────────
+      adminWorkerUrl: localStorage.getItem('admin-worker-url') ?? '',
+      setAdminWorkerUrl: (url) => {
+        localStorage.setItem('admin-worker-url', url)
+        set({ adminWorkerUrl: url })
+      },
+      adminSaveRanges: async (password) => {
+        const { ranges, adminWorkerUrl } = get()
+        if (!adminWorkerUrl) return 'error'
+        try {
+          const res = await fetch(adminWorkerUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password, ranges }),
+          })
+          if (res.status === 401) return 'wrong_password'
+          if (res.ok) return 'ok'
+          return 'error'
+        } catch { return 'error' }
       },
     }),
     {
