@@ -153,6 +153,12 @@ interface AppState {
   stopDrill: () => void
   incrementConsults: () => void
 
+  // ── Auth ──────────────────────────────────────────────────────────────────────
+  userMode: 'visitor' | 'admin' | null
+  login: (password: string) => Promise<'ok' | 'wrong_password' | 'error'>
+  enterAsVisitor: () => void
+  logout: () => void
+
   // ── Admin ─────────────────────────────────────────────────────────────────────
   adminWorkerUrl: string
   setAdminWorkerUrl: (url: string) => void
@@ -685,8 +691,27 @@ export const useStore = create<AppState>()(
         set({ sessionStats: { ...sessionStats, consults: sessionStats.consults + 1 } })
       },
 
+      // ── Auth ────────────────────────────────────────────────────────────────────
+      userMode: null,
+      login: async (password) => {
+        const { adminWorkerUrl } = get()
+        if (!adminWorkerUrl) return 'error'
+        try {
+          const res = await fetch(adminWorkerUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password, action: 'validate' }),
+          })
+          if (res.status === 401) return 'wrong_password'
+          if (res.ok) { set({ userMode: 'admin' }); return 'ok' }
+          return 'error'
+        } catch { return 'error' }
+      },
+      enterAsVisitor: () => set({ userMode: 'visitor' }),
+      logout: () => set({ userMode: null }),
+
       // ── Admin ───────────────────────────────────────────────────────────────────
-      adminWorkerUrl: localStorage.getItem('admin-worker-url') ?? '',
+      adminWorkerUrl: localStorage.getItem('admin-worker-url') ?? 'https://preflop-admin.loureirodlg.workers.dev',
       setAdminWorkerUrl: (url) => {
         localStorage.setItem('admin-worker-url', url)
         set({ adminWorkerUrl: url })

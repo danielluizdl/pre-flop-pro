@@ -1,5 +1,5 @@
 import { useStore } from '../../store/useStore'
-import { LayoutDashboard, Layers, Edit3, PlayCircle, Clock, Moon, Sun } from 'lucide-react'
+import { LayoutDashboard, Layers, Edit3, PlayCircle, Clock, Moon, Sun, LogOut } from 'lucide-react'
 import { clsx } from 'clsx'
 import type { Page } from '../../types'
 import { AdminPanel } from '../Admin/AdminPanel'
@@ -17,7 +17,7 @@ interface Props {
 }
 
 export function Sidebar({ collapsed }: Props) {
-  const { page, setPage, darkMode, toggleDarkMode } = useStore()
+  const { page, setPage, darkMode, toggleDarkMode, userMode, logout } = useStore()
 
   return (
     <aside className={clsx(
@@ -69,7 +69,7 @@ export function Sidebar({ collapsed }: Props) {
         })}
       </nav>
 
-      {/* Dark mode toggle + admin */}
+      {/* Bottom */}
       <div className="px-2 py-3 border-t border-gray-700/50 space-y-0.5">
         <button
           onClick={toggleDarkMode}
@@ -82,7 +82,29 @@ export function Sidebar({ collapsed }: Props) {
           {darkMode ? <Sun size={18} /> : <Moon size={18} />}
           {!collapsed && <span>{darkMode ? 'Modo Claro' : 'Modo Escuro'}</span>}
         </button>
-        {!collapsed && <AdminPanel />}
+
+        {userMode === 'admin' && !collapsed && <AdminPanel />}
+
+        {userMode === 'visitor' && !collapsed && (
+          <button
+            onClick={logout}
+            className="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-800 hover:text-gray-400 transition-all"
+            title="Sair"
+          >
+            <LogOut size={16} className="flex-shrink-0" />
+            <span>Sair</span>
+          </button>
+        )}
+
+        {collapsed && (
+          <button
+            onClick={logout}
+            className="w-full flex items-center justify-center px-0 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-800 hover:text-gray-400 transition-all"
+            title="Sair"
+          >
+            <LogOut size={16} />
+          </button>
+        )}
       </div>
     </aside>
   )

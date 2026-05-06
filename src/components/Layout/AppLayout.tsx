@@ -8,6 +8,7 @@ import { TableEditorPage } from '../TableEditor/TableEditorPage'
 import { SituationsPage } from '../Situations/SituationsPage'
 import { TrainerPage } from '../Trainer/TrainerPage'
 import { StatsPage } from '../Stats/StatsPage'
+import { LoginPage } from '../Auth/LoginPage'
 import { Menu } from 'lucide-react'
 
 const PAGE_TITLES: Record<string, string> = {
@@ -21,8 +22,10 @@ const PAGE_TITLES: Record<string, string> = {
 }
 
 export function AppLayout() {
-  const { page, darkMode } = useStore()
+  const { page, darkMode, userMode } = useStore()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+
+  if (userMode === null) return <LoginPage />
 
   function renderPage() {
     switch (page) {

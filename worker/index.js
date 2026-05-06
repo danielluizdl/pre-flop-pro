@@ -29,10 +29,17 @@ export default {
       return cors(new Response('Invalid JSON', { status: 400 }))
     }
 
-    const { password, ranges } = body
+    const { password, ranges, action } = body
 
     if (!password || password !== env.ADMIN_PASSWORD) {
       return cors(new Response('Unauthorized', { status: 401 }))
+    }
+
+    if (action === 'validate') {
+      return cors(new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }))
     }
 
     if (!Array.isArray(ranges)) {
