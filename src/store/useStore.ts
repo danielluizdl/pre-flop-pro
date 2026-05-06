@@ -13,14 +13,17 @@ import {
 import { DEFAULT_RANGES } from '../data/defaultRanges'
 import adminRangesRaw from '../data/adminRanges.json'
 
-const RANGES_KEY    = 'fbr-ranges-v1'
-const HISTORY_KEY   = 'fbr-training-history-v1'
-const HAND_PERF_KEY = 'pfp-hand-perf-v1'
+const RANGES_KEY       = 'fbr-ranges-v1'
+const HISTORY_KEY      = 'fbr-training-history-v1'
+const HAND_PERF_KEY    = 'pfp-hand-perf-v1'
 const ADMIN_WORKER_KEY = 'admin-worker-url'
+const ADMIN_VERSION_KEY = 'admin-ranges-version'
 
 type HandPerfMap = Record<number, Record<string, { c: number; t: number }>>
 
-const ADMIN_RANGES = adminRangesRaw as unknown as Range[]
+const adminPayload  = adminRangesRaw as unknown as { version: number; ranges: Range[] }
+const ADMIN_VERSION = adminPayload.version ?? 0
+const ADMIN_RANGES  = adminPayload.ranges ?? []
 
 const SEEDED_DEFAULTS: Range[] = (() => {
   if (ADMIN_RANGES.length === 0) return DEFAULT_RANGES
@@ -31,11 +34,27 @@ const SEEDED_DEFAULTS: Range[] = (() => {
 function loadRanges(): Range[] {
   try {
     const saved: Range[] = JSON.parse(localStorage.getItem(RANGES_KEY) ?? '[]') ?? []
-    const adminIds = new Set(SEEDED_DEFAULTS.map(r => r.id))
-    const userRanges = saved.filter(r => !adminIds.has(r.id))
-    const merged = [...SEEDED_DEFAULTS, ...userRanges]
-    localStorage.setItem(RANGES_KEY, JSON.stringify(merged))
-    return merged
+    const seenVersion = Number(localStorage.getItem(ADMIN_VERSION_KEY) ?? '0')
+
+    if (ADMIN_VERSION > seenVersion) {
+      // Nova versão publicada: sobrescreve ranges do admin, preserva ranges do usuário
+      const adminIds = new Set(SEEDED_DEFAULTS.map(r => r.id))
+      const userRanges = saved.filter(r => !adminIds.has(r.id))
+      const merged = [...SEEDED_DEFAULTS, ...userRanges]
+      localStorage.setItem(RANGES_KEY, JSON.stringify(merged))
+      localStorage.setItem(ADMIN_VERSION_KEY, String(ADMIN_VERSION))
+      return merged
+    }
+
+    // Versão já vista: injeta apenas ranges ausentes sem sobrescrever edições locais
+    const existingIds = new Set(saved.map(r => r.id))
+    const missing = SEEDED_DEFAULTS.filter(r => !existingIds.has(r.id))
+    if (missing.length > 0) {
+      const merged = [...missing, ...saved]
+      localStorage.setItem(RANGES_KEY, JSON.stringify(merged))
+      return merged
+    }
+    return saved
   } catch { return [...SEEDED_DEFAULTS] }
 }
 

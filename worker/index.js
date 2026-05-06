@@ -74,7 +74,8 @@ export default {
     }
 
     // 2. Encode content as base64
-    const content = JSON.stringify(ranges, null, 2)
+    const payload = { version: Date.now(), ranges }
+    const content = JSON.stringify(payload, null, 2)
     const encoded = btoa(unescape(encodeURIComponent(content)))
 
     // 3. Commit updated file
