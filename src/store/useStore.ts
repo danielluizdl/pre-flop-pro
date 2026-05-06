@@ -31,14 +31,11 @@ const SEEDED_DEFAULTS: Range[] = (() => {
 function loadRanges(): Range[] {
   try {
     const saved: Range[] = JSON.parse(localStorage.getItem(RANGES_KEY) ?? '[]') ?? []
-    const existingIds = new Set(saved.map(r => r.id))
-    const missing = SEEDED_DEFAULTS.filter(r => !existingIds.has(r.id))
-    if (missing.length > 0) {
-      const merged = [...missing, ...saved]
-      localStorage.setItem(RANGES_KEY, JSON.stringify(merged))
-      return merged
-    }
-    return saved
+    const adminIds = new Set(SEEDED_DEFAULTS.map(r => r.id))
+    const userRanges = saved.filter(r => !adminIds.has(r.id))
+    const merged = [...SEEDED_DEFAULTS, ...userRanges]
+    localStorage.setItem(RANGES_KEY, JSON.stringify(merged))
+    return merged
   } catch { return [...SEEDED_DEFAULTS] }
 }
 
