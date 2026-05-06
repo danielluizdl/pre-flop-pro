@@ -202,16 +202,27 @@ function HandFilterGrid() {
 }
 
 
+const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'EP', 'LJ', 'UTG']
+
 /* ── Range select screen ────────────────────────────────────────────────────── */
 function DrillRangeSelect() {
-  const ranges = useStore(s => s.ranges)
-  const selectedIds = useStore(s => s.selectedDrillRangeIds)
-  const toggleDrillRange = useStore(s => s.toggleDrillRange)
-  const startDrillSession = useStore(s => s.startDrillSession)
-  const nextDrillHand = useStore(s => s.nextDrillHand)
-  const setPage = useStore(s => s.setPage)
+  const ranges        = useStore(s => s.ranges)
+  const selectedIds   = useStore(s => s.selectedDrillRangeIds)
+  const toggleDrillRange   = useStore(s => s.toggleDrillRange)
+  const startDrillSession  = useStore(s => s.startDrillSession)
+  const nextDrillHand      = useStore(s => s.nextDrillHand)
+  const setPage            = useStore(s => s.setPage)
 
-  const [step, setStep] = useState<'select' | 'filter'>('select')
+  const [step, setStep]           = useState<'select' | 'filter'>('select')
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
+
+  function toggleGroup(pos: string) {
+    setOpenGroups(prev => {
+      const next = new Set(prev)
+      next.has(pos) ? next.delete(pos) : next.add(pos)
+      return next
+    })
+  }
 
   function handleStartDrill() {
     startDrillSession()
@@ -220,16 +231,31 @@ function DrillRangeSelect() {
   }
 
   if (step === 'select') {
+    // Group ranges by each position label they belong to
+    const grouped: Record<string, typeof ranges> = {}
+    for (const r of ranges) {
+      for (const pos of r.positions) {
+        if (!grouped[pos]) grouped[pos] = []
+        grouped[pos].push(r)
+      }
+    }
+
+    // Order groups
+    const orderedKeys = [
+      ...POSITION_ORDER.filter(p => grouped[p]),
+      ...Object.keys(grouped).filter(p => !POSITION_ORDER.includes(p)).sort(),
+    ]
+
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 max-w-2xl mx-auto">
         <div>
-          <h2 className="text-2xl font-extrabold text-white mb-1">Selecionar Ranges</h2>
-          <p className="text-gray-400 text-sm">Clique nos ranges que deseja incluir no treino.</p>
+          <h2 className="text-2xl font-extrabold text-white mb-1">Drill</h2>
+          <p className="text-gray-400 text-sm">Selecione os ranges para o treino. Clique em uma posição para expandir.</p>
         </div>
 
         {ranges.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-gray-400 mb-4">Nenhum range criado. Crie um range primeiro.</p>
+            <p className="text-gray-400 mb-4">Nenhum range criado.</p>
             <button
               onClick={() => setPage('ranges')}
               className="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2.5 rounded-lg text-sm font-semibold"
@@ -239,31 +265,71 @@ function DrillRangeSelect() {
           </div>
         ) : (
           <>
-            <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
-              {ranges.map(r => (
-                <div
-                  key={r.id}
-                  onClick={() => toggleDrillRange(r.id)}
-                  className={[
-                    'border rounded-xl p-4 cursor-pointer transition-all relative',
-                    selectedIds.includes(r.id)
-                      ? 'border-brand-500 bg-brand-900/20'
-                      : 'border-gray-700 bg-gray-800/60 hover:border-gray-500',
-                  ].join(' ')}
-                >
-                  {selectedIds.includes(r.id) && (
-                    <div className="absolute -top-2 -right-2 bg-brand-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shadow">
-                      ✔
-                    </div>
-                  )}
-                  <div className="text-xs text-gray-400 font-semibold">{r.positions.join(', ')}</div>
-                  <h3 className="font-bold text-white mt-0.5">{r.name}</h3>
-                  <div className="text-xs text-gray-500 mt-0.5">{r.tableSize}-max · {r.scenarios.length} cenário(s)</div>
-                </div>
-              ))}
+            <div className="space-y-2">
+              {orderedKeys.map(pos => {
+                const group = grouped[pos]
+                const isOpen = openGroups.has(pos)
+                const selectedInGroup = group.filter(r => selectedIds.includes(r.id)).length
+
+                return (
+                  <div key={pos} className="border border-gray-700 rounded-xl overflow-hidden">
+                    {/* Header */}
+                    <button
+                      onClick={() => toggleGroup(pos)}
+                      className="w-full flex items-center justify-between px-4 py-3 bg-gray-800 hover:bg-gray-750 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="font-extrabold text-white text-sm w-10 text-left">{pos}</span>
+                        <span className="text-gray-400 text-xs">{group.length} range{group.length !== 1 ? 's' : ''}</span>
+                        {selectedInGroup > 0 && (
+                          <span className="bg-brand-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                            {selectedInGroup} selecionado{selectedInGroup !== 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </div>
+                      <span className={`text-gray-400 text-lg transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
+                        ›
+                      </span>
+                    </button>
+
+                    {/* Ranges list */}
+                    {isOpen && (
+                      <div className="border-t border-gray-700 bg-gray-900/40 p-3 grid gap-2"
+                        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+                        {group.map(r => {
+                          const selected = selectedIds.includes(r.id)
+                          return (
+                            <div
+                              key={r.id}
+                              onClick={() => toggleDrillRange(r.id)}
+                              className={[
+                                'border rounded-lg p-3 cursor-pointer transition-all relative',
+                                selected
+                                  ? 'border-brand-500 bg-brand-900/20'
+                                  : 'border-gray-700 bg-gray-800/60 hover:border-gray-500',
+                              ].join(' ')}
+                            >
+                              {selected && (
+                                <div className="absolute -top-1.5 -right-1.5 bg-brand-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shadow">
+                                  ✔
+                                </div>
+                              )}
+                              <h3 className="font-bold text-white text-sm leading-tight">{r.name}</h3>
+                              <div className="text-xs text-gray-500 mt-1">{r.tableSize}-max · {r.scenarios.length} cenário{r.scenarios.length !== 1 ? 's' : ''}</div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
 
-            <div className="flex justify-center">
+            <div className="flex items-center justify-between pt-2">
+              <span className="text-sm text-gray-400">
+                {selectedIds.length > 0 ? `${selectedIds.length} range${selectedIds.length !== 1 ? 's' : ''} selecionado${selectedIds.length !== 1 ? 's' : ''}` : 'Nenhum selecionado'}
+              </span>
               <button
                 onClick={() => {
                   if (selectedIds.length === 0) { alert('Selecione pelo menos um range.'); return }
@@ -281,7 +347,7 @@ function DrillRangeSelect() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-2xl mx-auto">
       <div className="text-center">
         <h2 className="text-2xl font-extrabold text-white mb-1">Filtro de Mãos</h2>
         <p className="text-gray-400 text-sm">Arraste para selecionar/remover várias mãos.</p>

@@ -7,7 +7,7 @@ const NAV_ITEMS: { id: Page; label: string; icon: React.ElementType }[] = [
   { id: 'dashboard',   label: 'Dashboard',    icon: LayoutDashboard },
   { id: 'ranges',      label: 'Meus Ranges',  icon: Layers },
   { id: 'range-setup', label: 'Criar Range',  icon: Edit3 },
-  { id: 'drill',       label: 'Treinar',      icon: PlayCircle },
+  { id: 'drill',       label: 'Drill',        icon: PlayCircle },
   { id: 'history',     label: 'Histórico',    icon: Clock },
 ]
 

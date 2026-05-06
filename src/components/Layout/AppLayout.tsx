@@ -16,7 +16,7 @@ const PAGE_TITLES: Record<string, string> = {
   'range-setup': 'Novo Range',
   editor:        'Editor de Range',
   'table-editor': 'Configurar Cenários',
-  drill:         'Treinar',
+  drill:         'Drill',
   history:       'Histórico',
 }
 
