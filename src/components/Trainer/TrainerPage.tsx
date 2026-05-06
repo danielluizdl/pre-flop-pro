@@ -481,16 +481,16 @@ function DrillActive() {
         <div className="flex-1 min-h-0 rounded-2xl border border-gray-800 overflow-hidden"
           style={{ background: '#030712', boxShadow: 'inset 0 0 60px rgba(0,0,0,0.9)' }}>
           <div className="w-full h-full flex items-start justify-center" style={{ padding: '16px 44px 36px' }}>
-            <div className="w-full" style={{ maxWidth: 'calc((100vh - 420px) / 0.63)' }}>
+            <div className="w-full" style={{ maxWidth: 'calc((100vh - 540px) / 0.63)' }}>
               <PokerTableEditor />
             </div>
           </div>
         </div>
 
-        {/* Cartas + Resultado */}
+        {/* Cartas centralizadas + Resultado à direita */}
         <div className="flex-shrink-0 flex items-center gap-4">
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="w-20 flex justify-end">
+          <div className="flex items-center justify-center gap-3 flex-1">
+            <div className="w-20 flex justify-end flex-shrink-0">
               {useRng && (
                 <span className="bg-gray-800 border border-gray-600 text-white px-2.5 py-1.5 rounded-full text-xs font-bold tracking-wider whitespace-nowrap">
                   RNG {displayRng}
@@ -499,8 +499,9 @@ function DrillActive() {
             </div>
             <PlayingCard rank={r1} suit={s1} />
             <PlayingCard rank={r2} suit={s2} />
+            <div className="w-20 flex-shrink-0" />
           </div>
-          <div className="flex-1 min-w-0 pl-2 min-h-[52px] flex flex-col justify-center">
+          <div className="w-48 flex-shrink-0 min-h-[52px] flex flex-col justify-center">
             {!!showFeedback && (
               <>
                 <div className={`text-lg font-bold leading-tight ${showFeedbackOk ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -515,13 +516,13 @@ function DrillActive() {
         </div>
 
         {/* Botões de ação */}
-        <div className="flex-shrink-0 flex gap-2 flex-wrap">
+        <div className="flex-shrink-0 flex gap-2 justify-center">
           {actionBtns.map(({ label, action, color }) => (
             <button
               key={action}
               onClick={() => handleAction(action)}
               disabled={isAnswered}
-              className="flex-1 text-white font-bold py-3 rounded-lg transition-all active:scale-95 text-sm disabled:opacity-40 disabled:cursor-not-allowed min-w-[80px]"
+              className="text-white font-bold px-6 py-3 rounded-lg transition-all active:scale-95 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
               style={{ backgroundColor: color }}
             >
               {label}
@@ -530,11 +531,11 @@ function DrillActive() {
         </div>
 
         {/* Navegação */}
-        <div className="flex-shrink-0 flex items-center gap-2">
+        <div className="flex-shrink-0 flex items-center justify-center gap-2">
           <button
             onClick={doGoNext}
             className={[
-              'flex-1 py-2.5 rounded-xl font-bold text-sm transition-colors',
+              'px-8 py-2.5 rounded-xl font-bold text-sm transition-colors',
               isAnswered
                 ? 'bg-brand-600 hover:bg-brand-500 text-white'
                 : 'bg-gray-700 hover:bg-gray-600 text-white',
@@ -545,7 +546,7 @@ function DrillActive() {
           <button
             onClick={() => setAutoAdvance(a => !a)}
             className={[
-              'px-3 py-2.5 text-xs rounded-xl border font-semibold transition-colors flex-shrink-0',
+              'px-3 py-2.5 text-xs rounded-xl border font-semibold transition-colors',
               autoAdvance
                 ? 'bg-brand-600/40 border-brand-500 text-brand-300'
                 : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700',
@@ -553,14 +554,13 @@ function DrillActive() {
           >
             2s
           </button>
-          {!!prevSnapshot && !viewingPrev && (
-            <button
-              onClick={() => setViewingPrev(true)}
-              className="px-3 py-2.5 text-xs rounded-xl border border-gray-600 bg-gray-800 text-gray-400 hover:bg-gray-700 font-semibold transition-colors flex-shrink-0"
-            >
-              ← Anterior
-            </button>
-          )}
+          <button
+            onClick={() => setViewingPrev(true)}
+            disabled={!prevSnapshot || viewingPrev}
+            className="px-3 py-2.5 text-xs rounded-xl border border-gray-600 bg-gray-800 text-gray-400 hover:bg-gray-700 font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            ← Anterior
+          </button>
         </div>
       </div>
 
