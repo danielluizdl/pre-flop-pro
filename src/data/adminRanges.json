@@ -5084,1190 +5084,6 @@
     }
   },
   {
-    "id": 1777980539985,
-    "name": "BB 3B vs RFI BTN",
-    "positions": [
-      "BTN"
-    ],
-    "tableSize": 8,
-    "scenarios": [
-      {
-        "id": 1777980535208,
-        "pot": "13.5",
-        "ante": 0.5,
-        "summary": "BTN Open (6bb)",
-        "data": {
-          "sb": {
-            "role": "post",
-            "bet": 0.5,
-            "isHero": false,
-            "stack": 250
-          },
-          "bb": {
-            "role": "post",
-            "bet": 1,
-            "isHero": true,
-            "stack": 250
-          },
-          "str": {
-            "role": "post",
-            "bet": 2,
-            "isHero": false,
-            "stack": 250
-          },
-          "utg": {
-            "role": "fold",
-            "bet": 0,
-            "isHero": false,
-            "stack": 250
-          },
-          "utg1": {
-            "role": "fold",
-            "bet": 0,
-            "isHero": false,
-            "stack": 250
-          },
-          "mp": {
-            "role": "fold",
-            "bet": 0,
-            "isHero": false,
-            "stack": 250
-          },
-          "co": {
-            "role": "fold",
-            "bet": 0,
-            "isHero": false,
-            "stack": 250
-          },
-          "btn": {
-            "role": "open",
-            "bet": 6,
-            "isHero": false,
-            "stack": 250
-          }
-        }
-      }
-    ],
-    "grid": {
-      "22": {
-        "fold": 0,
-        "call": 100,
-        "raise": 0,
-        "allin": 0
-      },
-      "33": {
-        "fold": 0,
-        "call": 100,
-        "raise": 0,
-        "allin": 0
-      },
-      "44": {
-        "fold": 0,
-        "call": 100,
-        "raise": 0,
-        "allin": 0
-      },
-      "55": {
-        "fold": 0,
-        "call": 100,
-        "raise": 0,
-        "allin": 0
-      },
-      "66": {
-        "fold": 0,
-        "call": 100,
-        "raise": 0,
-        "allin": 0
-      },
-      "77": {
-        "fold": 0,
-        "call": 100,
-        "raise": 0,
-        "allin": 0
-      },
-      "88": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "99": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "AA": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "AKs": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "AQs": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "AJs": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "ATs": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "A9s": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "A8s": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "A7s": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "A6s": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "A5s": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "A4s": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "A3s": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "A2s": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "AKo": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "KK": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "KQs": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "KJs": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "KTs": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "K9s": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "K8s": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "K7s": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "K6s": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "K5s": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "K4s": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "K3s": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "K2s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "AQo": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "KQo": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "QQ": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "QJs": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "QTs": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "Q9s": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "Q8s": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "Q7s": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "Q6s": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "Q5s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "Q4s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "Q3s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "Q2s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "AJo": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "KJo": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "QJo": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "JJ": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "JTs": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "J9s": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "J8s": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "J7s": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "J6s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "J5s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "J4s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "J3s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "J2s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "ATo": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "KTo": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "QTo": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "JTo": {
-        "fold": 0,
-        "call": 25,
-        "raise": 75,
-        "allin": 0
-      },
-      "TT": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "T9s": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "T8s": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "T7s": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "T6s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "T5s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "T4s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "T3s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "T2s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "A9o": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "K9o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "Q9o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "J9o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "T9o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "98s": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "97s": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "96s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "95s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "94s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "93s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "92s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "A8o": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "K8o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "Q8o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "J8o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "T8o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "98o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "87s": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "86s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "85s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "84s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "83s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "82s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "A7o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "K7o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "Q7o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "J7o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "T7o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "97o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "87o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "76s": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "75s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "74s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "73s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "72s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "A6o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "K6o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "Q6o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "J6o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "T6o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "96o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "86o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "76o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "65s": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "64s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "63s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "62s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "A5o": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "K5o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "Q5o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "J5o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "T5o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "95o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "85o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "75o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "65o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "54s": {
-        "fold": 0,
-        "call": 0,
-        "raise": 100,
-        "allin": 0
-      },
-      "53s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "52s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "A4o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "K4o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "Q4o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "J4o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "T4o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "94o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "84o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "74o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "64o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "54o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "43s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "42s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "A3o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "K3o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "Q3o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "J3o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "T3o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "93o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "83o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "73o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "63o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "53o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "43o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "32s": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "A2o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "K2o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "Q2o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "J2o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "T2o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "92o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "82o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "72o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "62o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "52o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "42o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      },
-      "32o": {
-        "fold": 100,
-        "call": 0,
-        "raise": 0,
-        "allin": 0,
-        "size": 0
-      }
-    }
-  },
-  {
     "id": 1777980718643,
     "name": "BB 3B vs RFI SB",
     "positions": [
@@ -40293,49 +39109,49 @@
             "role": "post",
             "bet": 1,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "btn": {
             "role": "open",
             "bet": 6,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "co": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "mp": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "sb": {
             "role": "post",
             "bet": 0.5,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "str": {
             "role": "3bet",
             "bet": 3,
             "isHero": true,
-            "stack": 250
+            "stack": 100
           },
           "utg": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "utg1": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           }
         }
       }
@@ -41396,49 +40212,49 @@
             "role": "post",
             "bet": 1,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "btn": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "co": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "mp": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "sb": {
             "role": "open",
             "bet": 8,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "str": {
             "role": "3bet",
             "bet": 3,
             "isHero": true,
-            "stack": 250
+            "stack": 100
           },
           "utg": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "utg1": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           }
         }
       },
@@ -41453,49 +40269,49 @@
             "role": "open",
             "bet": 8,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "btn": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "co": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "mp": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "sb": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "str": {
             "role": "3bet",
             "bet": 3,
             "isHero": true,
-            "stack": 250
+            "stack": 100
           },
           "utg": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "utg1": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           }
         }
       }
@@ -42621,49 +41437,49 @@
             "role": "post",
             "bet": 1,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "btn": {
             "role": "iso",
             "bet": 10,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "co": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "mp": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "sb": {
             "role": "post",
             "bet": 0.5,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "str": {
             "role": "3bet",
             "bet": 0,
             "isHero": true,
-            "stack": 250
+            "stack": 100
           },
           "utg": {
             "role": "limp",
             "bet": 2,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "utg1": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           }
         }
       },
@@ -42678,49 +41494,49 @@
             "role": "post",
             "bet": 1,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "btn": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "co": {
             "role": "iso",
             "bet": 10,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "mp": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "sb": {
             "role": "post",
             "bet": 0.5,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "str": {
             "role": "3bet",
             "bet": 0,
             "isHero": true,
-            "stack": 250
+            "stack": 100
           },
           "utg": {
             "role": "limp",
             "bet": 2,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "utg1": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           }
         }
       },
@@ -42735,49 +41551,49 @@
             "role": "post",
             "bet": 1,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "btn": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "co": {
             "role": "iso",
             "bet": 10,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "mp": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "sb": {
             "role": "post",
             "bet": 0.5,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "str": {
             "role": "3bet",
             "bet": 0,
             "isHero": true,
-            "stack": 250
+            "stack": 100
           },
           "utg": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "utg1": {
             "role": "limp",
             "bet": 2,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           }
         }
       },
@@ -42792,49 +41608,49 @@
             "role": "post",
             "bet": 1,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "btn": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "co": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "mp": {
             "role": "iso",
             "bet": 10,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "sb": {
             "role": "post",
             "bet": 0.5,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "str": {
             "role": "3bet",
             "bet": 0,
             "isHero": true,
-            "stack": 250
+            "stack": 100
           },
           "utg": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "utg1": {
             "role": "limp",
             "bet": 2,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           }
         }
       },
@@ -42849,49 +41665,49 @@
             "role": "post",
             "bet": 1,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "btn": {
             "role": "iso",
             "bet": 10,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "co": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "mp": {
             "role": "limp",
             "bet": 2,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "sb": {
             "role": "post",
             "bet": 0.5,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "str": {
             "role": "3bet",
             "bet": 0,
             "isHero": true,
-            "stack": 250
+            "stack": 100
           },
           "utg": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "utg1": {
             "role": "limp",
             "bet": 2,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           }
         }
       },
@@ -42906,49 +41722,49 @@
             "role": "post",
             "bet": 1,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "btn": {
             "role": "iso",
             "bet": 10,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "co": {
             "role": "limp",
             "bet": 2,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "mp": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "sb": {
             "role": "post",
             "bet": 0.5,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "str": {
             "role": "3bet",
             "bet": 0,
             "isHero": true,
-            "stack": 250
+            "stack": 100
           },
           "utg": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "utg1": {
             "role": "limp",
             "bet": 2,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           }
         }
       }
@@ -42957,7 +41773,6 @@
   {
     "id": 1777583189615,
     "name": "STR 3B vs ISO OOP",
-    "tableSize": 8,
     "positions": [
       "STR"
     ],
@@ -44644,7 +43459,8 @@
           }
         }
       }
-    ]
+    ],
+    "tableSize": 8
   },
   {
     "id": 1777900860399,
@@ -49576,49 +48392,49 @@
             "role": "post",
             "bet": 1,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "btn": {
             "role": "call",
             "bet": 6,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "co": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "mp": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "sb": {
             "role": "post",
             "bet": 0.5,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "str": {
             "role": "post",
             "bet": 2,
             "isHero": true,
-            "stack": 250
+            "stack": 100
           },
           "utg": {
             "role": "open",
             "bet": 6,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "utg1": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           }
         }
       },
@@ -49633,49 +48449,49 @@
             "role": "post",
             "bet": 1,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "btn": {
             "role": "call",
             "bet": 6,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "co": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "mp": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "sb": {
             "role": "post",
             "bet": 0.5,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "str": {
             "role": "post",
             "bet": 2,
             "isHero": true,
-            "stack": 250
+            "stack": 100
           },
           "utg": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "utg1": {
             "role": "open",
             "bet": 6,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           }
         }
       }
@@ -50865,49 +49681,49 @@
             "role": "3bet",
             "bet": 24,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "btn": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "co": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "mp": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "sb": {
             "role": "open",
             "bet": 8,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "str": {
             "role": "post",
             "bet": 2,
             "isHero": true,
-            "stack": 250
+            "stack": 100
           },
           "utg": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "utg1": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           }
         }
       }
@@ -52087,49 +50903,49 @@
             "role": "post",
             "bet": 1,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "btn": {
             "role": "open",
             "bet": 6,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "co": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "mp": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "sb": {
             "role": "3bet",
             "bet": 24,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "str": {
             "role": "post",
             "bet": 2,
             "isHero": true,
-            "stack": 250
+            "stack": 100
           },
           "utg": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "utg1": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           }
         }
       },
@@ -52144,49 +50960,49 @@
             "role": "open",
             "bet": 24,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "btn": {
             "role": "open",
             "bet": 6,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "co": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "mp": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "sb": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "str": {
             "role": "post",
             "bet": 2,
             "isHero": true,
-            "stack": 250
+            "stack": 100
           },
           "utg": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "utg1": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           }
         }
       }
@@ -53227,49 +52043,49 @@
             "role": "limp",
             "bet": 2,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "btn": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "co": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "mp": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "sb": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "str": {
             "role": "post",
             "bet": 2,
             "isHero": true,
-            "stack": 250
+            "stack": 100
           },
           "utg": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           },
           "utg1": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 250
+            "stack": 100
           }
         }
       }
