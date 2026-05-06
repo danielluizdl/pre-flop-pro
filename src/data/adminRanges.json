@@ -39109,49 +39109,49 @@
             "role": "post",
             "bet": 1,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "btn": {
             "role": "open",
             "bet": 6,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "co": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "mp": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "sb": {
             "role": "post",
             "bet": 0.5,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "str": {
             "role": "3bet",
             "bet": 3,
             "isHero": true,
-            "stack": 100
+            "stack": 250
           },
           "utg": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "utg1": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           }
         }
       }
@@ -40212,49 +40212,49 @@
             "role": "post",
             "bet": 1,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "btn": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "co": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "mp": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "sb": {
             "role": "open",
             "bet": 8,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "str": {
             "role": "3bet",
             "bet": 3,
             "isHero": true,
-            "stack": 100
+            "stack": 250
           },
           "utg": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "utg1": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           }
         }
       },
@@ -40269,49 +40269,49 @@
             "role": "open",
             "bet": 8,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "btn": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "co": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "mp": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "sb": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "str": {
             "role": "3bet",
             "bet": 3,
             "isHero": true,
-            "stack": 100
+            "stack": 250
           },
           "utg": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "utg1": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           }
         }
       }
@@ -41437,49 +41437,49 @@
             "role": "post",
             "bet": 1,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "btn": {
             "role": "iso",
             "bet": 10,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "co": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "mp": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "sb": {
             "role": "post",
             "bet": 0.5,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "str": {
             "role": "3bet",
             "bet": 0,
             "isHero": true,
-            "stack": 100
+            "stack": 250
           },
           "utg": {
             "role": "limp",
             "bet": 2,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "utg1": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           }
         }
       },
@@ -41494,49 +41494,49 @@
             "role": "post",
             "bet": 1,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "btn": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "co": {
             "role": "iso",
             "bet": 10,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "mp": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "sb": {
             "role": "post",
             "bet": 0.5,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "str": {
             "role": "3bet",
             "bet": 0,
             "isHero": true,
-            "stack": 100
+            "stack": 250
           },
           "utg": {
             "role": "limp",
             "bet": 2,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "utg1": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           }
         }
       },
@@ -41551,49 +41551,49 @@
             "role": "post",
             "bet": 1,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "btn": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "co": {
             "role": "iso",
             "bet": 10,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "mp": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "sb": {
             "role": "post",
             "bet": 0.5,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "str": {
             "role": "3bet",
             "bet": 0,
             "isHero": true,
-            "stack": 100
+            "stack": 250
           },
           "utg": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "utg1": {
             "role": "limp",
             "bet": 2,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           }
         }
       },
@@ -41608,49 +41608,49 @@
             "role": "post",
             "bet": 1,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "btn": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "co": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "mp": {
             "role": "iso",
             "bet": 10,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "sb": {
             "role": "post",
             "bet": 0.5,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "str": {
             "role": "3bet",
             "bet": 0,
             "isHero": true,
-            "stack": 100
+            "stack": 250
           },
           "utg": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "utg1": {
             "role": "limp",
             "bet": 2,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           }
         }
       },
@@ -41665,49 +41665,49 @@
             "role": "post",
             "bet": 1,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "btn": {
             "role": "iso",
             "bet": 10,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "co": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "mp": {
             "role": "limp",
             "bet": 2,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "sb": {
             "role": "post",
             "bet": 0.5,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "str": {
             "role": "3bet",
             "bet": 0,
             "isHero": true,
-            "stack": 100
+            "stack": 250
           },
           "utg": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "utg1": {
             "role": "limp",
             "bet": 2,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           }
         }
       },
@@ -41722,49 +41722,49 @@
             "role": "post",
             "bet": 1,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "btn": {
             "role": "iso",
             "bet": 10,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "co": {
             "role": "limp",
             "bet": 2,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "mp": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "sb": {
             "role": "post",
             "bet": 0.5,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "str": {
             "role": "3bet",
             "bet": 0,
             "isHero": true,
-            "stack": 100
+            "stack": 250
           },
           "utg": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "utg1": {
             "role": "limp",
             "bet": 2,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           }
         }
       }
@@ -48392,49 +48392,49 @@
             "role": "post",
             "bet": 1,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "btn": {
             "role": "call",
             "bet": 6,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "co": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "mp": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "sb": {
             "role": "post",
             "bet": 0.5,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "str": {
             "role": "post",
             "bet": 2,
             "isHero": true,
-            "stack": 100
+            "stack": 250
           },
           "utg": {
             "role": "open",
             "bet": 6,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "utg1": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           }
         }
       },
@@ -48449,49 +48449,49 @@
             "role": "post",
             "bet": 1,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "btn": {
             "role": "call",
             "bet": 6,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "co": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "mp": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "sb": {
             "role": "post",
             "bet": 0.5,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "str": {
             "role": "post",
             "bet": 2,
             "isHero": true,
-            "stack": 100
+            "stack": 250
           },
           "utg": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "utg1": {
             "role": "open",
             "bet": 6,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           }
         }
       }
@@ -49681,49 +49681,49 @@
             "role": "3bet",
             "bet": 24,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "btn": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "co": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "mp": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "sb": {
             "role": "open",
             "bet": 8,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "str": {
             "role": "post",
             "bet": 2,
             "isHero": true,
-            "stack": 100
+            "stack": 250
           },
           "utg": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "utg1": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           }
         }
       }
@@ -50903,49 +50903,49 @@
             "role": "post",
             "bet": 1,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "btn": {
             "role": "open",
             "bet": 6,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "co": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "mp": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "sb": {
             "role": "3bet",
             "bet": 24,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "str": {
             "role": "post",
             "bet": 2,
             "isHero": true,
-            "stack": 100
+            "stack": 250
           },
           "utg": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "utg1": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           }
         }
       },
@@ -50960,49 +50960,49 @@
             "role": "open",
             "bet": 24,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "btn": {
             "role": "open",
             "bet": 6,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "co": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "mp": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "sb": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "str": {
             "role": "post",
             "bet": 2,
             "isHero": true,
-            "stack": 100
+            "stack": 250
           },
           "utg": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "utg1": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           }
         }
       }
@@ -52043,49 +52043,49 @@
             "role": "limp",
             "bet": 2,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "btn": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "co": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "mp": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "sb": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "str": {
             "role": "post",
             "bet": 2,
             "isHero": true,
-            "stack": 100
+            "stack": 250
           },
           "utg": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           },
           "utg1": {
             "role": "fold",
             "bet": 0,
             "isHero": false,
-            "stack": 100
+            "stack": 250
           }
         }
       }
