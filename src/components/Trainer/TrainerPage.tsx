@@ -474,22 +474,30 @@ function DrillActive() {
   return (
     <div className="flex gap-3 h-[calc(100vh-90px)] overflow-hidden">
 
-      {/* LEFT: mesa + cartas + botões + nav */}
-      <div className="flex-1 min-w-0 flex flex-col gap-2 overflow-hidden">
+      {/* LEFT: mesa (com cartas e ver range dentro) + botões + resposta + nav */}
+      <div className="flex-1 min-w-0 flex flex-col gap-3 overflow-hidden">
 
-        {/* Mesa */}
-        <div className="flex-1 min-h-0 rounded-2xl border border-gray-800 overflow-hidden"
+        {/* Dark box: mesa + cartas + botão Ver Range */}
+        <div className="flex-1 min-h-0 rounded-2xl border border-gray-800 overflow-hidden relative flex flex-col"
           style={{ background: '#030712', boxShadow: 'inset 0 0 60px rgba(0,0,0,0.9)' }}>
-          <div className="w-full h-full flex items-start justify-center" style={{ padding: '16px 44px 36px' }}>
-            <div className="w-full" style={{ maxWidth: 'calc((100vh - 540px) / 0.63)' }}>
+
+          {/* Ver Range — canto superior direito */}
+          <button
+            onClick={() => { setModalOpen(true); incrementConsults() }}
+            className="absolute top-3 right-3 z-10 px-2.5 py-1 text-xs border border-gray-600 bg-gray-900/80 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            Ver Range
+          </button>
+
+          {/* Tabela */}
+          <div className="flex-1 min-h-0 flex items-start justify-center" style={{ padding: '16px 44px 8px' }}>
+            <div className="w-full" style={{ maxWidth: 'calc((100vh - 500px) / 0.63)' }}>
               <PokerTableEditor />
             </div>
           </div>
-        </div>
 
-        {/* Cartas centralizadas + Resultado à direita */}
-        <div className="flex-shrink-0 flex items-center gap-4">
-          <div className="flex items-center justify-center gap-3 flex-1">
+          {/* Cartas centralizadas — abaixo da mesa, dentro do box */}
+          <div className="flex-shrink-0 border-t border-gray-800 py-3 px-6 flex items-center justify-center gap-3">
             <div className="w-20 flex justify-end flex-shrink-0">
               {useRng && (
                 <span className="bg-gray-800 border border-gray-600 text-white px-2.5 py-1.5 rounded-full text-xs font-bold tracking-wider whitespace-nowrap">
@@ -501,18 +509,20 @@ function DrillActive() {
             <PlayingCard rank={r2} suit={s2} />
             <div className="w-20 flex-shrink-0" />
           </div>
-          <div className="w-48 flex-shrink-0 min-h-[52px] flex flex-col justify-center">
-            {!!showFeedback && (
-              <>
-                <div className={`text-lg font-bold leading-tight ${showFeedbackOk ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {showFeedback}
-                </div>
-                {!!showFreqLabel && (
-                  <div className="text-xs text-gray-400 mt-0.5">{showFreqLabel}</div>
-                )}
-              </>
-            )}
-          </div>
+        </div>
+
+        {/* Resposta */}
+        <div className="flex-shrink-0 min-h-[44px] flex flex-col justify-center text-center">
+          {!!showFeedback && (
+            <>
+              <div className={`text-xl font-bold ${showFeedbackOk ? 'text-emerald-400' : 'text-red-400'}`}>
+                {showFeedback}
+              </div>
+              {!!showFreqLabel && (
+                <div className="text-sm text-gray-400 mt-0.5">{showFreqLabel}</div>
+              )}
+            </>
+          )}
         </div>
 
         {/* Botões de ação */}
@@ -522,7 +532,7 @@ function DrillActive() {
               key={action}
               onClick={() => handleAction(action)}
               disabled={isAnswered}
-              className="text-white font-bold px-6 py-3 rounded-lg transition-all active:scale-95 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+              className="text-white font-bold px-7 py-3.5 rounded-lg transition-all active:scale-95 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
               style={{ backgroundColor: color }}
             >
               {label}
@@ -583,13 +593,7 @@ function DrillActive() {
             <span className="text-gray-400">Consultas</span>
             <span className="text-white font-bold text-right">{stats.consults}</span>
           </div>
-          <div className="flex flex-col gap-1.5 pt-1 border-t border-gray-700">
-            <button
-              onClick={() => { setModalOpen(true); incrementConsults() }}
-              className="w-full py-1.5 text-xs border border-gray-600 bg-gray-900 text-gray-300 rounded-lg hover:bg-gray-700 font-semibold transition-colors"
-            >
-              Ver Range
-            </button>
+          <div className="pt-1 border-t border-gray-700">
             <button
               onClick={stopDrill}
               className="w-full py-1.5 text-xs border border-gray-700 bg-gray-900 text-gray-500 rounded-lg hover:bg-gray-700 hover:text-gray-200 font-semibold transition-colors"
