@@ -399,7 +399,7 @@ function DrillActive() {
   const actionBtns = [
     { label: 'FOLD', action: 'Fold', color: '#6b7280' },
     { label: 'CALL', action: 'Call', color: '#22c55e' },
-    { label: currentHeroRaiseSize ? `RAISE (${currentHeroRaiseSize}bb)` : 'RAISE', action: 'Raise', color: '#ef4444' },
+    ...(currentHeroRaiseSize > 0 ? [{ label: `RAISE (${currentHeroRaiseSize}bb)`, action: 'Raise', color: '#ef4444' }] : []),
     { label: `ALL IN (${heroStack}bb)`, action: 'Allin', color: '#8b5cf6' },
   ]
 
@@ -430,16 +430,19 @@ function DrillActive() {
             </div>
           </div>
 
-          {/* Bottom strip — cards */}
+          {/* Bottom strip — cards always centered */}
           <div className="px-16 py-5 border-t border-gray-800">
             <div className="w-full max-w-2xl mx-auto flex items-center justify-center gap-4">
-              {useRng && (
-                <span className="bg-gray-800 border border-gray-600 text-white px-4 py-2 rounded-full text-sm font-bold tracking-wider flex-shrink-0">
-                  RNG {displayRng}
-                </span>
-              )}
+              <div className="w-24 flex justify-end flex-shrink-0">
+                {useRng && (
+                  <span className="bg-gray-800 border border-gray-600 text-white px-4 py-2 rounded-full text-sm font-bold tracking-wider">
+                    RNG {displayRng}
+                  </span>
+                )}
+              </div>
               <PlayingCard rank={r1} suit={s1} />
               <PlayingCard rank={r2} suit={s2} />
+              <div className="w-24 flex-shrink-0" />
             </div>
           </div>
         </div>
