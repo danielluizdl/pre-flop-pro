@@ -5,7 +5,7 @@ import { Edit3, Trash2, PlayCircle, BarChart2 } from 'lucide-react'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import type { Range } from '../../types'
 
-const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'EP', 'LJ', 'UTG']
+const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'UTG']
 
 interface CardProps {
   r: Range

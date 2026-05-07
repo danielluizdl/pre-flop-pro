@@ -202,7 +202,7 @@ function HandFilterGrid() {
 }
 
 
-const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'EP', 'LJ', 'UTG']
+const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'UTG']
 
 /* ── Range select screen ────────────────────────────────────────────────────── */
 function DrillRangeSelect() {

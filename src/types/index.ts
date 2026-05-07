@@ -113,14 +113,14 @@ export const POS_6MAX: PokerPosition[] = [
 ]
 
 export const POS_8MAX: PokerPosition[] = [
-  { id: 'sb',   label: 'SB'    },
-  { id: 'bb',   label: 'BB'    },
-  { id: 'str',  label: 'STR'   },
-  { id: 'utg',  label: 'UTG'   },
-  { id: 'utg1', label: 'UTG+1' },
-  { id: 'mp',   label: 'MP'    },
-  { id: 'co',   label: 'CO'    },
-  { id: 'btn',  label: 'BTN'   },
+  { id: 'sb',   label: 'SB'  },
+  { id: 'bb',   label: 'BB'  },
+  { id: 'str',  label: 'STR' },
+  { id: 'utg',  label: 'UTG' },
+  { id: 'utg1', label: 'MP'  },
+  { id: 'mp',   label: 'HJ'  },
+  { id: 'co',   label: 'CO'  },
+  { id: 'btn',  label: 'BTN' },
 ]
 
 // Slot positions (t = top%, l = left%) relative to table container

@@ -32,7 +32,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777581910806,
         pot: '10.5',
         ante: 0,
-        summary: 'STR 3bet (3bb) → UTG+1 Open (6bb)',
+        summary: 'STR 3bet (3bb) → HJ Open (6bb)',
         heroRaiseSize: 24,
         data: {
           sb: { role: 'post', bet: 0.5, isHero: false, stack: 250 },
@@ -49,7 +49,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777581916050,
         pot: '10.5',
         ante: 0,
-        summary: 'STR 3bet (3bb) → MP Open (6bb)',
+        summary: 'STR 3bet (3bb) → HJ Open (6bb)',
         heroRaiseSize: 24,
         data: {
           sb: { role: 'post', bet: 0.5, isHero: false, stack: 250 },
@@ -212,7 +212,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777551149863,
         pot: '19.5',
         ante: 0.5,
-        summary: 'UTG+1 Open (6bb) → BTN Call (6bb)',
+        summary: 'HJ Open (6bb) → BTN Call (6bb)',
         heroRaiseSize: 32,
         data: {
           sb: { role: 'post', bet: 0.5, isHero: false, stack: 250 },
@@ -229,7 +229,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777551156698,
         pot: '19.5',
         ante: 0.5,
-        summary: 'UTG+1 Open (6bb) → MP Call (6bb)',
+        summary: 'HJ Open (6bb) → HJ Call (6bb)',
         heroRaiseSize: 32,
         data: {
           sb: { role: 'post', bet: 0.5, isHero: false, stack: 250 },
@@ -732,7 +732,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777582957315,
         pot: '17.5',
         ante: 0.5,
-        summary: 'STR 3bet (0bb) → UTG+1 Limp (2bb) → CO Iso (10bb)',
+        summary: 'STR 3bet (0bb) → HJ Limp (2bb) → CO Iso (10bb)',
         heroRaiseSize: 35,
         data: {
           sb: { role: 'post', bet: 0.5, isHero: false, stack: 250 },
@@ -749,7 +749,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777582964509,
         pot: '17.5',
         ante: 0.5,
-        summary: 'STR 3bet (0bb) → UTG+1 Limp (2bb) → MP Iso (10bb)',
+        summary: 'STR 3bet (0bb) → HJ Limp (2bb) → HJ Iso (10bb)',
         heroRaiseSize: 35,
         data: {
           sb: { role: 'post', bet: 0.5, isHero: false, stack: 250 },
@@ -766,7 +766,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777582974145,
         pot: '19.5',
         ante: 0.5,
-        summary: 'STR 3bet (0bb) → UTG+1 Limp (2bb) → MP Limp (2bb) → BTN Iso (10bb)',
+        summary: 'STR 3bet (0bb) → HJ Limp (2bb) → HJ Limp (2bb) → BTN Iso (10bb)',
         heroRaiseSize: 35,
         data: {
           sb: { role: 'post', bet: 0.5, isHero: false, stack: 250 },
@@ -783,7 +783,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777582981650,
         pot: '19.5',
         ante: 0.5,
-        summary: 'STR 3bet (0bb) → UTG+1 Limp (2bb) → CO Limp (2bb) → BTN Iso (10bb)',
+        summary: 'STR 3bet (0bb) → HJ Limp (2bb) → CO Limp (2bb) → BTN Iso (10bb)',
         heroRaiseSize: 35,
         data: {
           sb: { role: 'post', bet: 0.5, isHero: false, stack: 250 },
@@ -911,7 +911,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777583128795,
         pot: '22.5',
         ante: 0.5,
-        summary: 'BB Iso (14bb) → STR 3bet (2bb) → UTG+1 Limp (2bb)',
+        summary: 'BB Iso (14bb) → STR 3bet (2bb) → HJ Limp (2bb)',
         heroRaiseSize: 42,
         data: {
           sb: { role: 'post', bet: 0.5, isHero: false, stack: 250 },
@@ -928,7 +928,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777583133374,
         pot: '22.5',
         ante: 0.5,
-        summary: 'BB Iso (14bb) → STR 3bet (2bb) → MP Limp (2bb)',
+        summary: 'BB Iso (14bb) → STR 3bet (2bb) → HJ Limp (2bb)',
         heroRaiseSize: 42,
         data: {
           sb: { role: 'post', bet: 0.5, isHero: false, stack: 250 },
@@ -996,7 +996,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777583166867,
         pot: '22.0',
         ante: 0.5,
-        summary: 'SB Iso (14bb) → STR 3bet (2bb) → UTG+1 Limp (2bb)',
+        summary: 'SB Iso (14bb) → STR 3bet (2bb) → HJ Limp (2bb)',
         heroRaiseSize: 42,
         data: {
           sb: { role: 'iso', bet: 14, isHero: false, stack: 250 },
@@ -1013,7 +1013,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777583170175,
         pot: '22.0',
         ante: 0.5,
-        summary: 'SB Iso (14bb) → STR 3bet (2bb) → MP Limp (2bb)',
+        summary: 'SB Iso (14bb) → STR 3bet (2bb) → HJ Limp (2bb)',
         heroRaiseSize: 42,
         data: {
           sb: { role: 'iso', bet: 14, isHero: false, stack: 250 },
@@ -1289,7 +1289,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777901418317,
         pot: '13.5',
         ante: 0.5,
-        summary: 'MP Open (6bb)',
+        summary: 'HJ Open (6bb)',
         heroRaiseSize: 24,
         data: {
           sb: { role: 'post', bet: 0.5, isHero: false, stack: 250 },
@@ -1566,7 +1566,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777904356890,
         pot: '19.5',
         ante: 0.5,
-        summary: 'UTG+1 Open (6bb) → BTN Call (6bb)',
+        summary: 'HJ Open (6bb) → BTN Call (6bb)',
         heroRaiseSize: 34,
         data: {
           sb: { role: 'post', bet: 0.5, isHero: false, stack: 250 },
@@ -2418,7 +2418,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777979898016,
         pot: '13.5',
         ante: 0.5,
-        summary: 'UTG+1 Open (6bb)',
+        summary: 'HJ Open (6bb)',
         heroRaiseSize: 24,
         data: {
           sb: { role: 'fold', bet: 0.5, isHero: false, stack: 250 },
@@ -2435,7 +2435,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777979901740,
         pot: '13.5',
         ante: 0.5,
-        summary: 'MP Open (6bb)',
+        summary: 'HJ Open (6bb)',
         heroRaiseSize: 24,
         data: {
           sb: { role: 'fold', bet: 0.5, isHero: false, stack: 250 },
@@ -2982,7 +2982,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777981206946,
         pot: '19.5',
         ante: 0.5,
-        summary: 'UTG Open (6bb) → MP Call (6bb)',
+        summary: 'UTG Open (6bb) → HJ Call (6bb)',
         heroRaiseSize: 35,
         data: {
           sb: { role: 'fold', bet: 0.5, isHero: false, stack: 250 },
@@ -3033,7 +3033,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777981229253,
         pot: '19.5',
         ante: 0.5,
-        summary: 'UTG+1 Open (6bb) → BTN Call (6bb)',
+        summary: 'HJ Open (6bb) → BTN Call (6bb)',
         heroRaiseSize: 35,
         data: {
           sb: { role: 'fold', bet: 0.5, isHero: false, stack: 250 },
@@ -3050,7 +3050,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777981235434,
         pot: '19.5',
         ante: 0.5,
-        summary: 'UTG+1 Open (6bb) → CO Call (6bb)',
+        summary: 'HJ Open (6bb) → CO Call (6bb)',
         heroRaiseSize: 35,
         data: {
           sb: { role: 'fold', bet: 0.5, isHero: false, stack: 250 },
@@ -3067,7 +3067,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777981241009,
         pot: '19.5',
         ante: 0.5,
-        summary: 'UTG+1 Open (6bb) → MP Call (6bb)',
+        summary: 'HJ Open (6bb) → HJ Call (6bb)',
         heroRaiseSize: 35,
         data: {
           sb: { role: 'fold', bet: 0.5, isHero: false, stack: 250 },
@@ -3084,7 +3084,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777981254458,
         pot: '19.0',
         ante: 0.5,
-        summary: 'SB Call (6bb) → UTG+1 Open (6bb)',
+        summary: 'SB Call (6bb) → HJ Open (6bb)',
         heroRaiseSize: 35,
         data: {
           sb: { role: 'call', bet: 6, isHero: false, stack: 250 },
@@ -3342,7 +3342,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777981932180,
         pot: '19.5',
         ante: 0.5,
-        summary: 'UTG Limp (2bb) → MP Iso (10bb)',
+        summary: 'UTG Limp (2bb) → HJ Iso (10bb)',
         heroRaiseSize: 35,
         data: {
           sb: { role: 'fold', bet: 0.5, isHero: false, stack: 250 },
@@ -3359,7 +3359,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777981938310,
         pot: '19.5',
         ante: 0.5,
-        summary: 'UTG Limp (2bb) → UTG+1 Iso (10bb)',
+        summary: 'UTG Limp (2bb) → HJ Iso (10bb)',
         heroRaiseSize: 35,
         data: {
           sb: { role: 'fold', bet: 0.5, isHero: false, stack: 250 },
@@ -3410,7 +3410,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777981962576,
         pot: '19.5',
         ante: 0.5,
-        summary: 'UTG+1 Limp (2bb) → BTN Iso (10bb)',
+        summary: 'HJ Limp (2bb) → BTN Iso (10bb)',
         heroRaiseSize: 35,
         data: {
           sb: { role: 'fold', bet: 0.5, isHero: false, stack: 250 },
@@ -3427,7 +3427,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777981968278,
         pot: '19.5',
         ante: 0.5,
-        summary: 'MP Limp (2bb) → BTN Iso (10bb)',
+        summary: 'HJ Limp (2bb) → BTN Iso (10bb)',
         heroRaiseSize: 35,
         data: {
           sb: { role: 'fold', bet: 0.5, isHero: false, stack: 250 },
@@ -3461,7 +3461,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777981982940,
         pot: '19.5',
         ante: 0.5,
-        summary: 'MP Limp (2bb) → CO Iso (10bb)',
+        summary: 'HJ Limp (2bb) → CO Iso (10bb)',
         heroRaiseSize: 35,
         data: {
           sb: { role: 'fold', bet: 0.5, isHero: false, stack: 250 },
@@ -3478,7 +3478,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777982054052,
         pot: '19.5',
         ante: 0.5,
-        summary: 'UTG+1 Limp (2bb) → MP Iso (10bb)',
+        summary: 'HJ Limp (2bb) → HJ Iso (10bb)',
         heroRaiseSize: 35,
         data: {
           sb: { role: 'fold', bet: 0.5, isHero: false, stack: 250 },
@@ -3563,7 +3563,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777982464760,
         pot: '23.0',
         ante: 0.5,
-        summary: 'SB Iso (14bb) → UTG+1 Limp (2bb)',
+        summary: 'SB Iso (14bb) → HJ Limp (2bb)',
         heroRaiseSize: 42,
         data: {
           sb: { role: 'iso', bet: 14, isHero: false, stack: 250 },
@@ -3580,7 +3580,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777982467458,
         pot: '23.0',
         ante: 0.5,
-        summary: 'SB Iso (14bb) → MP Limp (2bb)',
+        summary: 'SB Iso (14bb) → HJ Limp (2bb)',
         heroRaiseSize: 42,
         data: {
           sb: { role: 'iso', bet: 14, isHero: false, stack: 250 },
@@ -3702,7 +3702,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777982674592,
         pot: '54.0',
         ante: 0.5,
-        summary: 'SB 3bet (35bb) → UTG+1 Limp (2bb) → BTN Iso (10bb)',
+        summary: 'SB 3bet (35bb) → HJ Limp (2bb) → BTN Iso (10bb)',
         heroRaiseSize: 100,
         data: {
           sb: { role: '3bet', bet: 35, isHero: false, stack: 250 },
@@ -3719,7 +3719,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777982679780,
         pot: '54.0',
         ante: 0.5,
-        summary: 'SB 3bet (35bb) → MP Limp (2bb) → BTN Iso (10bb)',
+        summary: 'SB 3bet (35bb) → HJ Limp (2bb) → BTN Iso (10bb)',
         heroRaiseSize: 100,
         data: {
           sb: { role: '3bet', bet: 35, isHero: false, stack: 250 },
@@ -3810,7 +3810,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777982874875,
         pot: '13.5',
         ante: 0.5,
-        summary: 'UTG+1 Open (6bb)',
+        summary: 'HJ Open (6bb)',
         heroRaiseSize: 24,
         data: {
           sb: { role: 'fold', bet: 0.5, isHero: false, stack: 250 },
@@ -3827,7 +3827,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1777982877544,
         pot: '13.5',
         ante: 0.5,
-        summary: 'MP Open (6bb)',
+        summary: 'HJ Open (6bb)',
         heroRaiseSize: 24,
         data: {
           sb: { role: 'fold', bet: 0.5, isHero: false, stack: 250 },
@@ -4294,7 +4294,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1778018037791,
         pot: '13.5',
         ante: 0.5,
-        summary: 'UTG+1 Open (6bb)',
+        summary: 'HJ Open (6bb)',
         heroRaiseSize: 24,
         data: {
           sb: { role: 'post', bet: 0.5, isHero: true, stack: 250 },
@@ -4311,7 +4311,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1778018040541,
         pot: '13.5',
         ante: 0.5,
-        summary: 'MP Open (6bb)',
+        summary: 'HJ Open (6bb)',
         heroRaiseSize: 24,
         data: {
           sb: { role: 'post', bet: 0.5, isHero: true, stack: 250 },
@@ -4838,7 +4838,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1778029969477,
         pot: '19.5',
         ante: 0.5,
-        summary: 'SB 3bet (0.5bb) → UTG+1 Limp (2bb) → BTN Iso (10bb)',
+        summary: 'SB 3bet (0.5bb) → HJ Limp (2bb) → BTN Iso (10bb)',
         heroRaiseSize: 35,
         data: {
           sb: { role: '3bet', bet: 0.5, isHero: true, stack: 250 },
@@ -4855,7 +4855,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1778029972890,
         pot: '19.5',
         ante: 0.5,
-        summary: 'SB 3bet (0.5bb) → MP Limp (2bb) → BTN Iso (10bb)',
+        summary: 'SB 3bet (0.5bb) → HJ Limp (2bb) → BTN Iso (10bb)',
         heroRaiseSize: 35,
         data: {
           sb: { role: '3bet', bet: 0.5, isHero: true, stack: 250 },
@@ -4872,7 +4872,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1778029985155,
         pot: '19.5',
         ante: 0.5,
-        summary: 'SB 3bet (0.5bb) → MP Limp (2bb) → CO Iso (10bb)',
+        summary: 'SB 3bet (0.5bb) → HJ Limp (2bb) → CO Iso (10bb)',
         heroRaiseSize: 35,
         data: {
           sb: { role: '3bet', bet: 0.5, isHero: true, stack: 250 },
@@ -4889,7 +4889,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1778029991457,
         pot: '19.5',
         ante: 0.5,
-        summary: 'SB 3bet (0.5bb) → UTG+1 Limp (2bb) → CO Iso (10bb)',
+        summary: 'SB 3bet (0.5bb) → HJ Limp (2bb) → CO Iso (10bb)',
         heroRaiseSize: 35,
         data: {
           sb: { role: '3bet', bet: 0.5, isHero: true, stack: 250 },
@@ -4906,7 +4906,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1778030017796,
         pot: '19.5',
         ante: 0.5,
-        summary: 'SB 3bet (0.5bb) → UTG Limp (2bb) → MP Iso (10bb)',
+        summary: 'SB 3bet (0.5bb) → UTG Limp (2bb) → HJ Iso (10bb)',
         heroRaiseSize: 35,
         data: {
           sb: { role: '3bet', bet: 0.5, isHero: true, stack: 250 },
@@ -4923,7 +4923,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1778030021551,
         pot: '19.5',
         ante: 0.5,
-        summary: 'SB 3bet (0.5bb) → UTG+1 Limp (2bb) → MP Iso (10bb)',
+        summary: 'SB 3bet (0.5bb) → HJ Limp (2bb) → HJ Iso (10bb)',
         heroRaiseSize: 35,
         data: {
           sb: { role: '3bet', bet: 0.5, isHero: true, stack: 250 },
@@ -4979,7 +4979,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1778030365097,
         pot: '64.0',
         ante: 0.5,
-        summary: 'SB Iso (14bb) → BB 3bet (42bb) → MP Limp (2bb)',
+        summary: 'SB Iso (14bb) → BB 3bet (42bb) → HJ Limp (2bb)',
         data: {
           sb: { role: 'iso', bet: 14, isHero: true, stack: 250 },
           bb: { role: '3bet', bet: 42, isHero: false, stack: 250 },
@@ -5059,7 +5059,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1778030397306,
         pot: '63.0',
         ante: 0.5,
-        summary: 'SB Iso (14bb) → STR 3bet (42bb) → MP Limp (2bb)',
+        summary: 'SB Iso (14bb) → STR 3bet (42bb) → HJ Limp (2bb)',
         data: {
           sb: { role: 'iso', bet: 14, isHero: true, stack: 250 },
           bb: { role: 'fold', bet: 1, isHero: false, stack: 250 },
@@ -5171,7 +5171,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1778030676251,
         pot: '13.5',
         ante: 0.5,
-        summary: 'MP Open (6bb)',
+        summary: 'HJ Open (6bb)',
         heroRaiseSize: 24,
         data: {
           sb: { role: 'post', bet: 0.5, isHero: true, stack: 250 },
@@ -5188,7 +5188,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1778030690650,
         pot: '13.5',
         ante: 0.5,
-        summary: 'UTG+1 Open (6bb)',
+        summary: 'HJ Open (6bb)',
         heroRaiseSize: 24,
         data: {
           sb: { role: 'post', bet: 0.5, isHero: true, stack: 250 },
@@ -5272,7 +5272,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1778031241983,
         pot: '25.5',
         ante: 0.5,
-        summary: 'SB 3bet (0.5bb) → MP Open (6bb) → CO Call (6bb) → BTN Call (6bb)',
+        summary: 'SB 3bet (0.5bb) → HJ Open (6bb) → CO Call (6bb) → BTN Call (6bb)',
         heroRaiseSize: 38,
         data: {
           sb: { role: '3bet', bet: 0.5, isHero: true, stack: 250 },
@@ -5306,7 +5306,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1778031252726,
         pot: '25.5',
         ante: 0.5,
-        summary: 'SB 3bet (0.5bb) → UTG+1 Open (6bb) → CO Call (6bb) → BTN Call (6bb)',
+        summary: 'SB 3bet (0.5bb) → HJ Open (6bb) → CO Call (6bb) → BTN Call (6bb)',
         heroRaiseSize: 38,
         data: {
           sb: { role: '3bet', bet: 0.5, isHero: true, stack: 250 },
@@ -5323,7 +5323,7 @@ export const DEFAULT_RANGES: Range[] = [
         id: 1778031263912,
         pot: '25.5',
         ante: 0.5,
-        summary: 'SB 3bet (0.5bb) → UTG+1 Open (6bb) → MP Call (6bb) → BTN Call (6bb)',
+        summary: 'SB 3bet (0.5bb) → HJ Open (6bb) → HJ Call (6bb) → BTN Call (6bb)',
         heroRaiseSize: 38,
         data: {
           sb: { role: '3bet', bet: 0.5, isHero: true, stack: 250 },
