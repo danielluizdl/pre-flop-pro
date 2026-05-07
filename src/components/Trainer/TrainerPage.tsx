@@ -491,7 +491,7 @@ function DrillActive() {
 
           {/* Tabela */}
           <div className="flex-1 min-h-0 flex items-start justify-center" style={{ padding: '16px 44px 8px' }}>
-            <div className="w-full" style={{ maxWidth: 'calc((100vh - 500px) / 0.63)' }}>
+            <div className="w-full" style={{ maxWidth: 'calc((100vh - 500px) / 0.63)', minWidth: '280px' }}>
               <PokerTableEditor />
             </div>
           </div>
