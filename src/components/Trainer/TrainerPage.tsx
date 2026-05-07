@@ -466,7 +466,7 @@ function DrillActive() {
     { label: 'FOLD', action: 'Fold', color: '#6b7280' },
     { label: 'CALL', action: 'Call', color: '#22c55e' },
     ...(currentHeroRaiseSize > 0 ? [{ label: `RAISE (${currentHeroRaiseSize}bb)`, action: 'Raise', color: '#ef4444' }] : []),
-    { label: `ALL IN (${heroStack}bb)`, action: 'Allin', color: '#8b5cf6' },
+    { label: `ALL IN (${heroStack}bb)`, action: 'Allin', color: '#92400e' },
   ]
 
   const stats = useStore(s => s.sessionStats)

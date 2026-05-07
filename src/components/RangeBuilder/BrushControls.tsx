@@ -91,7 +91,7 @@ export function BrushControls() {
         }
       />
 
-      <ActionRow label="All-In" color="#8b5cf6" field="allin" value={brush.allin} onChange={setBrush} />
+      <ActionRow label="All-In" color="#92400e" field="allin" value={brush.allin} onChange={setBrush} />
     </div>
   )
 }

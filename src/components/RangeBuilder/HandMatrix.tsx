@@ -3,7 +3,7 @@ import { RANKS } from '../../utils/hands'
 import { useStore } from '../../store/useStore'
 import type { HandData } from '../../types'
 
-const C = { allin: '#8b5cf6', raise: '#ef4444', call: '#22c55e' }
+const C = { allin: '#92400e', raise: '#ef4444', call: '#22c55e' }
 
 function cellBackground(data: HandData): string {
   const p1 = data.allin
