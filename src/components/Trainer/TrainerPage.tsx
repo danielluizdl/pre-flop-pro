@@ -3,6 +3,8 @@ import { useStore } from '../../store/useStore'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import { PokerTableEditor } from '../ui/PokerTableEditor'
 import { HandQuickSelect } from '../ui/HandQuickSelect'
+import { RangePreviewModal } from '../ui/RangePreviewModal'
+import { Eye } from 'lucide-react'
 import { RANKS, SUIT_ICONS } from '../../types'
 import { ALL_HANDS } from '../../utils/hands'
 import type { HandHistoryEntry } from '../../types'
@@ -213,8 +215,9 @@ function DrillRangeSelect() {
   const nextDrillHand      = useStore(s => s.nextDrillHand)
   const setPage            = useStore(s => s.setPage)
 
-  const [step, setStep]           = useState<'select' | 'filter'>('select')
+  const [step, setStep]             = useState<'select' | 'filter'>('select')
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
+  const [previewId, setPreviewId]   = useState<number | null>(null)
 
   function toggleGroup(pos: string) {
     setOpenGroups(prev => {
@@ -247,6 +250,7 @@ function DrillRangeSelect() {
     ]
 
     return (
+      <>
       <div className="space-y-4 max-w-2xl mx-auto">
         <div>
           <h2 className="text-2xl font-extrabold text-white mb-1">Drill</h2>
@@ -314,7 +318,16 @@ function DrillRangeSelect() {
                                   ✔
                                 </div>
                               )}
-                              <h3 className="font-bold text-white text-sm leading-tight">{r.name}</h3>
+                              <div className="flex items-start justify-between gap-1">
+                                <h3 className="font-bold text-white text-sm leading-tight">{r.name}</h3>
+                                <button
+                                  onClick={e => { e.stopPropagation(); setPreviewId(r.id) }}
+                                  className="flex-shrink-0 text-gray-500 hover:text-blue-400 transition-colors"
+                                  title="Visualizar range"
+                                >
+                                  <Eye size={13} />
+                                </button>
+                              </div>
                               <div className="text-xs text-gray-500 mt-1">{r.tableSize}-max · {r.scenarios.length} cenário{r.scenarios.length !== 1 ? 's' : ''}</div>
                             </div>
                           )
@@ -343,6 +356,11 @@ function DrillRangeSelect() {
           </>
         )}
       </div>
+      {previewId !== null && (() => {
+        const r = ranges.find(x => x.id === previewId)
+        return r ? <RangePreviewModal range={r} onClose={() => setPreviewId(null)} /> : null
+      })()}
+      </>
     )
   }
 

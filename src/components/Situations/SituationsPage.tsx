@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { countNonFoldHands } from '../../utils/hands'
-import { Edit3, Trash2, PlayCircle, BarChart2 } from 'lucide-react'
+import { Edit3, Trash2, PlayCircle, BarChart2, Eye } from 'lucide-react'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
+import { RangePreviewModal } from '../ui/RangePreviewModal'
 import type { Range } from '../../types'
 
 const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'UTG']
@@ -10,9 +11,10 @@ const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'UTG']
 interface CardProps {
   r: Range
   onViewHeatmap: (id: number) => void
+  onPreview: (id: number) => void
 }
 
-function RangeCard({ r, onViewHeatmap }: CardProps) {
+function RangeCard({ r, onViewHeatmap, onPreview }: CardProps) {
   const deleteRange       = useStore(s => s.deleteRange)
   const loadRangeForEdit  = useStore(s => s.loadRangeForEdit)
   const startDrillSession = useStore(s => s.startDrillSession)
@@ -66,6 +68,13 @@ function RangeCard({ r, onViewHeatmap }: CardProps) {
           <Edit3 size={11} /> Editar
         </button>
         <button
+          onClick={() => onPreview(r.id)}
+          className="flex items-center justify-center py-1.5 px-2 rounded-md bg-gray-700 hover:bg-blue-900/30 text-xs text-gray-400 hover:text-blue-400 transition-colors"
+          title="Visualizar range"
+        >
+          <Eye size={11} />
+        </button>
+        <button
           onClick={() => onViewHeatmap(r.id)}
           className="flex items-center justify-center py-1.5 px-2 rounded-md bg-gray-700 hover:bg-orange-900/30 text-xs text-gray-400 hover:text-orange-400 transition-colors"
           title="Ver heatmap"
@@ -91,6 +100,7 @@ export function SituationsPage() {
 
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
   const [heatmapId, setHeatmapId]   = useState<number | null>(null)
+  const [previewId, setPreviewId]   = useState<number | null>(null)
 
   function toggleGroup(pos: string) {
     setOpenGroups(prev => {
@@ -168,7 +178,7 @@ export function SituationsPage() {
                   <div className="border-t border-gray-700 bg-gray-900/40 p-3 grid gap-2"
                     style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
                     {group.map(r => (
-                      <RangeCard key={r.id} r={r} onViewHeatmap={setHeatmapId} />
+                      <RangeCard key={r.id} r={r} onViewHeatmap={setHeatmapId} onPreview={setPreviewId} />
                     ))}
                   </div>
                 )}
@@ -235,6 +245,11 @@ export function SituationsPage() {
           </div>
         </div>
       )}
+
+      {previewId !== null && (() => {
+        const r = ranges.find(x => x.id === previewId)
+        return r ? <RangePreviewModal range={r} onClose={() => setPreviewId(null)} /> : null
+      })()}
     </div>
   )
 }
