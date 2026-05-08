@@ -437,7 +437,7 @@ function DrillActive() {
   const [autoAdvance, setAutoAdvance] = useState(false)
   const [prevSnapshot, setPrevSnapshot] = useState<PrevSnapshot | null>(null)
   const [viewingPrev, setViewingPrev] = useState(false)
-  const [modalOpen, setModalOpen]     = useState(false)
+  const [modalViewMode, setModalViewMode] = useState<'actions' | 'heatmap' | null>(null)
 
   const goNextRef = useRef<() => void>(() => {})
 
@@ -521,13 +521,21 @@ function DrillActive() {
         <div className="flex-1 min-h-0 rounded-2xl border border-gray-800 overflow-hidden relative flex flex-col"
           style={{ background: '#030712', boxShadow: 'inset 0 0 60px rgba(0,0,0,0.9)' }}>
 
-          {/* Ver Range — canto superior direito */}
-          <button
-            onClick={() => { setModalOpen(true); incrementConsults() }}
-            className="absolute top-3 right-3 z-10 px-2.5 py-1 text-xs border border-gray-600 bg-gray-900/80 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
-          >
-            Ver Range
-          </button>
+          {/* Botões canto superior direito */}
+          <div className="absolute top-3 right-3 z-10 flex gap-1.5">
+            <button
+              onClick={() => setModalViewMode('heatmap')}
+              className="px-2.5 py-1 text-xs border border-gray-600 bg-gray-900/80 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Erro / Acerto
+            </button>
+            <button
+              onClick={() => { setModalViewMode('actions'); incrementConsults() }}
+              className="px-2.5 py-1 text-xs border border-gray-600 bg-gray-900/80 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Ver Range
+            </button>
+          </div>
 
           {/* Tabela */}
           <div className="flex-1 min-h-0 flex items-start justify-center" style={{ padding: '16px 44px 8px' }}>
@@ -650,18 +658,19 @@ function DrillActive() {
       </div>
 
       {/* Modal range */}
-      {modalOpen && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setModalOpen(false)}>
+      {modalViewMode !== null && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setModalViewMode(null)}>
           <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-3xl w-full" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold text-white text-lg">{activeDrillRange.name}</h3>
-              <button onClick={() => setModalOpen(false)} className="text-gray-400 hover:text-white text-xl">✕</button>
+              <button onClick={() => setModalViewMode(null)} className="text-gray-400 hover:text-white text-xl">✕</button>
             </div>
             <HandMatrix
               readOnly
               grid={activeDrillStackGridIdx >= 0 && activeDrillRange.stackGrids ? activeDrillRange.stackGrids[activeDrillStackGridIdx].grid : activeDrillRange.grid}
               heatmap={handPerformance[activeDrillRange.id]}
               customActionColor={activeDrillRange.customAction?.color}
+              forceViewMode={modalViewMode}
             />
           </div>
         </div>

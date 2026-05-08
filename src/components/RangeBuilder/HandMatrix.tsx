@@ -34,11 +34,12 @@ interface Props {
   grid?: Record<string, HandData>
   heatmap?: HandPerf
   customActionColor?: string
+  forceViewMode?: ViewMode
 }
 
 type ViewMode = 'actions' | 'heatmap'
 
-export function HandMatrix({ readOnly = false, grid: externalGrid, heatmap, customActionColor }: Props) {
+export function HandMatrix({ readOnly = false, grid: externalGrid, heatmap, customActionColor, forceViewMode }: Props) {
   const applyBrush      = useStore(s => s.applyBrush)
   const clearHand       = useStore(s => s.clearHand)
   const brush           = useStore(s => s.brush)
@@ -54,7 +55,8 @@ export function HandMatrix({ readOnly = false, grid: externalGrid, heatmap, cust
   const [mousePos, setMousePos]       = useState({ x: 0, y: 0 })
   const warnTimer  = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const isHeatmapMode = !!heatmap && viewMode === 'heatmap'
+  const activeViewMode = forceViewMode ?? viewMode
+  const isHeatmapMode = !!heatmap && activeViewMode === 'heatmap'
 
   function triggerWarning() {
     setShowWarning(true)
@@ -104,7 +106,7 @@ export function HandMatrix({ readOnly = false, grid: externalGrid, heatmap, cust
         </div>
       )}
 
-      {heatmap && (
+      {heatmap && !forceViewMode && (
         <div className="flex gap-1 mb-2">
           {(['actions', 'heatmap'] as ViewMode[]).map(mode => (
             <button
@@ -112,7 +114,7 @@ export function HandMatrix({ readOnly = false, grid: externalGrid, heatmap, cust
               onClick={() => setViewMode(mode)}
               className={[
                 'px-3 py-1 rounded-full text-xs font-semibold border transition-colors',
-                viewMode === mode
+                activeViewMode === mode
                   ? 'bg-brand-600 border-brand-500 text-white'
                   : 'bg-gray-800 border-gray-600 text-gray-400 hover:text-gray-200',
               ].join(' ')}
@@ -155,8 +157,8 @@ export function HandMatrix({ readOnly = false, grid: externalGrid, heatmap, cust
             const data    = grid[hand] ?? { fold: 100, call: 0, raise: 0, allin: 0 }
             const isEmpty = data.fold >= 100
 
-            const showActions  = !heatmap || viewMode === 'actions'
-            const showHeatmap  = !!heatmap && viewMode === 'heatmap'
+            const showActions  = !heatmap || activeViewMode === 'actions'
+            const showHeatmap  = !!heatmap && activeViewMode === 'heatmap'
 
             const bg    = showActions ? cellBackground(data, effectiveExtraColor) : 'transparent'
             const heat  = showHeatmap ? heatColor(heatmap[hand]) : null
