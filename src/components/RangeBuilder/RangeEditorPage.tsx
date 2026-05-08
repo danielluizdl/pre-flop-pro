@@ -48,8 +48,6 @@ export function RangeEditorPage() {
 
   function handleNext() {
     if (!validate()) return
-    const overlapMsg = checkOverlap(rangeData.stackRange)
-    if (overlapMsg) { alert(`Stack range inválido: ${overlapMsg}`); return }
     useStore.setState({
       rangeData: { ...rangeData, positions: [...selectedPositions] },
       ...(sessionGrids.length === 0 ? { tempScenarios: [] } : {}),
