@@ -136,6 +136,7 @@ interface AppState {
   finalizeRange: () => void
   sessionGrids: SessionGrid[]
   pushGridToSession: () => void
+  updateSessionGrid: (idx: number, sg: SessionGrid) => void
 
   // ── Hand performance (heatmap) ────────────────────────────────────────────────
   handPerformance: HandPerfMap
@@ -568,6 +569,11 @@ export const useStore = create<AppState>()(
           rangeData: { ...rangeData, name: '', grid: makeEmptyGrid(), stackRange: '' },
           selectedEditorPositions: [],
         })
+      },
+
+      updateSessionGrid: (idx, sg) => {
+        const { sessionGrids } = get()
+        set({ sessionGrids: sessionGrids.map((s, i) => i === idx ? sg : s) })
       },
 
       // ── Hand performance (heatmap) ────────────────────────────────────────────

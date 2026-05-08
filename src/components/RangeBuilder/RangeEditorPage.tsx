@@ -1,21 +1,27 @@
+import { useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { HandMatrix } from './HandMatrix'
 import { BrushControls } from './BrushControls'
 import { HandQuickSelect } from '../ui/HandQuickSelect'
 import { countNonFoldHands } from '../../utils/hands'
+import type { SessionGrid } from '../../types'
 
 export function RangeEditorPage() {
-  const activePositions    = useStore(s => s.activePositions)
-  const selectedPositions  = useStore(s => s.selectedEditorPositions)
-  const togglePosition     = useStore(s => s.toggleEditorPosition)
-  const rangeData          = useStore(s => s.rangeData)
-  const setRangeName       = useStore(s => s.setRangeName)
-  const setStackRange      = useStore(s => s.setStackRange)
-  const resetGrid          = useStore(s => s.resetGrid)
-  const setPage            = useStore(s => s.setPage)
-  const initTableConfig    = useStore(s => s.initTableConfig)
-  const sessionGrids       = useStore(s => s.sessionGrids)
-  const pushGridToSession  = useStore(s => s.pushGridToSession)
+  const activePositions   = useStore(s => s.activePositions)
+  const selectedPositions = useStore(s => s.selectedEditorPositions)
+  const togglePosition    = useStore(s => s.toggleEditorPosition)
+  const rangeData         = useStore(s => s.rangeData)
+  const setRangeName      = useStore(s => s.setRangeName)
+  const setStackRange     = useStore(s => s.setStackRange)
+  const resetGrid         = useStore(s => s.resetGrid)
+  const setPage           = useStore(s => s.setPage)
+  const initTableConfig   = useStore(s => s.initTableConfig)
+  const sessionGrids      = useStore(s => s.sessionGrids)
+  const pushGridToSession = useStore(s => s.pushGridToSession)
+  const updateSessionGrid = useStore(s => s.updateSessionGrid)
+
+  const [editingIdx, setEditingIdx]         = useState<number | null>(null)
+  const [snapshot, setSnapshot]             = useState<SessionGrid | null>(null)
 
   function validate() {
     if (!rangeData.name.trim()) { alert('Dê um nome ao range.'); return false }
@@ -38,6 +44,57 @@ export function RangeEditorPage() {
     pushGridToSession()
   }
 
+  function loadSessionForEdit(idx: number) {
+    const sg = sessionGrids[idx]
+    setSnapshot({
+      name: rangeData.name,
+      stackRange: rangeData.stackRange,
+      grid: JSON.parse(JSON.stringify(rangeData.grid)),
+      positions: [...selectedPositions],
+    })
+    useStore.setState({
+      rangeData: { ...rangeData, name: sg.name, stackRange: sg.stackRange, grid: JSON.parse(JSON.stringify(sg.grid)) },
+      selectedEditorPositions: [...sg.positions],
+    })
+    setEditingIdx(idx)
+  }
+
+  function handleCancelSessionEdit() {
+    if (!snapshot) return
+    useStore.setState({
+      rangeData: { ...rangeData, name: snapshot.name, stackRange: snapshot.stackRange, grid: snapshot.grid },
+      selectedEditorPositions: snapshot.positions,
+    })
+    setEditingIdx(null)
+    setSnapshot(null)
+  }
+
+  function handleSaveSessionEdit() {
+    if (editingIdx === null) return
+    updateSessionGrid(editingIdx, {
+      name: rangeData.name,
+      stackRange: rangeData.stackRange,
+      grid: JSON.parse(JSON.stringify(rangeData.grid)),
+      positions: [...selectedPositions],
+    })
+    if (snapshot) {
+      useStore.setState({
+        rangeData: { ...rangeData, name: snapshot.name, stackRange: snapshot.stackRange, grid: snapshot.grid },
+        selectedEditorPositions: snapshot.positions,
+      })
+    }
+    setEditingIdx(null)
+    setSnapshot(null)
+  }
+
+  const editingOriginal = editingIdx !== null ? sessionGrids[editingIdx] : null
+  const hasChanges = editingOriginal !== null && (
+    rangeData.name !== editingOriginal.name ||
+    rangeData.stackRange !== editingOriginal.stackRange ||
+    JSON.stringify(selectedPositions) !== JSON.stringify(editingOriginal.positions) ||
+    JSON.stringify(rangeData.grid) !== JSON.stringify(editingOriginal.grid)
+  )
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -58,7 +115,16 @@ export function RangeEditorPage() {
           </p>
           <div className="flex flex-wrap gap-2">
             {sessionGrids.map((sg, i) => (
-              <div key={i} className="flex items-center gap-1.5 bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-1.5">
+              <button
+                key={i}
+                onClick={() => editingIdx === i ? handleCancelSessionEdit() : loadSessionForEdit(i)}
+                className={[
+                  'flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 border transition-colors text-left',
+                  editingIdx === i
+                    ? 'bg-brand-900/30 border-brand-600/60 ring-1 ring-brand-600/40'
+                    : 'bg-gray-900 border-gray-700 hover:border-gray-500',
+                ].join(' ')}
+              >
                 <span className="text-xs font-semibold text-white">{sg.name}</span>
                 {sg.stackRange && (
                   <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-900/40 border border-brand-700/50 text-brand-400 leading-tight">
@@ -66,7 +132,8 @@ export function RangeEditorPage() {
                   </span>
                 )}
                 <span className="text-xs text-gray-500">{countNonFoldHands(sg.grid)} mãos</span>
-              </div>
+                {editingIdx === i && <span className="text-[10px] text-brand-400 font-bold ml-1">editando</span>}
+              </button>
             ))}
           </div>
         </div>
@@ -183,18 +250,41 @@ export function RangeEditorPage() {
             Limpar Grid
           </button>
 
-          <button
-            onClick={handlePushToSession}
-            className="w-full py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-bold text-sm transition-colors border border-gray-600"
-          >
-            + Salvar e criar outro
-          </button>
+          {editingIdx !== null ? (
+            <>
+              <button
+                onClick={handleSaveSessionEdit}
+                disabled={!hasChanges}
+                className={[
+                  'w-full py-2.5 rounded-lg font-bold text-sm transition-colors border',
+                  hasChanges
+                    ? 'bg-emerald-700 hover:bg-emerald-600 text-white border-emerald-600'
+                    : 'bg-gray-800 text-gray-600 border-gray-700 cursor-not-allowed',
+                ].join(' ')}
+              >
+                Salvar alterações no #{editingIdx + 1}
+              </button>
+              <button
+                onClick={handleCancelSessionEdit}
+                className="w-full py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-bold text-sm transition-colors border border-gray-600"
+              >
+                Cancelar
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={handlePushToSession}
+              className="w-full py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-bold text-sm transition-colors border border-gray-600"
+            >
+              + Salvar e criar outro
+            </button>
+          )}
 
           <button
             onClick={handleNext}
             className="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-lg font-bold text-sm transition-colors"
           >
-            {sessionGrids.length > 0 ? 'PRÓXIMO: CONFIGURAR CENÁRIOS →' : 'PRÓXIMO: CONFIGURAR CENÁRIOS →'}
+            PRÓXIMO: CONFIGURAR CENÁRIOS →
           </button>
         </div>
       </div>
