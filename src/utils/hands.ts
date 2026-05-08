@@ -127,10 +127,14 @@ export function getBroadwaysOffsuit(): string[] {
 function parseStackRange(str: string): [number, number] | null {
   if (!str) return null
   const s = str.replace(/bb/gi, '').trim()
-  const le = s.match(/^<=?\s*(\d+(?:\.\d+)?)$/)
-  if (le) return [0, Number(le[1])]
-  const ge = s.match(/^>=?\s*(\d+(?:\.\d+)?)$/)
-  if (ge) return [Number(ge[1]), Infinity]
+  const leIncl = s.match(/^<=\s*(\d+(?:\.\d+)?)$/)
+  if (leIncl) return [0, Number(leIncl[1])]
+  const leStrict = s.match(/^<\s*(\d+(?:\.\d+)?)$/)
+  if (leStrict) return [0, Number(leStrict[1]) - 0.01]
+  const geIncl = s.match(/^>=\s*(\d+(?:\.\d+)?)$/)
+  if (geIncl) return [Number(geIncl[1]), Infinity]
+  const geStrict = s.match(/^>\s*(\d+(?:\.\d+)?)$/)
+  if (geStrict) return [Number(geStrict[1]) + 0.01, Infinity]
   const rng = s.match(/^(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)$/)
   if (rng) return [Number(rng[1]), Number(rng[2])]
   const exact = s.match(/^(\d+(?:\.\d+)?)$/)
