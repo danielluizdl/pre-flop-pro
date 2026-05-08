@@ -50,7 +50,7 @@ export function RangeEditorPage() {
     if (!validate()) return
     useStore.setState({
       rangeData: { ...rangeData, positions: [...selectedPositions] },
-      ...(sessionGrids.length === 0 ? { tempScenarios: [] } : {}),
+      ...(rangeData.id === null && sessionGrids.length === 0 ? { tempScenarios: [] } : {}),
     })
     initTableConfig()
     setPage('table-editor')
