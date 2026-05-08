@@ -319,7 +319,20 @@ function DrillRangeSelect() {
                                 </div>
                               )}
                               <div className="flex items-start justify-between gap-1">
-                                <h3 className="font-bold text-white text-sm leading-tight">{r.name}</h3>
+                                <div className="flex items-start gap-1.5 flex-wrap flex-1 min-w-0">
+                                  <h3 className="font-bold text-white text-sm leading-tight">{r.name}</h3>
+                                  {r.stackGrids && r.stackGrids.length > 0 ? (
+                                    r.stackGrids.map((sg, i) => sg.stackRange && (
+                                      <span key={i} className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-900/40 border border-brand-700/50 text-brand-400 flex-shrink-0 leading-tight">
+                                        {sg.stackRange}
+                                      </span>
+                                    ))
+                                  ) : r.stackRange ? (
+                                    <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-900/40 border border-brand-700/50 text-brand-400 flex-shrink-0 leading-tight">
+                                      {r.stackRange}
+                                    </span>
+                                  ) : null}
+                                </div>
                                 <button
                                   onClick={e => { e.stopPropagation(); setPreviewId(r.id) }}
                                   className="flex-shrink-0 text-gray-500 hover:text-blue-400 transition-colors"
@@ -400,7 +413,9 @@ type PrevSnapshot = {
 
 /* ── Active drill ──────────────────────────────────────────────────────────── */
 function DrillActive() {
-  const activeDrillRange = useStore(s => s.activeDrillRange)
+  const activeDrillRange     = useStore(s => s.activeDrillRange)
+  const activeDrillStackRange = useStore(s => s.activeDrillStackRange)
+  const activeDrillStackGridIdx = useStore(s => s.activeDrillStackGridIdx)
   const handPerformance  = useStore(s => s.handPerformance)
   const activeHand = useStore(s => s.activeHand)
   const currentHandSuits = useStore(s => s.currentHandSuits)
@@ -435,7 +450,10 @@ function DrillActive() {
   if (!activeDrillRange || !activeHand) return null
 
   function getFreqLabel(hand: string): string {
-    const d = activeDrillRange!.grid[hand]
+    const activeGrid = activeDrillStackGridIdx >= 0 && activeDrillRange!.stackGrids
+      ? activeDrillRange!.stackGrids[activeDrillStackGridIdx].grid
+      : activeDrillRange!.grid
+    const d = activeGrid[hand]
     if (!d) return ''
     const parts: string[] = []
     const extraLabel = activeDrillRange!.customAction?.label
@@ -605,6 +623,11 @@ function DrillActive() {
           <div className="text-xs font-bold text-white leading-tight truncate" title={activeDrillRange.name}>
             {activeDrillRange.name}
           </div>
+          {!!activeDrillStackRange && (
+            <span className="inline-block px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-900/40 border border-brand-700/50 text-brand-400 leading-tight">
+              {activeDrillStackRange}
+            </span>
+          )}
           <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
             <span className="text-gray-400">Mãos</span>
             <span className="text-white font-bold text-right">{stats.hands}</span>
@@ -634,7 +657,12 @@ function DrillActive() {
               <h3 className="font-bold text-white text-lg">{activeDrillRange.name}</h3>
               <button onClick={() => setModalOpen(false)} className="text-gray-400 hover:text-white text-xl">✕</button>
             </div>
-            <HandMatrix readOnly grid={activeDrillRange.grid} heatmap={handPerformance[activeDrillRange.id]} />
+            <HandMatrix
+              readOnly
+              grid={activeDrillStackGridIdx >= 0 && activeDrillRange.stackGrids ? activeDrillRange.stackGrids[activeDrillStackGridIdx].grid : activeDrillRange.grid}
+              heatmap={handPerformance[activeDrillRange.id]}
+              customActionColor={activeDrillRange.customAction?.color}
+            />
           </div>
         </div>
       )}

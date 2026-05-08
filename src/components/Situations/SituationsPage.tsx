@@ -40,7 +40,20 @@ function RangeCard({ r, onViewHeatmap, onPreview }: CardProps) {
   return (
     <div className="bg-gray-800/60 border border-gray-700 rounded-lg p-3 hover:border-gray-500 transition-all flex flex-col gap-2">
       <div>
-        <h3 className="font-bold text-white text-sm leading-tight">{r.name}</h3>
+        <div className="flex items-start gap-1.5 flex-wrap">
+          <h3 className="font-bold text-white text-sm leading-tight">{r.name}</h3>
+          {r.stackGrids && r.stackGrids.length > 0 ? (
+            r.stackGrids.map((sg, i) => sg.stackRange && (
+              <span key={i} className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-900/40 border border-brand-700/50 text-brand-400 flex-shrink-0 leading-tight">
+                {sg.stackRange}
+              </span>
+            ))
+          ) : r.stackRange ? (
+            <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-900/40 border border-brand-700/50 text-brand-400 flex-shrink-0 leading-tight">
+              {r.stackRange}
+            </span>
+          ) : null}
+        </div>
         <div className="flex items-center gap-3 mt-1">
           <span className="text-xs text-gray-500">{nonFold} mãos · {r.scenarios.length} cenário{r.scenarios.length !== 1 ? 's' : ''}</span>
           {accuracy !== null && (

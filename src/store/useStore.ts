@@ -5,7 +5,7 @@ import {
 } from '../utils/hands'
 import type {
   BrushState, HandData, HandHistoryEntry, PokerPosition, PositionConfig,
-  Range, Scenario, SessionGrid, SessionStats, Slot, TableSize, TrainingSession, Page,
+  Range, Scenario, SessionGrid, SessionStats, Slot, StackGrid, TableSize, TrainingSession, Page,
 } from '../types'
 import {
   POS_6MAX, POS_8MAX, SLOTS_6MAX, SLOTS_8MAX,
@@ -151,6 +151,8 @@ interface AppState {
   selectedDrillRangeIds: number[]
   drillExcludedHands: string[]
   activeDrillRange: Range | null
+  activeDrillStackRange: string
+  activeDrillStackGridIdx: number
   activeHand: string
   sessionStats: SessionStats
   handHistory: HandHistoryEntry[]
@@ -510,39 +512,75 @@ export const useStore = create<AppState>()(
         const { rangeData, tempScenarios, ranges, currentTableSize, selectedEditorPositions, brush, sessionGrids } = get()
         const isEditing = rangeData.id !== null
         const baseId = Date.now()
-        const scenarios = JSON.parse(JSON.stringify(tempScenarios))
+        const scenarios: Scenario[] = JSON.parse(JSON.stringify(tempScenarios))
         const customAction = brush.extraLabel ? { label: brush.extraLabel, color: brush.extraColor } : undefined
 
-        const sessionRanges: Range[] = sessionGrids.map((sg, i) => ({
-          id: baseId + i + 1,
-          name: sg.name,
-          positions: sg.positions,
-          grid: JSON.parse(JSON.stringify(sg.grid)),
-          scenarios,
-          tableSize: currentTableSize,
-          ...(customAction ? { customAction } : {}),
-          ...(sg.stackRange ? { stackRange: sg.stackRange } : {}),
-        }))
-
-        const newId = isEditing ? rangeData.id! : baseId
-        const finalObj: Range = {
-          id: newId,
-          name: rangeData.name,
-          positions: selectedEditorPositions,
-          grid: JSON.parse(JSON.stringify(rangeData.grid)),
-          scenarios,
-          tableSize: currentTableSize,
-          ...(customAction ? { customAction } : {}),
-          ...(rangeData.stackRange ? { stackRange: rangeData.stackRange } : {}),
-        }
-
         let newRanges: Range[]
+
         if (isEditing) {
+          const newId = rangeData.id!
+          const finalObj: Range = {
+            id: newId,
+            name: rangeData.name,
+            positions: selectedEditorPositions,
+            grid: JSON.parse(JSON.stringify(rangeData.grid)),
+            scenarios,
+            tableSize: currentTableSize,
+            ...(customAction ? { customAction } : {}),
+            ...(rangeData.stackRange ? { stackRange: rangeData.stackRange } : {}),
+          }
           const idx = ranges.findIndex(r => r.id === newId)
           newRanges = idx !== -1 ? ranges.map(r => r.id === newId ? finalObj : r) : [...ranges, finalObj]
         } else {
-          newRanges = [...ranges, ...sessionRanges, finalObj]
+          // Group all grids (session + current) by position
+          type GridEntry = { name: string; stackRange: string; grid: Record<string, HandData>; positions: string[] }
+          const allEntries: GridEntry[] = [
+            ...sessionGrids,
+            { name: rangeData.name, stackRange: rangeData.stackRange, grid: JSON.parse(JSON.stringify(rangeData.grid)), positions: [...selectedEditorPositions] },
+          ]
+          const groups = new Map<string, GridEntry[]>()
+          allEntries.forEach(g => {
+            const key = [...g.positions].sort().join(',')
+            if (!groups.has(key)) groups.set(key, [])
+            groups.get(key)!.push(g)
+          })
+
+          let idSeed = baseId
+          const groupedRanges: Range[] = []
+          groups.forEach(grids => {
+            idSeed++
+            if (grids.length === 1) {
+              const g = grids[0]
+              groupedRanges.push({
+                id: idSeed,
+                name: g.name,
+                positions: g.positions,
+                grid: JSON.parse(JSON.stringify(g.grid)),
+                scenarios,
+                tableSize: currentTableSize,
+                ...(customAction ? { customAction } : {}),
+                ...(g.stackRange ? { stackRange: g.stackRange } : {}),
+              })
+            } else {
+              const stackGridsList: StackGrid[] = grids.map(g => ({
+                stackRange: g.stackRange,
+                grid: JSON.parse(JSON.stringify(g.grid)),
+              }))
+              groupedRanges.push({
+                id: idSeed,
+                name: grids[0].name,
+                positions: grids[0].positions,
+                grid: JSON.parse(JSON.stringify(grids[0].grid)),
+                stackGrids: stackGridsList,
+                scenarios,
+                tableSize: currentTableSize,
+                ...(customAction ? { customAction } : {}),
+              })
+            }
+          })
+          newRanges = [...ranges, ...groupedRanges]
         }
+
         saveRanges(newRanges)
         set({
           ranges: newRanges,
@@ -604,6 +642,8 @@ export const useStore = create<AppState>()(
       selectedDrillRangeIds: [],
       drillExcludedHands: [],
       activeDrillRange: null,
+      activeDrillStackRange: '',
+      activeDrillStackGridIdx: -1,
       activeHand: '',
       sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 },
       handHistory: [],
@@ -646,19 +686,29 @@ export const useStore = create<AppState>()(
 
       nextDrillHand: () => {
         const { ranges, selectedDrillRangeIds, drillExcludedHands } = get()
-        const candidates: { range: Range; hand: string }[] = []
+        const candidates: { range: Range; hand: string; stackGridIdx: number }[] = []
         selectedDrillRangeIds.forEach(id => {
           const r = ranges.find(x => x.id === id)
-          if (r) {
+          if (!r) return
+          if (r.stackGrids && r.stackGrids.length > 0) {
+            r.stackGrids.forEach((sg, sgIdx) => {
+              Object.keys(sg.grid)
+                .filter(h => !drillExcludedHands.includes(h))
+                .forEach(hand => candidates.push({ range: r, hand, stackGridIdx: sgIdx }))
+            })
+          } else {
             Object.keys(r.grid)
               .filter(h => !drillExcludedHands.includes(h))
-              .forEach(hand => candidates.push({ range: r, hand }))
+              .forEach(hand => candidates.push({ range: r, hand, stackGridIdx: -1 }))
           }
         })
         if (candidates.length === 0) return false
 
         const pick = candidates[Math.floor(Math.random() * candidates.length)]
-        const { range, hand } = pick
+        const { range, hand, stackGridIdx } = pick
+        const activeGrid = stackGridIdx >= 0 && range.stackGrids ? range.stackGrids[stackGridIdx].grid : range.grid
+        const stackRangeLabel = stackGridIdx >= 0 && range.stackGrids ? range.stackGrids[stackGridIdx].stackRange : ''
+
         const rSize: TableSize = range.tableSize || 6
         const activePos = rSize === 6 ? POS_6MAX : POS_8MAX
         const activeSlts = rSize === 6 ? SLOTS_6MAX : SLOTS_8MAX
@@ -674,7 +724,7 @@ export const useStore = create<AppState>()(
         }
 
         const rng = Math.ceil(Math.random() * 100)
-        const handData = range.grid[hand]
+        const handData = activeGrid[hand]
         const { useRngForFrequency } = get()
         const extraLabel = range.customAction?.label
         const correctAction = useRngForFrequency
@@ -684,6 +734,8 @@ export const useStore = create<AppState>()(
 
         set({
           activeDrillRange: range,
+          activeDrillStackRange: stackRangeLabel,
+          activeDrillStackGridIdx: stackGridIdx,
           activeHand: hand,
           currentScenario: newScenario,
           currentAnte: newAnte,
@@ -700,7 +752,7 @@ export const useStore = create<AppState>()(
 
       checkDrillAnswer: (action) => {
         const {
-          activeDrillRange, activeHand, sessionStats,
+          activeDrillRange, activeDrillStackGridIdx, activeHand, sessionStats,
           currentRng, correctActionForCurrentHand, currentHandSuits, handHistory,
         } = get()
         if (!activeDrillRange) return { correct: false, message: '' }
@@ -709,7 +761,10 @@ export const useStore = create<AppState>()(
         const stats = { ...sessionStats, hands: sessionStats.hands + 1 }
         if (correct) stats.correct++; else stats.errors++
 
-        const d = activeDrillRange.grid[activeHand]
+        const activeGrid = activeDrillStackGridIdx >= 0 && activeDrillRange.stackGrids
+          ? activeDrillRange.stackGrids[activeDrillStackGridIdx].grid
+          : activeDrillRange.grid
+        const d = activeGrid[activeHand]
         const entry: HandHistoryEntry = {
           id: Date.now(),
           hand: activeHand,
@@ -761,6 +816,8 @@ export const useStore = create<AppState>()(
         }
         set({
           activeDrillRange: null,
+          activeDrillStackRange: '',
+          activeDrillStackGridIdx: -1,
           activeHand: '',
           page: 'drill',
           trainingHistory: newHistory,

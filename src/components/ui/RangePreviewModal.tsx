@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import type { Range } from '../../types'
 
@@ -7,6 +8,12 @@ interface Props {
 }
 
 export function RangePreviewModal({ range, onClose }: Props) {
+  const hasStackGrids = !!(range.stackGrids && range.stackGrids.length > 0)
+  const [selectedIdx, setSelectedIdx] = useState(0)
+
+  const displayGrid = hasStackGrids ? range.stackGrids![selectedIdx].grid : range.grid
+  const displayStackRange = hasStackGrids ? range.stackGrids![selectedIdx].stackRange : range.stackRange
+
   return (
     <div
       className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
@@ -21,14 +28,35 @@ export function RangePreviewModal({ range, onClose }: Props) {
             <h3 className="font-bold text-white text-lg">{range.name}</h3>
             <p className="text-xs text-gray-400 mt-0.5">
               {range.tableSize}-max · {range.positions.join(', ')} · {range.scenarios.length} cenário{range.scenarios.length !== 1 ? 's' : ''}
+              {!!displayStackRange && <span className="ml-1 text-brand-400">· {displayStackRange}</span>}
             </p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-white text-xl ml-4 flex-shrink-0">✕</button>
         </div>
 
+        {/* Stack grid selector */}
+        {hasStackGrids && (
+          <div className="flex gap-2 mb-4 flex-wrap">
+            {range.stackGrids!.map((sg, i) => (
+              <button
+                key={i}
+                onClick={() => setSelectedIdx(i)}
+                className={[
+                  'px-3 py-1.5 rounded-lg text-sm font-semibold border transition-colors',
+                  selectedIdx === i
+                    ? 'bg-brand-600 border-brand-500 text-white'
+                    : 'bg-gray-800 border-gray-600 text-gray-400 hover:text-gray-200 hover:border-gray-500',
+                ].join(' ')}
+              >
+                {sg.stackRange || `Grid ${i + 1}`}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="flex gap-6 flex-wrap">
           <div className="flex-shrink-0">
-            <HandMatrix readOnly grid={range.grid} customActionColor={range.customAction?.color} />
+            <HandMatrix readOnly grid={displayGrid} customActionColor={range.customAction?.color} />
           </div>
 
           <div className="flex-1 min-w-[200px]">
