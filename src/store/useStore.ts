@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import {
-  ALL_HANDS, makeEmptyGrid, generateSuits, getRngCorrectAction, getHighestFrequencyAction,
+  ALL_HANDS, makeEmptyGrid, generateSuits, getRngCorrectAction, getHighestFrequencyAction, stackMatchesRange,
 } from '../utils/hands'
 import type {
   BrushState, HandData, HandHistoryEntry, PokerPosition, PositionConfig,
@@ -708,33 +708,28 @@ export const useStore = create<AppState>()(
 
       nextDrillHand: () => {
         const { ranges, selectedDrillRangeIds, drillExcludedHands } = get()
-        const candidates: { range: Range; hand: string; stackGridIdx: number }[] = []
+
+        // Build candidates using only one grid per range for uniform hand distribution.
+        // For stackGrids ranges, the active grid is resolved after scenario selection.
+        const candidates: { range: Range; hand: string }[] = []
         selectedDrillRangeIds.forEach(id => {
           const r = ranges.find(x => x.id === id)
           if (!r) return
-          if (r.stackGrids && r.stackGrids.length > 0) {
-            r.stackGrids.forEach((sg, sgIdx) => {
-              Object.keys(sg.grid)
-                .filter(h => !drillExcludedHands.includes(h))
-                .forEach(hand => candidates.push({ range: r, hand, stackGridIdx: sgIdx }))
-            })
-          } else {
-            Object.keys(r.grid)
-              .filter(h => !drillExcludedHands.includes(h))
-              .forEach(hand => candidates.push({ range: r, hand, stackGridIdx: -1 }))
-          }
+          const sourceGrid = r.stackGrids && r.stackGrids.length > 0 ? r.stackGrids[0].grid : r.grid
+          Object.keys(sourceGrid)
+            .filter(h => !drillExcludedHands.includes(h))
+            .forEach(hand => candidates.push({ range: r, hand }))
         })
         if (candidates.length === 0) return false
 
         const pick = candidates[Math.floor(Math.random() * candidates.length)]
-        const { range, hand, stackGridIdx } = pick
-        const activeGrid = stackGridIdx >= 0 && range.stackGrids ? range.stackGrids[stackGridIdx].grid : range.grid
-        const stackRangeLabel = stackGridIdx >= 0 && range.stackGrids ? range.stackGrids[stackGridIdx].stackRange : ''
+        const { range, hand } = pick
 
         const rSize: TableSize = range.tableSize || 6
         const activePos = rSize === 6 ? POS_6MAX : POS_8MAX
         const activeSlts = rSize === 6 ? SLOTS_6MAX : SLOTS_8MAX
 
+        // Pick scenario first
         let newScenario: Record<string, PositionConfig> = {}
         let newAnte = 0
         let heroRaiseFromScen = 0
@@ -744,6 +739,22 @@ export const useStore = create<AppState>()(
           newAnte = rndScen.ante || 0
           heroRaiseFromScen = rndScen.heroRaiseSize ?? 0
         }
+
+        // Determine which stackGrid to use based on the hero's stack in the chosen scenario
+        let finalStackGridIdx = -1
+        let stackRangeLabel = ''
+        if (range.stackGrids && range.stackGrids.length > 0) {
+          const heroStack = Object.values(newScenario as Record<string, PositionConfig>).find(p => p.isHero)?.stack ?? 0
+          const matched = heroStack > 0
+            ? range.stackGrids.findIndex(sg => stackMatchesRange(heroStack, sg.stackRange))
+            : -1
+          finalStackGridIdx = matched !== -1 ? matched : 0
+          stackRangeLabel = range.stackGrids[finalStackGridIdx].stackRange
+        }
+
+        const activeGrid = finalStackGridIdx >= 0 && range.stackGrids
+          ? range.stackGrids[finalStackGridIdx].grid
+          : range.grid
 
         const rng = Math.ceil(Math.random() * 100)
         const handData = activeGrid[hand]
@@ -757,7 +768,7 @@ export const useStore = create<AppState>()(
         set({
           activeDrillRange: range,
           activeDrillStackRange: stackRangeLabel,
-          activeDrillStackGridIdx: stackGridIdx,
+          activeDrillStackGridIdx: finalStackGridIdx,
           activeHand: hand,
           currentScenario: newScenario,
           currentAnte: newAnte,

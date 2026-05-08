@@ -142,6 +142,24 @@ function parseStackRange(str: string): [number, number] | null {
   return null
 }
 
+export function stackMatchesRange(stack: number, rangeStr: string): boolean {
+  if (!rangeStr) return true
+  const s = rangeStr.replace(/bb/gi, '').trim()
+  const leIncl = s.match(/^<=\s*(\d+(?:\.\d+)?)$/)
+  if (leIncl) return stack <= Number(leIncl[1])
+  const leStrict = s.match(/^<\s*(\d+(?:\.\d+)?)$/)
+  if (leStrict) return stack < Number(leStrict[1])
+  const geIncl = s.match(/^>=\s*(\d+(?:\.\d+)?)$/)
+  if (geIncl) return stack >= Number(geIncl[1])
+  const geStrict = s.match(/^>\s*(\d+(?:\.\d+)?)$/)
+  if (geStrict) return stack > Number(geStrict[1])
+  const rng = s.match(/^(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)$/)
+  if (rng) return stack >= Number(rng[1]) && stack <= Number(rng[2])
+  const exact = s.match(/^(\d+(?:\.\d+)?)$/)
+  if (exact) return stack === Number(exact[1])
+  return true
+}
+
 export function stackRangesOverlap(a: string, b: string): boolean {
   const ra = parseStackRange(a)
   const rb = parseStackRange(b)
