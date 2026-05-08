@@ -1,5 +1,5 @@
 {
-  "version": 1778202285969,
+  "version": 1778251145545,
   "ranges": [
     {
       "id": 1777977759033,
@@ -43466,8 +43466,7 @@
     },
     {
       "id": 1777900860399,
-      "name": "JAM vs RFI BTN-CO vs 3B SB-BB",
-      "tableSize": 8,
+      "name": "STR JAM vs RFI BTN-CO vs 3B SB-BB",
       "positions": [
         "STR"
       ],
@@ -44628,25 +44627,33 @@
       },
       "scenarios": [
         {
-          "id": 1777900812192,
-          "pot": "37.0",
-          "ante": 0.5,
-          "summary": "SB 3bet (24bb) → BTN Open (6bb)",
-          "heroRaiseSize": 72,
+          "id": 1778251078510,
           "data": {
+            "sb": {
+              "role": "3bet",
+              "bet": 24,
+              "isHero": false,
+              "stack": 250
+            },
             "bb": {
-              "role": "post",
+              "role": "fold",
               "bet": 1,
               "isHero": false,
               "stack": 250
             },
-            "btn": {
-              "role": "open",
-              "bet": 6,
+            "str": {
+              "role": "post",
+              "bet": 2,
+              "isHero": true,
+              "stack": 250
+            },
+            "utg": {
+              "role": "fold",
+              "bet": 0,
               "isHero": false,
               "stack": 250
             },
-            "co": {
+            "utg1": {
               "role": "fold",
               "bet": 0,
               "isHero": false,
@@ -44658,7 +44665,33 @@
               "isHero": false,
               "stack": 250
             },
+            "co": {
+              "role": "fold",
+              "bet": 0,
+              "isHero": false,
+              "stack": 250
+            },
+            "btn": {
+              "role": "open",
+              "bet": 6,
+              "isHero": false,
+              "stack": 250
+            }
+          },
+          "pot": "37.0",
+          "ante": 0.5,
+          "summary": "SB 3bet (24bb) → BTN Open (6bb)"
+        },
+        {
+          "id": 1778251084323,
+          "data": {
             "sb": {
+              "role": "fold",
+              "bet": 0.5,
+              "isHero": false,
+              "stack": 250
+            },
+            "bb": {
               "role": "3bet",
               "bet": 24,
               "isHero": false,
@@ -44681,25 +44714,10 @@
               "bet": 0,
               "isHero": false,
               "stack": 250
-            }
-          }
-        },
-        {
-          "id": 1777900838699,
-          "pot": "30.5",
-          "ante": 0.5,
-          "summary": "BB 3bet (18bb) → BTN Open (6bb)",
-          "heroRaiseSize": 72,
-          "data": {
-            "bb": {
-              "role": "3bet",
-              "bet": 18,
-              "isHero": false,
-              "stack": 250
             },
-            "btn": {
-              "role": "open",
-              "bet": 6,
+            "mp": {
+              "role": "fold",
+              "bet": 0,
               "isHero": false,
               "stack": 250
             },
@@ -44709,153 +44727,19 @@
               "isHero": false,
               "stack": 250
             },
-            "mp": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            },
-            "sb": {
-              "role": "fold",
-              "bet": 0.5,
-              "isHero": false,
-              "stack": 250
-            },
-            "str": {
-              "role": "post",
-              "bet": 2,
-              "isHero": true,
-              "stack": 250
-            },
-            "utg": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            },
-            "utg1": {
-              "role": "fold",
-              "bet": 0,
+            "btn": {
+              "role": "open",
+              "bet": 6,
               "isHero": false,
               "stack": 250
             }
-          }
-        },
-        {
-          "id": 1777900892501,
+          },
           "pot": "36.5",
           "ante": 0.5,
-          "summary": "BB 3bet (24bb) → CO Open (6bb)",
-          "heroRaiseSize": 72,
-          "data": {
-            "bb": {
-              "role": "3bet",
-              "bet": 24,
-              "isHero": false,
-              "stack": 250
-            },
-            "btn": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            },
-            "co": {
-              "role": "open",
-              "bet": 6,
-              "isHero": false,
-              "stack": 250
-            },
-            "mp": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            },
-            "sb": {
-              "role": "post",
-              "bet": 0.5,
-              "isHero": false,
-              "stack": 250
-            },
-            "str": {
-              "role": "post",
-              "bet": 2,
-              "isHero": true,
-              "stack": 250
-            },
-            "utg": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            },
-            "utg1": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            }
-          }
-        },
-        {
-          "id": 1777900912526,
-          "pot": "36.0",
-          "ante": 0.5,
-          "summary": "SB 3bet (24bb) → CO Open (6bb)",
-          "heroRaiseSize": 72,
-          "data": {
-            "bb": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            },
-            "btn": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            },
-            "co": {
-              "role": "open",
-              "bet": 6,
-              "isHero": false,
-              "stack": 250
-            },
-            "mp": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            },
-            "sb": {
-              "role": "3bet",
-              "bet": 24,
-              "isHero": false,
-              "stack": 250
-            },
-            "str": {
-              "role": "post",
-              "bet": 2,
-              "isHero": true,
-              "stack": 250
-            },
-            "utg": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            },
-            "utg1": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            }
-          }
+          "summary": "BB 3bet (24bb) → BTN Open (6bb)"
         }
-      ]
+      ],
+      "tableSize": 8
     },
     {
       "id": 1777901302516,
