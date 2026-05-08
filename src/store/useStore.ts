@@ -5,7 +5,7 @@ import {
 } from '../utils/hands'
 import type {
   BrushState, HandData, HandHistoryEntry, PokerPosition, PositionConfig,
-  Range, Scenario, SessionStats, Slot, TableSize, TrainingSession, Page,
+  Range, Scenario, SessionGrid, SessionStats, Slot, TableSize, TrainingSession, Page,
 } from '../types'
 import {
   POS_6MAX, POS_8MAX, SLOTS_6MAX, SLOTS_8MAX,
@@ -99,7 +99,7 @@ interface AppState {
   setTableFormat: (size: TableSize) => void
 
   // ── Range editor ─────────────────────────────────────────────────────────────
-  rangeData: { id: number | null; name: string; grid: Record<string, HandData>; positions: string[]; tableSize: TableSize }
+  rangeData: { id: number | null; name: string; grid: Record<string, HandData>; positions: string[]; tableSize: TableSize; stackRange: string }
   selectedEditorPositions: string[]
   brush: BrushState
 
@@ -110,6 +110,7 @@ interface AppState {
   clearHand: (hand: string) => void
   resetGrid: () => void
   setRangeName: (name: string) => void
+  setStackRange: (val: string) => void
   toggleEditorPosition: (label: string) => void
   loadRangeForEdit: (id: number) => void
 
@@ -133,6 +134,8 @@ interface AppState {
   removeScenario: (idx: number) => void
   loadScenarioFromBuffer: (idx: number) => void
   finalizeRange: () => void
+  sessionGrids: SessionGrid[]
+  pushGridToSession: () => void
 
   // ── Hand performance (heatmap) ────────────────────────────────────────────────
   handPerformance: HandPerfMap
@@ -212,13 +215,13 @@ export const useStore = create<AppState>()(
           currentAnte: ante,
           page: 'editor',
           ...(rangeData.id === null
-            ? { rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: [], tableSize: size } }
+            ? { rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: [], tableSize: size, stackRange: '' } }
             : {}),
         })
       },
 
       // ── Range editor ──────────────────────────────────────────────────────────
-      rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: [], tableSize: 6 },
+      rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: [], tableSize: 6, stackRange: '' },
       selectedEditorPositions: [],
       brush: { call: 0, raise: 0, allin: 0, extra: 0, raiseSize: '', extraLabel: '', extraColor: '#a855f7' },
 
@@ -312,6 +315,11 @@ export const useStore = create<AppState>()(
         set({ rangeData: { ...rangeData, name } })
       },
 
+      setStackRange: (val) => {
+        const { rangeData } = get()
+        set({ rangeData: { ...rangeData, stackRange: val } })
+      },
+
       toggleEditorPosition: (label) => {
         const { selectedEditorPositions } = get()
         const next = selectedEditorPositions.includes(label) ? [] : [label]
@@ -330,10 +338,11 @@ export const useStore = create<AppState>()(
           ? { extraLabel: r.customAction.label, extraColor: r.customAction.color, extra: brush.extra }
           : { extraLabel: '', extraColor: '#a855f7', extra: 0 }
         set({
-          rangeData: { id: r.id, name: r.name, positions: r.positions, grid: JSON.parse(JSON.stringify(r.grid)), tableSize: tSize },
+          rangeData: { id: r.id, name: r.name, positions: r.positions, grid: JSON.parse(JSON.stringify(r.grid)), tableSize: tSize, stackRange: r.stackRange ?? '' },
           tempScenarios: r.scenarios ? JSON.parse(JSON.stringify(r.scenarios)) : [],
           selectedEditorPositions: [...r.positions],
           currentTableSize: tSize,
+          sessionGrids: [],
           brush: { ...brush, ...brushExtra },
           activePositions: positions,
           activeSlots: slots,
@@ -341,6 +350,8 @@ export const useStore = create<AppState>()(
           page: 'editor',
         })
       },
+
+      sessionRangeIds: [],
 
       // ── Table editor ──────────────────────────────────────────────────────────
       currentScenario: {},
@@ -369,9 +380,10 @@ export const useStore = create<AppState>()(
           currentHasStraddle: hasStraddle,
           currentScenario: scenario,
           currentHeroRaiseSize: 0,
-          rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: [], tableSize: size },
+          rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: [], tableSize: size, stackRange: '' },
           tempScenarios: [],
           selectedEditorPositions: [],
+          sessionGrids: [],
           brush: { ...brush, extra: 0, extraLabel: '', extraColor: '#a855f7' },
           page: 'editor',
         })
@@ -494,32 +506,67 @@ export const useStore = create<AppState>()(
       },
 
       finalizeRange: () => {
-        const { rangeData, tempScenarios, ranges, currentTableSize, selectedEditorPositions, brush } = get()
+        const { rangeData, tempScenarios, ranges, currentTableSize, selectedEditorPositions, brush, sessionGrids } = get()
         const isEditing = rangeData.id !== null
-        const newId = isEditing ? rangeData.id! : Date.now()
+        const baseId = Date.now()
+        const scenarios = JSON.parse(JSON.stringify(tempScenarios))
+        const customAction = brush.extraLabel ? { label: brush.extraLabel, color: brush.extraColor } : undefined
+
+        const sessionRanges: Range[] = sessionGrids.map((sg, i) => ({
+          id: baseId + i + 1,
+          name: sg.name,
+          positions: sg.positions,
+          grid: JSON.parse(JSON.stringify(sg.grid)),
+          scenarios,
+          tableSize: currentTableSize,
+          ...(customAction ? { customAction } : {}),
+          ...(sg.stackRange ? { stackRange: sg.stackRange } : {}),
+        }))
+
+        const newId = isEditing ? rangeData.id! : baseId
         const finalObj: Range = {
           id: newId,
           name: rangeData.name,
           positions: selectedEditorPositions,
           grid: JSON.parse(JSON.stringify(rangeData.grid)),
-          scenarios: JSON.parse(JSON.stringify(tempScenarios)),
+          scenarios,
           tableSize: currentTableSize,
-          ...(brush.extraLabel ? { customAction: { label: brush.extraLabel, color: brush.extraColor } } : {}),
+          ...(customAction ? { customAction } : {}),
+          ...(rangeData.stackRange ? { stackRange: rangeData.stackRange } : {}),
         }
+
         let newRanges: Range[]
         if (isEditing) {
           const idx = ranges.findIndex(r => r.id === newId)
           newRanges = idx !== -1 ? ranges.map(r => r.id === newId ? finalObj : r) : [...ranges, finalObj]
         } else {
-          newRanges = [...ranges, finalObj]
+          newRanges = [...ranges, ...sessionRanges, finalObj]
         }
         saveRanges(newRanges)
         set({
           ranges: newRanges,
-          rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: [], tableSize: currentTableSize },
+          rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: [], tableSize: currentTableSize, stackRange: '' },
           tempScenarios: [],
           selectedEditorPositions: [],
+          sessionGrids: [],
           page: 'ranges',
+        })
+      },
+
+      sessionGrids: [],
+
+      pushGridToSession: () => {
+        const { rangeData, selectedEditorPositions, sessionGrids } = get()
+        const sg: SessionGrid = {
+          name: rangeData.name,
+          stackRange: rangeData.stackRange,
+          grid: JSON.parse(JSON.stringify(rangeData.grid)),
+          positions: [...selectedEditorPositions],
+        }
+        set({
+          sessionGrids: [...sessionGrids, sg],
+          rangeData: { ...rangeData, name: '', grid: makeEmptyGrid(), stackRange: '' },
+          selectedEditorPositions: [],
         })
       },
 

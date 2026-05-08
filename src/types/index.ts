@@ -53,6 +53,7 @@ export interface Range {
   scenarios: Scenario[]
   tableSize: TableSize
   customAction?: { label: string; color: string }
+  stackRange?: string
 }
 
 export interface PokerPosition {
@@ -92,6 +93,13 @@ export interface HandHistoryEntry {
   correct: boolean
   rangeName: string
   raiseSize?: number | string
+}
+
+export interface SessionGrid {
+  name: string
+  stackRange: string
+  grid: Record<string, HandData>
+  positions: string[]
 }
 
 export interface TrainingSession {

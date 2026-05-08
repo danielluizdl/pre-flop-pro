@@ -2,6 +2,7 @@ import { useStore } from '../../store/useStore'
 import { HandMatrix } from './HandMatrix'
 import { BrushControls } from './BrushControls'
 import { HandQuickSelect } from '../ui/HandQuickSelect'
+import { countNonFoldHands } from '../../utils/hands'
 
 export function RangeEditorPage() {
   const activePositions    = useStore(s => s.activePositions)
@@ -9,19 +10,32 @@ export function RangeEditorPage() {
   const togglePosition     = useStore(s => s.toggleEditorPosition)
   const rangeData          = useStore(s => s.rangeData)
   const setRangeName       = useStore(s => s.setRangeName)
+  const setStackRange      = useStore(s => s.setStackRange)
   const resetGrid          = useStore(s => s.resetGrid)
   const setPage            = useStore(s => s.setPage)
   const initTableConfig    = useStore(s => s.initTableConfig)
+  const sessionGrids       = useStore(s => s.sessionGrids)
+  const pushGridToSession  = useStore(s => s.pushGridToSession)
+
+  function validate() {
+    if (!rangeData.name.trim()) { alert('Dê um nome ao range.'); return false }
+    if (selectedPositions.length === 0) { alert('Selecione pelo menos uma posição.'); return false }
+    return true
+  }
 
   function handleNext() {
-    if (!rangeData.name.trim()) { alert('Dê um nome ao range.'); return }
-    if (selectedPositions.length === 0) { alert('Selecione pelo menos uma posição.'); return }
+    if (!validate()) return
     useStore.setState({
       rangeData: { ...rangeData, positions: [...selectedPositions] },
-      ...(rangeData.id === null ? { tempScenarios: [] } : {}),
+      ...(sessionGrids.length === 0 ? { tempScenarios: [] } : {}),
     })
     initTableConfig()
     setPage('table-editor')
+  }
+
+  function handlePushToSession() {
+    if (!validate()) return
+    pushGridToSession()
   }
 
   return (
@@ -35,6 +49,28 @@ export function RangeEditorPage() {
           Pinte as mãos com as frequências de cada ação, depois configure os cenários.
         </p>
       </div>
+
+      {/* Preview da sessão */}
+      {sessionGrids.length > 0 && (
+        <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-3 space-y-2">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+            Salvos nesta sessão ({sessionGrids.length})
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {sessionGrids.map((sg, i) => (
+              <div key={i} className="flex items-center gap-1.5 bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-1.5">
+                <span className="text-xs font-semibold text-white">{sg.name}</span>
+                {sg.stackRange && (
+                  <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-900/40 border border-brand-700/50 text-brand-400 leading-tight">
+                    {sg.stackRange}
+                  </span>
+                )}
+                <span className="text-xs text-gray-500">{countNonFoldHands(sg.grid)} mãos</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col xl:flex-row gap-5">
         {/* Left: positions + name + matrix */}
@@ -76,6 +112,46 @@ export function RangeEditorPage() {
             />
           </div>
 
+          {/* Stack Efetivo */}
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-semibold text-gray-400 whitespace-nowrap flex-shrink-0">
+                Stack:
+              </label>
+              <input
+                type="text"
+                className="w-52 px-2.5 py-1.5 border border-gray-600 rounded-lg text-sm bg-gray-800 text-white placeholder-gray-500 focus:border-brand-500 focus:outline-none"
+                placeholder="Ex: <= 250, ou 250-300"
+                value={rangeData.stackRange}
+                onChange={e => setStackRange(e.target.value)}
+              />
+              {rangeData.stackRange && (
+                <button
+                  onClick={() => setStackRange('')}
+                  className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                >
+                  limpar
+                </button>
+              )}
+            </div>
+            <div className="flex gap-1.5 flex-wrap">
+              {['<=250bb', '250-300bb', '>=300bb'].map(p => (
+                <button
+                  key={p}
+                  onClick={() => setStackRange(rangeData.stackRange === p ? '' : p)}
+                  className={[
+                    'px-3 py-1.5 rounded-lg text-sm font-semibold border transition-colors',
+                    rangeData.stackRange === p
+                      ? 'bg-brand-600 border-brand-500 text-white'
+                      : 'bg-gray-800 border-gray-600 text-gray-400 hover:text-gray-200 hover:border-gray-500',
+                  ].join(' ')}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Matrix */}
           <div>
             <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">
@@ -85,10 +161,9 @@ export function RangeEditorPage() {
           </div>
         </div>
 
-        {/* Right: ações + frequências (mais largo) */}
+        {/* Right: ações + frequências */}
         <div className="xl:w-80 space-y-3 flex-shrink-0">
           <div className="bg-gray-800/60 rounded-xl p-4 border border-gray-700 space-y-3">
-            {/* Cabeçalho do card com quick-select inline */}
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <h3 className="font-bold text-xs text-gray-400 uppercase tracking-wider whitespace-nowrap">
                 Ações &amp; Frequências
@@ -109,10 +184,17 @@ export function RangeEditorPage() {
           </button>
 
           <button
+            onClick={handlePushToSession}
+            className="w-full py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-bold text-sm transition-colors border border-gray-600"
+          >
+            + Salvar e criar outro
+          </button>
+
+          <button
             onClick={handleNext}
             className="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-lg font-bold text-sm transition-colors"
           >
-            PRÓXIMO: CONFIGURAR CENÁRIOS →
+            {sessionGrids.length > 0 ? 'PRÓXIMO: CONFIGURAR CENÁRIOS →' : 'PRÓXIMO: CONFIGURAR CENÁRIOS →'}
           </button>
         </div>
       </div>
