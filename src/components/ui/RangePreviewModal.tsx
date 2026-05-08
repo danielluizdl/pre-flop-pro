@@ -28,7 +28,7 @@ export function RangePreviewModal({ range, onClose }: Props) {
 
         <div className="flex gap-6 flex-wrap">
           <div className="flex-shrink-0">
-            <HandMatrix readOnly grid={range.grid} />
+            <HandMatrix readOnly grid={range.grid} customActionColor={range.customAction?.color} />
           </div>
 
           <div className="flex-1 min-w-[200px]">

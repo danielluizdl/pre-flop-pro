@@ -438,9 +438,11 @@ function DrillActive() {
     const d = activeDrillRange!.grid[hand]
     if (!d) return ''
     const parts: string[] = []
+    const extraLabel = activeDrillRange!.customAction?.label
     if (d.allin > 0) parts.push(`${d.allin}% All-in`)
     if (d.raise > 0) parts.push(`${d.raise}% Raise`)
     if (d.call  > 0) parts.push(`${d.call}% Call`)
+    if (d.extra && d.extra > 0 && extraLabel) parts.push(`${d.extra}% ${extraLabel}`)
     if (parts.length === 0) return '100% Fold'
     if (d.fold  > 0) parts.push(`${d.fold}% Fold`)
     return parts.join(' e ')
@@ -480,11 +482,13 @@ function DrillActive() {
     setAnswered(true)
   }
 
+  const customAction = activeDrillRange?.customAction
   const actionBtns = [
     { label: 'FOLD', action: 'Fold', color: '#6b7280' },
     { label: 'CALL', action: 'Call', color: '#22c55e' },
     ...(currentHeroRaiseSize > 0 ? [{ label: `RAISE (${currentHeroRaiseSize}bb)`, action: 'Raise', color: '#ef4444' }] : []),
     { label: `ALL IN (${heroStack}bb)`, action: 'Allin', color: '#6b2d0d' },
+    ...(customAction ? [{ label: customAction.label.toUpperCase(), action: customAction.label, color: customAction.color }] : []),
   ]
 
   const stats = useStore(s => s.sessionStats)

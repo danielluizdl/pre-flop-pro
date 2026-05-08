@@ -30,19 +30,21 @@ export function generateSuits(hand: string): [string, string] {
   return [s1, s2]
 }
 
-export function getRngCorrectAction(data: HandData, rng: number): string {
+export function getRngCorrectAction(data: HandData, rng: number, extraLabel?: string): string {
   if (rng <= data.raise) return 'Raise'
   if (rng <= data.raise + data.call) return 'Call'
   if (rng <= data.raise + data.call + data.allin) return 'Allin'
+  if (extraLabel && data.extra && rng <= data.raise + data.call + data.allin + data.extra) return extraLabel
   return 'Fold'
 }
 
-export function getHighestFrequencyAction(data: HandData): string {
+export function getHighestFrequencyAction(data: HandData, extraLabel?: string): string {
   const opts = [
     { action: 'Raise', pct: data.raise },
     { action: 'Call',  pct: data.call  },
     { action: 'Allin', pct: data.allin },
     { action: 'Fold',  pct: data.fold  },
+    ...(extraLabel && data.extra ? [{ action: extraLabel, pct: data.extra }] : []),
   ]
   return opts.reduce((best, cur) => (cur.pct > best.pct ? cur : best)).action
 }

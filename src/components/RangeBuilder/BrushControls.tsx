@@ -1,13 +1,14 @@
 import { useStore } from '../../store/useStore'
 
 const PRESETS = [0, 25, 50, 75, 100]
+const CUSTOM_COLORS = ['#a855f7', '#f97316', '#06b6d4', '#eab308', '#ec4899', '#84cc16']
 
 interface ActionRowProps {
   label: string
   color: string
-  field: 'call' | 'raise' | 'allin'
+  field: 'call' | 'raise' | 'allin' | 'extra'
   value: number
-  onChange: (field: 'call' | 'raise' | 'allin', v: number) => void
+  onChange: (field: 'call' | 'raise' | 'allin' | 'extra', v: number) => void
   extra?: React.ReactNode
 }
 
@@ -53,9 +54,22 @@ function ActionRow({ label, color, field, value, onChange, extra }: ActionRowPro
 }
 
 export function BrushControls() {
-  const brush = useStore(s => s.brush)
+  const brush    = useStore(s => s.brush)
   const setBrush = useStore(s => s.setBrush)
-  const fold = Math.max(0, 100 - brush.call - brush.raise - brush.allin)
+  const fold = Math.max(0, 100 - brush.call - brush.raise - brush.allin - brush.extra)
+
+  function handleRemoveExtra() {
+    const state = useStore.getState()
+    const newGrid = { ...state.rangeData.grid }
+    Object.keys(newGrid).forEach(h => {
+      const d = newGrid[h]
+      if (d.extra) newGrid[h] = { ...d, fold: d.fold + d.extra, extra: 0 }
+    })
+    useStore.setState({
+      rangeData: { ...state.rangeData, grid: newGrid },
+      brush: { ...state.brush, extra: 0, extraLabel: '' },
+    })
+  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -92,6 +106,76 @@ export function BrushControls() {
       />
 
       <ActionRow label="All-In" color="#6b2d0d" field="allin" value={brush.allin} onChange={setBrush} />
+
+      {brush.extraLabel ? (
+        <div className="p-3 rounded-lg bg-gray-800 border border-gray-700 flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+              <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: brush.extraColor }} />
+              <input
+                type="text"
+                value={brush.extraLabel}
+                onChange={e => setBrush('extraLabel', e.target.value)}
+                className="flex-1 min-w-0 bg-transparent text-white font-semibold text-sm border-b border-gray-600 focus:border-brand-500 focus:outline-none"
+              />
+            </div>
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                className="w-12 p-1 text-right font-bold border border-gray-600 rounded text-sm bg-gray-900 text-white"
+                value={brush.extra}
+                min={0} max={100}
+                onChange={e => setBrush('extra', Number(e.target.value))}
+              />
+              <span className="text-sm text-gray-400">%</span>
+            </div>
+          </div>
+          <div className="flex gap-1.5">
+            {CUSTOM_COLORS.map(c => (
+              <button
+                key={c}
+                onClick={() => setBrush('extraColor', c)}
+                className="w-5 h-5 rounded-full border-2 transition-all flex-shrink-0"
+                style={{
+                  backgroundColor: c,
+                  borderColor: brush.extraColor === c ? 'white' : 'transparent',
+                  transform: brush.extraColor === c ? 'scale(1.2)' : 'scale(1)',
+                }}
+              />
+            ))}
+            <button
+              onClick={handleRemoveExtra}
+              className="ml-auto text-xs text-gray-500 hover:text-red-400 transition-colors"
+            >
+              remover
+            </button>
+          </div>
+          <input
+            type="range" min={0} max={100} value={brush.extra}
+            className="w-full cursor-pointer"
+            style={{ accentColor: brush.extraColor }}
+            onChange={e => setBrush('extra', Number(e.target.value))}
+          />
+          <div className="flex gap-1 justify-between">
+            {PRESETS.map(p => (
+              <button
+                key={p}
+                onClick={() => setBrush('extra', p)}
+                className="flex-1 py-1 text-xs border border-gray-600 bg-gray-900 rounded cursor-pointer text-gray-400 hover:bg-gray-700 hover:text-white transition-colors"
+              >
+                {p}%
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => setBrush('extraLabel', 'Custom')}
+          className="w-full py-2 border border-dashed border-gray-600 rounded-lg text-sm text-gray-500 hover:text-gray-300 hover:border-gray-400 transition-colors"
+        >
+          + Nova Condição
+        </button>
+      )}
     </div>
   )
 }

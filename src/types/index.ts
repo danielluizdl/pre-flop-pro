@@ -25,6 +25,7 @@ export interface HandData {
   call: number
   raise: number
   allin: number
+  extra?: number
   size?: number | string
 }
 
@@ -51,6 +52,7 @@ export interface Range {
   grid: Record<string, HandData>
   scenarios: Scenario[]
   tableSize: TableSize
+  customAction?: { label: string; color: string }
 }
 
 export interface PokerPosition {
@@ -74,7 +76,10 @@ export interface BrushState {
   call: number
   raise: number
   allin: number
+  extra: number
   raiseSize: string
+  extraLabel: string
+  extraColor: string
 }
 
 export interface HandHistoryEntry {

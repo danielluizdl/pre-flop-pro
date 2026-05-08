@@ -2,20 +2,32 @@ import { useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { Settings, LogOut } from 'lucide-react'
 
+const PUBLISHED_HASH_KEY = 'pfp-last-published-hash'
+
 export function AdminPanel() {
   const ranges          = useStore(s => s.ranges)
   const adminSaveRanges = useStore(s => s.adminSaveRanges)
   const logout          = useStore(s => s.logout)
 
-  const [open, setOpen]         = useState(false)
-  const [password, setPassword] = useState('')
-  const [status, setStatus]     = useState<'idle' | 'loading' | 'ok' | 'wrong' | 'error'>('idle')
+  const [open, setOpen]               = useState(false)
+  const [password, setPassword]       = useState('')
+  const [status, setStatus]           = useState<'idle' | 'loading' | 'ok' | 'wrong' | 'error'>('idle')
+  const [publishedHash, setPublishedHash] = useState(() => localStorage.getItem(PUBLISHED_HASH_KEY) ?? '')
+
+  const currentHash  = JSON.stringify(ranges)
+  const isPublished  = !!publishedHash && publishedHash === currentHash
 
   async function handlePublish() {
-    if (!password) return
+    if (!password || isPublished) return
     setStatus('loading')
     const result = await adminSaveRanges(password)
-    setStatus(result === 'ok' ? 'ok' : result === 'wrong_password' ? 'wrong' : 'error')
+    if (result === 'ok') {
+      localStorage.setItem(PUBLISHED_HASH_KEY, currentHash)
+      setPublishedHash(currentHash)
+      setStatus('ok')
+    } else {
+      setStatus(result === 'wrong_password' ? 'wrong' : 'error')
+    }
   }
 
   function handleClose() {
@@ -87,10 +99,10 @@ export function AdminPanel() {
 
             <button
               onClick={handlePublish}
-              disabled={!password || status === 'loading'}
+              disabled={!password || status === 'loading' || isPublished}
               className="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
             >
-              {status === 'loading' ? 'Publicando...' : 'Publicar'}
+              {status === 'loading' ? 'Publicando...' : isPublished ? 'Publicado' : 'Publicar'}
             </button>
           </div>
         </div>

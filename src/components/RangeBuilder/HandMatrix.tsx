@@ -5,16 +5,18 @@ import type { HandData } from '../../types'
 
 const C = { allin: '#6b2d0d', raise: '#ef4444', call: '#22c55e' }
 
-function cellBackground(data: HandData): string {
+function cellBackground(data: HandData, extraColor: string): string {
   const p1 = data.allin
   const p2 = p1 + data.raise
   const p3 = p2 + data.call
-  if (p3 === 0) return 'transparent'
+  const p4 = p3 + (data.extra ?? 0)
+  if (p4 === 0) return 'transparent'
   return `linear-gradient(to right,
     ${C.allin} 0% ${p1}%,
     ${C.raise} ${p1}% ${p2}%,
     ${C.call}  ${p2}% ${p3}%,
-    transparent ${p3}% 100%)`
+    ${extraColor} ${p3}% ${p4}%,
+    transparent ${p4}% 100%)`
 }
 
 type HandPerf = Record<string, { c: number; t: number }>
@@ -31,16 +33,18 @@ interface Props {
   readOnly?: boolean
   grid?: Record<string, HandData>
   heatmap?: HandPerf
+  customActionColor?: string
 }
 
 type ViewMode = 'actions' | 'heatmap'
 
-export function HandMatrix({ readOnly = false, grid: externalGrid, heatmap }: Props) {
-  const applyBrush = useStore(s => s.applyBrush)
-  const clearHand  = useStore(s => s.clearHand)
-  const brush      = useStore(s => s.brush)
-  const storeGrid  = useStore(s => s.rangeData.grid)
+export function HandMatrix({ readOnly = false, grid: externalGrid, heatmap, customActionColor }: Props) {
+  const applyBrush      = useStore(s => s.applyBrush)
+  const clearHand       = useStore(s => s.clearHand)
+  const brush           = useStore(s => s.brush)
+  const storeGrid       = useStore(s => s.rangeData.grid)
   const grid = externalGrid ?? storeGrid
+  const effectiveExtraColor = customActionColor ?? brush.extraColor
 
   const isDrawing  = useRef(false)
   const drawMode   = useRef<'apply' | 'clear'>('apply')
@@ -154,7 +158,7 @@ export function HandMatrix({ readOnly = false, grid: externalGrid, heatmap }: Pr
             const showActions  = !heatmap || viewMode === 'actions'
             const showHeatmap  = !!heatmap && viewMode === 'heatmap'
 
-            const bg    = showActions ? cellBackground(data) : 'transparent'
+            const bg    = showActions ? cellBackground(data, effectiveExtraColor) : 'transparent'
             const heat  = showHeatmap ? heatColor(heatmap[hand]) : null
 
             // In heatmap mode: in-range but untrained cells get a distinct base color

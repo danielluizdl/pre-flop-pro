@@ -220,81 +220,85 @@ export const useStore = create<AppState>()(
       // ── Range editor ──────────────────────────────────────────────────────────
       rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: [], tableSize: 6 },
       selectedEditorPositions: [],
-      brush: { call: 0, raise: 0, allin: 0, raiseSize: '' },
+      brush: { call: 0, raise: 0, allin: 0, extra: 0, raiseSize: '', extraLabel: '', extraColor: '#a855f7' },
 
       setBrush: (field, value) => {
         const { brush } = get()
-        if (field === 'raiseSize') {
-          set({ brush: { ...brush, raiseSize: value as string } })
+        if (field === 'raiseSize' || field === 'extraLabel' || field === 'extraColor') {
+          set({ brush: { ...brush, [field]: value as string } })
           return
         }
         let v = Math.max(0, Math.min(100, Number(value)))
-        // Clicking 100% zeroes the other two actions
         if (v === 100) {
-          set({ brush: { ...brush, call: field === 'call' ? 100 : 0, raise: field === 'raise' ? 100 : 0, allin: field === 'allin' ? 100 : 0 } })
+          set({ brush: { ...brush, call: field === 'call' ? 100 : 0, raise: field === 'raise' ? 100 : 0, allin: field === 'allin' ? 100 : 0, extra: field === 'extra' ? 100 : 0 } })
           return
         }
         let c = field === 'call' ? v : brush.call
         let r = field === 'raise' ? v : brush.raise
         let a = field === 'allin' ? v : brush.allin
-        const total = c + r + a
+        let e = field === 'extra' ? v : brush.extra
+        const total = c + r + a + e
         if (total > 100) {
           const excess = total - 100
           const others = ([
             { t: 'call' as const, v: c },
             { t: 'raise' as const, v: r },
             { t: 'allin' as const, v: a },
-          ] as { t: 'call' | 'raise' | 'allin'; v: number }[])
+            { t: 'extra' as const, v: e },
+          ] as { t: 'call' | 'raise' | 'allin' | 'extra'; v: number }[])
             .filter(o => o.t !== field)
             .sort((x, y) => y.v - x.v)
+          const reduce = (key: 'call' | 'raise' | 'allin' | 'extra', amt: number) => {
+            if (key === 'call') c = Math.max(0, c - amt)
+            else if (key === 'raise') r = Math.max(0, r - amt)
+            else if (key === 'allin') a = Math.max(0, a - amt)
+            else e = Math.max(0, e - amt)
+          }
           if (others.length > 0) {
-            const reduce = (key: 'call' | 'raise' | 'allin', amt: number) => {
-              if (key === 'call') c = Math.max(0, c - amt)
-              else if (key === 'raise') r = Math.max(0, r - amt)
-              else a = Math.max(0, a - amt)
-            }
             reduce(others[0].t, excess)
-            const remaining = c + r + a - 100
-            if (remaining > 0 && others.length > 1) reduce(others[1].t, remaining)
+            const rem1 = c + r + a + e - 100
+            if (rem1 > 0 && others.length > 1) reduce(others[1].t, rem1)
+            const rem2 = c + r + a + e - 100
+            if (rem2 > 0 && others.length > 2) reduce(others[2].t, rem2)
           }
         }
-        set({ brush: { ...brush, call: c, raise: r, allin: a } })
+        set({ brush: { ...brush, call: c, raise: r, allin: a, extra: e } })
       },
 
       applyBrush: (hand) => {
         const { brush, rangeData } = get()
-        const total = brush.call + brush.raise + brush.allin
+        const total = brush.call + brush.raise + brush.allin + brush.extra
         if (total > 100) return
         const fold = 100 - total
         const newGrid = {
           ...rangeData.grid,
-          [hand]: { call: brush.call, raise: brush.raise, allin: brush.allin, fold, size: brush.raiseSize },
+          [hand]: { call: brush.call, raise: brush.raise, allin: brush.allin, extra: brush.extra, fold, size: brush.raiseSize },
         }
         set({ rangeData: { ...rangeData, grid: newGrid } })
       },
 
       applyBrushToHands: (hands) => {
         const { brush, rangeData } = get()
-        const total = brush.call + brush.raise + brush.allin
+        const total = brush.call + brush.raise + brush.allin + brush.extra
         if (total > 100) return
         const fold = 100 - total
         const newGrid = { ...rangeData.grid }
         hands.forEach(hand => {
-          newGrid[hand] = { call: brush.call, raise: brush.raise, allin: brush.allin, fold, size: brush.raiseSize }
+          newGrid[hand] = { call: brush.call, raise: brush.raise, allin: brush.allin, extra: brush.extra, fold, size: brush.raiseSize }
         })
         set({ rangeData: { ...rangeData, grid: newGrid } })
       },
 
       clearHand: (hand) => {
         const { rangeData } = get()
-        const newGrid = { ...rangeData.grid, [hand]: { fold: 100, call: 0, raise: 0, allin: 0, size: '' } }
+        const newGrid = { ...rangeData.grid, [hand]: { fold: 100, call: 0, raise: 0, allin: 0, extra: 0, size: '' } }
         set({ rangeData: { ...rangeData, grid: newGrid } })
       },
 
       clearHands: (hands) => {
         const { rangeData } = get()
         const newGrid = { ...rangeData.grid }
-        hands.forEach(hand => { newGrid[hand] = { fold: 100, call: 0, raise: 0, allin: 0, size: '' } })
+        hands.forEach(hand => { newGrid[hand] = { fold: 100, call: 0, raise: 0, allin: 0, extra: 0, size: '' } })
         set({ rangeData: { ...rangeData, grid: newGrid } })
       },
 
@@ -315,18 +319,22 @@ export const useStore = create<AppState>()(
       },
 
       loadRangeForEdit: (id) => {
-        const { ranges } = get()
+        const { ranges, brush } = get()
         const r = ranges.find(x => x.id === id)
         if (!r) return
         const tSize: TableSize = r.tableSize || 6
         const positions = tSize === 6 ? POS_6MAX : POS_8MAX
         const slots = tSize === 6 ? SLOTS_6MAX : SLOTS_8MAX
         const ante = r.scenarios?.[0]?.ante ?? 0
+        const brushExtra = r.customAction
+          ? { extraLabel: r.customAction.label, extraColor: r.customAction.color, extra: brush.extra }
+          : { extraLabel: '', extraColor: '#a855f7', extra: 0 }
         set({
           rangeData: { id: r.id, name: r.name, positions: r.positions, grid: JSON.parse(JSON.stringify(r.grid)), tableSize: tSize },
           tempScenarios: r.scenarios ? JSON.parse(JSON.stringify(r.scenarios)) : [],
           selectedEditorPositions: [...r.positions],
           currentTableSize: tSize,
+          brush: { ...brush, ...brushExtra },
           activePositions: positions,
           activeSlots: slots,
           currentAnte: ante,
@@ -341,6 +349,7 @@ export const useStore = create<AppState>()(
       currentHasStraddle: false,
 
       setupNewRange: (size, hasStraddle, ante) => {
+        const { brush } = get()
         const positions = size === 6 ? POS_6MAX : POS_8MAX
         const slots = size === 6 ? SLOTS_6MAX : SLOTS_8MAX
         const scenario: Record<string, PositionConfig> = {}
@@ -363,6 +372,7 @@ export const useStore = create<AppState>()(
           rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: [], tableSize: size },
           tempScenarios: [],
           selectedEditorPositions: [],
+          brush: { ...brush, extra: 0, extraLabel: '', extraColor: '#a855f7' },
           page: 'editor',
         })
       },
@@ -484,7 +494,7 @@ export const useStore = create<AppState>()(
       },
 
       finalizeRange: () => {
-        const { rangeData, tempScenarios, ranges, currentTableSize, selectedEditorPositions } = get()
+        const { rangeData, tempScenarios, ranges, currentTableSize, selectedEditorPositions, brush } = get()
         const isEditing = rangeData.id !== null
         const newId = isEditing ? rangeData.id! : Date.now()
         const finalObj: Range = {
@@ -494,6 +504,7 @@ export const useStore = create<AppState>()(
           grid: JSON.parse(JSON.stringify(rangeData.grid)),
           scenarios: JSON.parse(JSON.stringify(tempScenarios)),
           tableSize: currentTableSize,
+          ...(brush.extraLabel ? { customAction: { label: brush.extraLabel, color: brush.extraColor } } : {}),
         }
         let newRanges: Range[]
         if (isEditing) {
@@ -612,9 +623,10 @@ export const useStore = create<AppState>()(
         const rng = Math.ceil(Math.random() * 100)
         const handData = range.grid[hand]
         const { useRngForFrequency } = get()
+        const extraLabel = range.customAction?.label
         const correctAction = useRngForFrequency
-          ? getRngCorrectAction(handData, rng)
-          : getHighestFrequencyAction(handData)
+          ? getRngCorrectAction(handData, rng, extraLabel)
+          : getHighestFrequencyAction(handData, extraLabel)
         const suits = generateSuits(hand)
 
         set({
