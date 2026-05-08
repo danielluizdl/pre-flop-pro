@@ -99,6 +99,7 @@ export interface HandHistoryEntry {
 export interface StackGrid {
   stackRange: string
   grid: Record<string, HandData>
+  name?: string
 }
 
 export interface SessionGrid {

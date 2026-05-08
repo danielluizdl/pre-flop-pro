@@ -3,6 +3,7 @@ import { useStore } from '../../store/useStore'
 import { PokerTableEditor } from '../ui/PokerTableEditor'
 import { SEAT_ROLE_LABELS } from '../../types'
 import type { PositionConfig } from '../../types'
+import { countNonFoldHands } from '../../utils/hands'
 
 function getStackLabel(data: Record<string, PositionConfig>): string {
   const stacks = Object.values(data).map(p => p.stack)
@@ -30,27 +31,31 @@ function getScenarioSummary(
 }
 
 export function TableEditorPage() {
-  const activePositions      = useStore(s => s.activePositions)
-  const currentScenario      = useStore(s => s.currentScenario)
-  const currentAnte          = useStore(s => s.currentAnte)
-  const tempScenarios        = useStore(s => s.tempScenarios)
-  const currentHeroRaiseSize = useStore(s => s.currentHeroRaiseSize)
-  const initTableConfig      = useStore(s => s.initTableConfig)
-  const updateHero           = useStore(s => s.updateHero)
-  const updateRole           = useStore(s => s.updateRole)
-  const updateBet            = useStore(s => s.updateBet)
-  const updateStack          = useStore(s => s.updateStack)
-  const setHeroRaiseSize     = useStore(s => s.setHeroRaiseSize)
-  const setAllStacks         = useStore(s => s.setAllStacks)
-  const addScenario          = useStore(s => s.addScenarioToBuffer)
-  const updateScenario       = useStore(s => s.updateScenarioInBuffer)
-  const removeScenario       = useStore(s => s.removeScenario)
-  const loadScenario         = useStore(s => s.loadScenarioFromBuffer)
-  const finalizeRange        = useStore(s => s.finalizeRange)
-  const setPage              = useStore(s => s.setPage)
+  const activePositions       = useStore(s => s.activePositions)
+  const currentScenario       = useStore(s => s.currentScenario)
+  const currentAnte           = useStore(s => s.currentAnte)
+  const tempScenarios         = useStore(s => s.tempScenarios)
+  const currentHeroRaiseSize  = useStore(s => s.currentHeroRaiseSize)
+  const initTableConfig       = useStore(s => s.initTableConfig)
+  const updateHero            = useStore(s => s.updateHero)
+  const updateRole            = useStore(s => s.updateRole)
+  const updateBet             = useStore(s => s.updateBet)
+  const updateStack           = useStore(s => s.updateStack)
+  const setHeroRaiseSize      = useStore(s => s.setHeroRaiseSize)
+  const setAllStacks          = useStore(s => s.setAllStacks)
+  const addScenario           = useStore(s => s.addScenarioToBuffer)
+  const updateScenario        = useStore(s => s.updateScenarioInBuffer)
+  const removeScenario        = useStore(s => s.removeScenario)
+  const loadScenario          = useStore(s => s.loadScenarioFromBuffer)
+  const finalizeRange         = useStore(s => s.finalizeRange)
+  const setPage               = useStore(s => s.setPage)
+  const sessionGrids          = useStore(s => s.sessionGrids)
+  const rangeData             = useStore(s => s.rangeData)
 
-  const [customStack, setCustomStack] = useState(0)
-  const [editingIdx, setEditingIdx]   = useState<number | null>(null)
+  const [customStack, setCustomStack]     = useState(0)
+  const [editingIdx, setEditingIdx]       = useState<number | null>(null)
+  const [nameModalOpen, setNameModalOpen] = useState(false)
+  const [primaryName, setPrimaryName]     = useState('')
 
   useEffect(() => {
     if (Object.keys(currentScenario).length === 0) initTableConfig()
@@ -59,6 +64,11 @@ export function TableEditorPage() {
   const numPlayers = activePositions.length
   let pot = currentAnte * numPlayers
   activePositions.forEach(p => { pot += parseFloat(String(currentScenario[p.id]?.bet ?? 0)) })
+
+  // Grids of the same position (session + current) that will be merged
+  const posKey = [...rangeData.positions].sort().join(',')
+  const samePosSessions = sessionGrids.filter(sg => [...sg.positions].sort().join(',') === posKey)
+  const willBeCombined  = samePosSessions.length > 0
 
   function handleAddScenario() {
     const summary = getScenarioSummary(currentScenario, activePositions)
@@ -79,7 +89,18 @@ export function TableEditorPage() {
       const summary = getScenarioSummary(currentScenario, activePositions)
       addScenario(pot.toFixed(1), summary)
     }
-    finalizeRange()
+    if (willBeCombined) {
+      setPrimaryName(samePosSessions[0]?.name ?? rangeData.name)
+      setNameModalOpen(true)
+    } else {
+      finalizeRange()
+    }
+  }
+
+  function handleConfirmName() {
+    if (!primaryName.trim()) { alert('Digite um nome para o range.'); return }
+    setNameModalOpen(false)
+    finalizeRange(primaryName.trim())
   }
 
   return (
@@ -309,6 +330,64 @@ export function TableEditorPage() {
           </div>
         </div>
       </div>
+
+      {/* Name modal for combined ranges */}
+      {nameModalOpen && (
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+          onClick={() => setNameModalOpen(false)}
+        >
+          <div
+            className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-md w-full"
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 className="font-bold text-white text-lg mb-1">Nome do Range</h3>
+            <p className="text-xs text-gray-400 mb-4">
+              {samePosSessions.length + 1} variações de stack serão salvas em um único range. Escolha o nome principal.
+            </p>
+
+            {/* Preview das variações */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {[...samePosSessions, { name: rangeData.name, stackRange: rangeData.stackRange, grid: rangeData.grid, positions: rangeData.positions }].map((sg, i) => (
+                <div key={i} className="flex items-center gap-1.5 bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5">
+                  <span className="text-xs text-gray-300">{sg.name}</span>
+                  {sg.stackRange && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-900/40 border border-brand-700/50 text-brand-400 leading-tight">
+                      {sg.stackRange}
+                    </span>
+                  )}
+                  <span className="text-xs text-gray-500">{countNonFoldHands(sg.grid)} mãos</span>
+                </div>
+              ))}
+            </div>
+
+            <input
+              type="text"
+              autoFocus
+              className="w-full px-3 py-2.5 border border-gray-600 rounded-lg text-sm bg-gray-800 text-white placeholder-gray-500 focus:border-brand-500 focus:outline-none mb-4"
+              placeholder="Ex: Defesa BB vs UTG"
+              value={primaryName}
+              onChange={e => setPrimaryName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleConfirmName() }}
+            />
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleConfirmName}
+                className="flex-1 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-lg font-bold transition-colors"
+              >
+                Confirmar
+              </button>
+              <button
+                onClick={() => setNameModalOpen(false)}
+                className="px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-bold transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

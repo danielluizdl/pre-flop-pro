@@ -133,7 +133,7 @@ interface AppState {
   updateScenarioInBuffer: (idx: number, pot: string, summary: string) => void
   removeScenario: (idx: number) => void
   loadScenarioFromBuffer: (idx: number) => void
-  finalizeRange: () => void
+  finalizeRange: (primaryName?: string) => void
   sessionGrids: SessionGrid[]
   pushGridToSession: () => void
   updateSessionGrid: (idx: number, sg: SessionGrid) => void
@@ -344,13 +344,13 @@ export const useStore = create<AppState>()(
         if (r.stackGrids && r.stackGrids.length > 0) {
           const firstGrid = r.stackGrids[0]
           const sessionGridsFromRange: SessionGrid[] = r.stackGrids.slice(1).map(sg => ({
-            name: r.name,
+            name: sg.name ?? r.name,
             stackRange: sg.stackRange,
             grid: JSON.parse(JSON.stringify(sg.grid)),
             positions: [...r.positions],
           }))
           set({
-            rangeData: { id: r.id, name: r.name, positions: r.positions, grid: JSON.parse(JSON.stringify(firstGrid.grid)), tableSize: tSize, stackRange: firstGrid.stackRange },
+            rangeData: { id: r.id, name: firstGrid.name ?? r.name, positions: r.positions, grid: JSON.parse(JSON.stringify(firstGrid.grid)), tableSize: tSize, stackRange: firstGrid.stackRange },
             tempScenarios: r.scenarios ? JSON.parse(JSON.stringify(r.scenarios)) : [],
             selectedEditorPositions: [...r.positions],
             currentTableSize: tSize,
@@ -531,7 +531,7 @@ export const useStore = create<AppState>()(
         })
       },
 
-      finalizeRange: () => {
+      finalizeRange: (primaryName) => {
         const { rangeData, tempScenarios, ranges, currentTableSize, selectedEditorPositions, brush, sessionGrids } = get()
         const isEditing = rangeData.id !== null
         const baseId = Date.now()
@@ -573,10 +573,11 @@ export const useStore = create<AppState>()(
             const stackGridsList: StackGrid[] = grids.map(g => ({
               stackRange: g.stackRange,
               grid: JSON.parse(JSON.stringify(g.grid)),
+              name: g.name,
             }))
             groupedRanges.push({
               id: thisId,
-              name: grids[0].name,
+              name: primaryName ?? grids[0].name,
               positions: grids[0].positions,
               grid: JSON.parse(JSON.stringify(grids[0].grid)),
               stackGrids: stackGridsList,
