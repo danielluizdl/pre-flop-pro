@@ -3,7 +3,7 @@ import { useStore } from '../../store/useStore'
 import { HandMatrix } from './HandMatrix'
 import { BrushControls } from './BrushControls'
 import { HandQuickSelect } from '../ui/HandQuickSelect'
-import { countNonFoldHands } from '../../utils/hands'
+import { countNonFoldHands, stackRangesOverlap } from '../../utils/hands'
 import type { SessionGrid } from '../../types'
 
 export function RangeEditorPage() {
@@ -20,8 +20,25 @@ export function RangeEditorPage() {
   const pushGridToSession = useStore(s => s.pushGridToSession)
   const updateSessionGrid = useStore(s => s.updateSessionGrid)
 
-  const [editingIdx, setEditingIdx]         = useState<number | null>(null)
-  const [snapshot, setSnapshot]             = useState<SessionGrid | null>(null)
+  const [editingIdx, setEditingIdx] = useState<number | null>(null)
+  const [snapshot, setSnapshot]     = useState<SessionGrid | null>(null)
+
+  // Returns overlap error message against session grids of the same position,
+  // optionally excluding one index (for save-edit validation).
+  function checkOverlap(stackRange: string, excludeIdx: number | null = null): string | null {
+    if (!stackRange) return null
+    const posKey = [...selectedPositions].sort().join(',')
+    for (let i = 0; i < sessionGrids.length; i++) {
+      if (i === excludeIdx) continue
+      const sg = sessionGrids[i]
+      const sgKey = [...sg.positions].sort().join(',')
+      if (sgKey !== posKey) continue
+      if (stackRangesOverlap(stackRange, sg.stackRange)) {
+        return `"${stackRange}" se sobrepõe com "${sg.stackRange || 'sem range'}" (grid #${i + 1}).`
+      }
+    }
+    return null
+  }
 
   function validate() {
     if (!rangeData.name.trim()) { alert('Dê um nome ao range.'); return false }
@@ -31,6 +48,8 @@ export function RangeEditorPage() {
 
   function handleNext() {
     if (!validate()) return
+    const overlapMsg = checkOverlap(rangeData.stackRange)
+    if (overlapMsg) { alert(`Stack range inválido: ${overlapMsg}`); return }
     useStore.setState({
       rangeData: { ...rangeData, positions: [...selectedPositions] },
       ...(sessionGrids.length === 0 ? { tempScenarios: [] } : {}),
@@ -41,6 +60,8 @@ export function RangeEditorPage() {
 
   function handlePushToSession() {
     if (!validate()) return
+    const overlapMsg = checkOverlap(rangeData.stackRange)
+    if (overlapMsg) { alert(`Stack range inválido: ${overlapMsg}`); return }
     pushGridToSession()
   }
 
@@ -71,6 +92,8 @@ export function RangeEditorPage() {
 
   function handleSaveSessionEdit() {
     if (editingIdx === null) return
+    const overlapMsg = checkOverlap(rangeData.stackRange, editingIdx)
+    if (overlapMsg) { alert(`Stack range inválido: ${overlapMsg}`); return }
     updateSessionGrid(editingIdx, {
       name: rangeData.name,
       stackRange: rangeData.stackRange,

@@ -340,18 +340,41 @@ export const useStore = create<AppState>()(
         const brushExtra = r.customAction
           ? { extraLabel: r.customAction.label, extraColor: r.customAction.color, extra: brush.extra }
           : { extraLabel: '', extraColor: '#a855f7', extra: 0 }
-        set({
-          rangeData: { id: r.id, name: r.name, positions: r.positions, grid: JSON.parse(JSON.stringify(r.grid)), tableSize: tSize, stackRange: r.stackRange ?? '' },
-          tempScenarios: r.scenarios ? JSON.parse(JSON.stringify(r.scenarios)) : [],
-          selectedEditorPositions: [...r.positions],
-          currentTableSize: tSize,
-          sessionGrids: [],
-          brush: { ...brush, ...brushExtra },
-          activePositions: positions,
-          activeSlots: slots,
-          currentAnte: ante,
-          page: 'editor',
-        })
+
+        if (r.stackGrids && r.stackGrids.length > 0) {
+          const firstGrid = r.stackGrids[0]
+          const sessionGridsFromRange: SessionGrid[] = r.stackGrids.slice(1).map(sg => ({
+            name: r.name,
+            stackRange: sg.stackRange,
+            grid: JSON.parse(JSON.stringify(sg.grid)),
+            positions: [...r.positions],
+          }))
+          set({
+            rangeData: { id: r.id, name: r.name, positions: r.positions, grid: JSON.parse(JSON.stringify(firstGrid.grid)), tableSize: tSize, stackRange: firstGrid.stackRange },
+            tempScenarios: r.scenarios ? JSON.parse(JSON.stringify(r.scenarios)) : [],
+            selectedEditorPositions: [...r.positions],
+            currentTableSize: tSize,
+            sessionGrids: sessionGridsFromRange,
+            brush: { ...brush, ...brushExtra },
+            activePositions: positions,
+            activeSlots: slots,
+            currentAnte: ante,
+            page: 'editor',
+          })
+        } else {
+          set({
+            rangeData: { id: r.id, name: r.name, positions: r.positions, grid: JSON.parse(JSON.stringify(r.grid)), tableSize: tSize, stackRange: r.stackRange ?? '' },
+            tempScenarios: r.scenarios ? JSON.parse(JSON.stringify(r.scenarios)) : [],
+            selectedEditorPositions: [...r.positions],
+            currentTableSize: tSize,
+            sessionGrids: [],
+            brush: { ...brush, ...brushExtra },
+            activePositions: positions,
+            activeSlots: slots,
+            currentAnte: ante,
+            page: 'editor',
+          })
+        }
       },
 
       sessionRangeIds: [],
@@ -515,69 +538,68 @@ export const useStore = create<AppState>()(
         const scenarios: Scenario[] = JSON.parse(JSON.stringify(tempScenarios))
         const customAction = brush.extraLabel ? { label: brush.extraLabel, color: brush.extraColor } : undefined
 
-        let newRanges: Range[]
+        // Group all grids (session + current) by position
+        type GridEntry = { name: string; stackRange: string; grid: Record<string, HandData>; positions: string[] }
+        const allEntries: GridEntry[] = [
+          ...sessionGrids,
+          { name: rangeData.name, stackRange: rangeData.stackRange, grid: JSON.parse(JSON.stringify(rangeData.grid)), positions: [...selectedEditorPositions] },
+        ]
+        const groups = new Map<string, GridEntry[]>()
+        allEntries.forEach(g => {
+          const key = [...g.positions].sort().join(',')
+          if (!groups.has(key)) groups.set(key, [])
+          groups.get(key)!.push(g)
+        })
 
-        if (isEditing) {
-          const newId = rangeData.id!
-          const finalObj: Range = {
-            id: newId,
-            name: rangeData.name,
-            positions: selectedEditorPositions,
-            grid: JSON.parse(JSON.stringify(rangeData.grid)),
-            scenarios,
-            tableSize: currentTableSize,
-            ...(customAction ? { customAction } : {}),
-            ...(rangeData.stackRange ? { stackRange: rangeData.stackRange } : {}),
+        const primaryKey = [...selectedEditorPositions].sort().join(',')
+        let idSeed = baseId
+        const groupedRanges: Range[] = []
+        groups.forEach((grids, posKey) => {
+          idSeed++
+          const thisId = isEditing && posKey === primaryKey ? rangeData.id! : idSeed
+          if (grids.length === 1) {
+            const g = grids[0]
+            groupedRanges.push({
+              id: thisId,
+              name: g.name,
+              positions: g.positions,
+              grid: JSON.parse(JSON.stringify(g.grid)),
+              scenarios,
+              tableSize: currentTableSize,
+              ...(customAction ? { customAction } : {}),
+              ...(g.stackRange ? { stackRange: g.stackRange } : {}),
+            })
+          } else {
+            const stackGridsList: StackGrid[] = grids.map(g => ({
+              stackRange: g.stackRange,
+              grid: JSON.parse(JSON.stringify(g.grid)),
+            }))
+            groupedRanges.push({
+              id: thisId,
+              name: grids[0].name,
+              positions: grids[0].positions,
+              grid: JSON.parse(JSON.stringify(grids[0].grid)),
+              stackGrids: stackGridsList,
+              scenarios,
+              tableSize: currentTableSize,
+              ...(customAction ? { customAction } : {}),
+            })
           }
-          const idx = ranges.findIndex(r => r.id === newId)
-          newRanges = idx !== -1 ? ranges.map(r => r.id === newId ? finalObj : r) : [...ranges, finalObj]
-        } else {
-          // Group all grids (session + current) by position
-          type GridEntry = { name: string; stackRange: string; grid: Record<string, HandData>; positions: string[] }
-          const allEntries: GridEntry[] = [
-            ...sessionGrids,
-            { name: rangeData.name, stackRange: rangeData.stackRange, grid: JSON.parse(JSON.stringify(rangeData.grid)), positions: [...selectedEditorPositions] },
-          ]
-          const groups = new Map<string, GridEntry[]>()
-          allEntries.forEach(g => {
-            const key = [...g.positions].sort().join(',')
-            if (!groups.has(key)) groups.set(key, [])
-            groups.get(key)!.push(g)
-          })
+        })
 
-          let idSeed = baseId
-          const groupedRanges: Range[] = []
-          groups.forEach(grids => {
-            idSeed++
-            if (grids.length === 1) {
-              const g = grids[0]
-              groupedRanges.push({
-                id: idSeed,
-                name: g.name,
-                positions: g.positions,
-                grid: JSON.parse(JSON.stringify(g.grid)),
-                scenarios,
-                tableSize: currentTableSize,
-                ...(customAction ? { customAction } : {}),
-                ...(g.stackRange ? { stackRange: g.stackRange } : {}),
-              })
-            } else {
-              const stackGridsList: StackGrid[] = grids.map(g => ({
-                stackRange: g.stackRange,
-                grid: JSON.parse(JSON.stringify(g.grid)),
-              }))
-              groupedRanges.push({
-                id: idSeed,
-                name: grids[0].name,
-                positions: grids[0].positions,
-                grid: JSON.parse(JSON.stringify(grids[0].grid)),
-                stackGrids: stackGridsList,
-                scenarios,
-                tableSize: currentTableSize,
-                ...(customAction ? { customAction } : {}),
-              })
-            }
-          })
+        let newRanges: Range[]
+        if (isEditing) {
+          const editedId = rangeData.id!
+          const primary = groupedRanges.find(r => r.id === editedId)
+          const extras = groupedRanges.filter(r => r.id !== editedId)
+          const editedIdx = ranges.findIndex(r => r.id === editedId)
+          if (editedIdx !== -1 && primary) {
+            newRanges = ranges.map(r => r.id === editedId ? primary : r)
+            newRanges = [...newRanges, ...extras]
+          } else {
+            newRanges = [...ranges, ...groupedRanges]
+          }
+        } else {
           newRanges = [...ranges, ...groupedRanges]
         }
 

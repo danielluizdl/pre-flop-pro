@@ -121,3 +121,26 @@ export function getBroadwaysOffsuit(): string[] {
       h.push(broadways[i] + broadways[j] + 'o')
   return h
 }
+
+// ── Stack range overlap detection ──────────────────────────────────────────
+
+function parseStackRange(str: string): [number, number] | null {
+  if (!str) return null
+  const s = str.replace(/bb/gi, '').trim()
+  const le = s.match(/^<=?\s*(\d+(?:\.\d+)?)$/)
+  if (le) return [0, Number(le[1])]
+  const ge = s.match(/^>=?\s*(\d+(?:\.\d+)?)$/)
+  if (ge) return [Number(ge[1]), Infinity]
+  const rng = s.match(/^(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)$/)
+  if (rng) return [Number(rng[1]), Number(rng[2])]
+  const exact = s.match(/^(\d+(?:\.\d+)?)$/)
+  if (exact) { const n = Number(exact[1]); return [n, n] }
+  return null
+}
+
+export function stackRangesOverlap(a: string, b: string): boolean {
+  const ra = parseStackRange(a)
+  const rb = parseStackRange(b)
+  if (!ra || !rb) return false
+  return ra[0] <= rb[1] && rb[0] <= ra[1]
+}
