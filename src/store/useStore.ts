@@ -158,6 +158,7 @@ interface AppState {
   handHistory: HandHistoryEntry[]
   currentRng: number
   correctActionForCurrentHand: string
+  correctActionsForCurrentHand: string[]
   currentHandSuits: [string, string]
   sessionStartTime: number
 
@@ -672,6 +673,7 @@ export const useStore = create<AppState>()(
       handHistory: [],
       currentRng: 0,
       correctActionForCurrentHand: 'Fold',
+      correctActionsForCurrentHand: ['Fold'],
       currentHandSuits: ['h', 's'],
       sessionStartTime: 0,
 
@@ -761,9 +763,15 @@ export const useStore = create<AppState>()(
         const handData = activeGrid[hand]
         const { useRngForFrequency } = get()
         const extraLabel = range.customAction?.label
-        const correctAction = useRngForFrequency
-          ? getRngCorrectAction(handData, rng, extraLabel)
-          : getTopFrequencyActions(handData, extraLabel).join(' ou ')
+        let correctAction: string
+        let correctActions: string[]
+        if (useRngForFrequency) {
+          correctAction = getRngCorrectAction(handData, rng, extraLabel)
+          correctActions = [correctAction]
+        } else {
+          correctActions = getTopFrequencyActions(handData, extraLabel)
+          correctAction = correctActions.join(' ou ')
+        }
         const suits = generateSuits(hand)
 
         set({
@@ -778,6 +786,7 @@ export const useStore = create<AppState>()(
           currentTableSize: rSize,
           currentRng: rng,
           correctActionForCurrentHand: correctAction,
+          correctActionsForCurrentHand: correctActions,
           currentHandSuits: suits,
           currentHeroRaiseSize: heroRaiseFromScen,
         })
@@ -787,8 +796,8 @@ export const useStore = create<AppState>()(
       checkDrillAnswer: (action) => {
         const {
           activeDrillRange, activeDrillStackGridIdx, activeHand, sessionStats,
-          currentRng, correctActionForCurrentHand, currentHandSuits, handHistory,
-          useRngForFrequency,
+          currentRng, correctActionForCurrentHand, correctActionsForCurrentHand,
+          currentHandSuits, handHistory, useRngForFrequency,
         } = get()
         if (!activeDrillRange) return { correct: false, message: '' }
 
@@ -796,11 +805,10 @@ export const useStore = create<AppState>()(
           ? activeDrillRange.stackGrids[activeDrillStackGridIdx].grid
           : activeDrillRange.grid
         const d = activeGrid[activeHand]
-        const extraLabel = activeDrillRange.customAction?.label
 
         const correct = useRngForFrequency
           ? action === correctActionForCurrentHand
-          : getTopFrequencyActions(d, extraLabel).includes(action)
+          : correctActionsForCurrentHand.includes(action)
 
         const stats = { ...sessionStats, hands: sessionStats.hands + 1 }
         if (correct) stats.correct++; else stats.errors++
