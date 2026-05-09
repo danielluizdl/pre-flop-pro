@@ -1,5 +1,5 @@
 {
-  "version": 1778251145545,
+  "version": 1778331541539,
   "ranges": [
     {
       "id": 1777977759033,
@@ -35445,7 +35445,6 @@
     {
       "id": 2000000001,
       "name": "STR 3B vs RFI MP-CO",
-      "tableSize": 8,
       "positions": [
         "STR"
       ],
@@ -36535,13 +36534,13 @@
       "scenarios": [
         {
           "id": 1777581905323,
-          "pot": "10.5",
+          "pot": "9.5",
           "ante": 0,
-          "summary": "STR 3bet (3bb) → UTG Open (6bb)",
+          "summary": "STR 3bet (2bb) → UTG Open (6bb)",
           "heroRaiseSize": 24,
           "data": {
             "bb": {
-              "role": "post",
+              "role": "fold",
               "bet": 1,
               "isHero": false,
               "stack": 250
@@ -36565,14 +36564,14 @@
               "stack": 250
             },
             "sb": {
-              "role": "post",
+              "role": "fold",
               "bet": 0.5,
               "isHero": false,
               "stack": 250
             },
             "str": {
               "role": "3bet",
-              "bet": 3,
+              "bet": 2,
               "isHero": true,
               "stack": 250
             },
@@ -36592,13 +36591,13 @@
         },
         {
           "id": 1777581910806,
-          "pot": "10.5",
+          "pot": "9.5",
           "ante": 0,
-          "summary": "STR 3bet (3bb) → UTG+1 Open (6bb)",
+          "summary": "STR 3bet (2bb) → MP Open (6bb)",
           "heroRaiseSize": 24,
           "data": {
             "bb": {
-              "role": "post",
+              "role": "fold",
               "bet": 1,
               "isHero": false,
               "stack": 250
@@ -36622,14 +36621,14 @@
               "stack": 250
             },
             "sb": {
-              "role": "post",
+              "role": "fold",
               "bet": 0.5,
               "isHero": false,
               "stack": 250
             },
             "str": {
               "role": "3bet",
-              "bet": 3,
+              "bet": 2,
               "isHero": true,
               "stack": 250
             },
@@ -36649,13 +36648,13 @@
         },
         {
           "id": 1777581916050,
-          "pot": "10.5",
+          "pot": "9.5",
           "ante": 0,
-          "summary": "STR 3bet (3bb) → MP Open (6bb)",
+          "summary": "STR 3bet (2bb) → HJ Open (6bb)",
           "heroRaiseSize": 24,
           "data": {
             "bb": {
-              "role": "post",
+              "role": "fold",
               "bet": 1,
               "isHero": false,
               "stack": 250
@@ -36679,14 +36678,14 @@
               "stack": 250
             },
             "sb": {
-              "role": "post",
+              "role": "fold",
               "bet": 0.5,
               "isHero": false,
               "stack": 250
             },
             "str": {
               "role": "3bet",
-              "bet": 3,
+              "bet": 2,
               "isHero": true,
               "stack": 250
             },
@@ -36706,13 +36705,13 @@
         },
         {
           "id": 1777581921118,
-          "pot": "10.5",
+          "pot": "9.5",
           "ante": 0,
-          "summary": "STR 3bet (3bb) → CO Open (6bb)",
+          "summary": "STR 3bet (2bb) → CO Open (6bb)",
           "heroRaiseSize": 24,
           "data": {
             "bb": {
-              "role": "post",
+              "role": "fold",
               "bet": 1,
               "isHero": false,
               "stack": 250
@@ -36736,14 +36735,14 @@
               "stack": 250
             },
             "sb": {
-              "role": "post",
+              "role": "fold",
               "bet": 0.5,
               "isHero": false,
               "stack": 250
             },
             "str": {
               "role": "3bet",
-              "bet": 3,
+              "bet": 2,
               "isHero": true,
               "stack": 250
             },
@@ -36761,7 +36760,8 @@
             }
           }
         }
-      ]
+      ],
+      "tableSize": 8
     },
     {
       "id": 1777551159554,
@@ -38047,7 +38047,6 @@
     {
       "id": 1777582530152,
       "name": "STR 3B vs RFI BTN",
-      "tableSize": 8,
       "positions": [
         "STR"
       ],
@@ -39102,13 +39101,13 @@
       "scenarios": [
         {
           "id": 1777582525783,
-          "pot": "14.5",
+          "pot": "13.5",
           "ante": 0.5,
-          "summary": "STR 3bet (3bb) → BTN Open (6bb)",
+          "summary": "STR 3bet (2bb) → BTN Open (6bb)",
           "heroRaiseSize": 24,
           "data": {
             "bb": {
-              "role": "post",
+              "role": "fold",
               "bet": 1,
               "isHero": false,
               "stack": 250
@@ -39132,14 +39131,14 @@
               "stack": 250
             },
             "sb": {
-              "role": "post",
+              "role": "fold",
               "bet": 0.5,
               "isHero": false,
               "stack": 250
             },
             "str": {
               "role": "3bet",
-              "bet": 3,
+              "bet": 2,
               "isHero": true,
               "stack": 250
             },
@@ -39157,12 +39156,12 @@
             }
           }
         }
-      ]
+      ],
+      "tableSize": 8
     },
     {
       "id": 1777582760461,
       "name": "STR 3B vs RFI SB-BB",
-      "tableSize": 8,
       "positions": [
         "STR"
       ],
@@ -40205,13 +40204,13 @@
       "scenarios": [
         {
           "id": 1777582745077,
-          "pot": "16.0",
+          "pot": "15.0",
           "ante": 0.5,
-          "summary": "SB Open (8bb) → STR 3bet (3bb)",
+          "summary": "SB Open (8bb) → STR 3bet (2bb)",
           "heroRaiseSize": 24,
           "data": {
             "bb": {
-              "role": "post",
+              "role": "fold",
               "bet": 1,
               "isHero": false,
               "stack": 250
@@ -40242,7 +40241,7 @@
             },
             "str": {
               "role": "3bet",
-              "bet": 3,
+              "bet": 2,
               "isHero": true,
               "stack": 250
             },
@@ -40262,9 +40261,9 @@
         },
         {
           "id": 1777582753516,
-          "pot": "15.0",
+          "pot": "14.0",
           "ante": 0.5,
-          "summary": "BB Open (8bb) → STR 3bet (3bb)",
+          "summary": "BB Open (8bb) → STR 3bet (2bb)",
           "heroRaiseSize": 24,
           "data": {
             "bb": {
@@ -40299,7 +40298,7 @@
             },
             "str": {
               "role": "3bet",
-              "bet": 3,
+              "bet": 2,
               "isHero": true,
               "stack": 250
             },
@@ -40317,12 +40316,12 @@
             }
           }
         }
-      ]
+      ],
+      "tableSize": 8
     },
     {
       "id": 1777582990989,
       "name": "STR 3B vs ISO IP",
-      "tableSize": 8,
       "positions": [
         "STR"
       ],
@@ -41430,13 +41429,13 @@
       "scenarios": [
         {
           "id": 1777582941418,
-          "pot": "17.5",
+          "pot": "19.5",
           "ante": 0.5,
-          "summary": "STR 3bet (0bb) → UTG Limp (2bb) → BTN Iso (10bb)",
+          "summary": "UTG Limp (2bb) → BTN Iso (10bb)",
           "heroRaiseSize": 35,
           "data": {
             "bb": {
-              "role": "post",
+              "role": "fold",
               "bet": 1,
               "isHero": false,
               "stack": 250
@@ -41460,14 +41459,14 @@
               "stack": 250
             },
             "sb": {
-              "role": "post",
+              "role": "fold",
               "bet": 0.5,
               "isHero": false,
               "stack": 250
             },
             "str": {
-              "role": "3bet",
-              "bet": 0,
+              "role": "post",
+              "bet": 2,
               "isHero": true,
               "stack": 250
             },
@@ -41487,13 +41486,13 @@
         },
         {
           "id": 1777582951128,
-          "pot": "17.5",
+          "pot": "19.5",
           "ante": 0.5,
-          "summary": "STR 3bet (0bb) → UTG Limp (2bb) → CO Iso (10bb)",
+          "summary": "UTG Limp (2bb) → CO Iso (10bb)",
           "heroRaiseSize": 35,
           "data": {
             "bb": {
-              "role": "post",
+              "role": "fold",
               "bet": 1,
               "isHero": false,
               "stack": 250
@@ -41517,14 +41516,14 @@
               "stack": 250
             },
             "sb": {
-              "role": "post",
+              "role": "fold",
               "bet": 0.5,
               "isHero": false,
               "stack": 250
             },
             "str": {
-              "role": "3bet",
-              "bet": 0,
+              "role": "post",
+              "bet": 2,
               "isHero": true,
               "stack": 250
             },
@@ -41544,13 +41543,13 @@
         },
         {
           "id": 1777582957315,
-          "pot": "17.5",
+          "pot": "19.5",
           "ante": 0.5,
-          "summary": "STR 3bet (0bb) → UTG+1 Limp (2bb) → CO Iso (10bb)",
+          "summary": "MP Limp (2bb) → CO Iso (10bb)",
           "heroRaiseSize": 35,
           "data": {
             "bb": {
-              "role": "post",
+              "role": "fold",
               "bet": 1,
               "isHero": false,
               "stack": 250
@@ -41574,14 +41573,14 @@
               "stack": 250
             },
             "sb": {
-              "role": "post",
+              "role": "fold",
               "bet": 0.5,
               "isHero": false,
               "stack": 250
             },
             "str": {
-              "role": "3bet",
-              "bet": 0,
+              "role": "post",
+              "bet": 2,
               "isHero": true,
               "stack": 250
             },
@@ -41601,9 +41600,9 @@
         },
         {
           "id": 1777582964509,
-          "pot": "17.5",
+          "pot": "19.5",
           "ante": 0.5,
-          "summary": "STR 3bet (0bb) → UTG+1 Limp (2bb) → MP Iso (10bb)",
+          "summary": "MP Limp (2bb) → HJ Iso (10bb)",
           "heroRaiseSize": 35,
           "data": {
             "bb": {
@@ -41637,8 +41636,8 @@
               "stack": 250
             },
             "str": {
-              "role": "3bet",
-              "bet": 0,
+              "role": "post",
+              "bet": 2,
               "isHero": true,
               "stack": 250
             },
@@ -41660,11 +41659,11 @@
           "id": 1777582974145,
           "pot": "19.5",
           "ante": 0.5,
-          "summary": "STR 3bet (0bb) → UTG+1 Limp (2bb) → MP Limp (2bb) → BTN Iso (10bb)",
+          "summary": "HJ Limp (2bb) → BTN Iso (10bb)",
           "heroRaiseSize": 35,
           "data": {
             "bb": {
-              "role": "post",
+              "role": "fold",
               "bet": 1,
               "isHero": false,
               "stack": 250
@@ -41688,14 +41687,14 @@
               "stack": 250
             },
             "sb": {
-              "role": "post",
+              "role": "fold",
               "bet": 0.5,
               "isHero": false,
               "stack": 250
             },
             "str": {
-              "role": "3bet",
-              "bet": 0,
+              "role": "post",
+              "bet": 2,
               "isHero": true,
               "stack": 250
             },
@@ -41706,8 +41705,8 @@
               "stack": 250
             },
             "utg1": {
-              "role": "limp",
-              "bet": 2,
+              "role": "fold",
+              "bet": 0,
               "isHero": false,
               "stack": 250
             }
@@ -41717,11 +41716,11 @@
           "id": 1777582981650,
           "pot": "19.5",
           "ante": 0.5,
-          "summary": "STR 3bet (0bb) → UTG+1 Limp (2bb) → CO Limp (2bb) → BTN Iso (10bb)",
+          "summary": "CO Limp (2bb) → BTN Iso (10bb)",
           "heroRaiseSize": 35,
           "data": {
             "bb": {
-              "role": "post",
+              "role": "fold",
               "bet": 1,
               "isHero": false,
               "stack": 250
@@ -41745,14 +41744,14 @@
               "stack": 250
             },
             "sb": {
-              "role": "post",
+              "role": "fold",
               "bet": 0.5,
               "isHero": false,
               "stack": 250
             },
             "str": {
-              "role": "3bet",
-              "bet": 0,
+              "role": "post",
+              "bet": 2,
               "isHero": true,
               "stack": 250
             },
@@ -41763,14 +41762,15 @@
               "stack": 250
             },
             "utg1": {
-              "role": "limp",
-              "bet": 2,
+              "role": "fold",
+              "bet": 0,
               "isHero": false,
               "stack": 250
             }
           }
         }
-      ]
+      ],
+      "tableSize": 8
     },
     {
       "id": 1777583189615,
