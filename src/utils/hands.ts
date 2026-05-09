@@ -49,6 +49,18 @@ export function getHighestFrequencyAction(data: HandData, extraLabel?: string): 
   return opts.reduce((best, cur) => (cur.pct > best.pct ? cur : best)).action
 }
 
+export function getTopFrequencyActions(data: HandData, extraLabel?: string): string[] {
+  const opts = [
+    { action: 'Raise', pct: data.raise },
+    { action: 'Call',  pct: data.call  },
+    { action: 'Allin', pct: data.allin },
+    { action: 'Fold',  pct: data.fold  },
+    ...(extraLabel && data.extra ? [{ action: extraLabel, pct: data.extra }] : []),
+  ]
+  const max = Math.max(...opts.map(o => o.pct))
+  return opts.filter(o => o.pct === max).map(o => o.action)
+}
+
 export function countNonFoldHands(grid: Record<string, HandData>): number {
   return Object.values(grid).filter(d => d.fold < 100).length
 }

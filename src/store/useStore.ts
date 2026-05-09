@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import {
-  ALL_HANDS, makeEmptyGrid, generateSuits, getRngCorrectAction, getHighestFrequencyAction, stackMatchesRange,
+  ALL_HANDS, makeEmptyGrid, generateSuits, getRngCorrectAction, getHighestFrequencyAction, getTopFrequencyActions, stackMatchesRange,
 } from '../utils/hands'
 import type {
   BrushState, HandData, HandHistoryEntry, PokerPosition, PositionConfig,
@@ -659,7 +659,7 @@ export const useStore = create<AppState>()(
       setRangesFilter: (f) => set({ rangesFilter: f }),
 
       // ── Drill ─────────────────────────────────────────────────────────────────
-      useRngForFrequency: true,
+      useRngForFrequency: false,
       setUseRng: (val) => set({ useRngForFrequency: val }),
 
       selectedDrillRangeIds: [],
@@ -763,7 +763,7 @@ export const useStore = create<AppState>()(
         const extraLabel = range.customAction?.label
         const correctAction = useRngForFrequency
           ? getRngCorrectAction(handData, rng, extraLabel)
-          : getHighestFrequencyAction(handData, extraLabel)
+          : getTopFrequencyActions(handData, extraLabel).join(' ou ')
         const suits = generateSuits(hand)
 
         set({
@@ -788,17 +788,23 @@ export const useStore = create<AppState>()(
         const {
           activeDrillRange, activeDrillStackGridIdx, activeHand, sessionStats,
           currentRng, correctActionForCurrentHand, currentHandSuits, handHistory,
+          useRngForFrequency,
         } = get()
         if (!activeDrillRange) return { correct: false, message: '' }
-
-        const correct = action === correctActionForCurrentHand
-        const stats = { ...sessionStats, hands: sessionStats.hands + 1 }
-        if (correct) stats.correct++; else stats.errors++
 
         const activeGrid = activeDrillStackGridIdx >= 0 && activeDrillRange.stackGrids
           ? activeDrillRange.stackGrids[activeDrillStackGridIdx].grid
           : activeDrillRange.grid
         const d = activeGrid[activeHand]
+        const extraLabel = activeDrillRange.customAction?.label
+
+        const correct = useRngForFrequency
+          ? action === correctActionForCurrentHand
+          : getTopFrequencyActions(d, extraLabel).includes(action)
+
+        const stats = { ...sessionStats, hands: sessionStats.hands + 1 }
+        if (correct) stats.correct++; else stats.errors++
+
         const entry: HandHistoryEntry = {
           id: Date.now(),
           hand: activeHand,
@@ -820,7 +826,6 @@ export const useStore = create<AppState>()(
         saveHandPerf(newPerf)
         set({ sessionStats: stats, handHistory: [...handHistory, entry].slice(-50), handPerformance: newPerf })
 
-        const { useRngForFrequency } = get()
         const rngTag = useRngForFrequency ? ` (RNG: ${currentRng})` : ''
         return {
           correct,
