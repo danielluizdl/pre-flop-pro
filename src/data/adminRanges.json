@@ -1,5 +1,5 @@
 {
-  "version": 1778331541539,
+  "version": 1778332295208,
   "ranges": [
     {
       "id": 1777977759033,
@@ -42923,7 +42923,7 @@
               "stack": 250
             },
             "sb": {
-              "role": "post",
+              "role": "fold",
               "bet": 0.5,
               "isHero": false,
               "stack": 250
@@ -42952,7 +42952,7 @@
           "id": 1777583128795,
           "pot": "22.5",
           "ante": 0.5,
-          "summary": "BB Iso (14bb) → STR 3bet (2bb) → UTG+1 Limp (2bb)",
+          "summary": "BB Iso (14bb) → STR 3bet (2bb) → MP Limp (2bb)",
           "heroRaiseSize": 42,
           "data": {
             "bb": {
@@ -42980,7 +42980,7 @@
               "stack": 250
             },
             "sb": {
-              "role": "post",
+              "role": "fold",
               "bet": 0.5,
               "isHero": false,
               "stack": 250
@@ -43009,7 +43009,7 @@
           "id": 1777583133374,
           "pot": "22.5",
           "ante": 0.5,
-          "summary": "BB Iso (14bb) → STR 3bet (2bb) → MP Limp (2bb)",
+          "summary": "BB Iso (14bb) → STR 3bet (2bb) → HJ Limp (2bb)",
           "heroRaiseSize": 42,
           "data": {
             "bb": {
@@ -43037,7 +43037,7 @@
               "stack": 250
             },
             "sb": {
-              "role": "post",
+              "role": "fold",
               "bet": 0.5,
               "isHero": false,
               "stack": 250
@@ -43094,7 +43094,7 @@
               "stack": 250
             },
             "sb": {
-              "role": "post",
+              "role": "fold",
               "bet": 0.5,
               "isHero": false,
               "stack": 250
@@ -43151,7 +43151,7 @@
               "stack": 250
             },
             "sb": {
-              "role": "post",
+              "role": "fold",
               "bet": 0.5,
               "isHero": false,
               "stack": 250
