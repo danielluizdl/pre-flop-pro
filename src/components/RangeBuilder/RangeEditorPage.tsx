@@ -47,6 +47,13 @@ export function RangeEditorPage() {
   }
 
   function handleNext() {
+    // If the current editor is empty but session grids exist, proceed without adding current state
+    const currentIsEmpty = !rangeData.name.trim() && selectedPositions.length === 0
+    if (currentIsEmpty && sessionGrids.length > 0) {
+      initTableConfig()
+      setPage('table-editor')
+      return
+    }
     if (!validate()) return
     useStore.setState({
       rangeData: { ...rangeData, positions: [...selectedPositions] },

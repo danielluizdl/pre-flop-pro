@@ -541,10 +541,10 @@ export const useStore = create<AppState>()(
 
         // Group all grids (session + current) by position
         type GridEntry = { name: string; stackRange: string; grid: Record<string, HandData>; positions: string[] }
-        const allEntries: GridEntry[] = [
-          ...sessionGrids,
-          { name: rangeData.name, stackRange: rangeData.stackRange, grid: JSON.parse(JSON.stringify(rangeData.grid)), positions: [...selectedEditorPositions] },
-        ]
+        const currentEntry: GridEntry[] = selectedEditorPositions.length > 0
+          ? [{ name: rangeData.name, stackRange: rangeData.stackRange, grid: JSON.parse(JSON.stringify(rangeData.grid)), positions: [...selectedEditorPositions] }]
+          : []
+        const allEntries: GridEntry[] = [...sessionGrids, ...currentEntry]
         const groups = new Map<string, GridEntry[]>()
         allEntries.forEach(g => {
           const key = [...g.positions].sort().join(',')
