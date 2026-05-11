@@ -275,6 +275,18 @@ function DrillRangeSelect() {
                 const isOpen = openGroups.has(pos)
                 const selectedInGroup = group.filter(r => selectedIds.includes(r.id)).length
 
+                const allGroupSelected = group.length > 0 && group.every(r => selectedIds.includes(r.id))
+
+                function toggleAllInGroup(e: React.MouseEvent) {
+                  e.stopPropagation()
+                  if (allGroupSelected) {
+                    useStore.setState({ selectedDrillRangeIds: selectedIds.filter(id => !group.some(r => r.id === id)) })
+                  } else {
+                    const toAdd = group.filter(r => !selectedIds.includes(r.id)).map(r => r.id)
+                    useStore.setState({ selectedDrillRangeIds: [...selectedIds, ...toAdd] })
+                  }
+                }
+
                 return (
                   <div key={pos} className="border border-gray-700 rounded-xl overflow-hidden">
                     {/* Header */}
@@ -298,8 +310,19 @@ function DrillRangeSelect() {
 
                     {/* Ranges list */}
                     {isOpen && (
-                      <div className="border-t border-gray-700 bg-gray-900/40 p-3 grid gap-2"
-                        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+                      <div className="border-t border-gray-700 bg-gray-900/40 p-3 space-y-2">
+                        <button
+                          onClick={toggleAllInGroup}
+                          className={[
+                            'w-full py-1.5 rounded-lg text-xs font-semibold border transition-colors',
+                            allGroupSelected
+                              ? 'bg-brand-900/30 border-brand-600/50 text-brand-400 hover:bg-brand-900/50'
+                              : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700 hover:text-gray-200',
+                          ].join(' ')}
+                        >
+                          {allGroupSelected ? 'Desfazer seleção' : 'Selecionar todos'}
+                        </button>
+                      <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
                         {group.map(r => {
                           const selected = selectedIds.includes(r.id)
                           return (
@@ -345,6 +368,7 @@ function DrillRangeSelect() {
                             </div>
                           )
                         })}
+                      </div>
                       </div>
                     )}
                   </div>
@@ -604,13 +628,20 @@ function DrillActive() {
           <button
             onClick={() => setAutoAdvance(a => !a)}
             className={[
-              'px-3 py-2.5 text-xs rounded-xl border font-semibold transition-colors',
+              'relative overflow-hidden px-7 py-3.5 text-sm rounded-xl border font-semibold transition-colors',
               autoAdvance
                 ? 'bg-brand-600/40 border-brand-500 text-brand-300'
                 : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700',
             ].join(' ')}
           >
-            2s
+            {autoAdvance && answered && !viewingPrev && (
+              <span
+                key={activeHand}
+                className="absolute inset-y-0 left-0 bg-brand-500/30"
+                style={{ animation: 'btn-fill 2s linear forwards' }}
+              />
+            )}
+            <span className="relative z-10">2s</span>
           </button>
           <button
             onClick={() => setViewingPrev(true)}

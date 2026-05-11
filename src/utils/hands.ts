@@ -65,6 +65,7 @@ export function countNonFoldHands(grid: Record<string, HandData>): number {
   return Object.values(grid).filter(d => d.fold < 100).length
 }
 
+
 // ── Hand group helpers ─────────────────────────────────────────────────────
 
 /** Todos os 13 pares (AA, KK, ... 22) */
