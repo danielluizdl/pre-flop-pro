@@ -13,11 +13,23 @@ import {
 import { DEFAULT_RANGES } from '../data/defaultRanges'
 import adminRangesRaw from '../data/adminRanges.json'
 
-const RANGES_KEY       = 'fbr-ranges-v1'
-const HISTORY_KEY      = 'fbr-training-history-v1'
-const HAND_PERF_KEY    = 'pfp-hand-perf-v1'
-const ADMIN_WORKER_KEY = 'admin-worker-url'
+const RANGES_KEY        = 'fbr-ranges-v1'
+const HISTORY_KEY       = 'fbr-training-history-v1'
+const HAND_PERF_KEY     = 'pfp-hand-perf-v1'
+const ADMIN_WORKER_KEY  = 'admin-worker-url'
 const ADMIN_VERSION_KEY = 'admin-ranges-version'
+const DELETED_ADMIN_KEY = 'fbr-deleted-admin-ids'
+
+function loadDeletedAdminIds(): Set<number> {
+  try { return new Set(JSON.parse(localStorage.getItem(DELETED_ADMIN_KEY) ?? '[]')) }
+  catch { return new Set() }
+}
+
+function addDeletedAdminId(id: number) {
+  const ids = loadDeletedAdminIds()
+  ids.add(id)
+  localStorage.setItem(DELETED_ADMIN_KEY, JSON.stringify([...ids]))
+}
 
 type HandPerfMap = Record<number, Record<string, { c: number; t: number }>>
 
@@ -35,20 +47,25 @@ function loadRanges(): Range[] {
   try {
     const saved: Range[] = JSON.parse(localStorage.getItem(RANGES_KEY) ?? '[]') ?? []
     const seenVersion = Number(localStorage.getItem(ADMIN_VERSION_KEY) ?? '0')
+    const deletedIds = loadDeletedAdminIds()
 
     if (ADMIN_VERSION > seenVersion) {
       // Nova versão publicada: sobrescreve ranges do admin, preserva ranges do usuário
+      // Ranges que o admin deletou explicitamente não são reinjeitados
       const adminIds = new Set(SEEDED_DEFAULTS.map(r => r.id))
       const userRanges = saved.filter(r => !adminIds.has(r.id))
-      const merged = [...SEEDED_DEFAULTS, ...userRanges]
+      const toSeed = SEEDED_DEFAULTS.filter(r => !deletedIds.has(r.id))
+      const merged = [...toSeed, ...userRanges]
       localStorage.setItem(RANGES_KEY, JSON.stringify(merged))
       localStorage.setItem(ADMIN_VERSION_KEY, String(ADMIN_VERSION))
+      // Versão nova publicada: limpa a lista de deletados (admin decidiu manter esses ranges)
+      localStorage.removeItem(DELETED_ADMIN_KEY)
       return merged
     }
 
     // Versão já vista: injeta apenas ranges ausentes sem sobrescrever edições locais
     const existingIds = new Set(saved.map(r => r.id))
-    const missing = SEEDED_DEFAULTS.filter(r => !existingIds.has(r.id))
+    const missing = SEEDED_DEFAULTS.filter(r => !existingIds.has(r.id) && !deletedIds.has(r.id))
     if (missing.length > 0) {
       const merged = [...missing, ...saved]
       localStorage.setItem(RANGES_KEY, JSON.stringify(merged))
@@ -654,6 +671,8 @@ export const useStore = create<AppState>()(
         const { ranges } = get()
         const newRanges = ranges.filter(r => r.id !== id)
         saveRanges(newRanges)
+        const adminIds = new Set(SEEDED_DEFAULTS.map(r => r.id))
+        if (adminIds.has(id)) addDeletedAdminId(id)
         set({ ranges: newRanges })
       },
       rangesFilter: 'ALL',
