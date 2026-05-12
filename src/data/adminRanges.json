@@ -1,5 +1,5 @@
 {
-  "version": 1778547355325,
+  "version": 1778587553202,
   "ranges": [
     {
       "id": 1777980904239,
@@ -42090,10 +42090,12 @@
           "allin": 0
         },
         "JTs": {
+          "call": 100,
+          "raise": 0,
+          "allin": 0,
+          "extra": 0,
           "fold": 0,
-          "call": 0,
-          "raise": 100,
-          "allin": 0
+          "size": ""
         },
         "J9s": {
           "fold": 0,
