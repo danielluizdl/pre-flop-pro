@@ -4,7 +4,7 @@ import { HandMatrix } from './HandMatrix'
 import { BrushControls } from './BrushControls'
 import { HandQuickSelect } from '../ui/HandQuickSelect'
 import { countNonFoldHands, stackRangesOverlap } from '../../utils/hands'
-import { Link2 } from 'lucide-react'
+import { Link2, X } from 'lucide-react'
 import { PrereqRangePicker } from '../ui/PrereqRangePicker'
 import type { SessionGrid } from '../../types'
 
@@ -23,6 +23,7 @@ export function RangeEditorPage() {
   const sessionGrids      = useStore(s => s.sessionGrids)
   const pushGridToSession = useStore(s => s.pushGridToSession)
   const updateSessionGrid = useStore(s => s.updateSessionGrid)
+  const removeSessionGrid = useStore(s => s.removeSessionGrid)
 
   const [editingIdx, setEditingIdx]       = useState<number | null>(null)
   const [snapshot, setSnapshot]           = useState<SessionGrid | null>(null)
@@ -52,17 +53,28 @@ export function RangeEditorPage() {
   }
 
   function handleNext() {
-    // If the current editor is empty but session grids exist, proceed without adding current state
-    const currentIsEmpty = !rangeData.name.trim() && selectedPositions.length === 0
-    if (currentIsEmpty && sessionGrids.length > 0) {
+    // If viewing/editing a session grid: save only if changes were made, otherwise cancel
+    if (editingIdx !== null) {
+      if (hasChanges) handleSaveSessionEdit()
+      else handleCancelSessionEdit()
+    }
+
+    const s = useStore.getState()
+    const freshName      = s.rangeData.name
+    const freshPositions = s.selectedEditorPositions
+    const freshSessions  = s.sessionGrids
+
+    const currentIsEmpty = !freshName.trim() && freshPositions.length === 0
+    if (currentIsEmpty && freshSessions.length > 0) {
       initTableConfig()
       setPage('table-editor')
       return
     }
-    if (!validate()) return
+    if (!freshName.trim()) { alert('Dê um nome ao range.'); return }
+    if (freshPositions.length === 0) { alert('Selecione pelo menos uma posição.'); return }
     useStore.setState({
-      rangeData: { ...rangeData, positions: [...selectedPositions] },
-      ...(rangeData.id === null && sessionGrids.length === 0 ? { tempScenarios: [] } : {}),
+      rangeData: { ...s.rangeData, positions: freshPositions },
+      ...(s.rangeData.id === null && freshSessions.length === 0 ? { tempScenarios: [] } : {}),
     })
     initTableConfig()
     setPage('table-editor')
@@ -148,15 +160,15 @@ export function RangeEditorPage() {
           </p>
           <div className="flex flex-wrap gap-2">
             {sessionGrids.map((sg, i) => (
-              <button
+              <div
                 key={i}
-                onClick={() => editingIdx === i ? handleCancelSessionEdit() : loadSessionForEdit(i)}
                 className={[
-                  'flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 border transition-colors text-left',
+                  'relative flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 pr-7 border transition-colors cursor-pointer',
                   editingIdx === i
                     ? 'bg-brand-900/30 border-brand-600/60 ring-1 ring-brand-600/40'
                     : 'bg-gray-900 border-gray-700 hover:border-gray-500',
                 ].join(' ')}
+                onClick={() => editingIdx === i ? handleCancelSessionEdit() : loadSessionForEdit(i)}
               >
                 <span className="text-xs font-semibold text-white">{sg.name}</span>
                 {sg.stackRange && (
@@ -166,7 +178,22 @@ export function RangeEditorPage() {
                 )}
                 <span className="text-xs text-gray-500">{countNonFoldHands(sg.grid)} mãos</span>
                 {editingIdx === i && <span className="text-[10px] text-brand-400 font-bold ml-1">editando</span>}
-              </button>
+                <button
+                  onClick={e => {
+                    e.stopPropagation()
+                    if (!confirm(`Remover "${sg.name}${sg.stackRange ? ` (${sg.stackRange})` : ''}"?`)) return
+                    if (editingIdx === i) {
+                      handleCancelSessionEdit()
+                    } else if (editingIdx !== null && editingIdx > i) {
+                      setEditingIdx(editingIdx - 1)
+                    }
+                    removeSessionGrid(i)
+                  }}
+                  className="absolute top-1 right-1 p-0.5 rounded text-gray-500 hover:text-red-400 hover:bg-red-900/20 transition-colors"
+                >
+                  <X size={10} />
+                </button>
+              </div>
             ))}
           </div>
         </div>

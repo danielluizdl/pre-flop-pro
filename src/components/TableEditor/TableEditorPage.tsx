@@ -4,6 +4,7 @@ import { PokerTableEditor } from '../ui/PokerTableEditor'
 import { SEAT_ROLE_LABELS } from '../../types'
 import type { PositionConfig } from '../../types'
 import { countNonFoldHands } from '../../utils/hands'
+import { X } from 'lucide-react'
 
 function getStackLabel(data: Record<string, PositionConfig>): string {
   const stacks = Object.values(data).map(p => p.stack)
@@ -51,6 +52,8 @@ export function TableEditorPage() {
   const setPage               = useStore(s => s.setPage)
   const sessionGrids          = useStore(s => s.sessionGrids)
   const rangeData             = useStore(s => s.rangeData)
+  const ranges                = useStore(s => s.ranges)
+  const removeSessionGrid     = useStore(s => s.removeSessionGrid)
 
   const [customStack, setCustomStack]     = useState(0)
   const [editingIdx, setEditingIdx]       = useState<number | null>(null)
@@ -69,6 +72,16 @@ export function TableEditorPage() {
   const posKey = [...rangeData.positions].sort().join(',')
   const samePosSessions = sessionGrids.filter(sg => [...sg.positions].sort().join(',') === posKey)
   const willBeCombined  = samePosSessions.length > 0
+
+  // Non-empty entries shown in the name modal, with their sessionGrids index (-1 = current editor)
+  const modalEntries = [
+    ...sessionGrids
+      .map((sg, i) => ({ ...sg, sessionIdx: i }))
+      .filter(e => [...e.positions].sort().join(',') === posKey && countNonFoldHands(e.grid) > 0),
+    ...(countNonFoldHands(rangeData.grid) > 0
+      ? [{ name: rangeData.name, stackRange: rangeData.stackRange, grid: rangeData.grid, positions: rangeData.positions, sessionIdx: -1 }]
+      : []),
+  ]
 
   function handleAddScenario() {
     const summary = getScenarioSummary(currentScenario, activePositions)
@@ -90,7 +103,10 @@ export function TableEditorPage() {
       addScenario(pot.toFixed(1), summary)
     }
     if (willBeCombined) {
-      setPrimaryName(samePosSessions[0]?.name ?? rangeData.name)
+      const originalName = rangeData.id !== null
+        ? (ranges.find(r => r.id === rangeData.id)?.name ?? '')
+        : ''
+      setPrimaryName(originalName || samePosSessions[0]?.name || rangeData.name)
       setNameModalOpen(true)
     } else {
       finalizeRange()
@@ -343,20 +359,28 @@ export function TableEditorPage() {
           >
             <h3 className="font-bold text-white text-lg mb-1">Nome do Range</h3>
             <p className="text-xs text-gray-400 mb-4">
-              {samePosSessions.length + 1} variações de stack serão salvas em um único range. Escolha o nome principal.
+              {modalEntries.length} variações de stack serão salvas em um único range. Escolha o nome principal.
             </p>
 
             {/* Preview das variações */}
             <div className="flex flex-wrap gap-2 mb-4">
-              {[...samePosSessions, { name: rangeData.name, stackRange: rangeData.stackRange, grid: rangeData.grid, positions: rangeData.positions }].map((sg, i) => (
-                <div key={i} className="flex items-center gap-1.5 bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5">
-                  <span className="text-xs text-gray-300">{sg.name}</span>
-                  {sg.stackRange && (
+              {modalEntries.map((entry, i) => (
+                <div key={i} className="relative flex items-center gap-1.5 bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5 pr-7">
+                  <span className="text-xs text-gray-300">{entry.name}</span>
+                  {entry.stackRange && (
                     <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-900/40 border border-brand-700/50 text-brand-400 leading-tight">
-                      {sg.stackRange}
+                      {entry.stackRange}
                     </span>
                   )}
-                  <span className="text-xs text-gray-500">{countNonFoldHands(sg.grid)} mãos</span>
+                  <span className="text-xs text-gray-500">{countNonFoldHands(entry.grid)} mãos</span>
+                  {entry.sessionIdx >= 0 && (
+                    <button
+                      onClick={() => removeSessionGrid(entry.sessionIdx)}
+                      className="absolute top-1 right-1 p-0.5 rounded text-gray-500 hover:text-red-400 hover:bg-red-900/20 transition-colors"
+                    >
+                      <X size={10} />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

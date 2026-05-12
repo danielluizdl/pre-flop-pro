@@ -154,6 +154,7 @@ interface AppState {
   sessionGrids: SessionGrid[]
   pushGridToSession: () => void
   updateSessionGrid: (idx: number, sg: SessionGrid) => void
+  removeSessionGrid: (idx: number) => void
 
   // ── Hand performance (heatmap) ────────────────────────────────────────────────
   handPerformance: HandPerfMap
@@ -369,17 +370,18 @@ export const useStore = create<AppState>()(
           : { extraLabel: '', extraColor: '#a855f7', extra: 0 }
 
         if (r.stackGrids && r.stackGrids.length > 0) {
-          const firstGrid = r.stackGrids[0]
-          const sessionGridsFromRange: SessionGrid[] = r.stackGrids.slice(1).map(sg => ({
+          // Load all stackGrids as session badges — editor starts empty so the user
+          // sees all variants up front and clicks one to edit.
+          const sessionGridsFromRange: SessionGrid[] = r.stackGrids.map(sg => ({
             name: sg.name ?? r.name,
             stackRange: sg.stackRange,
             grid: JSON.parse(JSON.stringify(sg.grid)),
             positions: [...r.positions],
           }))
           set({
-            rangeData: { id: r.id, name: firstGrid.name ?? r.name, positions: r.positions, grid: JSON.parse(JSON.stringify(firstGrid.grid)), tableSize: tSize, stackRange: firstGrid.stackRange, ...(r.prereqRangeId !== undefined ? { prereqRangeId: r.prereqRangeId } : {}) },
+            rangeData: { id: r.id, name: '', positions: r.positions, grid: makeEmptyGrid(), tableSize: tSize, stackRange: '', ...(r.prereqRangeId !== undefined ? { prereqRangeId: r.prereqRangeId } : {}) },
             tempScenarios: r.scenarios ? JSON.parse(JSON.stringify(r.scenarios)) : [],
-            selectedEditorPositions: [...r.positions],
+            selectedEditorPositions: [],
             currentTableSize: tSize,
             sessionGrids: sessionGridsFromRange,
             brush: { ...brush, ...brushExtra },
@@ -571,7 +573,17 @@ export const useStore = create<AppState>()(
         const currentEntry: GridEntry[] = selectedEditorPositions.length > 0
           ? [{ name: rangeData.name, stackRange: rangeData.stackRange, grid: JSON.parse(JSON.stringify(rangeData.grid)), positions: [...selectedEditorPositions] }]
           : []
-        const allEntries: GridEntry[] = [...sessionGrids, ...currentEntry]
+        // Deduplicate: for each (posKey + stackRange) pair keep only the last entry
+        const rawEntries: GridEntry[] = [...sessionGrids, ...currentEntry]
+        const seenSlots = new Map<string, number>()
+        rawEntries.forEach((g, i) => {
+          const slot = [...g.positions].sort().join(',') + '|' + (g.stackRange ?? '')
+          seenSlots.set(slot, i)
+        })
+        const allEntries: GridEntry[] = rawEntries.filter((_, i) =>
+          [...seenSlots.values()].includes(i)
+        ).filter(g => Object.values(g.grid).some(h => h.fold < 100))
+
         const groups = new Map<string, GridEntry[]>()
         allEntries.forEach(g => {
           const key = [...g.positions].sort().join(',')
@@ -579,7 +591,14 @@ export const useStore = create<AppState>()(
           groups.get(key)!.push(g)
         })
 
-        const primaryKey = [...selectedEditorPositions].sort().join(',')
+        // Resolve which positions identify the "primary" range being edited.
+        // Three fallbacks handle the case where the editor is empty (all grids in session).
+        const primaryPositions =
+          selectedEditorPositions.length > 0 ? selectedEditorPositions :
+          rangeData.positions.length > 0     ? rangeData.positions :
+          isEditing ? (ranges.find(r => r.id === rangeData.id)?.positions ?? []) :
+          []
+        const primaryKey = [...primaryPositions].sort().join(',')
         let idSeed = baseId
         const groupedRanges: Range[] = []
         groups.forEach((grids, posKey) => {
@@ -666,6 +685,11 @@ export const useStore = create<AppState>()(
       updateSessionGrid: (idx, sg) => {
         const { sessionGrids } = get()
         set({ sessionGrids: sessionGrids.map((s, i) => i === idx ? sg : s) })
+      },
+
+      removeSessionGrid: (idx) => {
+        const { sessionGrids } = get()
+        set({ sessionGrids: sessionGrids.filter((_, i) => i !== idx) })
       },
 
       // ── Hand performance (heatmap) ────────────────────────────────────────────
