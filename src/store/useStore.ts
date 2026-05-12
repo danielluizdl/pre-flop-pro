@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import {
-  ALL_HANDS, makeEmptyGrid, generateSuits, getRngCorrectAction, getHighestFrequencyAction, getTopFrequencyActions, stackMatchesRange,
+  ALL_HANDS, makeEmptyGrid, generateSuits, getRngCorrectAction, getTopFrequencyActions, stackMatchesRange,
 } from '../utils/hands'
 import type {
   BrushState, HandData, HandHistoryEntry, PokerPosition, PositionConfig,
@@ -16,7 +16,6 @@ import adminRangesRaw from '../data/adminRanges.json'
 const RANGES_KEY        = 'fbr-ranges-v1'
 const HISTORY_KEY       = 'fbr-training-history-v1'
 const HAND_PERF_KEY     = 'pfp-hand-perf-v1'
-const ADMIN_WORKER_KEY  = 'admin-worker-url'
 const ADMIN_VERSION_KEY = 'admin-ranges-version'
 const DELETED_ADMIN_KEY = 'fbr-deleted-admin-ids'
 
@@ -116,7 +115,7 @@ interface AppState {
   setTableFormat: (size: TableSize) => void
 
   // ── Range editor ─────────────────────────────────────────────────────────────
-  rangeData: { id: number | null; name: string; grid: Record<string, HandData>; positions: string[]; tableSize: TableSize; stackRange: string }
+  rangeData: { id: number | null; name: string; grid: Record<string, HandData>; positions: string[]; tableSize: TableSize; stackRange: string; prereqRangeId?: number }
   selectedEditorPositions: string[]
   brush: BrushState
 
@@ -128,6 +127,7 @@ interface AppState {
   resetGrid: () => void
   setRangeName: (name: string) => void
   setStackRange: (val: string) => void
+  setEditorPrereq: (prereqId: number | null) => void
   toggleEditorPosition: (label: string) => void
   loadRangeForEdit: (id: number) => void
 
@@ -161,6 +161,7 @@ interface AppState {
 
   // ── Saved ranges management ──────────────────────────────────────────────────
   deleteRange: (id: number) => void
+  setRangePrereq: (rangeId: number, prereqId: number | null) => void
   rangesFilter: string
   setRangesFilter: (f: string) => void
 
@@ -341,6 +342,14 @@ export const useStore = create<AppState>()(
         set({ rangeData: { ...rangeData, stackRange: val } })
       },
 
+      setEditorPrereq: (prereqId) => {
+        const { rangeData } = get()
+        const updated = { ...rangeData }
+        if (prereqId === null) delete updated.prereqRangeId
+        else updated.prereqRangeId = prereqId
+        set({ rangeData: updated })
+      },
+
       toggleEditorPosition: (label) => {
         const { selectedEditorPositions } = get()
         const next = selectedEditorPositions.includes(label) ? [] : [label]
@@ -368,7 +377,7 @@ export const useStore = create<AppState>()(
             positions: [...r.positions],
           }))
           set({
-            rangeData: { id: r.id, name: firstGrid.name ?? r.name, positions: r.positions, grid: JSON.parse(JSON.stringify(firstGrid.grid)), tableSize: tSize, stackRange: firstGrid.stackRange },
+            rangeData: { id: r.id, name: firstGrid.name ?? r.name, positions: r.positions, grid: JSON.parse(JSON.stringify(firstGrid.grid)), tableSize: tSize, stackRange: firstGrid.stackRange, ...(r.prereqRangeId !== undefined ? { prereqRangeId: r.prereqRangeId } : {}) },
             tempScenarios: r.scenarios ? JSON.parse(JSON.stringify(r.scenarios)) : [],
             selectedEditorPositions: [...r.positions],
             currentTableSize: tSize,
@@ -381,7 +390,7 @@ export const useStore = create<AppState>()(
           })
         } else {
           set({
-            rangeData: { id: r.id, name: r.name, positions: r.positions, grid: JSON.parse(JSON.stringify(r.grid)), tableSize: tSize, stackRange: r.stackRange ?? '' },
+            rangeData: { id: r.id, name: r.name, positions: r.positions, grid: JSON.parse(JSON.stringify(r.grid)), tableSize: tSize, stackRange: r.stackRange ?? '', ...(r.prereqRangeId !== undefined ? { prereqRangeId: r.prereqRangeId } : {}) },
             tempScenarios: r.scenarios ? JSON.parse(JSON.stringify(r.scenarios)) : [],
             selectedEditorPositions: [...r.positions],
             currentTableSize: tSize,
@@ -551,6 +560,7 @@ export const useStore = create<AppState>()(
 
       finalizeRange: (primaryName) => {
         const { rangeData, tempScenarios, ranges, currentTableSize, selectedEditorPositions, brush, sessionGrids } = get()
+        const prereqId = rangeData.prereqRangeId
         const isEditing = rangeData.id !== null
         const baseId = Date.now()
         const scenarios: Scenario[] = JSON.parse(JSON.stringify(tempScenarios))
@@ -575,6 +585,7 @@ export const useStore = create<AppState>()(
         groups.forEach((grids, posKey) => {
           idSeed++
           const thisId = isEditing && posKey === primaryKey ? rangeData.id! : idSeed
+          const prereqSpread = prereqId !== undefined ? { prereqRangeId: prereqId } : {}
           if (grids.length === 1) {
             const g = grids[0]
             groupedRanges.push({
@@ -586,6 +597,7 @@ export const useStore = create<AppState>()(
               tableSize: currentTableSize,
               ...(customAction ? { customAction } : {}),
               ...(g.stackRange ? { stackRange: g.stackRange } : {}),
+              ...prereqSpread,
             })
           } else {
             const stackGridsList: StackGrid[] = grids.map(g => ({
@@ -602,6 +614,7 @@ export const useStore = create<AppState>()(
               scenarios,
               tableSize: currentTableSize,
               ...(customAction ? { customAction } : {}),
+              ...prereqSpread,
             })
           }
         })
@@ -675,6 +688,16 @@ export const useStore = create<AppState>()(
         if (adminIds.has(id)) addDeletedAdminId(id)
         set({ ranges: newRanges })
       },
+      setRangePrereq: (rangeId, prereqId) => {
+        const { ranges } = get()
+        const newRanges = ranges.map(r =>
+          r.id === rangeId
+            ? { ...r, prereqRangeId: prereqId ?? undefined }
+            : r
+        )
+        saveRanges(newRanges)
+        set({ ranges: newRanges })
+      },
       rangesFilter: 'ALL',
       setRangesFilter: (f) => set({ rangesFilter: f }),
 
@@ -738,8 +761,16 @@ export const useStore = create<AppState>()(
           const r = ranges.find(x => x.id === id)
           if (!r) return
           const sourceGrid = r.stackGrids && r.stackGrids.length > 0 ? r.stackGrids[0].grid : r.grid
+          const prereqGrid = r.prereqRangeId
+            ? (() => {
+                const pr = ranges.find(x => x.id === r.prereqRangeId)
+                if (!pr) return null
+                return pr.stackGrids && pr.stackGrids.length > 0 ? pr.stackGrids[0].grid : pr.grid
+              })()
+            : null
           Object.keys(sourceGrid)
             .filter(h => !drillExcludedHands.includes(h))
+            .filter(h => !prereqGrid || (prereqGrid[h]?.fold ?? 100) < 100)
             .forEach(hand => candidates.push({ range: r, hand }))
         })
         if (candidates.length === 0) return false

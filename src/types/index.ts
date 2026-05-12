@@ -55,6 +55,7 @@ export interface Range {
   customAction?: { label: string; color: string }
   stackRange?: string
   stackGrids?: StackGrid[]
+  prereqRangeId?: number
 }
 
 export interface PokerPosition {

@@ -4,6 +4,8 @@ import { HandMatrix } from './HandMatrix'
 import { BrushControls } from './BrushControls'
 import { HandQuickSelect } from '../ui/HandQuickSelect'
 import { countNonFoldHands, stackRangesOverlap } from '../../utils/hands'
+import { Link2 } from 'lucide-react'
+import { PrereqRangePicker } from '../ui/PrereqRangePicker'
 import type { SessionGrid } from '../../types'
 
 export function RangeEditorPage() {
@@ -13,6 +15,8 @@ export function RangeEditorPage() {
   const rangeData         = useStore(s => s.rangeData)
   const setRangeName      = useStore(s => s.setRangeName)
   const setStackRange     = useStore(s => s.setStackRange)
+  const setEditorPrereq   = useStore(s => s.setEditorPrereq)
+  const ranges            = useStore(s => s.ranges)
   const resetGrid         = useStore(s => s.resetGrid)
   const setPage           = useStore(s => s.setPage)
   const initTableConfig   = useStore(s => s.initTableConfig)
@@ -20,8 +24,9 @@ export function RangeEditorPage() {
   const pushGridToSession = useStore(s => s.pushGridToSession)
   const updateSessionGrid = useStore(s => s.updateSessionGrid)
 
-  const [editingIdx, setEditingIdx] = useState<number | null>(null)
-  const [snapshot, setSnapshot]     = useState<SessionGrid | null>(null)
+  const [editingIdx, setEditingIdx]       = useState<number | null>(null)
+  const [snapshot, setSnapshot]           = useState<SessionGrid | null>(null)
+  const [prereqPickerOpen, setPrereqPickerOpen] = useState(false)
 
   // Returns overlap error message against session grids of the same position,
   // optionally excluding one index (for save-edit validation).
@@ -247,6 +252,28 @@ export function RangeEditorPage() {
             </div>
           </div>
 
+          {/* Pré-requisito */}
+          <div className="flex items-center gap-2">
+            <Link2 size={13} className="text-gray-500 flex-shrink-0" />
+            <label className="text-xs font-semibold text-gray-400 whitespace-nowrap flex-shrink-0">
+              Pré-req:
+            </label>
+            <button
+              type="button"
+              onClick={() => setPrereqPickerOpen(true)}
+              className={[
+                'flex-1 min-w-0 px-2.5 py-1.5 border rounded-lg text-sm text-left transition-colors',
+                rangeData.prereqRangeId !== undefined
+                  ? 'bg-sky-900/20 border-sky-700/50 text-sky-300 hover:border-sky-500'
+                  : 'bg-gray-800 border-gray-600 text-gray-500 hover:border-gray-400',
+              ].join(' ')}
+            >
+              {rangeData.prereqRangeId !== undefined
+                ? (ranges.find(x => x.id === rangeData.prereqRangeId)?.name ?? '?')
+                : '— sem pré-requisito —'}
+            </button>
+          </div>
+
           {/* Matrix */}
           <div>
             <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">
@@ -316,6 +343,17 @@ export function RangeEditorPage() {
           </button>
         </div>
       </div>
+
+      {prereqPickerOpen && (
+        <PrereqRangePicker
+          ranges={ranges}
+          excludeId={rangeData.id}
+          filterPositions={selectedPositions}
+          currentPrereqId={rangeData.prereqRangeId}
+          onSelect={id => setEditorPrereq(id)}
+          onClose={() => setPrereqPickerOpen(false)}
+        />
+      )}
     </div>
   )
 }

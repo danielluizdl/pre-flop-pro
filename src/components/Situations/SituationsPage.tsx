@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { countNonFoldHands } from '../../utils/hands'
-import { Edit3, Trash2, PlayCircle, BarChart2, Eye } from 'lucide-react'
+import { Edit3, Trash2, PlayCircle, BarChart2, Eye, Link2 } from 'lucide-react'
+
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import { RangePreviewModal } from '../ui/RangePreviewModal'
 import type { Range } from '../../types'
@@ -10,11 +11,12 @@ const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'UTG']
 
 interface CardProps {
   r: Range
+  allRanges: Range[]
   onViewHeatmap: (id: number) => void
   onPreview: (id: number) => void
 }
 
-function RangeCard({ r, onViewHeatmap, onPreview }: CardProps) {
+function RangeCard({ r, allRanges, onViewHeatmap, onPreview }: CardProps) {
   const deleteRange       = useStore(s => s.deleteRange)
   const loadRangeForEdit  = useStore(s => s.loadRangeForEdit)
   const startDrillSession = useStore(s => s.startDrillSession)
@@ -36,6 +38,7 @@ function RangeCard({ r, onViewHeatmap, onPreview }: CardProps) {
   const totalAnswered = perfEntries.reduce((s, p) => s + p.t, 0)
   const totalCorrect  = perfEntries.reduce((s, p) => s + p.c, 0)
   const accuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : null
+  const prereqRange = r.prereqRangeId !== undefined ? allRanges.find(x => x.id === r.prereqRangeId) : undefined
 
   return (
     <div className="bg-gray-800/60 border border-gray-700 rounded-lg p-3 hover:border-gray-500 transition-all flex flex-col gap-2">
@@ -65,6 +68,12 @@ function RangeCard({ r, onViewHeatmap, onPreview }: CardProps) {
             </span>
           )}
         </div>
+        {prereqRange && (
+          <div className="flex items-center gap-1 mt-1">
+            <Link2 size={9} className="text-sky-500 flex-shrink-0" />
+            <span className="text-[0.6rem] text-sky-400 leading-tight truncate">{prereqRange.name}</span>
+          </div>
+        )}
       </div>
 
       <div className="flex gap-1.5 mt-auto">
@@ -191,7 +200,7 @@ export function SituationsPage() {
                   <div className="border-t border-gray-700 bg-gray-900/40 p-3 grid gap-2"
                     style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
                     {group.map(r => (
-                      <RangeCard key={r.id} r={r} onViewHeatmap={setHeatmapId} onPreview={setPreviewId} />
+                      <RangeCard key={r.id} r={r} allRanges={ranges} onViewHeatmap={setHeatmapId} onPreview={setPreviewId} />
                     ))}
                   </div>
                 )}
