@@ -442,56 +442,37 @@ type PrevSnapshot = {
 
 /* ── Active drill ──────────────────────────────────────────────────────────── */
 function DrillActive() {
-  const activeDrillRange     = useStore(s => s.activeDrillRange)
-  const activeDrillStackRange = useStore(s => s.activeDrillStackRange)
+  const activeDrillRange       = useStore(s => s.activeDrillRange)
+  const activeDrillStackRange  = useStore(s => s.activeDrillStackRange)
   const activeDrillStackGridIdx = useStore(s => s.activeDrillStackGridIdx)
-  const handPerformance  = useStore(s => s.handPerformance)
-  const activeHand = useStore(s => s.activeHand)
-  const currentHandSuits = useStore(s => s.currentHandSuits)
-  const currentRng = useStore(s => s.currentRng)
-  const currentHeroRaiseSize = useStore(s => s.currentHeroRaiseSize)
-  const currentScenario = useStore(s => s.currentScenario)
-  const useRng = useStore(s => s.useRngForFrequency)
-  const checkAnswer = useStore(s => s.checkDrillAnswer)
-  const nextHand = useStore(s => s.nextDrillHand)
-  const stopDrill = useStore(s => s.stopDrill)
-  const incrementConsults = useStore(s => s.incrementConsults)
+  const handPerformance        = useStore(s => s.handPerformance)
+  const activeHand             = useStore(s => s.activeHand)
+  const currentHandSuits       = useStore(s => s.currentHandSuits)
+  const currentRng             = useStore(s => s.currentRng)
+  const currentHeroRaiseSize   = useStore(s => s.currentHeroRaiseSize)
+  const currentScenario        = useStore(s => s.currentScenario)
+  const useRng                 = useStore(s => s.useRngForFrequency)
+  const checkAnswer            = useStore(s => s.checkDrillAnswer)
+  const nextHand               = useStore(s => s.nextDrillHand)
+  const stopDrill              = useStore(s => s.stopDrill)
+  const incrementConsults      = useStore(s => s.incrementConsults)
+  const stats                  = useStore(s => s.sessionStats)
 
   const heroStack = Object.values(currentScenario).find(p => p.isHero)?.stack ?? 100
 
-  const [feedback, setFeedback]       = useState('')
-  const [feedbackOk, setFeedbackOk]   = useState(true)
-  const [answered, setAnswered]       = useState(false)
-  const [freqLabel, setFreqLabel]     = useState('')
-  const [autoAdvance, setAutoAdvance] = useState(false)
+  const [feedback, setFeedback]         = useState('')
+  const [feedbackOk, setFeedbackOk]     = useState(true)
+  const [answered, setAnswered]         = useState(false)
+  const [freqLabel, setFreqLabel]       = useState('')
+  const [autoAdvance, setAutoAdvance]   = useState(false)
   const [prevSnapshot, setPrevSnapshot] = useState<PrevSnapshot | null>(null)
-  const [viewingPrev, setViewingPrev] = useState(false)
+  const [viewingPrev, setViewingPrev]   = useState(false)
   const [modalViewMode, setModalViewMode] = useState<'actions' | 'heatmap' | null>(null)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
-  const goNextRef    = useRef<() => void>(() => {})
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [dims, setDims] = useState({ w: 900, h: 560 })
+  const goNextRef = useRef<() => void>(() => {})
 
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    const update = () => setDims({ w: el.clientWidth, h: el.clientHeight })
-    update()
-    const obs = new ResizeObserver(update)
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
-
-  // Escala relativa ao tamanho de referência (900×560). Usada para fontes, botões, cartas.
-  const sc = Math.min(dims.w / 900, dims.h / 560)
-  // Sidebar escala entre 140-208px
-  const sidebarW = Math.round(Math.min(208, Math.max(140, 208 * sc)))
-  const gapPx = Math.round(Math.max(4, 8 * sc))
-  const leftW = dims.w - sidebarW - gapPx
-  // Altura estimada dos controles abaixo da mesa (escala linearmente)
-  const controlsH = Math.round(220 * sc + 36)
-  const tableAvailH = dims.h - controlsH - Math.round(12 * sc)
-  const tableMaxW = Math.min(leftW, Math.max(160, Math.round(tableAvailH / 0.63)))
+  const sidebarW = sidebarCollapsed ? 28 : 208
 
   useEffect(() => {
     if (!answered || viewingPrev || !autoAdvance) return
@@ -518,12 +499,12 @@ function DrillActive() {
     return parts.join(' e ')
   }
 
-  const displayHand    = viewingPrev ? prevSnapshot!.hand      : activeHand
-  const displaySuits   = viewingPrev ? prevSnapshot!.suits     : currentHandSuits
-  const displayRng     = viewingPrev ? prevSnapshot!.rng       : currentRng
-  const showFeedback   = viewingPrev ? prevSnapshot!.feedback  : feedback
+  const displayHand    = viewingPrev ? prevSnapshot!.hand       : activeHand
+  const displaySuits   = viewingPrev ? prevSnapshot!.suits      : currentHandSuits
+  const displayRng     = viewingPrev ? prevSnapshot!.rng        : currentRng
+  const showFeedback   = viewingPrev ? prevSnapshot!.feedback   : feedback
   const showFeedbackOk = viewingPrev ? prevSnapshot!.feedbackOk : feedbackOk
-  const showFreqLabel  = viewingPrev ? prevSnapshot!.freqLabel : freqLabel
+  const showFreqLabel  = viewingPrev ? prevSnapshot!.freqLabel  : freqLabel
   const isAnswered     = viewingPrev || answered
 
   const r1 = displayHand[0]
@@ -554,178 +535,178 @@ function DrillActive() {
 
   const customAction = activeDrillRange?.customAction
   const actionBtns = [
-    { label: 'FOLD', action: 'Fold', color: '#6b7280' },
-    { label: 'CALL', action: 'Call', color: '#22c55e' },
+    { label: 'FOLD',                        action: 'Fold',               color: '#6b7280' },
+    { label: 'CALL',                        action: 'Call',               color: '#22c55e' },
     ...(currentHeroRaiseSize > 0 ? [{ label: `RAISE (${currentHeroRaiseSize}bb)`, action: 'Raise', color: '#ef4444' }] : []),
-    { label: `ALL IN (${heroStack}bb)`, action: 'Allin', color: '#6b2d0d' },
+    { label: `ALL IN (${heroStack}bb)`,     action: 'Allin',              color: '#6b2d0d' },
     ...(customAction ? [{ label: customAction.label.toUpperCase(), action: customAction.label, color: customAction.color }] : []),
   ]
 
-  const stats = useStore(s => s.sessionStats)
-
-  const btnPy = Math.max(6, Math.round(10 * sc))
-  const btnPx = Math.max(14, Math.round(20 * sc))
-  const btnFs = Math.max(11, Math.round(14 * sc))
-  const navPy = Math.max(5, Math.round(8 * sc))
-  const navPx = Math.max(14, Math.round(24 * sc))
-  const cardScale = Math.min(1, Math.max(0.5, sc))
-  const stripPy = Math.max(4, Math.round(8 * sc))
-
   return (
-    <div
-      ref={containerRef}
-      className="w-full flex overflow-hidden"
-      style={{ height: 'calc(100vh - 90px)', gap: gapPx }}
-    >
-      {/* LEFT: mesa (com cartas e ver range dentro) + botões + resposta + nav */}
-      <div className="flex-1 min-w-0 flex flex-col overflow-hidden" style={{ gap: gapPx }}>
+    <div className="w-full h-[calc(100vh-90px)] overflow-auto">
+      <div className="flex gap-2 min-h-full">
 
-        {/* Dark box: mesa + cartas + botão Ver Range */}
-        <div className="flex-1 min-h-0 rounded-2xl border border-gray-800 overflow-hidden relative flex flex-col"
-          style={{ background: '#030712', boxShadow: 'inset 0 0 60px rgba(0,0,0,0.9)' }}>
+        {/* LEFT: dark box + controles */}
+        <div className="flex-1 min-w-0 flex flex-col gap-2">
 
-          {/* Botões canto superior direito */}
-          <div className="absolute top-2 right-2 z-10 flex gap-1.5">
-            <button
-              onClick={() => setModalViewMode('heatmap')}
-              className="px-2 py-0.5 text-xs border border-gray-600 bg-gray-900/80 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              Erro / Acerto
-            </button>
-            <button
-              onClick={() => { setModalViewMode('actions'); incrementConsults() }}
-              className="px-2 py-0.5 text-xs border border-gray-600 bg-gray-900/80 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              Ver Range
-            </button>
-          </div>
+          {/* Dark box: botões, mesa, cartas */}
+          <div
+            className="flex-1 min-h-0 rounded-2xl border border-gray-800 flex flex-col"
+            style={{ background: '#030712', boxShadow: 'inset 0 0 60px rgba(0,0,0,0.9)', minHeight: 340 }}
+          >
+            {/* Botões topo */}
+            <div className="flex-shrink-0 flex justify-end gap-1.5 pt-1.5 pr-2">
+              <button
+                onClick={() => setModalViewMode('heatmap')}
+                className="px-2 py-0.5 text-xs border border-gray-600 bg-gray-900/80 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Erro / Acerto
+              </button>
+              <button
+                onClick={() => { setModalViewMode('actions'); incrementConsults() }}
+                className="px-2 py-0.5 text-xs border border-gray-600 bg-gray-900/80 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Ver Range
+              </button>
+            </div>
 
-          {/* Tabela */}
-          <div className="flex-1 min-h-0 flex items-start justify-center"
-            style={{ padding: `${Math.round(8*sc)}px ${Math.round(40*sc)}px ${Math.round(4*sc)}px` }}>
-            <div className="w-full" style={{ maxWidth: tableMaxW }}>
-              <PokerTableEditor />
+            {/* Mesa */}
+            <div className="flex-1 min-h-0 flex items-center justify-center px-10 pt-1 pb-[52px]">
+              <div className="w-full max-w-[460px]">
+                <PokerTableEditor />
+              </div>
+            </div>
+
+            {/* Cartas */}
+            <div className="flex-shrink-0 border-t border-gray-800 flex items-center justify-center gap-3 py-2 px-6">
+              <div className="w-[72px] flex justify-end">
+                {useRng && (
+                  <span className="bg-gray-800 border border-gray-600 text-white text-xs rounded-full font-bold px-2.5 py-1.5 tracking-wider whitespace-nowrap">
+                    RNG {displayRng}
+                  </span>
+                )}
+              </div>
+              <PlayingCard rank={r1} suit={s1} />
+              <PlayingCard rank={r2} suit={s2} />
+              <div className="w-[72px]" />
             </div>
           </div>
 
-          {/* Cartas centralizadas */}
-          <div className="flex-shrink-0 border-t border-gray-800 flex items-center justify-center"
-            style={{ padding: `${stripPy}px ${Math.round(24*sc)}px`, gap: Math.round(12*sc) }}>
-            <div style={{ width: Math.round(72*sc), flexShrink: 0 }} className="flex justify-end">
-              {useRng && (
-                <span className="bg-gray-800 border border-gray-600 text-white rounded-full font-bold tracking-wider whitespace-nowrap"
-                  style={{ padding: `${Math.round(6*sc)}px ${Math.round(10*sc)}px`, fontSize: Math.max(9, Math.round(12*sc)) }}>
-                  RNG {displayRng}
-                </span>
+          {/* Resposta */}
+          <div className="flex-shrink-0 min-h-[36px] flex flex-col justify-center text-center">
+            {!!showFeedback && (
+              <>
+                <div className={`font-bold text-lg ${showFeedbackOk ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {showFeedback}
+                </div>
+                {!!showFreqLabel && (
+                  <div className="text-gray-400 text-sm mt-0.5">{showFreqLabel}</div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Botões de ação */}
+          <div className="flex-shrink-0 flex justify-center gap-2">
+            {actionBtns.map(({ label, action, color }) => (
+              <button
+                key={action}
+                onClick={() => handleAction(action)}
+                disabled={isAnswered}
+                className="text-white font-bold rounded-lg transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed px-5 py-2.5 text-sm"
+                style={{ backgroundColor: color }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Navegação */}
+          <div className="flex-shrink-0 flex items-center justify-center gap-2">
+            <button
+              onClick={doGoNext}
+              className={[
+                'px-6 py-2 rounded-xl font-bold text-sm transition-colors',
+                isAnswered ? 'bg-brand-600 hover:bg-brand-500 text-white' : 'bg-gray-700 hover:bg-gray-600 text-white',
+              ].join(' ')}
+            >
+              {viewingPrev ? '← Mão atual' : 'Próxima Mão →'}
+            </button>
+            <button
+              onClick={() => setAutoAdvance(a => !a)}
+              className={[
+                'relative overflow-hidden px-6 py-2 rounded-xl border font-semibold text-sm transition-colors',
+                autoAdvance ? 'bg-brand-600/40 border-brand-500 text-brand-300' : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700',
+              ].join(' ')}
+            >
+              {autoAdvance && answered && !viewingPrev && (
+                <span key={activeHand} className="absolute inset-y-0 left-0 bg-brand-500/30"
+                  style={{ animation: 'btn-fill 2s linear forwards' }} />
               )}
-            </div>
-            <PlayingCard rank={r1} suit={s1} scale={cardScale} />
-            <PlayingCard rank={r2} suit={s2} scale={cardScale} />
-            <div style={{ width: Math.round(72*sc), flexShrink: 0 }} />
+              <span className="relative z-10">2s</span>
+            </button>
+            <button
+              onClick={() => setViewingPrev(true)}
+              disabled={!prevSnapshot || viewingPrev}
+              className="px-4 py-2 rounded-xl border border-gray-600 bg-gray-800 text-gray-400 hover:bg-gray-700 font-semibold text-xs transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              ← Anterior
+            </button>
           </div>
         </div>
 
-        {/* Resposta */}
-        <div className="flex-shrink-0 flex flex-col justify-center text-center" style={{ minHeight: Math.round(36*sc) }}>
-          {!!showFeedback && (
+        {/* RIGHT: histórico + stats */}
+        <div className="flex-shrink-0 flex flex-col gap-2" style={{ width: sidebarW }}>
+          {sidebarCollapsed ? (
+            <button
+              onClick={() => setSidebarCollapsed(false)}
+              className="flex-1 min-h-0 bg-gray-800 border border-gray-700 rounded-xl flex items-center justify-center text-gray-500 hover:text-white hover:bg-gray-700 transition-colors"
+              title="Expandir histórico"
+            >
+              <span className="font-bold tracking-wider" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', fontSize: 10 }}>HIST ›</span>
+            </button>
+          ) : (
             <>
-              <div className={`font-bold ${showFeedbackOk ? 'text-emerald-400' : 'text-red-400'}`}
-                style={{ fontSize: Math.max(13, Math.round(18*sc)) }}>
-                {showFeedback}
+              <div className="flex-1 min-h-0 flex flex-col relative">
+                <HandHistorySidebar />
+                <button
+                  onClick={() => setSidebarCollapsed(true)}
+                  className="absolute top-2 right-2 z-10 w-5 h-5 rounded-full bg-gray-700 text-gray-400 hover:text-white hover:bg-gray-600 flex items-center justify-center text-xs transition-colors"
+                  title="Minimizar histórico"
+                >‹</button>
               </div>
-              {!!showFreqLabel && (
-                <div className="text-gray-400" style={{ fontSize: Math.max(10, Math.round(14*sc)), marginTop: Math.round(2*sc) }}>
-                  {showFreqLabel}
+
+              {/* Stats + info */}
+              <div className="flex-shrink-0 bg-gray-800 border border-gray-700 rounded-xl p-3 space-y-2">
+                <div className="text-xs font-bold text-white leading-tight truncate" title={activeDrillRange.name}>
+                  {activeDrillRange.name}
                 </div>
-              )}
+                {!!activeDrillStackRange && (
+                  <span className="inline-block px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-900/40 border border-brand-700/50 text-brand-400 leading-tight">
+                    {activeDrillStackRange}
+                  </span>
+                )}
+                <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
+                  <span className="text-gray-400">Mãos</span>
+                  <span className="text-white font-bold text-right">{stats.hands}</span>
+                  <span className="text-emerald-400">Acertos</span>
+                  <span className="text-emerald-400 font-bold text-right">{stats.correct}</span>
+                  <span className="text-red-400">Erros</span>
+                  <span className="text-red-400 font-bold text-right">{stats.errors}</span>
+                  <span className="text-gray-400">Consultas</span>
+                  <span className="text-white font-bold text-right">{stats.consults}</span>
+                </div>
+                <div className="pt-1 border-t border-gray-700">
+                  <button
+                    onClick={stopDrill}
+                    className="w-full py-1.5 text-xs border border-gray-700 bg-gray-900 text-gray-500 rounded-lg hover:bg-gray-700 hover:text-gray-200 font-semibold transition-colors"
+                  >
+                    Encerrar Treino
+                  </button>
+                </div>
+              </div>
             </>
           )}
-        </div>
-
-        {/* Botões de ação */}
-        <div className="flex-shrink-0 flex justify-center" style={{ gap: Math.round(8*sc) }}>
-          {actionBtns.map(({ label, action, color }) => (
-            <button
-              key={action}
-              onClick={() => handleAction(action)}
-              disabled={isAnswered}
-              className="text-white font-bold rounded-lg transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ backgroundColor: color, padding: `${btnPy}px ${btnPx}px`, fontSize: btnFs }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {/* Navegação */}
-        <div className="flex-shrink-0 flex items-center justify-center" style={{ gap: Math.round(8*sc) }}>
-          <button
-            onClick={doGoNext}
-            className={[
-              'rounded-xl font-bold transition-colors',
-              isAnswered ? 'bg-brand-600 hover:bg-brand-500 text-white' : 'bg-gray-700 hover:bg-gray-600 text-white',
-            ].join(' ')}
-            style={{ padding: `${navPy}px ${navPx}px`, fontSize: Math.max(11, Math.round(14*sc)) }}
-          >
-            {viewingPrev ? '← Mão atual' : 'Próxima Mão →'}
-          </button>
-          <button
-            onClick={() => setAutoAdvance(a => !a)}
-            className={[
-              'relative overflow-hidden rounded-xl border font-semibold transition-colors',
-              autoAdvance ? 'bg-brand-600/40 border-brand-500 text-brand-300' : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700',
-            ].join(' ')}
-            style={{ padding: `${navPy}px ${navPx}px`, fontSize: Math.max(11, Math.round(14*sc)) }}
-          >
-            {autoAdvance && answered && !viewingPrev && (
-              <span key={activeHand} className="absolute inset-y-0 left-0 bg-brand-500/30"
-                style={{ animation: 'btn-fill 2s linear forwards' }} />
-            )}
-            <span className="relative z-10">2s</span>
-          </button>
-          <button
-            onClick={() => setViewingPrev(true)}
-            disabled={!prevSnapshot || viewingPrev}
-            className="rounded-xl border border-gray-600 bg-gray-800 text-gray-400 hover:bg-gray-700 font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-            style={{ padding: `${navPy}px ${Math.round(12*sc)}px`, fontSize: Math.max(10, Math.round(12*sc)) }}
-          >
-            ← Anterior
-          </button>
-        </div>
-      </div>
-
-      {/* RIGHT: histórico + stats/info */}
-      <div className="flex-shrink-0 flex flex-col" style={{ width: sidebarW, gap: gapPx }}>
-        <HandHistorySidebar />
-
-        {/* Stats + info */}
-        <div className="flex-shrink-0 bg-gray-800 border border-gray-700 rounded-xl p-3 space-y-2">
-          <div className="text-xs font-bold text-white leading-tight truncate" title={activeDrillRange.name}>
-            {activeDrillRange.name}
-          </div>
-          {!!activeDrillStackRange && (
-            <span className="inline-block px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-900/40 border border-brand-700/50 text-brand-400 leading-tight">
-              {activeDrillStackRange}
-            </span>
-          )}
-          <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
-            <span className="text-gray-400">Mãos</span>
-            <span className="text-white font-bold text-right">{stats.hands}</span>
-            <span className="text-emerald-400">Acertos</span>
-            <span className="text-emerald-400 font-bold text-right">{stats.correct}</span>
-            <span className="text-red-400">Erros</span>
-            <span className="text-red-400 font-bold text-right">{stats.errors}</span>
-            <span className="text-gray-400">Consultas</span>
-            <span className="text-white font-bold text-right">{stats.consults}</span>
-          </div>
-          <div className="pt-1 border-t border-gray-700">
-            <button
-              onClick={stopDrill}
-              className="w-full py-1.5 text-xs border border-gray-700 bg-gray-900 text-gray-500 rounded-lg hover:bg-gray-700 hover:text-gray-200 font-semibold transition-colors"
-            >
-              Encerrar Treino
-            </button>
-          </div>
         </div>
       </div>
 
