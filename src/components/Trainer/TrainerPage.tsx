@@ -32,14 +32,13 @@ function PlayingCard({ rank, suit }: { rank: string; suit: string }) {
   }
   return (
     <div
-      className={`relative rounded-lg ${colorMap[suit] ?? 'bg-gray-500'} shadow-lg border-2 border-white/30`}
-      style={{ width: 'clamp(40px, 7vh, 64px)', height: 'clamp(60px, 10.5vh, 96px)', fontSize: 'clamp(10px, 1.75vh, 16px)' }}
+      className={`relative w-16 h-24 rounded-lg ${colorMap[suit] ?? 'bg-gray-500'} shadow-lg border-2 border-white/30`}
     >
-      <div className="absolute top-1 left-1.5 font-extrabold text-white leading-none" style={{ fontSize: '1.125em' }}>{rank}</div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white" style={{ fontSize: '2.25em' }}>
+      <div className="absolute top-1 left-1.5 font-extrabold text-lg text-white leading-none">{rank}</div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-4xl text-white">
         {SUIT_ICONS[suit]}
       </div>
-      <div className="absolute bottom-1 right-1.5 font-extrabold text-white leading-none rotate-180" style={{ fontSize: '1.125em' }}>{rank}</div>
+      <div className="absolute bottom-1 right-1.5 font-extrabold text-lg text-white leading-none rotate-180">{rank}</div>
     </div>
   )
 }
@@ -436,6 +435,9 @@ type PrevSnapshot = {
   freqLabel: string
 }
 
+const DESIGN_W = 900
+const DESIGN_H = 560
+
 /* ── Active drill ──────────────────────────────────────────────────────────── */
 function DrillActive() {
   const activeDrillRange     = useStore(s => s.activeDrillRange)
@@ -464,7 +466,19 @@ function DrillActive() {
   const [viewingPrev, setViewingPrev] = useState(false)
   const [modalViewMode, setModalViewMode] = useState<'actions' | 'heatmap' | null>(null)
 
-  const goNextRef = useRef<() => void>(() => {})
+  const goNextRef    = useRef<() => void>(() => {})
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [scale, setScale] = useState(1)
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const update = () => setScale(Math.min(el.clientWidth / DESIGN_W, el.clientHeight / DESIGN_H))
+    update()
+    const obs = new ResizeObserver(update)
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
 
   useEffect(() => {
     if (!answered || viewingPrev || !autoAdvance) return
@@ -537,7 +551,15 @@ function DrillActive() {
   const stats = useStore(s => s.sessionStats)
 
   return (
-    <div className="flex gap-3 h-[calc(100vh-90px)] overflow-hidden">
+    <div
+      ref={containerRef}
+      className="w-full flex items-center justify-center overflow-hidden"
+      style={{ height: 'calc(100vh - 90px)' }}
+    >
+    <div
+      className="flex gap-2 flex-shrink-0"
+      style={{ width: DESIGN_W, height: DESIGN_H, transform: `scale(${scale})` }}
+    >
 
       {/* LEFT: mesa (com cartas e ver range dentro) + botões + resposta + nav */}
       <div className="flex-1 min-w-0 flex flex-col gap-2 overflow-hidden">
@@ -564,7 +586,7 @@ function DrillActive() {
 
           {/* Tabela */}
           <div className="flex-1 min-h-0 flex items-start justify-center" style={{ padding: '8px 40px 4px' }}>
-            <div className="w-full" style={{ maxWidth: 'calc((100vh - 430px) / 0.63)', minWidth: '280px' }}>
+            <div className="w-full" style={{ maxWidth: 500 }}>
               <PokerTableEditor />
             </div>
           </div>
@@ -688,6 +710,7 @@ function DrillActive() {
           </div>
         </div>
       </div>
+    </div>{/* fecha inner scaled div — modal fica fora para position:fixed funcionar */}
 
       {/* Modal range */}
       {modalViewMode !== null && (
