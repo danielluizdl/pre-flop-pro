@@ -39,7 +39,7 @@ const BLIND_BET: Record<string, number> = { SB: 0.5, BB: 1.0, STR: 2.0 }
 
 function Seat({ label, data, slot }: SeatProps) {
   const { role, bet, stack, isHero } = data
-  const isFolded = role === 'fold' && !isHero
+  const isFolded = (role === 'fold' || role === 'limp-fold') && !isHero
   const displayBet = (isFolded && bet === 0 && label in BLIND_BET) ? BLIND_BET[label] : bet
 
   return (

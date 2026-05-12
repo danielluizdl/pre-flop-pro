@@ -481,7 +481,7 @@ export const useStore = create<AppState>()(
           else bet = 0
         } else if (role === 'open') {
           bet = currentTableSize === 8 ? 6 : 2.5
-        } else if (role === 'limp') {
+        } else if (role === 'limp' || role === 'limp-fold') {
           bet = currentTableSize === 8 ? 2 : 1
         } else if (role === 'call') {
           const bets = Object.entries(currentScenario).filter(([k]) => k !== pid).map(([, d]) => d.bet)

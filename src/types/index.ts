@@ -5,19 +5,20 @@ export const SUITS = ['c', 'd', 'h', 's'] as const
 export const SUIT_ICONS: Record<string, string> = { h: '♥', d: '♦', s: '♠', c: '♣' }
 
 export type ActionType = 'fold' | 'call' | 'raise' | 'allin'
-export type RoleType = 'fold' | 'post' | 'limp' | 'open' | '3bet' | 'iso' | 'call' | 'allin'
+export type RoleType = 'fold' | 'post' | 'limp' | 'limp-fold' | 'open' | '3bet' | 'iso' | 'call' | 'allin'
 export type TableSize = 6 | 8
 export type Page = 'dashboard' | 'editor' | 'table-editor' | 'ranges' | 'drill' | 'history' | 'range-setup'
 
 export const SEAT_ROLE_LABELS: Record<RoleType, string> = {
-  fold:  'Fold',
-  post:  'Blind/Post',
-  limp:  'Limp',
-  open:  'Open Raise',
-  '3bet':'3-Bet',
-  iso:   'ISO',
-  call:  'Call',
-  allin: 'All-In',
+  fold:        'Fold',
+  post:        'Blind/Post',
+  limp:        'Limp',
+  'limp-fold': 'Limp Fold',
+  open:        'Open Raise',
+  '3bet':      '3-Bet',
+  iso:         'ISO',
+  call:        'Call',
+  allin:       'All-In',
 }
 
 export interface HandData {
