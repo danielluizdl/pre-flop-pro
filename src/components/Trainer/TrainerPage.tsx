@@ -32,13 +32,14 @@ function PlayingCard({ rank, suit }: { rank: string; suit: string }) {
   }
   return (
     <div
-      className={`relative w-16 h-24 rounded-lg ${colorMap[suit] ?? 'bg-gray-500'} shadow-lg border-2 border-white/30`}
+      className={`relative rounded-lg ${colorMap[suit] ?? 'bg-gray-500'} shadow-lg border-2 border-white/30`}
+      style={{ width: 'clamp(40px, 7vh, 64px)', height: 'clamp(60px, 10.5vh, 96px)', fontSize: 'clamp(10px, 1.75vh, 16px)' }}
     >
-      <div className="absolute top-1 left-1.5 font-extrabold text-lg text-white leading-none">{rank}</div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-4xl text-white">
+      <div className="absolute top-1 left-1.5 font-extrabold text-white leading-none" style={{ fontSize: '1.125em' }}>{rank}</div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white" style={{ fontSize: '2.25em' }}>
         {SUIT_ICONS[suit]}
       </div>
-      <div className="absolute bottom-1 right-1.5 font-extrabold text-lg text-white leading-none rotate-180">{rank}</div>
+      <div className="absolute bottom-1 right-1.5 font-extrabold text-white leading-none rotate-180" style={{ fontSize: '1.125em' }}>{rank}</div>
     </div>
   )
 }
@@ -539,7 +540,7 @@ function DrillActive() {
     <div className="flex gap-3 h-[calc(100vh-90px)] overflow-hidden">
 
       {/* LEFT: mesa (com cartas e ver range dentro) + botões + resposta + nav */}
-      <div className="flex-1 min-w-0 flex flex-col gap-3 overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col gap-2 overflow-hidden">
 
         {/* Dark box: mesa + cartas + botão Ver Range */}
         <div className="flex-1 min-h-0 rounded-2xl border border-gray-800 overflow-hidden relative flex flex-col"
@@ -562,14 +563,14 @@ function DrillActive() {
           </div>
 
           {/* Tabela */}
-          <div className="flex-1 min-h-0 flex items-start justify-center" style={{ padding: '16px 44px 8px' }}>
-            <div className="w-full" style={{ maxWidth: 'calc((100vh - 500px) / 0.63)', minWidth: '280px' }}>
+          <div className="flex-1 min-h-0 flex items-start justify-center" style={{ padding: '8px 40px 4px' }}>
+            <div className="w-full" style={{ maxWidth: 'calc((100vh - 430px) / 0.63)', minWidth: '280px' }}>
               <PokerTableEditor />
             </div>
           </div>
 
           {/* Cartas centralizadas — abaixo da mesa, dentro do box */}
-          <div className="flex-shrink-0 border-t border-gray-800 py-3 px-6 flex items-center justify-center gap-3">
+          <div className="flex-shrink-0 border-t border-gray-800 py-2 px-6 flex items-center justify-center gap-3">
             <div className="w-20 flex justify-end flex-shrink-0">
               {useRng && (
                 <span className="bg-gray-800 border border-gray-600 text-white px-2.5 py-1.5 rounded-full text-xs font-bold tracking-wider whitespace-nowrap">
@@ -584,10 +585,10 @@ function DrillActive() {
         </div>
 
         {/* Resposta */}
-        <div className="flex-shrink-0 min-h-[44px] flex flex-col justify-center text-center">
+        <div className="flex-shrink-0 min-h-[36px] flex flex-col justify-center text-center">
           {!!showFeedback && (
             <>
-              <div className={`text-xl font-bold ${showFeedbackOk ? 'text-emerald-400' : 'text-red-400'}`}>
+              <div className={`text-lg font-bold ${showFeedbackOk ? 'text-emerald-400' : 'text-red-400'}`}>
                 {showFeedback}
               </div>
               {!!showFreqLabel && (
@@ -604,7 +605,7 @@ function DrillActive() {
               key={action}
               onClick={() => handleAction(action)}
               disabled={isAnswered}
-              className="text-white font-bold px-7 py-3.5 rounded-lg transition-all active:scale-95 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+              className="text-white font-bold px-5 py-2.5 rounded-lg transition-all active:scale-95 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
               style={{ backgroundColor: color }}
             >
               {label}
@@ -617,7 +618,7 @@ function DrillActive() {
           <button
             onClick={doGoNext}
             className={[
-              'px-8 py-2.5 rounded-xl font-bold text-sm transition-colors',
+              'px-6 py-2 rounded-xl font-bold text-sm transition-colors',
               isAnswered
                 ? 'bg-brand-600 hover:bg-brand-500 text-white'
                 : 'bg-gray-700 hover:bg-gray-600 text-white',
@@ -628,7 +629,7 @@ function DrillActive() {
           <button
             onClick={() => setAutoAdvance(a => !a)}
             className={[
-              'relative overflow-hidden px-7 py-3.5 text-sm rounded-xl border font-semibold transition-colors',
+              'relative overflow-hidden px-5 py-2 text-sm rounded-xl border font-semibold transition-colors',
               autoAdvance
                 ? 'bg-brand-600/40 border-brand-500 text-brand-300'
                 : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700',
@@ -646,7 +647,7 @@ function DrillActive() {
           <button
             onClick={() => setViewingPrev(true)}
             disabled={!prevSnapshot || viewingPrev}
-            className="px-3 py-2.5 text-xs rounded-xl border border-gray-600 bg-gray-800 text-gray-400 hover:bg-gray-700 font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="px-3 py-2 text-xs rounded-xl border border-gray-600 bg-gray-800 text-gray-400 hover:bg-gray-700 font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             ← Anterior
           </button>
