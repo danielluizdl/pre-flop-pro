@@ -259,7 +259,7 @@ export function TableEditorPage() {
         <div className="flex-1 space-y-4">
           {/* Table */}
           <div className="flex justify-center">
-            <div className="w-full" style={{ maxWidth: 500 }}>
+            <div className="w-full" style={{ maxWidth: 575 }}>
               <div
                 className="rounded-2xl border border-gray-800 px-10 pt-8 pb-16"
                 style={{ background: '#030712', boxShadow: 'inset 0 0 50px rgba(0,0,0,0.8)' }}

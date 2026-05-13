@@ -29,6 +29,21 @@ function ChipStack({ amount }: { amount: number }) {
   )
 }
 
+const SUIT_BG: Record<string, string> = { h: '#dc2626', d: '#2563eb', c: '#047857', s: '#1f2937' }
+const SUIT_ICON: Record<string, string> = { h: '♥', d: '♦', c: '♣', s: '♠' }
+
+function SmallCard({ rank, suit }: { rank: string; suit: string }) {
+  return (
+    <div
+      className="rounded border-2 border-white/40 shadow-lg flex flex-col items-center justify-center gap-px"
+      style={{ width: 38, height: 56, background: SUIT_BG[suit] ?? '#374151', flexShrink: 0 }}
+    >
+      <span className="font-extrabold text-white leading-none" style={{ fontSize: 14 }}>{rank}</span>
+      <span className="text-white leading-none" style={{ fontSize: 17 }}>{SUIT_ICON[suit]}</span>
+    </div>
+  )
+}
+
 interface SeatProps {
   label: string
   data: PositionConfig
@@ -47,7 +62,7 @@ function Seat({ label, data, slot }: SeatProps) {
       {/* Seat circle */}
       <div
         className={[
-          'absolute w-[48px] h-[48px] rounded-full border-2 flex flex-col justify-center items-center font-bold z-10 transition-all duration-300',
+          'absolute w-[55px] h-[55px] rounded-full border-2 flex flex-col justify-center items-center font-bold z-10 transition-all duration-300',
           isHero
             ? 'bg-amber-500 border-white text-white shadow-[0_0_16px_#f59e0b] z-20 scale-110'
             : isFolded
@@ -56,20 +71,20 @@ function Seat({ label, data, slot }: SeatProps) {
         ].join(' ')}
         style={{ top: `${slot.t}%`, left: `${slot.l}%`, transform: isHero ? 'translate(-50%,-50%) scale(1.1)' : 'translate(-50%,-50%)' }}
       >
-        <div className="text-[0.6rem] font-bold">{label}</div>
-        {isHero && <small className="text-[0.45rem] text-yellow-300 leading-none">HERO</small>}
+        <div className="text-[0.69rem] font-bold">{label}</div>
+        {isHero && <small className="text-[0.52rem] text-yellow-300 leading-none">HERO</small>}
 
         {/* Mini face-down cards for active villains */}
         {!isHero && !isFolded && (
-          <div className="absolute top-[34px] right-0 flex z-10">
-            <div className="w-3 h-4 bg-red-700 border border-white/60 rounded-sm shadow" style={{ transform: 'rotate(-8deg)' }} />
-            <div className="w-3 h-4 bg-red-700 border border-white/60 rounded-sm shadow -ml-1" style={{ transform: 'rotate(8deg)' }} />
+          <div className="absolute top-[39px] right-0 flex z-10">
+            <div className="w-3.5 h-[18px] bg-red-700 border border-white/60 rounded-sm shadow" style={{ transform: 'rotate(-8deg)' }} />
+            <div className="w-3.5 h-[18px] bg-red-700 border border-white/60 rounded-sm shadow -ml-1" style={{ transform: 'rotate(8deg)' }} />
           </div>
         )}
 
         {/* Stack badge */}
-        <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] font-bold px-2 py-0.5 rounded border border-gray-600 whitespace-nowrap z-10 shadow">
-          {stack || 100} bb
+        <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 bg-black/80 border border-gray-700 rounded-md text-center whitespace-nowrap z-10 shadow-lg px-2 py-0.5">
+          <div className="text-blue-400 text-[11.5px] font-bold leading-tight">{stack || 100} bb</div>
         </div>
       </div>
 
@@ -90,7 +105,9 @@ function Seat({ label, data, slot }: SeatProps) {
   )
 }
 
-export function PokerTableEditor() {
+export interface HeroCards { r1: string; s1: string; r2: string; s2: string }
+
+export function PokerTableEditor({ heroCards }: { heroCards?: HeroCards } = {}) {
   const activePositions = useStore(s => s.activePositions)
   const activeSlots     = useStore(s => s.activeSlots)
   const currentScenario = useStore(s => s.currentScenario)
@@ -101,6 +118,9 @@ export function PokerTableEditor() {
 
   let pot = currentAnte * numPlayers
   activePositions.forEach(p => { pot += parseFloat(String(currentScenario[p.id]?.bet ?? 0)) })
+
+  // Hero is always rendered at visual slot 0 (rotation puts hero first)
+  const heroSlot = activeSlots[0]
 
   return (
     <div
@@ -138,6 +158,21 @@ export function PokerTableEditor() {
         const slot = activeSlots[i]
         return <Seat key={pos.id} label={pos.label} data={data} slot={slot} />
       })}
+
+      {/* Hero cards — to the right of the hero circle */}
+      {heroCards && heroSlot && (
+        <div
+          className="absolute z-[25] flex items-center pointer-events-none"
+          style={{
+            top: `${heroSlot.t}%`,
+            left: `${heroSlot.l}%`,
+            transform: 'translate(32px, -50%)',
+          }}
+        >
+          <SmallCard rank={heroCards.r1} suit={heroCards.s1} />
+          <SmallCard rank={heroCards.r2} suit={heroCards.s2} />
+        </div>
+      )}
 
       {/* Dealer button — follows BTN after rotation */}
       {(() => {
