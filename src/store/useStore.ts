@@ -778,60 +778,76 @@ export const useStore = create<AppState>()(
       nextDrillHand: () => {
         const { ranges, selectedDrillRangeIds, drillExcludedHands } = get()
 
-        // Build candidates using only one grid per range for uniform hand distribution.
-        // For stackGrids ranges, the active grid is resolved after scenario selection.
-        const candidates: { range: Range; hand: string }[] = []
+        // Scenario-first approach: pick scenario → resolve correct grid → filter non-fold hands.
+        // This guarantees the hand is always non-fold in the grid used for evaluation.
+        type Candidate = {
+          range: Range
+          hand: string
+          scenario: Record<string, PositionConfig>
+          ante: number
+          heroRaiseSize: number
+          stackGridIdx: number
+          stackRangeLabel: string
+          activeGrid: Record<string, HandData>
+        }
+        const candidates: Candidate[] = []
+
         selectedDrillRangeIds.forEach(id => {
           const r = ranges.find(x => x.id === id)
           if (!r) return
-          const sourceGrid = r.stackGrids && r.stackGrids.length > 0 ? r.stackGrids[0].grid : r.grid
-          const prereqGrid = r.prereqRangeId
-            ? (() => {
-                const pr = ranges.find(x => x.id === r.prereqRangeId)
-                if (!pr) return null
-                return pr.stackGrids && pr.stackGrids.length > 0 ? pr.stackGrids[0].grid : pr.grid
-              })()
-            : null
-          Object.keys(sourceGrid)
-            .filter(h => !drillExcludedHands.includes(h))
-            .filter(h => !prereqGrid || (prereqGrid[h]?.fold ?? 100) < 100)
-            .forEach(hand => candidates.push({ range: r, hand }))
+
+          const scenarios = r.scenarios?.length > 0 ? r.scenarios : [null as null]
+          scenarios.forEach(scen => {
+            const newScenario: Record<string, PositionConfig> = scen?.data ?? {}
+            const ante = scen?.ante ?? 0
+            const heroRaiseSize = scen?.heroRaiseSize ?? 0
+
+            let stackGridIdx = -1
+            let stackRangeLabel = ''
+            if (r.stackGrids && r.stackGrids.length > 0) {
+              const heroStack = Object.values(newScenario).find(p => p.isHero)?.stack ?? 0
+              const matched = heroStack > 0
+                ? r.stackGrids.findIndex(sg => stackMatchesRange(heroStack, sg.stackRange))
+                : -1
+              stackGridIdx = matched !== -1 ? matched : 0
+              stackRangeLabel = r.stackGrids[stackGridIdx].stackRange
+            }
+
+            const activeGrid = stackGridIdx >= 0 && r.stackGrids
+              ? r.stackGrids[stackGridIdx].grid
+              : r.grid
+
+            const prereqGrid = r.prereqRangeId
+              ? (() => {
+                  const pr = ranges.find(x => x.id === r.prereqRangeId)
+                  if (!pr) return null
+                  if (pr.stackGrids && pr.stackGrids.length > 0) {
+                    const heroStack = Object.values(newScenario).find(p => p.isHero)?.stack ?? 0
+                    const matched = heroStack > 0
+                      ? pr.stackGrids.findIndex(sg => stackMatchesRange(heroStack, sg.stackRange))
+                      : -1
+                    return pr.stackGrids[matched !== -1 ? matched : 0].grid
+                  }
+                  return pr.grid
+                })()
+              : null
+
+            Object.keys(activeGrid)
+              .filter(h => !drillExcludedHands.includes(h))
+              .filter(h => (activeGrid[h]?.fold ?? 100) < 100)
+              .filter(h => !prereqGrid || (prereqGrid[h]?.fold ?? 100) < 100)
+              .forEach(hand => candidates.push({ range: r, hand, scenario: newScenario, ante, heroRaiseSize, stackGridIdx, stackRangeLabel, activeGrid }))
+          })
         })
+
         if (candidates.length === 0) return false
 
         const pick = candidates[Math.floor(Math.random() * candidates.length)]
-        const { range, hand } = pick
+        const { range, hand, scenario: newScenario, ante: newAnte, heroRaiseSize: heroRaiseFromScen, stackGridIdx: finalStackGridIdx, stackRangeLabel, activeGrid } = pick
 
         const rSize: TableSize = range.tableSize || 6
         const activePos = rSize === 6 ? POS_6MAX : POS_8MAX
         const activeSlts = rSize === 6 ? SLOTS_6MAX : SLOTS_8MAX
-
-        // Pick scenario first
-        let newScenario: Record<string, PositionConfig> = {}
-        let newAnte = 0
-        let heroRaiseFromScen = 0
-        if (range.scenarios?.length > 0) {
-          const rndScen = range.scenarios[Math.floor(Math.random() * range.scenarios.length)]
-          newScenario = rndScen.data
-          newAnte = rndScen.ante || 0
-          heroRaiseFromScen = rndScen.heroRaiseSize ?? 0
-        }
-
-        // Determine which stackGrid to use based on the hero's stack in the chosen scenario
-        let finalStackGridIdx = -1
-        let stackRangeLabel = ''
-        if (range.stackGrids && range.stackGrids.length > 0) {
-          const heroStack = Object.values(newScenario as Record<string, PositionConfig>).find(p => p.isHero)?.stack ?? 0
-          const matched = heroStack > 0
-            ? range.stackGrids.findIndex(sg => stackMatchesRange(heroStack, sg.stackRange))
-            : -1
-          finalStackGridIdx = matched !== -1 ? matched : 0
-          stackRangeLabel = range.stackGrids[finalStackGridIdx].stackRange
-        }
-
-        const activeGrid = finalStackGridIdx >= 0 && range.stackGrids
-          ? range.stackGrids[finalStackGridIdx].grid
-          : range.grid
 
         const rng = Math.ceil(Math.random() * 100)
         const handData = activeGrid[hand]
