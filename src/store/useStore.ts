@@ -832,11 +832,17 @@ export const useStore = create<AppState>()(
                 })()
               : null
 
-            Object.keys(activeGrid)
-              .filter(h => !drillExcludedHands.includes(h))
-              .filter(h => (activeGrid[h]?.fold ?? 100) < 100)
-              .filter(h => !prereqGrid || (prereqGrid[h]?.fold ?? 100) < 100)
-              .forEach(hand => candidates.push({ range: r, hand, scenario: newScenario, ante, heroRaiseSize, stackGridIdx, stackRangeLabel, activeGrid }))
+            if (prereqGrid) {
+              // Com prereq: fonte = mãos não-fold no prereq; drillExcludedHands ignorado
+              ALL_HANDS
+                .filter(h => (prereqGrid[h]?.fold ?? 100) < 100)
+                .forEach(hand => candidates.push({ range: r, hand, scenario: newScenario, ante, heroRaiseSize, stackGridIdx, stackRangeLabel, activeGrid }))
+            } else {
+              // Sem prereq: fonte = seleção manual do usuário (todas as mãos não excluídas)
+              ALL_HANDS
+                .filter(h => !drillExcludedHands.includes(h))
+                .forEach(hand => candidates.push({ range: r, hand, scenario: newScenario, ante, heroRaiseSize, stackGridIdx, stackRangeLabel, activeGrid }))
+            }
           })
         })
 

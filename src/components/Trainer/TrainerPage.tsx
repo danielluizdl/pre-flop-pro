@@ -368,8 +368,8 @@ const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'UTG']
 
 /* ── Range select screen ────────────────────────────────────────────────────── */
 function DrillRangeSelect() {
-  const ranges        = useStore(s => s.ranges)
-  const selectedIds   = useStore(s => s.selectedDrillRangeIds)
+  const ranges             = useStore(s => s.ranges)
+  const selectedIds        = useStore(s => s.selectedDrillRangeIds)
   const toggleDrillRange   = useStore(s => s.toggleDrillRange)
   const startDrillSession  = useStore(s => s.startDrillSession)
   const nextDrillHand      = useStore(s => s.nextDrillHand)
