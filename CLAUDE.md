@@ -3,7 +3,7 @@
 ## Stack
 - **Vite + React + TypeScript + Tailwind CSS + Zustand**
 - Sem backend. Dados persistidos via `localStorage` manualmente (exceto `darkMode` que usa `zustand/persist`).
-- Deploy: GitHub Pages (`https://github.com/danielluizdl/pre-flop-pro`)
+- Deploy: GitHub Pages via GitHub Actions ao fazer push para `main` (`https://github.com/danielluizdl/pre-flop-pro`)
 
 ## Estrutura de Pastas
 ```
@@ -15,26 +15,29 @@ src/
     Trainer/      TrainerPage.tsx
     Situations/   SituationsPage.tsx
     Stats/        StatsPage.tsx
-    ui/           PokerTableEditor.tsx, HandQuickSelect.tsx
+    ui/           PokerTableEditor.tsx, HandQuickSelect.tsx, RangePreviewModal.tsx
   store/          useStore.ts  (toda a lógica de estado)
   types/          index.ts     (tipos, constantes de posições/slots)
-  utils/          hands.ts     (ALL_HANDS, makeEmptyGrid, getRngCorrectAction, getHighestFrequencyAction, countNonFoldHands, generateSuits)
-  data/           defaultRanges.ts  (41 ranges nativos, seed no localStorage)
+  utils/          hands.ts     (ALL_HANDS, makeEmptyGrid, getRngCorrectAction, getTopFrequencyActions, stackMatchesRange, generateSuits)
+  data/           defaultRanges.ts  (ranges nativos, seed no localStorage)
 ```
 
 ## Tipos Principais (`src/types/index.ts`)
 ```ts
-type RoleType   = 'fold'|'post'|'limp'|'open'|'3bet'|'iso'|'call'|'allin'
+type RoleType   = 'fold'|'post'|'limp'|'limp-fold'|'open'|'3bet'|'iso'|'call'|'allin'
 type TableSize  = 6 | 8
 type Page       = 'dashboard'|'editor'|'table-editor'|'ranges'|'drill'|'history'|'range-setup'
 type ActionType = 'fold'|'call'|'raise'|'allin'
 
-interface HandData      { fold:number; call:number; raise:number; allin:number; size?:number|string }
-interface PositionConfig{ role:RoleType; bet:number; isHero:boolean; stack:number }
-interface Scenario      { id:number; data:Record<string,PositionConfig>; pot:string; ante:number; summary:string; heroRaiseSize?:number }
-interface Range         { id:number; name:string; positions:string[]; grid:Record<string,HandData>; scenarios:Scenario[]; tableSize:TableSize }
-interface BrushState    { call:number; raise:number; allin:number; raiseSize:string }
+interface HandData         { fold:number; call:number; raise:number; allin:number; extra?:number; size?:number|string }
+interface PositionConfig   { role:RoleType; bet:number; isHero:boolean; stack:number }
+interface Scenario         { id:number; data:Record<string,PositionConfig>; pot:string; ante:number; summary:string; heroRaiseSize?:number }
+interface Range            { id:number; name:string; positions:string[]; grid:Record<string,HandData>; scenarios:Scenario[]; tableSize:TableSize; customAction?:{label:string;color:string}; stackRange?:string; stackGrids?:StackGrid[]; prereqRangeId?:number }
+interface StackGrid        { stackRange:string; grid:Record<string,HandData>; name?:string }
+interface BrushState       { call:number; raise:number; allin:number; extra:number; raiseSize:string; extraLabel:string; extraColor:string }
 interface HandHistoryEntry { id:number; hand:string; suits:[string,string]; actionTaken:string; correctAction:string; rng:number; correct:boolean; rangeName:string; raiseSize?:number|string }
+interface SessionStats     { hands:number; correct:number; errors:number; consults:number }
+interface TrainingSession  { id:number; timestamp:number; rangeNames:string[]; tableSize:number; hands:number; correct:number; errors:number; consults:number; durationSeconds:number }
 
 SEAT_ROLE_LABELS: Record<RoleType, string>  // labels PT-BR para selects
 POS_6MAX / POS_8MAX: PokerPosition[]         // {id, label}
@@ -43,38 +46,44 @@ SLOTS_6MAX / SLOTS_8MAX: Slot[]              // {t:%, l:%} posição visual dos 
 
 ## LocalStorage Keys
 ```
-'fbr-ranges-v1'           → Range[]     (ranges salvos)
-'fbr-training-history-v1' → TrainingSession[]
-'pfp-hand-perf-v1'        → HandPerfMap (Record<rangeId, Record<hand, {c,t}>>) heatmap
-'fbr-ui-state'            → {darkMode}  (zustand persist)
+'fbr-ranges-v1'           → Range[]          (ranges salvos)
+'fbr-training-history-v1' → TrainingSession[] (histórico de sessões)
+'pfp-hand-perf-v1'        → HandPerfMap       (Record<rangeId, Record<hand, {c,t}>>) — acumulativo
+'fbr-ui-state'            → {darkMode}        (zustand persist)
 ```
 
 ## Ranges Nativos (`src/data/defaultRanges.ts`)
-- 41 ranges nativos definidos com helper `const g = (hands) => ({ ...makeEmptyGrid(), ...hands })`
+- Ranges nativos definidos com helper `const g = (hands) => ({ ...makeEmptyGrid(), ...hands })`
 - Seed no `loadRanges()` do store: injeta ranges com IDs ausentes sem sobrescrever os do usuário
+- Versionamento via `ADMIN_VERSION`: ao publicar nova versão, sobrescreve ranges admin preservando os do usuário
 - Para atualizar: exportar `localStorage.getItem('fbr-ranges-v1')` do browser → processar com PowerShell → substituir o arquivo
 
 ## Store (`src/store/useStore.ts`) — Estado Principal
 Estado relevante (não persistido entre sessões, exceto darkMode):
 - `page` — navegação atual
 - `ranges` — carregado do localStorage na inicialização (com seed de DEFAULT_RANGES)
-- `rangeData` — range sendo editado no momento (`{id,name,grid,positions,tableSize}`)
+- `rangeData` — range sendo editado (`{id,name,grid,positions,tableSize,stackRange,prereqRangeId?}`)
 - `selectedEditorPositions` — posição do HERO selecionada no EditorPage (**single-select**)
-- `brush` — `{call,raise,allin,raiseSize}` — pincel para HandMatrix
+- `brush` — `{call,raise,allin,extra,raiseSize,extraLabel,extraColor}` — pincel para HandMatrix
 - `currentScenario` — `Record<posId, PositionConfig>` — cenário sendo configurado
 - `tempScenarios` — cenários salvos no buffer antes de finalizar o range
 - `currentHeroRaiseSize` — raise size do HERO para o cenário
 - `currentHasStraddle` — se mesa 8-max tem straddle obrigatório
 - `currentAnte` / `currentTableSize` / `activePositions` / `activeSlots`
-- `activeDrillRange` / `activeHand` / `sessionStats` / `handHistory` / `currentRng`
-- `correctActionForCurrentHand` / `currentHandSuits`
+- `activeDrillRange` / `activeDrillStackRange` / `activeDrillStackGridIdx`
+- `activeHand` / `sessionStats` / `handHistory` / `currentRng`
+- `correctActionForCurrentHand` / `correctActionsForCurrentHand` / `currentHandSuits`
 - `useRngForFrequency` — true=RNG, false=ação de maior frequência
 - `handPerformance: HandPerfMap` — carregado do localStorage na inicialização
 - `selectedDrillRangeIds` / `drillExcludedHands`
+- `trainingHistory: TrainingSession[]` — carregado do localStorage
+- `sessionStartTime: number` — timestamp de início da sessão atual
 
 **`toggleEditorPosition(label)`** — single-select: clica na posição selecionada → deseleciona; clica em outra → troca. `selectedEditorPositions` sempre tem 0 ou 1 elemento. Ranges armazenam `positions` como array de **labels** (ex: `["STR"]`, `["BTN"]`), não ids.
 
 **`updateRole(pid, role)`** — ao setar `fold` em SB/BB/STR, mantém a aposta do blind (0.5/1.0/2.0) para chips continuarem na mesa.
+
+**`stopDrill()`** — salva sessão em `trainingHistory` (se `sessionStats.hands > 0`), limpa `activeDrillRange`. NÃO limpa `sessionStats` nem `handHistory` (disponíveis para DrillSummary após encerrar).
 
 ## Fluxo de Navegação
 ```
@@ -84,7 +93,7 @@ dashboard
           → table-editor  (TableEditorPage: configurar roles/bets/stacks + cenários)
               → ranges     (após finalizeRange())
   → ranges        (SituationsPage: acordeão por posição com RangeCards)
-  → drill         (TrainerPage: acordeão por posição → filtro de mãos → DrillActive)
+  → drill         (TrainerPage: DrillRangeSelect → HandFilterGrid → DrillActive)
   → history       (StatsPage)
 ```
 
@@ -103,12 +112,13 @@ dashboard
 - Label "Posição do HERO" (single-select) — apenas uma posição pode ser selecionada
 - Campo "Nome:" fica **abaixo** dos botões de posição, com `max-w-xs`
 - Layout: título → posições → nome → HandMatrix (esquerda) + BrushControls (direita)
+- Picker de pré-requisito: abre modal com lista de ranges existentes; armazenado em `rangeData.prereqRangeId`
 
 ## HandMatrix (`src/components/RangeBuilder/HandMatrix.tsx`)
 - Grid 13×13 de mãos (169 células)
-- Props: `readOnly?`, `grid?` (externo ou do store), `heatmap?: Record<hand, {c,t}>`
+- Props: `readOnly?`, `grid?` (externo ou do store), `heatmap?: Record<hand, {c,t}>`, `forceViewMode?`
 - Clique em célula vazia → `applyBrush()`. Clique em célula preenchida → `clearHand()`
-- Quando `heatmap` prop é fornecido, exibe toggle **"Ações" / "Erro / Acerto"** acima da grade (default: "Erro / Acerto")
+- Quando `heatmap` prop fornecido: toggle **"Ações" / "Erro / Acerto"** (default: "Erro / Acerto")
   - Modo "Ações": gradient de frequências (allin=roxo, raise=vermelho, call=verde)
   - Modo "Erro / Acerto": cores de precisão (verde ≥80%, amarelo 50-79%, vermelho <50%, azul-acinzentado=não treinado)
 - Tooltip no modo "Erro / Acerto": `x/y w%` em posição `fixed` seguindo o cursor
@@ -120,9 +130,6 @@ dashboard
 - `setBrush` clampeia automaticamente para total ≤ 100%
 - Fold é read-only = 100 - (call+raise+allin)
 
-## HandQuickSelect (`src/components/ui/HandQuickSelect.tsx`)
-- Botões "Pares", "Suiteds", "Offsuits" — quando `disabled`, usa `border-gray-700/50 bg-gray-800 text-gray-500` (sem `opacity-30`)
-
 ## TableEditorPage (`src/components/TableEditor/TableEditorPage.tsx`)
 - Grid colunas: `'20px 44px 1fr 56px 56px'` (H / Pos / Ação / Stack / Aposta)
 - Select de Ação tem `w-full` (importante para funcionar em todos os browsers)
@@ -130,7 +137,7 @@ dashboard
 - Sub-row HERO: input para `currentHeroRaiseSize` — se 0, botão RAISE não aparece no drill
 - `getStackLabel()`: "250bb" se todos iguais, "* 120bb" se um outlier
 - Clicar em cenário salvo carrega + destaca verde; botão "Salvar alterações no #X" confirma edição
-- `PokerTableEditor` dentro de wrapper `maxWidth:500px`, padding `px-10 pt-8 pb-16`
+- `PokerTableEditor` dentro de wrapper `maxWidth: 575px`, padding `px-10 pt-8 pb-16`
 
 ## SituationsPage (`src/components/Situations/SituationsPage.tsx`)
 - Acordeão por posição (ordem: STR, BB, SB, BTN, CO, HJ, MP, EP, LJ, UTG, demais alfabético)
@@ -139,30 +146,62 @@ dashboard
 - Botão "+ Novo Range" no cabeçalho da página
 - Modal heatmap: `fixed inset-0 z-50`, HandMatrix com toggle Ações/Erro-Acerto + botão resetar dados
 
-## TrainerPage / Drill (`src/components/Trainer/TrainerPage.tsx`)
-- Sidebar e título: "Drill" (antes "Treinar")
+## TrainerPage (`src/components/Trainer/TrainerPage.tsx`)
+
+### Render order no TrainerPage
+```tsx
+if (showHistory)      → <HistoryModal>
+if (showSummary)      → <DrillSummary>        // stopDrill() chamado ao fechar
+if (activeDrillRange) → <DrillActive>
+else                  → <DrillRangeSelect>
+```
+- `showSummary` é mostrado ANTES de verificar `activeDrillRange` — permite "Voltar ao treino" sem perder estado
+- `stopDrill()` só é chamado ao clicar "Encerrar" no DrillSummary, não ao abrir o resumo
 
 ### DrillRangeSelect
 - Acordeão por posição idêntico ao SituationsPage
 - `POSITION_ORDER = ['STR','BB','SB','BTN','CO','HJ','MP','EP','LJ','UTG']`
 - Badge mostra quantos ranges selecionados por grupo
-- Contador total + botão "CONTINUAR →" → step 'filter' (HandFilterGrid) → INICIAR TREINO
+- "CONTINUAR →" → step 'filter' (HandFilterGrid) sem modificar `drillExcludedHands`
+- HandFilterGrid → "INICIAR TREINO" → `startDrillSession()` + `nextDrillHand()`
+
+### HandFilterGrid
+- Mostra grid 13×13 com todas as 169 mãos
+- Usuário exclui manualmente as mãos que não quer treinar
+- **Nunca é modificado automaticamente** ao selecionar ranges
+- Só se aplica a ranges SEM `prereqRangeId` (ver lógica de `nextDrillHand` abaixo)
+
+### nextDrillHand — Lógica de candidatos
+```
+Para cada range selecionado, por cenário:
+  Se range TEM prereqRangeId (e prereq encontrado):
+    → candidatos = ALL_HANDS onde prereqGrid[h].fold < 100
+    → drillExcludedHands é IGNORADO
+  Se range NÃO TEM prereqRangeId (ou prereq não encontrado):
+    → candidatos = ALL_HANDS onde !drillExcludedHands.includes(h)
+    → sem filtro de fold — mãos fold=100 aparecem (resposta correta = Fold)
+  A ação correta sempre vem de activeGrid[hand] (nunca do prereqGrid)
+```
+- Cenário-first: resolve stackGrid baseado no heroStack do cenário antes de filtrar mãos
+- `correctAction` calculado de `activeGrid[hand]` via `getRngCorrectAction` ou `getTopFrequencyActions`
 
 ### DrillActive — Layout
-Container: `flex gap-3 h-[calc(100vh-90px)] overflow-hidden`
+Container: `w-full h-[calc(100vh-90px)] overflow-auto`
 
-**Coluna esquerda (flex-1 flex flex-col gap-3 overflow-hidden):**
-- Dark box (`flex-1 min-h-0 relative flex flex-col`):
-  - Botão "Ver Range" `absolute top-3 right-3`
-  - PokerTableEditor com `maxWidth: 'calc((100vh - 500px) / 0.63)'` — limita largura pela altura disponível para evitar scroll
-  - Faixa de cartas (`flex-shrink-0 border-t`): RNG badge (w-20 espaçador esquerdo) + 2 cartas + w-20 espaçador direito (cartas sempre centralizadas)
-- Resposta/feedback (`flex-shrink-0 min-h-[44px] text-center`)
-- Botões de ação (`flex-shrink-0 flex gap-2 justify-center`): FOLD/CALL/RAISE/ALL IN com `px-7 py-3.5` fixo; RAISE só aparece quando `currentHeroRaiseSize > 0`
-- Navegação (`flex-shrink-0 flex justify-center gap-2`): Próxima Mão / 2s (auto-advance) / ← Anterior (sempre visível, `disabled` quando sem mão anterior)
+**Coluna esquerda (flex-1 flex flex-col gap-2):**
+- Dark box (rounded-2xl, background #030712):
+  - Linha de topo: RNG badge (esquerda) + botões "Erro/Acerto" e "Ver Range" (direita)
+  - Mesa: `flex justify-center px-10 pt-1 pb-[60px]` → `PokerTableEditor heroCards={{r1,s1,r2,s2}}`
+  - Cartas do hero renderizadas **dentro** do PokerTableEditor, à direita do círculo do hero
+  - Feedback: `min-h-[56px] flex flex-col justify-center text-center px-4 py-2`
+  - Botões de ação: FOLD/CALL/RAISE(se heroRaiseSize>0)/ALL IN — `px-5 py-2.5 text-sm`
+  - Navegação: Próxima Mão / 2s (auto-advance com barra de progresso) / ← Anterior
 
-**Coluna direita (w-52 flex flex-col gap-2):**
-- `HandHistorySidebar` (`flex-1 min-h-0`) — scroll interno
-- Stats box (`flex-shrink-0`): nome do range, Mãos/Acertos/Erros/Consultas em grid 2 colunas, botão Encerrar Treino
+**Coluna direita (`sticky top-0 self-start h-[calc(100vh-90px)]`):**
+- `HandHistorySidebar` com scroll interno, título clicável → abre HistoryModal
+- Stats box: nome range, stackRange badge, grid 2 colunas (Mãos/Acertos/Erros/Consultas)
+- Botões: "Encerrar Treino" (chama stopDrill) / "Encerrar e ver resumo" (só chama onShowSummary)
+- Sidebar colapsável (botão ‹ / HIST ›)
 
 ### DrillActive — Comportamento
 - `goNextRef` pattern para auto-advance estável em useEffect
@@ -170,14 +209,36 @@ Container: `flex gap-3 h-[calc(100vh-90px)] overflow-hidden`
 - `viewingPrev` exibe snapshot anterior sem avançar; "← Mão atual" volta
 - `getFreqLabel()` formata "75% Raise e 25% Call"
 
+### DrillSummary
+- Props: `onClose: () => void` (chama stopDrill + fecha), `onBack?: () => void` (volta ao drill sem encerrar)
+- Botão "← Voltar ao treino" só aparece quando `onBack` é definido (drill ainda ativo)
+- Stats do topo: lê `sessionStats` do store (sessão atual, não acumulativo)
+- Stats por range: computados de `handHistory` (entries têm `rangeName`) — sessão atual
+- Heatmap por range: usa `handPerformance` (acumulativo histórico — correto por design)
+
+### HistoryModal
+- Sub-componente `SessionDetail` com estado próprio (`openRangeId`, `viewMode`)
+- Cada sessão: clicável → expande `SessionDetail`
+- `SessionDetail`: stats box (Mãos/Acertos/Erros/Precisão da sessão) + acordeão por range com heatmap
+- Heatmap usa `handPerformance` acumulativo (sessões passadas não têm dados por mão)
+
 ## PokerTableEditor (`src/components/ui/PokerTableEditor.tsx`)
-- Assentos: `w-[48px] h-[48px] absolute z-10/z-20`
-- Seat badge de stack: `absolute -bottom-7` — vaza 28px abaixo; container precisa de `pb-8` mínimo (ou `pb-16` para folga)
-- Posição visual determinada por `activeSlots` (SLOTS_6MAX ou SLOTS_8MAX)
-- Rotação: HERO sempre no slot 0; dealer button segue posição BTN após rotação
+- Assentos: `w-[55px] h-[55px]` — 15% maior que original
+- Exported: `HeroCards` interface `{ r1, s1, r2, s2 }` e componente `PokerTableEditor`
+- Prop `heroCards?: HeroCards` — renderiza `SmallCard` pares à direita do círculo do hero via `activeSlots[0]`
+- `SmallCard`: `width:38, height:56`, fundo por naipe (`SUIT_BG`), ícone naipe (`SUIT_ICON`)
+- Cartas posicionadas com `transform: 'translate(32px, -50%)'` a partir do slot do hero
+- Seat badge de stack: apenas número bb (`text-[11.5px]` azul), sem nome da posição
+- Villain mini cards: `w-3.5 h-[18px]` em `top-[39px]`
+- `BLIND_BET` fallback: SB/BB/STR fold mostram fichas dos blinds mesmo com `bet=0`
 - Assentos em `l:0%`/`l:100%` vazam lateralmente — container precisa de `px-10` mínimo
-- Sistema de fichas com denominações (100/25/5/2/1/0.5bb) em cores realistas, pilha única
-- `BLIND_BET` fallback: SB/BB/STR fold mostram fichas dos blinds mesmo com `bet=0` (compatibilidade com cenários antigos)
+- Stack badge vaza 28px abaixo — wrapper precisa de `pb-8` mínimo (ou `pb-[60px]` no drill)
+
+## StatsPage (`src/components/Stats/StatsPage.tsx`)
+- Lista sessões em ordem reversa com `SessionCard`
+- `SessionCard`: accuracy%, data, tableSize, duração, range names, mãos/acertos/erros + botão olhinho
+- Botão olhinho → `setSelectedSession(session)` → renderiza `SessionDetailView`
+- `SessionDetailView`: cabeçalho com "← Voltar", stats box idêntico ao DrillSummary, acordeão por range com heatmap
 
 ## Convenções e Padrões
 - **Sem comentários** no código (exceto WHY não-óbvios)
@@ -192,7 +253,10 @@ Container: `flex gap-3 h-[calc(100vh-90px)] overflow-hidden`
 - `setBrush` deve sempre fazer `set({ brush: { ...brush, call:c, raise:r, allin:a } })` com os 3 campos
 - Assentos do PokerTableEditor têm `z-10/z-20` e podem vazar — `pointer-events-none` no wrapper quando puramente visual
 - `<select>` em CSS Grid pode não esticar em Safari sem `w-full` explícito
-- Badge de stack (`-bottom-7`) vaza 28px — wrapper precisa de `pb-8` mínimo para não clipar
+- Badge de stack vaza 28px abaixo — wrapper precisa de `pb-8` mínimo
+- `stopDrill()` NÃO limpa `sessionStats`/`handHistory` — DrillSummary depende disso após encerrar
+- `handPerformance` é acumulativo (all-time). Para stats da sessão atual usar `sessionStats` + `handHistory`
+- Sub-componentes com estado próprio (ex: SessionDetail) evitam conflito de viewMode entre sessões no accordion
 
 ## Preferências do Usuário (Daniel)
 - Respostas em português
