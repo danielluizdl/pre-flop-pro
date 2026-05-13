@@ -120,9 +120,15 @@ export function SituationsPage() {
   const handPerformance      = useStore(s => s.handPerformance)
   const clearHandPerformance = useStore(s => s.clearHandPerformance)
 
-  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
-  const [heatmapId, setHeatmapId]   = useState<number | null>(null)
-  const [previewId, setPreviewId]   = useState<number | null>(null)
+  const [openGroups, setOpenGroups]       = useState<Set<string>>(new Set())
+  const [heatmapId, setHeatmapId]         = useState<number | null>(null)
+  const [heatmapGridIdx, setHeatmapGridIdx] = useState(0)
+  const [previewId, setPreviewId]         = useState<number | null>(null)
+
+  function openHeatmap(id: number) {
+    setHeatmapId(id)
+    setHeatmapGridIdx(0)
+  }
 
   function toggleGroup(pos: string) {
     setOpenGroups(prev => {
@@ -146,9 +152,14 @@ export function SituationsPage() {
     ...Object.keys(grouped).filter(p => !POSITION_ORDER.includes(p)).sort(),
   ]
 
-  const heatmapRange = heatmapId !== null ? ranges.find(r => r.id === heatmapId) : null
-  const heatmapPerf  = heatmapId !== null ? handPerformance[heatmapId] : undefined
-  const hasData      = !!heatmapPerf && Object.values(heatmapPerf).some(p => p.t > 0)
+  const heatmapRange    = heatmapId !== null ? ranges.find(r => r.id === heatmapId) : null
+  const heatmapPerf     = heatmapId !== null ? handPerformance[heatmapId] : undefined
+  const hasData         = !!heatmapPerf && Object.values(heatmapPerf).some(p => p.t > 0)
+  const heatmapGrids    = heatmapRange?.stackGrids && heatmapRange.stackGrids.length > 0
+    ? heatmapRange.stackGrids
+    : null
+  const safeGridIdx     = heatmapGrids ? Math.min(heatmapGridIdx, heatmapGrids.length - 1) : 0
+  const heatmapGrid     = heatmapGrids ? heatmapGrids[safeGridIdx].grid : (heatmapRange?.grid ?? {})
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
@@ -200,7 +211,7 @@ export function SituationsPage() {
                   <div className="border-t border-gray-700 bg-gray-900/40 p-3 grid gap-2"
                     style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
                     {group.map(r => (
-                      <RangeCard key={r.id} r={r} allRanges={ranges} onViewHeatmap={setHeatmapId} onPreview={setPreviewId} />
+                      <RangeCard key={r.id} r={r} allRanges={ranges} onViewHeatmap={openHeatmap} onPreview={setPreviewId} />
                     ))}
                   </div>
                 )}
@@ -227,13 +238,32 @@ export function SituationsPage() {
               <button onClick={() => setHeatmapId(null)} className="text-gray-400 hover:text-white text-xl ml-4">✕</button>
             </div>
 
+            {heatmapGrids && (
+              <div className="flex gap-1.5 flex-wrap mb-4">
+                {heatmapGrids.map((sg, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setHeatmapGridIdx(i)}
+                    className={[
+                      'px-2.5 py-1 text-xs font-semibold rounded-lg border transition-colors',
+                      safeGridIdx === i
+                        ? 'bg-brand-600 border-brand-500 text-white'
+                        : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700',
+                    ].join(' ')}
+                  >
+                    {sg.stackRange || `Grid ${i + 1}`}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {!hasData ? (
               <div className="text-center py-12 text-gray-500">
                 <p className="mb-2">Nenhum dado de treino ainda.</p>
                 <p className="text-xs">Treine este range para gerar o heatmap.</p>
               </div>
             ) : (
-              <HandMatrix readOnly grid={heatmapRange.grid} heatmap={heatmapPerf} />
+              <HandMatrix readOnly grid={heatmapGrid} heatmap={heatmapPerf} />
             )}
 
             <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-700">

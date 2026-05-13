@@ -809,6 +809,7 @@ export const useStore = create<AppState>()(
               const matched = heroStack > 0
                 ? r.stackGrids.findIndex(sg => stackMatchesRange(heroStack, sg.stackRange))
                 : -1
+              if (heroStack > 0 && matched === -1) return
               stackGridIdx = matched !== -1 ? matched : 0
               stackRangeLabel = r.stackGrids[stackGridIdx].stackRange
             }
