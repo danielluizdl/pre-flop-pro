@@ -7,46 +7,9 @@ import { RangePreviewModal } from '../ui/RangePreviewModal'
 import { Eye } from 'lucide-react'
 import { RANKS, SUIT_ICONS } from '../../types'
 import { ALL_HANDS } from '../../utils/hands'
-import type { HandHistoryEntry } from '../../types'
+import type { HandHistoryEntry, Range, TrainingSession } from '../../types'
 
-/* ── Stats bar ──────────────────────────────────────────────────────────────── */
-function StatsBar() {
-  const stats = useStore(s => s.sessionStats)
-  return (
-    <div className="flex justify-center gap-5 bg-gray-800 border border-gray-700 py-2.5 px-5 rounded-xl font-semibold text-sm mb-4">
-      <span className="text-gray-300">Mãos: <strong className="text-white">{stats.hands}</strong></span>
-      <span className="text-emerald-400">Acertos: <strong>{stats.correct}</strong></span>
-      <span className="text-red-400">Erros: <strong>{stats.errors}</strong></span>
-      <span className="text-gray-400">Consultas: <strong>{stats.consults}</strong></span>
-    </div>
-  )
-}
 
-/* ── Playing card ────────────────────────────────────────────────────────────── */
-function PlayingCard({ rank, suit, scale = 1 }: { rank: string; suit: string; scale?: number }) {
-  const colorMap: Record<string, string> = {
-    h: 'bg-red-600',
-    d: 'bg-blue-600',
-    s: 'bg-gray-800',
-    c: 'bg-emerald-700',
-  }
-  const w = Math.max(36, Math.round(64 * scale))
-  const h = Math.round(w * 1.5)
-  const fs = Math.max(10, Math.round(18 * scale))
-  const fsIcon = Math.max(16, Math.round(36 * scale))
-  return (
-    <div
-      className={`relative rounded-lg ${colorMap[suit] ?? 'bg-gray-500'} shadow-lg border-2 border-white/30`}
-      style={{ width: w, height: h, flexShrink: 0 }}
-    >
-      <div className="absolute top-1 left-1.5 font-extrabold text-white leading-none" style={{ fontSize: fs }}>{rank}</div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white" style={{ fontSize: fsIcon }}>
-        {SUIT_ICONS[suit]}
-      </div>
-      <div className="absolute bottom-1 right-1.5 font-extrabold text-white leading-none rotate-180" style={{ fontSize: fs }}>{rank}</div>
-    </div>
-  )
-}
 
 /* ── Mini card for history ─────────────────────────────────────────────────── */
 function MiniCard({ rank, suit }: { rank: string; suit: string }) {
@@ -87,20 +50,212 @@ function HandHistoryItem({ entry }: { entry: HandHistoryEntry }) {
 }
 
 /* ── Hand history sidebar ────────────────────────────────────────────────────── */
-function HandHistorySidebar() {
+function HandHistorySidebar({ onOpenModal }: { onOpenModal: () => void }) {
   const history = useStore(s => s.handHistory)
   const reversed = [...history].reverse()
   return (
     <div className="flex-1 min-h-0 bg-gray-800 rounded-xl border border-gray-700 p-3 flex flex-col">
-      <h3 className="text-xs font-bold text-gray-400 mb-2 flex-shrink-0">
+      <button
+        onClick={onOpenModal}
+        className="text-xs font-bold text-gray-400 mb-2 flex-shrink-0 text-left hover:text-white transition-colors"
+      >
         HISTÓRICO <span className="text-gray-500">({history.length})</span>
-      </h3>
+      </button>
       <div className="flex flex-col gap-1.5 overflow-y-auto flex-1">
         {reversed.length === 0 ? (
           <p className="text-xs text-gray-600 text-center mt-4">Sem mãos ainda</p>
         ) : (
           reversed.map(entry => <HandHistoryItem key={entry.id} entry={entry} />)
         )}
+      </div>
+    </div>
+  )
+}
+
+/* ── Session detail (used inside HistoryModal) ────────────────────────────── */
+function SessionDetail({ session, ranges, handPerformance }: {
+  session: TrainingSession
+  ranges: Range[]
+  handPerformance: Record<number, Record<string, { c: number; t: number }>>
+}) {
+  const [openRangeId, setOpenRangeId] = useState<number | null>(null)
+  const [viewMode, setViewMode]       = useState<'actions' | 'heatmap'>('heatmap')
+
+  useEffect(() => { setViewMode('heatmap') }, [openRangeId])
+
+  const sessionRanges = session.rangeNames
+    .map(name => ranges.find(r => r.name === name))
+    .filter((r): r is Range => r !== undefined)
+
+  const acc = session.hands > 0 ? Math.round(session.correct / session.hands * 100) : null
+
+  return (
+    <div className="border-t border-gray-700 bg-gray-900/40 p-4 space-y-4">
+      {/* Stats box idêntico ao DrillSummary */}
+      <div className="bg-gray-800 border border-gray-700 rounded-xl p-4">
+        <div className="grid grid-cols-4 gap-3 text-center">
+          <div>
+            <div className="text-2xl font-extrabold text-white">{session.hands}</div>
+            <div className="text-xs text-gray-400">Mãos</div>
+          </div>
+          <div>
+            <div className="text-2xl font-extrabold text-emerald-400">{session.correct}</div>
+            <div className="text-xs text-gray-400">Acertos</div>
+          </div>
+          <div>
+            <div className="text-2xl font-extrabold text-red-400">{session.errors}</div>
+            <div className="text-xs text-gray-400">Erros</div>
+          </div>
+          <div>
+            <div className={`text-2xl font-extrabold ${acc !== null ? (acc >= 80 ? 'text-emerald-400' : acc >= 50 ? 'text-yellow-400' : 'text-red-400') : 'text-gray-600'}`}>
+              {acc !== null ? `${acc}%` : '—'}
+            </div>
+            <div className="text-xs text-gray-400">Precisão</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Acordeão por range */}
+      {sessionRanges.length === 0 ? (
+        <p className="text-gray-500 text-sm text-center py-2">Ranges desta sessão não encontrados.</p>
+      ) : (
+        <div className="space-y-2">
+          {sessionRanges.map(r => {
+            const perf     = handPerformance[r.id] ?? {}
+            const vals     = Object.values(perf)
+            const total    = vals.reduce((s, v) => s + v.t, 0)
+            const correct  = vals.reduce((s, v) => s + v.c, 0)
+            const accuracy = total > 0 ? Math.round(correct / total * 100) : null
+            const isOpenR  = openRangeId === r.id
+
+            return (
+              <div key={r.id} className="border border-gray-700/60 rounded-xl overflow-hidden">
+                <button
+                  onClick={() => setOpenRangeId(isOpenR ? null : r.id)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-800/60 hover:bg-gray-800 transition-colors text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="font-bold text-white text-sm">{r.name}</span>
+                    {r.positions.length > 0 && (
+                      <span className="text-gray-400 text-xs">{r.positions.join(', ')}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {accuracy !== null ? (
+                      <span className={`text-sm font-bold ${accuracy >= 80 ? 'text-emerald-400' : accuracy >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+                        {accuracy}%
+                      </span>
+                    ) : (
+                      <span className="text-gray-600 text-xs">sem dados</span>
+                    )}
+                    <span className={`text-gray-400 text-lg transition-transform duration-200 inline-block ${isOpenR ? 'rotate-180' : ''}`}>›</span>
+                  </div>
+                </button>
+
+                {isOpenR && (
+                  <div className="border-t border-gray-700/60 bg-gray-900/40 p-4">
+                    <div className="flex justify-end gap-1.5 mb-3">
+                      {(['heatmap', 'actions'] as const).map(mode => (
+                        <button
+                          key={mode}
+                          onClick={() => setViewMode(mode)}
+                          className={`px-2 py-0.5 text-xs border rounded-lg transition-colors ${viewMode === mode ? 'border-brand-500 bg-brand-900/30 text-brand-300' : 'border-gray-600 bg-gray-900/80 text-gray-300 hover:bg-gray-700'}`}
+                        >
+                          {mode === 'heatmap' ? 'Erro / Acerto' : 'Ver Range'}
+                        </button>
+                      ))}
+                    </div>
+                    <HandMatrix
+                      readOnly
+                      grid={r.stackGrids?.[0]?.grid ?? r.grid}
+                      heatmap={handPerformance[r.id]}
+                      customActionColor={r.customAction?.color}
+                      forceViewMode={viewMode}
+                    />
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ── History modal ───────────────────────────────────────────────────────────── */
+function HistoryModal({ onClose }: { onClose: () => void }) {
+  const trainingHistory = useStore(s => s.trainingHistory)
+  const ranges          = useStore(s => s.ranges)
+  const handPerformance = useStore(s => s.handPerformance)
+
+  const [openId, setOpenId] = useState<number | null>(null)
+
+  function formatDate(ts: number) {
+    return new Date(ts).toLocaleDateString('pt-BR', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    })
+  }
+
+  const sessions = [...trainingHistory].reverse()
+
+  return (
+    <div className="space-y-4 max-w-2xl mx-auto">
+
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-extrabold text-white mb-1">Histórico de Treino</h2>
+          <p className="text-gray-400 text-sm">Clique em uma sessão para ver o desempenho por mão.</p>
+        </div>
+        <button
+          onClick={onClose}
+          className="px-4 py-2 border border-gray-600 bg-gray-800 text-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-700 transition-colors"
+        >
+          Voltar
+        </button>
+      </div>
+
+      {sessions.length === 0 && (
+        <p className="text-gray-600 text-sm text-center py-16">Nenhuma sessão registrada ainda.</p>
+      )}
+
+      <div className="space-y-2">
+        {sessions.map((session: TrainingSession) => {
+          const acc    = session.hands > 0 ? Math.round(session.correct / session.hands * 100) : 0
+          const isOpen = openId === session.id
+
+          return (
+            <div key={session.id} className="border border-gray-700 rounded-xl overflow-hidden">
+              <button
+                onClick={() => setOpenId(isOpen ? null : session.id)}
+                className="w-full flex items-center justify-between px-4 py-3 bg-gray-800 hover:bg-gray-750 transition-colors text-left"
+              >
+                <div className="min-w-0">
+                  <div className="font-semibold text-white text-sm">{formatDate(session.timestamp)}</div>
+                  <div className="text-gray-400 text-xs truncate">{session.rangeNames.join(', ')}</div>
+                </div>
+                <div className="flex items-center gap-3 flex-shrink-0 ml-2">
+                  <div className="text-right">
+                    <div className={`text-sm font-bold ${acc >= 80 ? 'text-emerald-400' : acc >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+                      {acc}%
+                    </div>
+                    <div className="text-xs text-gray-500">{session.hands} mãos</div>
+                  </div>
+                  <span className={`text-gray-400 text-lg transition-transform duration-200 inline-block ${isOpen ? 'rotate-180' : ''}`}>›</span>
+                </div>
+              </button>
+
+              {isOpen && (
+                <SessionDetail
+                  session={session}
+                  ranges={ranges}
+                  handPerformance={handPerformance}
+                />
+              )}
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -440,8 +595,151 @@ type PrevSnapshot = {
   freqLabel: string
 }
 
+/* ── Drill summary ───────────────────────────────────────────────────────────── */
+function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () => void }) {
+  const ranges          = useStore(s => s.ranges)
+  const selectedIds     = useStore(s => s.selectedDrillRangeIds)
+  const handPerformance = useStore(s => s.handPerformance)
+  const sessionStats    = useStore(s => s.sessionStats)
+  const handHistory     = useStore(s => s.handHistory)
+  const [openId, setOpenId]     = useState<number | null>(null)
+  const [viewMode, setViewMode] = useState<'actions' | 'heatmap'>('heatmap')
+
+  useEffect(() => { setViewMode('heatmap') }, [openId])
+
+  const trainedRanges = ranges.filter(r => selectedIds.includes(r.id))
+
+  const sessionByRange = handHistory.reduce((acc, e) => {
+    if (!acc[e.rangeName]) acc[e.rangeName] = { total: 0, correct: 0 }
+    acc[e.rangeName].total++
+    if (e.correct) acc[e.rangeName].correct++
+    return acc
+  }, {} as Record<string, { total: number; correct: number }>)
+
+  const sessionAccuracy = sessionStats.hands > 0
+    ? Math.round(sessionStats.correct / sessionStats.hands * 100)
+    : null
+
+  return (
+    <div className="space-y-4 max-w-2xl mx-auto">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-extrabold text-white mb-1">Resumo do Treino</h2>
+          <p className="text-gray-400 text-sm">Clique em um range para ver o desempenho por mão.</p>
+        </div>
+        <div className="flex gap-2">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="px-4 py-2 border border-brand-700/50 bg-brand-900/20 text-brand-400 rounded-lg text-sm font-semibold hover:bg-brand-900/40 transition-colors"
+            >
+              ← Voltar ao treino
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-600 bg-gray-800 text-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-700 transition-colors"
+          >
+            Encerrar
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-gray-800 border border-gray-700 rounded-xl p-4">
+        <div className="grid grid-cols-4 gap-3 text-center">
+          <div>
+            <div className="text-2xl font-extrabold text-white">{sessionStats.hands}</div>
+            <div className="text-xs text-gray-400">Mãos</div>
+          </div>
+          <div>
+            <div className="text-2xl font-extrabold text-emerald-400">{sessionStats.correct}</div>
+            <div className="text-xs text-gray-400">Acertos</div>
+          </div>
+          <div>
+            <div className="text-2xl font-extrabold text-red-400">{sessionStats.errors}</div>
+            <div className="text-xs text-gray-400">Erros</div>
+          </div>
+          <div>
+            <div className={`text-2xl font-extrabold ${sessionAccuracy !== null ? (sessionAccuracy >= 80 ? 'text-emerald-400' : sessionAccuracy >= 50 ? 'text-yellow-400' : 'text-red-400') : 'text-gray-600'}`}>
+              {sessionAccuracy !== null ? `${sessionAccuracy}%` : '—'}
+            </div>
+            <div className="text-xs text-gray-400">Precisão</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {trainedRanges.map(r => {
+          const sess     = sessionByRange[r.name] ?? { total: 0, correct: 0 }
+          const accuracy = sess.total > 0 ? Math.round(sess.correct / sess.total * 100) : null
+          const isOpen = openId === r.id
+          const grid   = r.stackGrids?.[0]?.grid ?? r.grid
+
+          return (
+            <div key={r.id} className="border border-gray-700 rounded-xl overflow-hidden">
+              <button
+                onClick={() => setOpenId(isOpen ? null : r.id)}
+                className="w-full flex items-center justify-between px-4 py-3 bg-gray-800 hover:bg-gray-750 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="font-bold text-white text-sm">{r.name}</span>
+                  {r.positions.length > 0 && (
+                    <span className="text-gray-400 text-xs">{r.positions.join(', ')}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3">
+                  {accuracy !== null ? (
+                    <span className={`text-sm font-bold ${accuracy >= 80 ? 'text-emerald-400' : accuracy >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+                      {accuracy}% · {sess.total} mão{sess.total !== 1 ? 's' : ''}
+                    </span>
+                  ) : (
+                    <span className="text-gray-600 text-xs">sem dados</span>
+                  )}
+                  <span className={`text-gray-400 text-lg transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>›</span>
+                </div>
+              </button>
+
+              {isOpen && (
+                <div className="border-t border-gray-700 bg-gray-900/40 p-4">
+                  {sess.total === 0 ? (
+                    <p className="text-gray-500 text-sm text-center py-4">Nenhuma mão treinada neste range nesta sessão.</p>
+                  ) : (
+                    <>
+                      <div className="flex justify-end gap-1.5 mb-3">
+                        <button
+                          onClick={() => setViewMode('heatmap')}
+                          className={`px-2 py-0.5 text-xs border rounded-lg transition-colors ${viewMode === 'heatmap' ? 'border-brand-500 bg-brand-900/30 text-brand-300' : 'border-gray-600 bg-gray-900/80 text-gray-300 hover:bg-gray-700'}`}
+                        >
+                          Erro / Acerto
+                        </button>
+                        <button
+                          onClick={() => setViewMode('actions')}
+                          className={`px-2 py-0.5 text-xs border rounded-lg transition-colors ${viewMode === 'actions' ? 'border-brand-500 bg-brand-900/30 text-brand-300' : 'border-gray-600 bg-gray-900/80 text-gray-300 hover:bg-gray-700'}`}
+                        >
+                          Ver Range
+                        </button>
+                      </div>
+                      <HandMatrix
+                        readOnly
+                        grid={grid}
+                        heatmap={handPerformance[r.id]}
+                        customActionColor={r.customAction?.color}
+                        forceViewMode={viewMode}
+                      />
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 /* ── Active drill ──────────────────────────────────────────────────────────── */
-function DrillActive() {
+function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => void; onShowHistory: () => void }) {
   const activeDrillRange       = useStore(s => s.activeDrillRange)
   const activeDrillStackRange  = useStore(s => s.activeDrillStackRange)
   const activeDrillStackGridIdx = useStore(s => s.activeDrillStackGridIdx)
@@ -549,114 +847,109 @@ function DrillActive() {
         {/* LEFT: dark box + controles */}
         <div className="flex-1 min-w-0 flex flex-col gap-2">
 
-          {/* Dark box: botões, mesa, cartas */}
+          {/* Dark box: botões, mesa, cartas, resposta, ações */}
           <div
-            className="flex-1 min-h-0 rounded-2xl border border-gray-800 flex flex-col"
-            style={{ background: '#030712', boxShadow: 'inset 0 0 60px rgba(0,0,0,0.9)', minHeight: 340 }}
+            className="rounded-2xl border border-gray-800 flex flex-col"
+            style={{ background: '#030712', boxShadow: 'inset 0 0 60px rgba(0,0,0,0.9)' }}
           >
             {/* Botões topo */}
-            <div className="flex-shrink-0 flex justify-end gap-1.5 pt-1.5 pr-2">
-              <button
-                onClick={() => setModalViewMode('heatmap')}
-                className="px-2 py-0.5 text-xs border border-gray-600 bg-gray-900/80 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                Erro / Acerto
-              </button>
-              <button
-                onClick={() => { setModalViewMode('actions'); incrementConsults() }}
-                className="px-2 py-0.5 text-xs border border-gray-600 bg-gray-900/80 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                Ver Range
-              </button>
-            </div>
-
-            {/* Mesa */}
-            <div className="flex-1 min-h-0 flex items-center justify-center px-10 pt-1 pb-[52px]">
-              <div className="w-full max-w-[460px]">
-                <PokerTableEditor />
-              </div>
-            </div>
-
-            {/* Cartas */}
-            <div className="flex-shrink-0 border-t border-gray-800 flex items-center justify-center gap-3 py-2 px-6">
-              <div className="w-[72px] flex justify-end">
+            <div className="flex-shrink-0 flex items-center justify-between gap-1.5 pt-1.5 px-2">
+              <div>
                 {useRng && (
-                  <span className="bg-gray-800 border border-gray-600 text-white text-xs rounded-full font-bold px-2.5 py-1.5 tracking-wider whitespace-nowrap">
+                  <span className="bg-gray-800 border border-gray-600 text-white text-xs rounded-full font-bold px-2.5 py-1 tracking-wider whitespace-nowrap">
                     RNG {displayRng}
                   </span>
                 )}
               </div>
-              <PlayingCard rank={r1} suit={s1} />
-              <PlayingCard rank={r2} suit={s2} />
-              <div className="w-[72px]" />
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => setModalViewMode('heatmap')}
+                  className="px-2 py-0.5 text-xs border border-gray-600 bg-gray-900/80 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  Erro / Acerto
+                </button>
+                <button
+                  onClick={() => { setModalViewMode('actions'); incrementConsults() }}
+                  className="px-2 py-0.5 text-xs border border-gray-600 bg-gray-900/80 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  Ver Range
+                </button>
+              </div>
             </div>
-          </div>
 
-          {/* Resposta */}
-          <div className="flex-shrink-0 min-h-[36px] flex flex-col justify-center text-center">
-            {!!showFeedback && (
-              <>
-                <div className={`font-bold text-lg ${showFeedbackOk ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {showFeedback}
-                </div>
-                {!!showFreqLabel && (
-                  <div className="text-gray-400 text-sm mt-0.5">{showFreqLabel}</div>
-                )}
-              </>
-            )}
-          </div>
+            {/* Mesa com cartas do hero */}
+            <div className="flex justify-center px-10 pt-1 pb-[60px]">
+              <div className="w-full max-w-[529px]">
+                <PokerTableEditor heroCards={{ r1, s1, r2, s2 }} />
+              </div>
+            </div>
 
-          {/* Botões de ação */}
-          <div className="flex-shrink-0 flex justify-center gap-2">
-            {actionBtns.map(({ label, action, color }) => (
-              <button
-                key={action}
-                onClick={() => handleAction(action)}
-                disabled={isAnswered}
-                className="text-white font-bold rounded-lg transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed px-5 py-2.5 text-sm"
-                style={{ backgroundColor: color }}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {/* Navegação */}
-          <div className="flex-shrink-0 flex items-center justify-center gap-2">
-            <button
-              onClick={doGoNext}
-              className={[
-                'px-6 py-2 rounded-xl font-bold text-sm transition-colors',
-                isAnswered ? 'bg-brand-600 hover:bg-brand-500 text-white' : 'bg-gray-700 hover:bg-gray-600 text-white',
-              ].join(' ')}
-            >
-              {viewingPrev ? '← Mão atual' : 'Próxima Mão →'}
-            </button>
-            <button
-              onClick={() => setAutoAdvance(a => !a)}
-              className={[
-                'relative overflow-hidden px-6 py-2 rounded-xl border font-semibold text-sm transition-colors',
-                autoAdvance ? 'bg-brand-600/40 border-brand-500 text-brand-300' : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700',
-              ].join(' ')}
-            >
-              {autoAdvance && answered && !viewingPrev && (
-                <span key={activeHand} className="absolute inset-y-0 left-0 bg-brand-500/30"
-                  style={{ animation: 'btn-fill 2s linear forwards' }} />
+            {/* Resposta */}
+            <div className="flex-shrink-0 min-h-[56px] flex flex-col justify-center text-center px-4 py-2">
+              {!!showFeedback && (
+                <>
+                  <div className={`font-bold text-lg ${showFeedbackOk ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {showFeedback}
+                  </div>
+                  {!!showFreqLabel && (
+                    <div className="text-gray-400 text-sm mt-0.5">{showFreqLabel}</div>
+                  )}
+                </>
               )}
-              <span className="relative z-10">2s</span>
-            </button>
-            <button
-              onClick={() => setViewingPrev(true)}
-              disabled={!prevSnapshot || viewingPrev}
-              className="px-4 py-2 rounded-xl border border-gray-600 bg-gray-800 text-gray-400 hover:bg-gray-700 font-semibold text-xs transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              ← Anterior
-            </button>
+            </div>
+
+            {/* Botões de ação */}
+            <div className="flex-shrink-0 flex justify-center gap-2">
+              {actionBtns.map(({ label, action, color }) => (
+                <button
+                  key={action}
+                  onClick={() => handleAction(action)}
+                  disabled={isAnswered}
+                  className="text-white font-bold rounded-lg transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed px-5 py-2.5 text-sm"
+                  style={{ backgroundColor: color }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Navegação */}
+            <div className="flex-shrink-0 flex items-center justify-center gap-2 py-3">
+              <button
+                onClick={doGoNext}
+                className={[
+                  'px-6 py-2 rounded-xl font-bold text-sm transition-colors',
+                  isAnswered ? 'bg-brand-600 hover:bg-brand-500 text-white' : 'bg-gray-700 hover:bg-gray-600 text-white',
+                ].join(' ')}
+              >
+                {viewingPrev ? '← Mão atual' : 'Próxima Mão →'}
+              </button>
+              <button
+                onClick={() => setAutoAdvance(a => !a)}
+                className={[
+                  'relative overflow-hidden px-6 py-2 rounded-xl border font-semibold text-sm transition-colors',
+                  autoAdvance ? 'bg-brand-600/40 border-brand-500 text-brand-300' : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700',
+                ].join(' ')}
+              >
+                {autoAdvance && answered && !viewingPrev && (
+                  <span key={activeHand} className="absolute inset-y-0 left-0 bg-brand-500/30"
+                    style={{ animation: 'btn-fill 2s linear forwards' }} />
+                )}
+                <span className="relative z-10">2s</span>
+              </button>
+              <button
+                onClick={() => setViewingPrev(true)}
+                disabled={!prevSnapshot || viewingPrev}
+                className="px-4 py-2 rounded-xl border border-gray-600 bg-gray-800 text-gray-400 hover:bg-gray-700 font-semibold text-xs transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                ← Anterior
+              </button>
+            </div>
           </div>
         </div>
 
         {/* RIGHT: histórico + stats */}
-        <div className="flex-shrink-0 flex flex-col gap-2" style={{ width: sidebarW }}>
+        <div className="flex-shrink-0 flex flex-col gap-2 sticky top-0 self-start" style={{ width: sidebarW, height: 'calc(100vh - 90px)' }}>
           {sidebarCollapsed ? (
             <button
               onClick={() => setSidebarCollapsed(false)}
@@ -668,7 +961,7 @@ function DrillActive() {
           ) : (
             <>
               <div className="flex-1 min-h-0 flex flex-col relative">
-                <HandHistorySidebar />
+                <HandHistorySidebar onOpenModal={onShowHistory} />
                 <button
                   onClick={() => setSidebarCollapsed(true)}
                   className="absolute top-2 right-2 z-10 w-5 h-5 rounded-full bg-gray-700 text-gray-400 hover:text-white hover:bg-gray-600 flex items-center justify-center text-xs transition-colors"
@@ -696,12 +989,18 @@ function DrillActive() {
                   <span className="text-gray-400">Consultas</span>
                   <span className="text-white font-bold text-right">{stats.consults}</span>
                 </div>
-                <div className="pt-1 border-t border-gray-700">
+                <div className="pt-1 border-t border-gray-700 space-y-1.5">
                   <button
                     onClick={stopDrill}
                     className="w-full py-1.5 text-xs border border-gray-700 bg-gray-900 text-gray-500 rounded-lg hover:bg-gray-700 hover:text-gray-200 font-semibold transition-colors"
                   >
                     Encerrar Treino
+                  </button>
+                  <button
+                    onClick={onShowSummary}
+                    className="w-full py-1.5 text-xs border border-brand-700/50 bg-brand-900/20 text-brand-400 rounded-lg hover:bg-brand-900/40 font-semibold transition-colors"
+                  >
+                    Encerrar e ver resumo
                   </button>
                 </div>
               </div>
@@ -735,8 +1034,18 @@ function DrillActive() {
 /* ── Main TrainerPage ─────────────────────────────────────────────────────── */
 export function TrainerPage() {
   const activeDrillRange = useStore(s => s.activeDrillRange)
+  const stopDrill        = useStore(s => s.stopDrill)
+  const [showSummary, setShowSummary]   = useState(false)
+  const [showHistory, setShowHistory]   = useState(false)
 
-  if (activeDrillRange) return <DrillActive />
+  if (showHistory) return <HistoryModal onClose={() => setShowHistory(false)} />
+  if (showSummary) return (
+    <DrillSummary
+      onClose={() => { stopDrill(); setShowSummary(false) }}
+      onBack={activeDrillRange ? () => setShowSummary(false) : undefined}
+    />
+  )
+  if (activeDrillRange) return <DrillActive onShowSummary={() => setShowSummary(true)} onShowHistory={() => setShowHistory(true)} />
 
   return <DrillRangeSelect />
 }
