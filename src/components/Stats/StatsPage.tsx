@@ -17,10 +17,9 @@ function formatDuration(seconds: number): string {
 }
 
 /* ── Detalhe de sessão ─────────────────────────────────────────────────────── */
-function SessionDetailView({ session, ranges, handPerformance, onBack }: {
+function SessionDetailView({ session, ranges, onBack }: {
   session: TrainingSession
   ranges: Range[]
-  handPerformance: Record<number, Record<string, { c: number; t: number }>>
   onBack: () => void
 }) {
   const [openRangeId, setOpenRangeId] = useState<number | null>(null)
@@ -33,6 +32,7 @@ function SessionDetailView({ session, ranges, handPerformance, onBack }: {
     .filter((r): r is Range => r !== undefined)
 
   const acc = session.hands > 0 ? Math.round(session.correct / session.hands * 100) : null
+  const sessionPerf = session.handPerf ?? null
 
   return (
     <div className="space-y-4 max-w-2xl">
@@ -81,7 +81,7 @@ function SessionDetailView({ session, ranges, handPerformance, onBack }: {
       ) : (
         <div className="space-y-2">
           {sessionRanges.map(r => {
-            const perf     = handPerformance[r.id] ?? {}
+            const perf     = sessionPerf?.[r.name] ?? {}
             const vals     = Object.values(perf)
             const total    = vals.reduce((s, v) => s + v.t, 0)
             const correct  = vals.reduce((s, v) => s + v.c, 0)
@@ -114,24 +114,30 @@ function SessionDetailView({ session, ranges, handPerformance, onBack }: {
 
                 {isOpen && (
                   <div className="border-t border-gray-700 bg-gray-900/40 p-4">
-                    <div className="flex justify-end gap-1.5 mb-3">
-                      {(['heatmap', 'actions'] as const).map(mode => (
-                        <button
-                          key={mode}
-                          onClick={() => setViewMode(mode)}
-                          className={`px-2 py-0.5 text-xs border rounded-lg transition-colors ${viewMode === mode ? 'border-brand-500 bg-brand-900/30 text-brand-300' : 'border-gray-600 bg-gray-900/80 text-gray-300 hover:bg-gray-700'}`}
-                        >
-                          {mode === 'heatmap' ? 'Erro / Acerto' : 'Ver Range'}
-                        </button>
-                      ))}
-                    </div>
-                    <HandMatrix
-                      readOnly
-                      grid={r.stackGrids?.[0]?.grid ?? r.grid}
-                      heatmap={handPerformance[r.id]}
-                      customActionColor={r.customAction?.color}
-                      forceViewMode={viewMode}
-                    />
+                    {sessionPerf === null ? (
+                      <p className="text-gray-500 text-xs text-center py-4">Dados por mão não disponíveis para sessões anteriores.</p>
+                    ) : (
+                      <>
+                        <div className="flex justify-end gap-1.5 mb-3">
+                          {(['heatmap', 'actions'] as const).map(mode => (
+                            <button
+                              key={mode}
+                              onClick={() => setViewMode(mode)}
+                              className={`px-2 py-0.5 text-xs border rounded-lg transition-colors ${viewMode === mode ? 'border-brand-500 bg-brand-900/30 text-brand-300' : 'border-gray-600 bg-gray-900/80 text-gray-300 hover:bg-gray-700'}`}
+                            >
+                              {mode === 'heatmap' ? 'Erro / Acerto' : 'Ver Range'}
+                            </button>
+                          ))}
+                        </div>
+                        <HandMatrix
+                          readOnly
+                          grid={r.stackGrids?.[0]?.grid ?? r.grid}
+                          heatmap={Object.keys(perf).length > 0 ? perf : undefined}
+                          customActionColor={r.customAction?.color}
+                          forceViewMode={viewMode}
+                        />
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -191,7 +197,6 @@ function SessionCard({ session, onView }: { session: TrainingSession; onView: ()
 export function StatsPage() {
   const trainingHistory = useStore(s => s.trainingHistory)
   const ranges          = useStore(s => s.ranges)
-  const handPerformance = useStore(s => s.handPerformance)
 
   const [selectedSession, setSelectedSession] = useState<TrainingSession | null>(null)
 
@@ -206,7 +211,6 @@ export function StatsPage() {
       <SessionDetailView
         session={selectedSession}
         ranges={ranges}
-        handPerformance={handPerformance}
         onBack={() => setSelectedSession(null)}
       />
     )

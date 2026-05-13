@@ -941,9 +941,15 @@ export const useStore = create<AppState>()(
       },
 
       stopDrill: () => {
-        const { sessionStats, selectedDrillRangeIds, ranges, currentTableSize, sessionStartTime, trainingHistory } = get()
+        const { sessionStats, selectedDrillRangeIds, ranges, currentTableSize, sessionStartTime, trainingHistory, handHistory } = get()
         let newHistory = trainingHistory
         if (sessionStats.hands > 0) {
+          const handPerf: Record<string, Record<string, { c: number; t: number }>> = {}
+          handHistory.forEach(e => {
+            if (!handPerf[e.rangeName]) handPerf[e.rangeName] = {}
+            const cur = handPerf[e.rangeName][e.hand] ?? { c: 0, t: 0 }
+            handPerf[e.rangeName][e.hand] = { c: cur.c + (e.correct ? 1 : 0), t: cur.t + 1 }
+          })
           const session: TrainingSession = {
             id: Date.now(),
             timestamp: Date.now(),
@@ -954,6 +960,7 @@ export const useStore = create<AppState>()(
             errors: sessionStats.errors,
             consults: sessionStats.consults,
             durationSeconds: Math.round((Date.now() - sessionStartTime) / 1000),
+            handPerf,
           }
           newHistory = [...trainingHistory, session]
           saveHistory(newHistory)

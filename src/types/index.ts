@@ -121,6 +121,7 @@ export interface TrainingSession {
   errors: number
   consults: number
   durationSeconds: number
+  handPerf?: Record<string, Record<string, { c: number; t: number }>>
 }
 
 // ── Table position definitions ───────────────────────────────────────────────
