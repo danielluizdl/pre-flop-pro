@@ -193,6 +193,96 @@ function SessionCard({ session, onView }: { session: TrainingSession; onView: ()
   )
 }
 
+/* ── Painel de histórico geral ─────────────────────────────────────────────── */
+function GlobalHistoryPanel() {
+  const ranges          = useStore(s => s.ranges)
+  const handPerformance = useStore(s => s.handPerformance)
+
+  const [open, setOpen]         = useState(false)
+  const [openRangeId, setOpenRangeId] = useState<number | null>(null)
+  const [viewMode, setViewMode] = useState<'actions' | 'heatmap'>('heatmap')
+
+  useEffect(() => { setViewMode('heatmap') }, [openRangeId])
+
+  const trainedRanges = ranges.filter(r => {
+    const perf = handPerformance[r.id]
+    return perf && Object.values(perf).some(v => v.t > 0)
+  })
+
+  return (
+    <div className="flex-shrink-0 w-72 sticky top-0 self-start">
+      <div className="bg-gray-800/60 border border-gray-700 rounded-xl overflow-hidden">
+        <button
+          onClick={() => setOpen(o => !o)}
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-700/40 transition-colors"
+        >
+          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Histórico Geral</span>
+          <span className={`text-gray-400 text-lg transition-transform duration-200 inline-block ${open ? 'rotate-180' : ''}`}>›</span>
+        </button>
+
+        {open && (
+          <div className="border-t border-gray-700 p-3 space-y-2 max-h-[calc(100vh-160px)] overflow-y-auto">
+            {trainedRanges.length === 0 ? (
+              <p className="text-gray-600 text-xs text-center py-4">Nenhum dado de treino ainda.</p>
+            ) : (
+              trainedRanges.map(r => {
+                const perf     = handPerformance[r.id] ?? {}
+                const vals     = Object.values(perf)
+                const total    = vals.reduce((s, v) => s + v.t, 0)
+                const correct  = vals.reduce((s, v) => s + v.c, 0)
+                const accuracy = total > 0 ? Math.round(correct / total * 100) : null
+                const isOpen   = openRangeId === r.id
+
+                return (
+                  <div key={r.id} className="border border-gray-700/60 rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => setOpenRangeId(isOpen ? null : r.id)}
+                      className="w-full flex items-center justify-between px-3 py-2 bg-gray-900/40 hover:bg-gray-800 transition-colors text-left"
+                    >
+                      <span className="text-xs font-semibold text-white truncate flex-1 mr-2">{r.name}</span>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {accuracy !== null && (
+                          <span className={`text-xs font-bold ${accuracy >= 80 ? 'text-emerald-400' : accuracy >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+                            {accuracy}%
+                          </span>
+                        )}
+                        <span className={`text-gray-500 text-base transition-transform duration-200 inline-block ${isOpen ? 'rotate-180' : ''}`}>›</span>
+                      </div>
+                    </button>
+
+                    {isOpen && (
+                      <div className="border-t border-gray-700/60 bg-gray-900/40 p-2">
+                        <div className="flex gap-1 justify-end mb-2">
+                          {(['heatmap', 'actions'] as const).map(mode => (
+                            <button
+                              key={mode}
+                              onClick={() => setViewMode(mode)}
+                              className={`px-1.5 py-0.5 text-[10px] border rounded transition-colors ${viewMode === mode ? 'border-brand-500 bg-brand-900/30 text-brand-300' : 'border-gray-600 bg-gray-900/80 text-gray-400 hover:bg-gray-700'}`}
+                            >
+                              {mode === 'heatmap' ? 'Erro/Acerto' : 'Ver Range'}
+                            </button>
+                          ))}
+                        </div>
+                        <HandMatrix
+                          readOnly
+                          grid={r.stackGrids?.[0]?.grid ?? r.grid}
+                          heatmap={perf}
+                          customActionColor={r.customAction?.color}
+                          forceViewMode={viewMode}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )
+              })
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 /* ── Página principal ──────────────────────────────────────────────────────── */
 export function StatsPage() {
   const trainingHistory = useStore(s => s.trainingHistory)
@@ -208,54 +298,63 @@ export function StatsPage() {
 
   if (selectedSession) {
     return (
-      <SessionDetailView
-        session={selectedSession}
-        ranges={ranges}
-        onBack={() => setSelectedSession(null)}
-      />
+      <div className="flex gap-6 items-start">
+        <div className="flex-1 min-w-0">
+          <SessionDetailView
+            session={selectedSession}
+            ranges={ranges}
+            onBack={() => setSelectedSession(null)}
+          />
+        </div>
+        <GlobalHistoryPanel />
+      </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-white">Histórico de Treinos</h1>
-        <p className="text-xs text-gray-400">{sessions.length} sessão(ões) registrada(s)</p>
+    <div className="flex gap-6 items-start">
+      <div className="flex-1 min-w-0 space-y-6">
+        <div>
+          <h1 className="text-xl font-bold text-white">Histórico de Treinos</h1>
+          <p className="text-xs text-gray-400">{sessions.length} sessão(ões) registrada(s)</p>
+        </div>
+
+        {sessions.length > 0 && (
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { label: 'Sessões', value: sessions.length.toString(), color: 'text-brand-400' },
+              { label: 'Mãos Totais', value: totalHands.toLocaleString(), color: 'text-blue-400' },
+              {
+                label: 'Precisão Global',
+                value: globalAccuracy !== null ? `${globalAccuracy}%` : '—',
+                color: globalAccuracy === null ? 'text-gray-500'
+                     : globalAccuracy >= 70 ? 'text-emerald-400'
+                     : globalAccuracy >= 50 ? 'text-yellow-400' : 'text-red-400',
+              },
+            ].map(item => (
+              <div key={item.label} className="bg-gray-800/60 border border-gray-700 rounded-xl p-4 text-center">
+                <div className={`text-2xl font-bold ${item.color}`}>{item.value}</div>
+                <div className="text-xs text-gray-400 mt-0.5">{item.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {sessions.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="text-gray-400 text-sm">Nenhuma sessão registrada ainda.</p>
+            <p className="text-gray-500 text-xs mt-1">Complete um treino para ver o histórico aqui.</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3 max-w-2xl">
+            {sessions.map(s => (
+              <SessionCard key={s.id} session={s} onView={() => setSelectedSession(s)} />
+            ))}
+          </div>
+        )}
       </div>
 
-      {sessions.length > 0 && (
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { label: 'Sessões', value: sessions.length.toString(), color: 'text-brand-400' },
-            { label: 'Mãos Totais', value: totalHands.toLocaleString(), color: 'text-blue-400' },
-            {
-              label: 'Precisão Global',
-              value: globalAccuracy !== null ? `${globalAccuracy}%` : '—',
-              color: globalAccuracy === null ? 'text-gray-500'
-                   : globalAccuracy >= 70 ? 'text-emerald-400'
-                   : globalAccuracy >= 50 ? 'text-yellow-400' : 'text-red-400',
-            },
-          ].map(item => (
-            <div key={item.label} className="bg-gray-800/60 border border-gray-700 rounded-xl p-4 text-center">
-              <div className={`text-2xl font-bold ${item.color}`}>{item.value}</div>
-              <div className="text-xs text-gray-400 mt-0.5">{item.label}</div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {sessions.length === 0 ? (
-        <div className="text-center py-16">
-          <p className="text-gray-400 text-sm">Nenhuma sessão registrada ainda.</p>
-          <p className="text-gray-500 text-xs mt-1">Complete um treino para ver o histórico aqui.</p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3 max-w-2xl">
-          {sessions.map(s => (
-            <SessionCard key={s.id} session={s} onView={() => setSelectedSession(s)} />
-          ))}
-        </div>
-      )}
+      <GlobalHistoryPanel />
     </div>
   )
 }
