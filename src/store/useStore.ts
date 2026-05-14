@@ -780,8 +780,6 @@ export const useStore = create<AppState>()(
       nextDrillHand: () => {
         const { ranges, selectedDrillRangeIds, drillExcludedHands } = get()
 
-        // Scenario-first approach: pick scenario → resolve correct grid → filter non-fold hands.
-        // This guarantees the hand is always non-fold in the grid used for evaluation.
         type Candidate = {
           range: Range
           hand: string
@@ -792,13 +790,19 @@ export const useStore = create<AppState>()(
           stackRangeLabel: string
           activeGrid: Record<string, HandData>
         }
-        const candidates: Candidate[] = []
+
+        // Two-level sampling: each selected range gets equal probability (Level 1),
+        // then a (scenario, hand) pair is picked uniformly within that range (Level 2).
+        // This prevents ranges with more scenarios or hands from dominating the session.
+        const byRange = new Map<number, Candidate[]>()
 
         selectedDrillRangeIds.forEach(id => {
           const r = ranges.find(x => x.id === id)
           if (!r) return
 
+          const pool: Candidate[] = []
           const scenarios = r.scenarios?.length > 0 ? r.scenarios : [null as null]
+
           scenarios.forEach(scen => {
             const newScenario: Record<string, PositionConfig> = scen?.data ?? {}
             const ante = scen?.ante ?? 0
@@ -836,22 +840,28 @@ export const useStore = create<AppState>()(
               : null
 
             if (prereqGrid) {
-              // Com prereq: fonte = mãos não-fold no prereq; drillExcludedHands ignorado
               ALL_HANDS
                 .filter(h => (prereqGrid[h]?.fold ?? 100) < 100)
-                .forEach(hand => candidates.push({ range: r, hand, scenario: newScenario, ante, heroRaiseSize, stackGridIdx, stackRangeLabel, activeGrid }))
+                .forEach(hand => pool.push({ range: r, hand, scenario: newScenario, ante, heroRaiseSize, stackGridIdx, stackRangeLabel, activeGrid }))
             } else {
-              // Sem prereq: fonte = seleção manual do usuário (todas as mãos não excluídas)
               ALL_HANDS
                 .filter(h => !drillExcludedHands.includes(h))
-                .forEach(hand => candidates.push({ range: r, hand, scenario: newScenario, ante, heroRaiseSize, stackGridIdx, stackRangeLabel, activeGrid }))
+                .forEach(hand => pool.push({ range: r, hand, scenario: newScenario, ante, heroRaiseSize, stackGridIdx, stackRangeLabel, activeGrid }))
             }
           })
+
+          if (pool.length > 0) byRange.set(id, pool)
         })
 
-        if (candidates.length === 0) return false
+        const eligibleIds = [...byRange.keys()]
+        if (eligibleIds.length === 0) return false
 
-        const pick = candidates[Math.floor(Math.random() * candidates.length)]
+        // Level 1: uniform range selection
+        const pickedId = eligibleIds[Math.floor(Math.random() * eligibleIds.length)]
+        const pool = byRange.get(pickedId)!
+
+        // Level 2: uniform (scenario, hand) selection within the range
+        const pick = pool[Math.floor(Math.random() * pool.length)]
         const { range, hand, scenario: newScenario, ante: newAnte, heroRaiseSize: heroRaiseFromScen, stackGridIdx: finalStackGridIdx, stackRangeLabel, activeGrid } = pick
 
         const rSize: TableSize = range.tableSize || 6
