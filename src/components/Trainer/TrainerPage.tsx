@@ -24,9 +24,12 @@ function MiniCard({ rank, suit }: { rank: string; suit: string }) {
 }
 
 /* ── Hand history item ──────────────────────────────────────────────────────── */
-function HandHistoryItem({ entry }: { entry: HandHistoryEntry }) {
+function HandHistoryItem({ entry, onClick }: { entry: HandHistoryEntry; onClick?: () => void }) {
   return (
-    <div className={`p-2 rounded-lg border text-xs ${entry.correct ? 'border-emerald-700/40 bg-emerald-900/10' : 'border-red-700/40 bg-red-900/10'}`}>
+    <div
+      onClick={onClick}
+      className={`p-2 rounded-lg border text-xs transition-all ${entry.correct ? 'border-emerald-700/40 bg-emerald-900/10' : 'border-red-700/40 bg-red-900/10'} ${onClick ? 'cursor-pointer hover:brightness-125' : ''}`}
+    >
       <div className="flex items-center gap-1 mb-0.5">
         <span className={`w-2 h-2 rounded-full flex-shrink-0 ${entry.correct ? 'bg-emerald-500' : 'bg-red-500'}`} />
         <MiniCard rank={entry.hand[0]} suit={entry.suits[0]} />
@@ -50,7 +53,7 @@ function HandHistoryItem({ entry }: { entry: HandHistoryEntry }) {
 }
 
 /* ── Hand history sidebar ────────────────────────────────────────────────────── */
-function HandHistorySidebar({ onOpenModal }: { onOpenModal: () => void }) {
+function HandHistorySidebar({ onOpenModal, onReplayEntry }: { onOpenModal: () => void; onReplayEntry?: (entry: HandHistoryEntry) => void }) {
   const history = useStore(s => s.handHistory)
   const reversed = [...history].reverse()
   return (
@@ -65,7 +68,9 @@ function HandHistorySidebar({ onOpenModal }: { onOpenModal: () => void }) {
         {reversed.length === 0 ? (
           <p className="text-xs text-gray-600 text-center mt-4">Sem mãos ainda</p>
         ) : (
-          reversed.map(entry => <HandHistoryItem key={entry.id} entry={entry} />)
+          reversed.map(entry => (
+            <HandHistoryItem key={entry.id} entry={entry} onClick={onReplayEntry ? () => onReplayEntry(entry) : undefined} />
+          ))
         )}
       </div>
     </div>
@@ -221,7 +226,6 @@ function SessionDetail({ session, ranges }: {
 function HistoryModal({ onClose }: { onClose: () => void }) {
   const trainingHistory = useStore(s => s.trainingHistory)
   const ranges          = useStore(s => s.ranges)
-  const handPerformance = useStore(s => s.handPerformance)
 
   const [openId, setOpenId] = useState<number | null>(null)
 
@@ -871,6 +875,12 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
   const r2 = displayHand[1]
   const [s1, s2] = displaySuits
 
+  function handleReplayEntry(entry: HandHistoryEntry) {
+    const feedbackMsg = entry.correct ? `✓ ${entry.actionTaken}!` : `✗ Correto: ${entry.correctAction}`
+    setPrevSnapshot({ hand: entry.hand, suits: entry.suits, rng: entry.rng, feedback: feedbackMsg, feedbackOk: entry.correct, freqLabel: '' })
+    setViewingPrev(true)
+  }
+
   function doGoNext() {
     if (viewingPrev) { setViewingPrev(false); return }
     if (answered) {
@@ -1023,7 +1033,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
           ) : (
             <>
               <div className="flex-1 min-h-0 flex flex-col relative">
-                <HandHistorySidebar onOpenModal={onShowHistory} />
+                <HandHistorySidebar onOpenModal={onShowHistory} onReplayEntry={handleReplayEntry} />
                 <button
                   onClick={() => setSidebarCollapsed(true)}
                   className="absolute top-2 right-2 z-10 w-5 h-5 rounded-full bg-gray-700 text-gray-400 hover:text-white hover:bg-gray-600 flex items-center justify-center text-xs transition-colors"
