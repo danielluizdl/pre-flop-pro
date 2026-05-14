@@ -161,8 +161,10 @@ export function PokerTableEditor({ heroCards }: { heroCards?: HeroCards } = {}) 
       {/* Pot */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ paddingBottom: '4%' }}>
         <div className="text-center" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
-          <div className="text-[9px] uppercase text-white/50 tracking-widest">Pote Total</div>
-          <div className="text-2xl font-extrabold text-yellow-400">{pot.toFixed(1)} bb</div>
+          <div className="eyebrow-accent" style={{ letterSpacing: '0.22em', fontSize: 9 }}>Pote Total</div>
+          <div style={{ fontFamily: "'Inter',sans-serif", fontWeight: 900, fontSize: 28, lineHeight: 1, letterSpacing: '-0.035em', fontVariantNumeric: 'tabular-nums', color: '#ede8de', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
+            {pot.toFixed(1)}<span style={{ fontSize: 16, color: '#8a857a' }}> bb</span>
+          </div>
         </div>
       </div>
 

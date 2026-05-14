@@ -34,7 +34,7 @@ export function RangeSetupPage() {
   return (
     <div className="max-w-md mx-auto space-y-5 pt-2">
       <div>
-        <h1 className="text-xl font-bold text-white">Novo Range</h1>
+        <h1 className="font-display uppercase text-warm-100 text-[28px] leading-none tracking-wide">Novo Range</h1>
         <p className="text-xs text-warm-400 mt-0.5">Configure o formato do jogo antes de criar o range.</p>
       </div>
 
@@ -87,7 +87,7 @@ export function RangeSetupPage() {
       <div className="flex gap-3 pt-1">
         <button
           onClick={handleStart}
-          className="flex-1 py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-xl font-bold transition-colors"
+          className="btn-commit flex-1 justify-center"
         >
           Continuar →
         </button>

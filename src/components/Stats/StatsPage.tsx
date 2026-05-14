@@ -181,11 +181,11 @@ function SessionDetailView({ session, ranges, onBack }: {
 /* ── Card de sessão ────────────────────────────────────────────────────────── */
 function SessionCard({ session, onView }: { session: TrainingSession; onView: () => void }) {
   const accuracy = session.hands > 0 ? Math.round((session.correct / session.hands) * 100) : 0
-  const color = accuracy >= 70 ? 'text-emerald-400' : accuracy >= 50 ? 'text-yellow-400' : 'text-red-400'
+  const color = accuracy >= 80 ? 'text-brand-500' : accuracy >= 50 ? 'text-gold' : 'text-result-bad'
 
   return (
     <div className="bg-warm-800/60 border border-warm-700 rounded-xl p-4 flex gap-4 items-start">
-      <div className={`text-3xl font-extrabold w-14 text-center flex-shrink-0 ${color}`}>
+      <div className={`font-stat font-black tabular-nums text-3xl w-14 text-center flex-shrink-0 leading-none ${color}`}>
         {accuracy}%
       </div>
       <div className="flex-1 min-w-0">
@@ -396,7 +396,7 @@ export function StatsPage() {
     <div className="space-y-4 max-w-2xl">
       {/* Cabeçalho */}
       <div>
-        <h1 className="text-xl font-bold text-white">Histórico de Treinos</h1>
+        <h1 className="font-display uppercase text-warm-100 text-[28px] leading-none tracking-wide">Histórico de Treinos</h1>
         <p className="text-xs text-warm-400">{sessions.length} sessão(ões) registrada(s)</p>
       </div>
 

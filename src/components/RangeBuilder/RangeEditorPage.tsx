@@ -144,7 +144,7 @@ export function RangeEditorPage() {
     <div className="space-y-4">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-bold text-white">
+        <h1 className="font-display uppercase text-warm-100 text-[28px] leading-none tracking-wide">
           {rangeData.id !== null ? 'Editar Range' : 'Criar Range'}
         </h1>
         <p className="text-xs text-warm-500 mt-0.5">

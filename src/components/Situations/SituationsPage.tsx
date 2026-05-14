@@ -61,10 +61,11 @@ function RangeCard({ r, allRanges, onViewHeatmap, onPreview }: CardProps) {
           <span className="text-xs text-warm-500">{nonFold} mãos · {r.scenarios.length} cenário{r.scenarios.length !== 1 ? 's' : ''}</span>
           {accuracy !== null && (
             <span className={[
-              'text-xs font-bold',
-              accuracy >= 80 ? 'text-emerald-400' : accuracy >= 50 ? 'text-yellow-400' : 'text-red-400',
+              'font-stat font-black tabular-nums text-sm',
+              accuracy >= 80 ? 'text-brand-500' : accuracy >= 50 ? 'text-gold' : 'text-result-bad',
             ].join(' ')}>
-              {accuracy}% ({totalAnswered})
+              {accuracy}%
+              <span className="text-warm-500 font-medium text-xs ml-1">({totalAnswered})</span>
             </span>
           )}
         </div>
@@ -165,7 +166,7 @@ export function SituationsPage() {
     <div className="space-y-4 max-w-2xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">Meus Ranges</h1>
+          <h1 className="font-display uppercase text-warm-100 text-[28px] leading-none tracking-wide">Meus Ranges</h1>
           <p className="text-xs text-warm-400 mt-0.5">{ranges.length} range{ranges.length !== 1 ? 's' : ''} criado{ranges.length !== 1 ? 's' : ''}</p>
         </div>
         <button

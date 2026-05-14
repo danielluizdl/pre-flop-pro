@@ -243,7 +243,7 @@ function HistoryModal({ onClose }: { onClose: () => void }) {
 
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-extrabold text-white mb-1">Histórico de Treino</h2>
+          <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">Histórico de Treino</h2>
           <p className="text-warm-400 text-sm">Clique em uma sessão para ver o desempenho por mão.</p>
         </div>
         <button
@@ -450,7 +450,7 @@ function DrillRangeSelect() {
       <>
       <div className="space-y-4 max-w-2xl mx-auto">
         <div>
-          <h2 className="text-2xl font-extrabold text-white mb-1">Drill</h2>
+          <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">Drill</h2>
           <p className="text-warm-400 text-sm">Selecione os ranges para o treino. Clique em uma posição para expandir.</p>
         </div>
 
@@ -582,7 +582,7 @@ function DrillRangeSelect() {
                   if (selectedIds.length === 0) { alert('Selecione pelo menos um range.'); return }
                   setStep('filter')
                 }}
-                className="px-8 py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-lg font-bold transition-colors"
+                className="btn-commit"
               >
                 CONTINUAR →
               </button>
@@ -601,14 +601,14 @@ function DrillRangeSelect() {
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       <div className="text-center">
-        <h2 className="text-2xl font-extrabold text-white mb-1">Filtro de Mãos</h2>
+        <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">Filtro de Mãos</h2>
         <p className="text-warm-400 text-sm">Arraste para selecionar/remover várias mãos.</p>
       </div>
       <HandFilterGrid />
       <div className="flex gap-3 justify-center">
         <button
           onClick={handleStartDrill}
-          className="px-8 py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-lg font-bold transition-colors"
+          className="btn-commit"
         >
           INICIAR TREINO
         </button>
@@ -670,7 +670,7 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
     <div className="space-y-4 max-w-2xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-extrabold text-white mb-1">Resumo do Treino</h2>
+          <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">Resumo do Treino</h2>
           <p className="text-warm-400 text-sm">Clique em um range para ver o desempenho por mão.</p>
         </div>
         <div className="flex gap-2">

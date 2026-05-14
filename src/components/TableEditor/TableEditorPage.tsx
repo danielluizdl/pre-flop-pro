@@ -122,7 +122,7 @@ export function TableEditorPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-white">Configurar Cenários</h1>
+        <h1 className="font-display uppercase text-warm-100 text-[28px] leading-none tracking-wide">Configurar Cenários</h1>
         <p className="text-xs text-warm-400 mt-0.5">
           Configure as ações de cada posição na mesa. Você pode salvar múltiplos cenários por range.
         </p>
