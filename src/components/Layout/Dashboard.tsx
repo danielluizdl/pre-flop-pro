@@ -1,4 +1,4 @@
-import { useStore } from '../../store/useStore'
+﻿import { useStore } from '../../store/useStore'
 import { PlayCircle, Edit3, Plus, ChevronRight } from 'lucide-react'
 import { countNonFoldHands } from '../../utils/hands'
 
@@ -16,11 +16,11 @@ export function Dashboard() {
   return (
     <div className="space-y-8">
       {/* Hero */}
-      <div className="bg-gradient-to-br from-brand-900/40 to-gray-800/60 border border-brand-800/50 rounded-2xl p-6">
+      <div className="bg-gradient-to-br from-brand-900/40 to-warm-800/60 border border-brand-800/50 rounded-2xl p-6">
         <h1 className="text-3xl font-black text-white mb-1">
           Pre-Flop<span className="text-brand-400">Pro</span>
         </h1>
-        <p className="text-gray-400 mb-5">Treine seus ranges pré-flop e melhore suas decisões na mesa.</p>
+        <p className="text-warm-400 mb-5">Treine seus ranges pré-flop e melhore suas decisões na mesa.</p>
         <div className="flex flex-wrap gap-3">
           <button
             onClick={() => setPage('drill')}
@@ -30,7 +30,7 @@ export function Dashboard() {
           </button>
           <button
             onClick={() => setPage('range-setup')}
-            className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm"
+            className="flex items-center gap-2 bg-warm-700 hover:bg-warm-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm"
           >
             <Plus size={18} /> Novo Range
           </button>
@@ -45,14 +45,14 @@ export function Dashboard() {
           {
             label: 'Precisão Global',
             value: globalAccuracy !== null ? `${globalAccuracy}%` : '—',
-            color: globalAccuracy === null ? 'text-gray-500'
+            color: globalAccuracy === null ? 'text-warm-500'
                  : globalAccuracy >= 70 ? 'text-emerald-400'
                  : globalAccuracy >= 50 ? 'text-yellow-400' : 'text-red-400',
           },
         ].map(item => (
-          <div key={item.label} className="bg-gray-800/60 border border-gray-700 rounded-xl p-4 text-center">
+          <div key={item.label} className="bg-warm-800/60 border border-warm-700 rounded-xl p-4 text-center">
             <div className={`text-2xl font-bold ${item.color}`}>{item.value}</div>
-            <div className="text-xs text-gray-400 mt-0.5">{item.label}</div>
+            <div className="text-xs text-warm-400 mt-0.5">{item.label}</div>
           </div>
         ))}
       </div>
@@ -70,8 +70,8 @@ export function Dashboard() {
         </div>
 
         {recentRanges.length === 0 ? (
-          <div className="bg-gray-800/40 border border-dashed border-gray-600 rounded-xl p-8 text-center">
-            <p className="text-gray-400 text-sm mb-3">Nenhum range criado.</p>
+          <div className="bg-warm-800/40 border border-dashed border-warm-600 rounded-xl p-8 text-center">
+            <p className="text-warm-400 text-sm mb-3">Nenhum range criado.</p>
             <button
               onClick={() => setPage('range-setup')}
               className="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-lg text-sm"
@@ -86,14 +86,14 @@ export function Dashboard() {
               return (
                 <div
                   key={r.id}
-                  className="bg-gray-800/60 border border-gray-700 rounded-xl p-4 flex flex-col gap-3"
+                  className="bg-warm-800/60 border border-warm-700 rounded-xl p-4 flex flex-col gap-3"
                 >
                   <div>
-                    <div className="text-xs text-gray-500 mb-0.5">
+                    <div className="text-xs text-warm-500 mb-0.5">
                       {r.positions.join(', ')} · {r.tableSize}-max
                     </div>
                     <div className="font-semibold text-white text-sm">{r.name}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{nonFold} mãos não-fold · {r.scenarios.length} cenário(s)</div>
+                    <div className="text-xs text-warm-400 mt-0.5">{nonFold} mãos não-fold · {r.scenarios.length} cenário(s)</div>
                   </div>
                   <div className="flex gap-2 mt-auto">
                     <button
@@ -109,7 +109,7 @@ export function Dashboard() {
                     </button>
                     <button
                       onClick={() => useStore.getState().loadRangeForEdit(r.id)}
-                      className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-xs text-gray-200"
+                      className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-warm-700 hover:bg-warm-600 text-xs text-warm-200"
                     >
                       <Edit3 size={11} /> Editar
                     </button>
@@ -131,11 +131,11 @@ export function Dashboard() {
           <button
             key={feature.title}
             onClick={feature.onClick ?? (() => feature.page && setPage(feature.page))}
-            className="bg-gray-800/40 hover:bg-gray-800/80 border border-gray-700 hover:border-gray-500 rounded-xl p-4 text-left transition-all group"
+            className="bg-warm-800/40 hover:bg-warm-800/80 border border-warm-700 hover:border-warm-500 rounded-xl p-4 text-left transition-all group"
           >
             <div className="text-2xl mb-2">{feature.icon}</div>
             <div className="font-semibold text-white text-sm group-hover:text-brand-400 transition-colors">{feature.title}</div>
-            <div className="text-xs text-gray-400 mt-1">{feature.desc}</div>
+            <div className="text-xs text-warm-400 mt-1">{feature.desc}</div>
           </button>
         ))}
       </div>

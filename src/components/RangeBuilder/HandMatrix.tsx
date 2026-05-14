@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+﻿import { useState, useRef } from 'react'
 import { RANKS } from '../../utils/hands'
 import { useStore } from '../../store/useStore'
 import type { HandData } from '../../types'
@@ -116,7 +116,7 @@ export function HandMatrix({ readOnly = false, grid: externalGrid, heatmap, cust
                 'px-3 py-1 rounded-full text-xs font-semibold border transition-colors',
                 activeViewMode === mode
                   ? 'bg-brand-600 border-brand-500 text-white'
-                  : 'bg-gray-800 border-gray-600 text-gray-400 hover:text-gray-200',
+                  : 'bg-warm-800 border-warm-600 text-warm-400 hover:text-warm-200',
               ].join(' ')}
             >
               {mode === 'actions' ? 'Ações' : 'Erro / Acerto'}
@@ -132,10 +132,10 @@ export function HandMatrix({ readOnly = false, grid: externalGrid, heatmap, cust
           : 'Não treinado'
         return (
           <div
-            className="fixed z-50 pointer-events-none px-2 py-1 rounded bg-gray-900 border border-gray-600 text-xs text-white shadow-lg whitespace-nowrap"
+            className="fixed z-50 pointer-events-none px-2 py-1 rounded bg-warm-900 border border-warm-600 text-xs text-white shadow-lg whitespace-nowrap"
             style={{ left: mousePos.x + 14, top: mousePos.y - 28 }}
           >
-            <span className="font-bold text-gray-300 mr-1">{hoveredHand}</span>{text}
+            <span className="font-bold text-warm-300 mr-1">{hoveredHand}</span>{text}
           </div>
         )
       })()}
@@ -166,7 +166,7 @@ export function HandMatrix({ readOnly = false, grid: externalGrid, heatmap, cust
             // In heatmap mode: in-range but untrained cells get a distinct base color
             const baseBg = showHeatmap && !isEmpty && !heat
               ? '#2a3444'
-              : isEmpty ? '#1f2937' : '#111827'
+              : isEmpty ? '#1f1d1a' : '#16140f'
 
             return (
               <div
@@ -177,8 +177,8 @@ export function HandMatrix({ readOnly = false, grid: externalGrid, heatmap, cust
                 onMouseLeave={() => { if (isHeatmapMode) setHoveredHand(null) }}
                 className={[
                   'relative aspect-square rounded-sm border flex items-center justify-center text-[0.6rem] font-semibold overflow-hidden',
-                  readOnly ? '' : 'cursor-pointer hover:border-gray-400',
-                  isEmpty ? 'border-gray-700/50' : 'border-gray-600/50',
+                  readOnly ? '' : 'cursor-pointer hover:border-warm-400',
+                  isEmpty ? 'border-warm-700/50' : 'border-warm-600/50',
                 ].join(' ')}
                 style={{ background: baseBg }}
               >

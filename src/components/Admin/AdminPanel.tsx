@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { Settings, LogOut } from 'lucide-react'
 
@@ -41,14 +41,14 @@ export function AdminPanel() {
       <div className="flex gap-1">
         <button
           onClick={() => setOpen(true)}
-          className="flex-1 flex items-center gap-3 px-2 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-800 hover:text-gray-400 transition-all"
+          className="flex-1 flex items-center gap-3 px-2 py-2.5 rounded-lg text-sm text-warm-600 hover:bg-warm-800 hover:text-warm-400 transition-all"
           title="Publicar ranges"
         >
           <Settings size={16} className="flex-shrink-0" />
         </button>
         <button
           onClick={logout}
-          className="flex items-center px-2 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-800 hover:text-gray-400 transition-all"
+          className="flex items-center px-2 py-2.5 rounded-lg text-sm text-warm-600 hover:bg-warm-800 hover:text-warm-400 transition-all"
           title="Sair"
         >
           <LogOut size={16} />
@@ -61,26 +61,26 @@ export function AdminPanel() {
           onClick={handleClose}
         >
           <div
-            className="bg-gray-900 border border-gray-700 rounded-2xl p-6 w-full max-w-sm space-y-4"
+            className="bg-warm-900 border border-warm-700 rounded-2xl p-6 w-full max-w-sm space-y-4"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex justify-between items-center">
               <h3 className="font-bold text-white">Publicar Ranges</h3>
-              <button onClick={handleClose} className="text-gray-400 hover:text-white text-xl">✕</button>
+              <button onClick={handleClose} className="text-warm-400 hover:text-white text-xl">✕</button>
             </div>
 
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-warm-400">
               Envia todos os {ranges.length} ranges atuais como padrão nativo. Aguarde ~2 min para o deploy.
             </p>
 
             <div className="space-y-2">
-              <label className="text-xs text-gray-400 block">Confirme a senha</label>
+              <label className="text-xs text-warm-400 block">Confirme a senha</label>
               <input
                 type="password"
                 value={password}
                 onChange={e => { setPassword(e.target.value); setStatus('idle') }}
                 placeholder="••••••••"
-                className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-brand-500"
+                className="w-full bg-warm-800 border border-warm-600 rounded-lg px-3 py-2 text-sm text-white placeholder-warm-600 focus:outline-none focus:border-brand-500"
                 onKeyDown={e => { if (e.key === 'Enter') handlePublish() }}
               />
             </div>

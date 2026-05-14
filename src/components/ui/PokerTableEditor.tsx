@@ -1,4 +1,4 @@
-import { useStore } from '../../store/useStore'
+﻿import { useStore } from '../../store/useStore'
 import type { PositionConfig, Slot } from '../../types'
 
 function chipColor(amount: number) {
@@ -29,14 +29,14 @@ function ChipStack({ amount }: { amount: number }) {
   )
 }
 
-const SUIT_BG: Record<string, string> = { h: '#dc2626', d: '#2563eb', c: '#047857', s: '#1f2937' }
+const SUIT_BG: Record<string, string> = { h: '#dc2626', d: '#2563eb', c: '#047857', s: '#1f1d1a' }
 const SUIT_ICON: Record<string, string> = { h: '♥', d: '♦', c: '♣', s: '♠' }
 
 function SmallCard({ rank, suit }: { rank: string; suit: string }) {
   return (
     <div
       className="rounded border-2 border-white/40 shadow-lg flex flex-col items-center justify-center gap-px"
-      style={{ width: 38, height: 56, background: SUIT_BG[suit] ?? '#374151', flexShrink: 0 }}
+      style={{ width: 38, height: 56, background: SUIT_BG[suit] ?? '#2f2c25', flexShrink: 0 }}
     >
       <span className="font-extrabold text-white leading-none" style={{ fontSize: 14 }}>{rank}</span>
       <span className="text-white leading-none" style={{ fontSize: 17 }}>{SUIT_ICON[suit]}</span>
@@ -66,8 +66,8 @@ function Seat({ label, data, slot }: SeatProps) {
           isHero
             ? 'bg-amber-500 border-white text-white shadow-[0_0_16px_#f59e0b] z-20 scale-110'
             : isFolded
-              ? 'opacity-50 bg-gray-700 border-gray-600 text-gray-400 scale-90'
-              : 'bg-gray-800 border-white/70 text-white shadow-[0_0_10px_rgba(255,255,255,0.15)]',
+              ? 'opacity-50 bg-warm-700 border-warm-600 text-warm-400 scale-90'
+              : 'bg-warm-800 border-white/70 text-white shadow-[0_0_10px_rgba(255,255,255,0.15)]',
         ].join(' ')}
         style={{ top: `${slot.t}%`, left: `${slot.l}%`, transform: isHero ? 'translate(-50%,-50%) scale(1.1)' : 'translate(-50%,-50%)' }}
       >
@@ -83,7 +83,7 @@ function Seat({ label, data, slot }: SeatProps) {
         )}
 
         {/* Stack badge */}
-        <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 bg-black/80 border border-gray-700 rounded-md text-center whitespace-nowrap z-10 shadow-lg px-2 py-0.5">
+        <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 bg-black/80 border border-warm-700 rounded-md text-center whitespace-nowrap z-10 shadow-lg px-2 py-0.5">
           <div className="text-blue-400 text-[11.5px] font-bold leading-tight">{stack || 100} bb</div>
         </div>
       </div>

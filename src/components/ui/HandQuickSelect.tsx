@@ -1,4 +1,4 @@
-import { useStore } from '../../store/useStore'
+﻿import { useStore } from '../../store/useStore'
 import {
   getAllPairs,
   getAllSuited,
@@ -87,12 +87,12 @@ export function HandQuickSelect({ mode, excludedHands = [], onSetExcluded }: Pro
             className={[
               'px-2.5 py-1 rounded-md text-xs font-semibold border transition-all duration-150 select-none',
               disabled
-                ? 'cursor-not-allowed border-gray-700/50 bg-gray-800 text-gray-500'
+                ? 'cursor-not-allowed border-warm-700/50 bg-warm-800 text-warm-500'
                 : active
                   ? 'bg-brand-600/90 border-brand-500 text-white shadow-sm'
                   : partial
-                    ? 'bg-gray-700 border-gray-500 text-gray-200 ring-1 ring-brand-500/40'
-                    : 'bg-gray-800 border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-200 hover:bg-gray-700',
+                    ? 'bg-warm-700 border-warm-500 text-warm-200 ring-1 ring-brand-500/40'
+                    : 'bg-warm-800 border-warm-600 text-warm-400 hover:border-warm-500 hover:text-warm-200 hover:bg-warm-700',
             ].join(' ')}
           >
             {group.label}

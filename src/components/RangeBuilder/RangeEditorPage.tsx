@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { HandMatrix } from './HandMatrix'
 import { BrushControls } from './BrushControls'
@@ -147,15 +147,15 @@ export function RangeEditorPage() {
         <h1 className="text-xl font-bold text-white">
           {rangeData.id !== null ? 'Editar Range' : 'Criar Range'}
         </h1>
-        <p className="text-xs text-gray-500 mt-0.5">
+        <p className="text-xs text-warm-500 mt-0.5">
           Pinte as mãos com as frequências de cada ação, depois configure os cenários.
         </p>
       </div>
 
       {/* Preview da sessão */}
       {sessionGrids.length > 0 && (
-        <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-3 space-y-2">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+        <div className="bg-warm-800/60 border border-warm-700 rounded-xl p-3 space-y-2">
+          <p className="text-xs font-semibold text-warm-400 uppercase tracking-wide">
             Salvos nesta sessão ({sessionGrids.length})
           </p>
           <div className="flex flex-wrap gap-2">
@@ -166,7 +166,7 @@ export function RangeEditorPage() {
                   'relative flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 pr-7 border transition-colors cursor-pointer',
                   editingIdx === i
                     ? 'bg-brand-900/30 border-brand-600/60 ring-1 ring-brand-600/40'
-                    : 'bg-gray-900 border-gray-700 hover:border-gray-500',
+                    : 'bg-warm-900 border-warm-700 hover:border-warm-500',
                 ].join(' ')}
                 onClick={() => editingIdx === i ? handleCancelSessionEdit() : loadSessionForEdit(i)}
               >
@@ -176,7 +176,7 @@ export function RangeEditorPage() {
                     {sg.stackRange}
                   </span>
                 )}
-                <span className="text-xs text-gray-500">{countNonFoldHands(sg.grid)} mãos</span>
+                <span className="text-xs text-warm-500">{countNonFoldHands(sg.grid)} mãos</span>
                 {editingIdx === i && <span className="text-[10px] text-brand-400 font-bold ml-1">editando</span>}
                 <button
                   onClick={e => {
@@ -189,7 +189,7 @@ export function RangeEditorPage() {
                     }
                     removeSessionGrid(i)
                   }}
-                  className="absolute top-1 right-1 p-0.5 rounded text-gray-500 hover:text-red-400 hover:bg-red-900/20 transition-colors"
+                  className="absolute top-1 right-1 p-0.5 rounded text-warm-500 hover:text-red-400 hover:bg-red-900/20 transition-colors"
                 >
                   <X size={10} />
                 </button>
@@ -204,7 +204,7 @@ export function RangeEditorPage() {
         <div className="flex-1 min-w-0 space-y-3">
           {/* Posição do HERO — single select */}
           <div>
-            <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">
+            <label className="block text-xs font-semibold text-warm-400 mb-1.5 uppercase tracking-wider">
               Posição do HERO
             </label>
             <div className="flex gap-1.5 flex-wrap">
@@ -216,7 +216,7 @@ export function RangeEditorPage() {
                     'px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors',
                     selectedPositions.includes(p.label)
                       ? 'bg-brand-600 text-white border-brand-600'
-                      : 'bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700',
+                      : 'bg-warm-800 text-warm-300 border-warm-600 hover:bg-warm-700',
                   ].join(' ')}
                 >
                   {p.label}
@@ -227,12 +227,12 @@ export function RangeEditorPage() {
 
           {/* Nome */}
           <div className="flex items-center gap-2 max-w-xs">
-            <label className="text-xs font-semibold text-gray-400 whitespace-nowrap flex-shrink-0">
+            <label className="text-xs font-semibold text-warm-400 whitespace-nowrap flex-shrink-0">
               Nome:
             </label>
             <input
               type="text"
-              className="flex-1 min-w-0 px-2.5 py-1.5 border border-gray-600 rounded-lg text-sm bg-gray-800 text-white placeholder-gray-500 focus:border-brand-500 focus:outline-none"
+              className="flex-1 min-w-0 px-2.5 py-1.5 border border-warm-600 rounded-lg text-sm bg-warm-800 text-white placeholder-warm-500 focus:border-brand-500 focus:outline-none"
               placeholder="Ex: Defesa BB vs UTG"
               value={rangeData.name}
               onChange={e => setRangeName(e.target.value)}
@@ -242,12 +242,12 @@ export function RangeEditorPage() {
           {/* Stack Efetivo */}
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <label className="text-xs font-semibold text-gray-400 whitespace-nowrap flex-shrink-0">
+              <label className="text-xs font-semibold text-warm-400 whitespace-nowrap flex-shrink-0">
                 Stack:
               </label>
               <input
                 type="text"
-                className="w-52 px-2.5 py-1.5 border border-gray-600 rounded-lg text-sm bg-gray-800 text-white placeholder-gray-500 focus:border-brand-500 focus:outline-none"
+                className="w-52 px-2.5 py-1.5 border border-warm-600 rounded-lg text-sm bg-warm-800 text-white placeholder-warm-500 focus:border-brand-500 focus:outline-none"
                 placeholder="Ex: <= 250, ou 250-300"
                 value={rangeData.stackRange}
                 onChange={e => setStackRange(e.target.value)}
@@ -255,7 +255,7 @@ export function RangeEditorPage() {
               {rangeData.stackRange && (
                 <button
                   onClick={() => setStackRange('')}
-                  className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                  className="text-xs text-warm-500 hover:text-warm-300 transition-colors"
                 >
                   limpar
                 </button>
@@ -270,7 +270,7 @@ export function RangeEditorPage() {
                     'px-3 py-1.5 rounded-lg text-sm font-semibold border transition-colors',
                     rangeData.stackRange === p
                       ? 'bg-brand-600 border-brand-500 text-white'
-                      : 'bg-gray-800 border-gray-600 text-gray-400 hover:text-gray-200 hover:border-gray-500',
+                      : 'bg-warm-800 border-warm-600 text-warm-400 hover:text-warm-200 hover:border-warm-500',
                   ].join(' ')}
                 >
                   {p}
@@ -281,8 +281,8 @@ export function RangeEditorPage() {
 
           {/* Pré-requisito */}
           <div className="flex items-center gap-2">
-            <Link2 size={13} className="text-gray-500 flex-shrink-0" />
-            <label className="text-xs font-semibold text-gray-400 whitespace-nowrap flex-shrink-0">
+            <Link2 size={13} className="text-warm-500 flex-shrink-0" />
+            <label className="text-xs font-semibold text-warm-400 whitespace-nowrap flex-shrink-0">
               Pré-req:
             </label>
             <button
@@ -292,7 +292,7 @@ export function RangeEditorPage() {
                 'flex-1 min-w-0 px-2.5 py-1.5 border rounded-lg text-sm text-left transition-colors',
                 rangeData.prereqRangeId !== undefined
                   ? 'bg-sky-900/20 border-sky-700/50 text-sky-300 hover:border-sky-500'
-                  : 'bg-gray-800 border-gray-600 text-gray-500 hover:border-gray-400',
+                  : 'bg-warm-800 border-warm-600 text-warm-500 hover:border-warm-400',
               ].join(' ')}
             >
               {rangeData.prereqRangeId !== undefined
@@ -303,7 +303,7 @@ export function RangeEditorPage() {
 
           {/* Matrix */}
           <div>
-            <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">
+            <label className="block text-xs font-semibold text-warm-400 mb-1.5 uppercase tracking-wider">
               Grade de Mãos
             </label>
             <HandMatrix />
@@ -312,22 +312,22 @@ export function RangeEditorPage() {
 
         {/* Right: ações + frequências */}
         <div className="xl:w-80 space-y-3 flex-shrink-0">
-          <div className="bg-gray-800/60 rounded-xl p-4 border border-gray-700 space-y-3">
+          <div className="bg-warm-800/60 rounded-xl p-4 border border-warm-700 space-y-3">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <h3 className="font-bold text-xs text-gray-400 uppercase tracking-wider whitespace-nowrap">
+              <h3 className="font-bold text-xs text-warm-400 uppercase tracking-wider whitespace-nowrap">
                 Ações &amp; Frequências
               </h3>
               <HandQuickSelect mode="brush" />
             </div>
 
-            <div className="border-t border-gray-700/60" />
+            <div className="border-t border-warm-700/60" />
 
             <BrushControls />
           </div>
 
           <button
             onClick={() => { if (confirm('Limpar todo o grid?')) resetGrid() }}
-            className="w-full py-2 bg-gray-800 text-red-400 border border-red-900/50 rounded-lg font-semibold text-sm hover:bg-red-900/20 transition-colors"
+            className="w-full py-2 bg-warm-800 text-red-400 border border-red-900/50 rounded-lg font-semibold text-sm hover:bg-red-900/20 transition-colors"
           >
             Limpar Grid
           </button>
@@ -341,14 +341,14 @@ export function RangeEditorPage() {
                   'w-full py-2.5 rounded-lg font-bold text-sm transition-colors border',
                   hasChanges
                     ? 'bg-emerald-700 hover:bg-emerald-600 text-white border-emerald-600'
-                    : 'bg-gray-800 text-gray-600 border-gray-700 cursor-not-allowed',
+                    : 'bg-warm-800 text-warm-600 border-warm-700 cursor-not-allowed',
                 ].join(' ')}
               >
                 Salvar alterações no #{editingIdx + 1}
               </button>
               <button
                 onClick={handleCancelSessionEdit}
-                className="w-full py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-bold text-sm transition-colors border border-gray-600"
+                className="w-full py-2.5 bg-warm-700 hover:bg-warm-600 text-white rounded-lg font-bold text-sm transition-colors border border-warm-600"
               >
                 Cancelar
               </button>
@@ -356,7 +356,7 @@ export function RangeEditorPage() {
           ) : (
             <button
               onClick={handlePushToSession}
-              className="w-full py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-bold text-sm transition-colors border border-gray-600"
+              className="w-full py-2.5 bg-warm-700 hover:bg-warm-600 text-white rounded-lg font-bold text-sm transition-colors border border-warm-600"
             >
               + Salvar e criar outro
             </button>

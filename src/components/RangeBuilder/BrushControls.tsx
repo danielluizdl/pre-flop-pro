@@ -1,4 +1,4 @@
-import { useStore } from '../../store/useStore'
+﻿import { useStore } from '../../store/useStore'
 
 const PRESETS = [0, 25, 50, 75, 100]
 const CUSTOM_COLORS = ['#a855f7', '#f97316', '#06b6d4', '#eab308', '#ec4899', '#84cc16']
@@ -14,7 +14,7 @@ interface ActionRowProps {
 
 function ActionRow({ label, color, field, value, onChange, extra }: ActionRowProps) {
   return (
-    <div className="p-3 rounded-lg bg-gray-800 border border-gray-700 flex flex-col gap-2">
+    <div className="p-3 rounded-lg bg-warm-800 border border-warm-700 flex flex-col gap-2">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-1.5 font-semibold text-sm text-white">
           <span className="w-3 h-3 rounded-full inline-block flex-shrink-0" style={{ backgroundColor: color }} />
@@ -24,12 +24,12 @@ function ActionRow({ label, color, field, value, onChange, extra }: ActionRowPro
           {extra}
           <input
             type="number"
-            className="w-12 p-1 text-right font-bold border border-gray-600 rounded text-sm bg-gray-900 text-white"
+            className="w-12 p-1 text-right font-bold border border-warm-600 rounded text-sm bg-warm-900 text-white"
             value={value}
             min={0} max={100}
             onChange={e => onChange(field, Number(e.target.value))}
           />
-          <span className="text-sm text-gray-400">%</span>
+          <span className="text-sm text-warm-400">%</span>
         </div>
       </div>
       <input
@@ -43,7 +43,7 @@ function ActionRow({ label, color, field, value, onChange, extra }: ActionRowPro
           <button
             key={p}
             onClick={() => onChange(field, p)}
-            className="flex-1 py-1 text-xs border border-gray-600 bg-gray-900 rounded cursor-pointer text-gray-400 hover:bg-gray-700 hover:text-white transition-colors"
+            className="flex-1 py-1 text-xs border border-warm-600 bg-warm-900 rounded cursor-pointer text-warm-400 hover:bg-warm-700 hover:text-white transition-colors"
           >
             {p}%
           </button>
@@ -74,19 +74,19 @@ export function BrushControls() {
   return (
     <div className="flex flex-col gap-3">
       {/* Fold — read-only */}
-      <div className="p-3 rounded-lg bg-gray-800 border border-gray-700 flex justify-between items-center">
+      <div className="p-3 rounded-lg bg-warm-800 border border-warm-700 flex justify-between items-center">
         <div className="flex items-center gap-1.5 font-semibold text-sm text-white">
-          <span className="w-3 h-3 rounded-full bg-gray-500 inline-block" />
+          <span className="w-3 h-3 rounded-full bg-warm-500 inline-block" />
           Fold
         </div>
         <div className="flex items-center gap-1">
           <input
             type="text"
-            className="w-12 p-1 text-right font-bold border border-gray-600 rounded text-sm bg-gray-900/50 text-gray-400"
+            className="w-12 p-1 text-right font-bold border border-warm-600 rounded text-sm bg-warm-900/50 text-warm-400"
             value={fold}
             disabled
           />
-          <span className="text-sm text-gray-500">%</span>
+          <span className="text-sm text-warm-500">%</span>
         </div>
       </div>
 
@@ -97,7 +97,7 @@ export function BrushControls() {
         extra={
           <input
             type="text"
-            className="w-14 p-1 border border-gray-600 rounded text-xs text-center bg-gray-900 text-white"
+            className="w-14 p-1 border border-warm-600 rounded text-xs text-center bg-warm-900 text-white"
             placeholder="bb"
             value={brush.raiseSize}
             onChange={e => setBrush('raiseSize', e.target.value)}
@@ -108,7 +108,7 @@ export function BrushControls() {
       <ActionRow label="All-In" color="#6b2d0d" field="allin" value={brush.allin} onChange={setBrush} />
 
       {brush.extraLabel ? (
-        <div className="p-3 rounded-lg bg-gray-800 border border-gray-700 flex flex-col gap-2">
+        <div className="p-3 rounded-lg bg-warm-800 border border-warm-700 flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 flex-1 min-w-0">
               <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: brush.extraColor }} />
@@ -116,18 +116,18 @@ export function BrushControls() {
                 type="text"
                 value={brush.extraLabel}
                 onChange={e => setBrush('extraLabel', e.target.value)}
-                className="flex-1 min-w-0 bg-transparent text-white font-semibold text-sm border-b border-gray-600 focus:border-brand-500 focus:outline-none"
+                className="flex-1 min-w-0 bg-transparent text-white font-semibold text-sm border-b border-warm-600 focus:border-brand-500 focus:outline-none"
               />
             </div>
             <div className="flex items-center gap-1">
               <input
                 type="number"
-                className="w-12 p-1 text-right font-bold border border-gray-600 rounded text-sm bg-gray-900 text-white"
+                className="w-12 p-1 text-right font-bold border border-warm-600 rounded text-sm bg-warm-900 text-white"
                 value={brush.extra}
                 min={0} max={100}
                 onChange={e => setBrush('extra', Number(e.target.value))}
               />
-              <span className="text-sm text-gray-400">%</span>
+              <span className="text-sm text-warm-400">%</span>
             </div>
           </div>
           <div className="flex gap-1.5">
@@ -145,7 +145,7 @@ export function BrushControls() {
             ))}
             <button
               onClick={handleRemoveExtra}
-              className="ml-auto text-xs text-gray-500 hover:text-red-400 transition-colors"
+              className="ml-auto text-xs text-warm-500 hover:text-red-400 transition-colors"
             >
               remover
             </button>
@@ -161,7 +161,7 @@ export function BrushControls() {
               <button
                 key={p}
                 onClick={() => setBrush('extra', p)}
-                className="flex-1 py-1 text-xs border border-gray-600 bg-gray-900 rounded cursor-pointer text-gray-400 hover:bg-gray-700 hover:text-white transition-colors"
+                className="flex-1 py-1 text-xs border border-warm-600 bg-warm-900 rounded cursor-pointer text-warm-400 hover:bg-warm-700 hover:text-white transition-colors"
               >
                 {p}%
               </button>
@@ -171,7 +171,7 @@ export function BrushControls() {
       ) : (
         <button
           onClick={() => setBrush('extraLabel', 'Custom')}
-          className="w-full py-2 border border-dashed border-gray-600 rounded-lg text-sm text-gray-500 hover:text-gray-300 hover:border-gray-400 transition-colors"
+          className="w-full py-2 border border-dashed border-warm-600 rounded-lg text-sm text-warm-500 hover:text-warm-300 hover:border-warm-400 transition-colors"
         >
           + Nova Condição
         </button>

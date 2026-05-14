@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+﻿import { useState, useRef, useEffect } from 'react'
 import { useStore } from '../../store/useStore'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import { PokerTableEditor } from '../ui/PokerTableEditor'
@@ -14,10 +14,10 @@ import type { HandHistoryEntry, Range, TrainingSession } from '../../types'
 /* ── Mini card for history ─────────────────────────────────────────────────── */
 function MiniCard({ rank, suit }: { rank: string; suit: string }) {
   const colorClass: Record<string, string> = {
-    h: 'text-red-400', d: 'text-blue-400', s: 'text-gray-300', c: 'text-emerald-400',
+    h: 'text-red-400', d: 'text-blue-400', s: 'text-warm-300', c: 'text-emerald-400',
   }
   return (
-    <span className={`font-bold ${colorClass[suit] ?? 'text-gray-300'}`}>
+    <span className={`font-bold ${colorClass[suit] ?? 'text-warm-300'}`}>
       {rank}{SUIT_ICONS[suit]}
     </span>
   )
@@ -34,7 +34,7 @@ function HandHistoryItem({ entry, onClick }: { entry: HandHistoryEntry; onClick?
         <span className={`w-2 h-2 rounded-full flex-shrink-0 ${entry.correct ? 'bg-emerald-500' : 'bg-red-500'}`} />
         <MiniCard rank={entry.hand[0]} suit={entry.suits[0]} />
         <MiniCard rank={entry.hand[1]} suit={entry.suits[1]} />
-        <span className="ml-auto text-gray-500 tabular-nums">{entry.rng}</span>
+        <span className="ml-auto text-warm-500 tabular-nums">{entry.rng}</span>
       </div>
       <div className="pl-3.5">
         {entry.correct ? (
@@ -42,11 +42,11 @@ function HandHistoryItem({ entry, onClick }: { entry: HandHistoryEntry; onClick?
         ) : (
           <>
             <span className="text-red-400">{entry.actionTaken}</span>
-            <span className="text-gray-500"> → </span>
+            <span className="text-warm-500"> → </span>
             <span className="text-emerald-400">{entry.correctAction}</span>
           </>
         )}
-        {!!entry.raiseSize && <span className="text-gray-500"> ({entry.raiseSize})</span>}
+        {!!entry.raiseSize && <span className="text-warm-500"> ({entry.raiseSize})</span>}
       </div>
     </div>
   )
@@ -57,16 +57,16 @@ function HandHistorySidebar({ onOpenModal, onReplayEntry }: { onOpenModal: () =>
   const history = useStore(s => s.handHistory)
   const reversed = [...history].reverse()
   return (
-    <div className="flex-1 min-h-0 bg-gray-800 rounded-xl border border-gray-700 p-3 flex flex-col">
+    <div className="flex-1 min-h-0 bg-warm-800 rounded-xl border border-warm-700 p-3 flex flex-col">
       <button
         onClick={onOpenModal}
-        className="text-xs font-bold text-gray-400 mb-2 flex-shrink-0 text-left hover:text-white transition-colors"
+        className="text-xs font-bold text-warm-400 mb-2 flex-shrink-0 text-left hover:text-white transition-colors"
       >
-        HISTÓRICO <span className="text-gray-500">({history.length})</span>
+        HISTÓRICO <span className="text-warm-500">({history.length})</span>
       </button>
       <div className="flex flex-col gap-1.5 overflow-y-auto flex-1">
         {reversed.length === 0 ? (
-          <p className="text-xs text-gray-600 text-center mt-4">Sem mãos ainda</p>
+          <p className="text-xs text-warm-600 text-center mt-4">Sem mãos ainda</p>
         ) : (
           reversed.map(entry => (
             <HandHistoryItem key={entry.id} entry={entry} onClick={onReplayEntry ? () => onReplayEntry(entry) : undefined} />
@@ -104,32 +104,32 @@ function SessionDetail({ session, ranges }: {
   const sessionPerf = session.handPerf ?? null
 
   return (
-    <div className="border-t border-gray-700 bg-gray-900/40 p-4 space-y-4">
-      <div className="bg-gray-800 border border-gray-700 rounded-xl p-4">
+    <div className="border-t border-warm-700 bg-warm-900/40 p-4 space-y-4">
+      <div className="bg-warm-800 border border-warm-700 rounded-xl p-4">
         <div className="grid grid-cols-4 gap-3 text-center">
           <div>
             <div className="text-2xl font-extrabold text-white">{session.hands}</div>
-            <div className="text-xs text-gray-400">Mãos</div>
+            <div className="text-xs text-warm-400">Mãos</div>
           </div>
           <div>
             <div className="text-2xl font-extrabold text-emerald-400">{session.correct}</div>
-            <div className="text-xs text-gray-400">Acertos</div>
+            <div className="text-xs text-warm-400">Acertos</div>
           </div>
           <div>
             <div className="text-2xl font-extrabold text-red-400">{session.errors}</div>
-            <div className="text-xs text-gray-400">Erros</div>
+            <div className="text-xs text-warm-400">Erros</div>
           </div>
           <div>
-            <div className={`text-2xl font-extrabold ${acc !== null ? (acc >= 80 ? 'text-emerald-400' : acc >= 50 ? 'text-yellow-400' : 'text-red-400') : 'text-gray-600'}`}>
+            <div className={`text-2xl font-extrabold ${acc !== null ? (acc >= 80 ? 'text-emerald-400' : acc >= 50 ? 'text-yellow-400' : 'text-red-400') : 'text-warm-600'}`}>
               {acc !== null ? `${acc}%` : '—'}
             </div>
-            <div className="text-xs text-gray-400">Precisão</div>
+            <div className="text-xs text-warm-400">Precisão</div>
           </div>
         </div>
       </div>
 
       {sessionRanges.length === 0 ? (
-        <p className="text-gray-500 text-sm text-center py-2">Ranges desta sessão não encontrados.</p>
+        <p className="text-warm-500 text-sm text-center py-2">Ranges desta sessão não encontrados.</p>
       ) : (
         <div className="space-y-2">
           {sessionRanges.map(r => {
@@ -147,15 +147,15 @@ function SessionDetail({ session, ranges }: {
             const grid     = r.stackGrids && gridIdx >= 0 ? r.stackGrids[gridIdx].grid : (r.stackGrids?.[0]?.grid ?? r.grid)
 
             return (
-              <div key={r.id} className="border border-gray-700/60 rounded-xl overflow-hidden">
+              <div key={r.id} className="border border-warm-700/60 rounded-xl overflow-hidden">
                 <button
                   onClick={() => setOpenRangeId(isOpenR ? null : r.id)}
-                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-800/60 hover:bg-gray-800 transition-colors text-left"
+                  className="w-full flex items-center justify-between px-4 py-3 bg-warm-800/60 hover:bg-warm-800 transition-colors text-left"
                 >
                   <div className="flex items-center gap-3">
                     <span className="font-bold text-white text-sm">{r.name}</span>
                     {r.positions.length > 0 && (
-                      <span className="text-gray-400 text-xs">{r.positions.join(', ')}</span>
+                      <span className="text-warm-400 text-xs">{r.positions.join(', ')}</span>
                     )}
                   </div>
                   <div className="flex items-center gap-3">
@@ -164,16 +164,16 @@ function SessionDetail({ session, ranges }: {
                         {accuracy}%
                       </span>
                     ) : (
-                      <span className="text-gray-600 text-xs">sem dados</span>
+                      <span className="text-warm-600 text-xs">sem dados</span>
                     )}
-                    <span className={`text-gray-400 text-lg transition-transform duration-200 inline-block ${isOpenR ? 'rotate-180' : ''}`}>›</span>
+                    <span className={`text-warm-400 text-lg transition-transform duration-200 inline-block ${isOpenR ? 'rotate-180' : ''}`}>›</span>
                   </div>
                 </button>
 
                 {isOpenR && (
-                  <div className="border-t border-gray-700/60 bg-gray-900/40 p-4">
+                  <div className="border-t border-warm-700/60 bg-warm-900/40 p-4">
                     {sessionPerf === null ? (
-                      <p className="text-gray-500 text-xs text-center py-4">Dados por mão não disponíveis para sessões anteriores.</p>
+                      <p className="text-warm-500 text-xs text-center py-4">Dados por mão não disponíveis para sessões anteriores.</p>
                     ) : (
                       <>
                         {stackRanges.length > 0 && (
@@ -183,7 +183,7 @@ function SessionDetail({ session, ranges }: {
                                 key={sr}
                                 onClick={() => setSelectedStack(sr)}
                                 className={['px-2.5 py-1 text-xs font-semibold rounded-lg border transition-colors',
-                                  selectedStack === sr ? 'bg-brand-600 border-brand-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700',
+                                  selectedStack === sr ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:bg-warm-700',
                                 ].join(' ')}
                               >
                                 {sr}
@@ -196,7 +196,7 @@ function SessionDetail({ session, ranges }: {
                             <button
                               key={mode}
                               onClick={() => setViewMode(mode)}
-                              className={`px-2 py-0.5 text-xs border rounded-lg transition-colors ${viewMode === mode ? 'border-brand-500 bg-brand-900/30 text-brand-300' : 'border-gray-600 bg-gray-900/80 text-gray-300 hover:bg-gray-700'}`}
+                              className={`px-2 py-0.5 text-xs border rounded-lg transition-colors ${viewMode === mode ? 'border-brand-500 bg-brand-900/30 text-brand-300' : 'border-warm-600 bg-warm-900/80 text-warm-300 hover:bg-warm-700'}`}
                             >
                               {mode === 'heatmap' ? 'Erro / Acerto' : 'Ver Range'}
                             </button>
@@ -244,18 +244,18 @@ function HistoryModal({ onClose }: { onClose: () => void }) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-extrabold text-white mb-1">Histórico de Treino</h2>
-          <p className="text-gray-400 text-sm">Clique em uma sessão para ver o desempenho por mão.</p>
+          <p className="text-warm-400 text-sm">Clique em uma sessão para ver o desempenho por mão.</p>
         </div>
         <button
           onClick={onClose}
-          className="px-4 py-2 border border-gray-600 bg-gray-800 text-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-700 transition-colors"
+          className="px-4 py-2 border border-warm-600 bg-warm-800 text-warm-300 rounded-lg text-sm font-semibold hover:bg-warm-700 transition-colors"
         >
           Voltar
         </button>
       </div>
 
       {sessions.length === 0 && (
-        <p className="text-gray-600 text-sm text-center py-16">Nenhuma sessão registrada ainda.</p>
+        <p className="text-warm-600 text-sm text-center py-16">Nenhuma sessão registrada ainda.</p>
       )}
 
       <div className="space-y-2">
@@ -264,23 +264,23 @@ function HistoryModal({ onClose }: { onClose: () => void }) {
           const isOpen = openId === session.id
 
           return (
-            <div key={session.id} className="border border-gray-700 rounded-xl overflow-hidden">
+            <div key={session.id} className="border border-warm-700 rounded-xl overflow-hidden">
               <button
                 onClick={() => setOpenId(isOpen ? null : session.id)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-gray-800 hover:bg-gray-750 transition-colors text-left"
+                className="w-full flex items-center justify-between px-4 py-3 bg-warm-800 hover:bg-warm-750 transition-colors text-left"
               >
                 <div className="min-w-0">
                   <div className="font-semibold text-white text-sm">{formatDate(session.timestamp)}</div>
-                  <div className="text-gray-400 text-xs truncate">{session.rangeNames.join(', ')}</div>
+                  <div className="text-warm-400 text-xs truncate">{session.rangeNames.join(', ')}</div>
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0 ml-2">
                   <div className="text-right">
                     <div className={`text-sm font-bold ${acc >= 80 ? 'text-emerald-400' : acc >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
                       {acc}%
                     </div>
-                    <div className="text-xs text-gray-500">{session.hands} mãos</div>
+                    <div className="text-xs text-warm-500">{session.hands} mãos</div>
                   </div>
-                  <span className={`text-gray-400 text-lg transition-transform duration-200 inline-block ${isOpen ? 'rotate-180' : ''}`}>›</span>
+                  <span className={`text-warm-400 text-lg transition-transform duration-200 inline-block ${isOpen ? 'rotate-180' : ''}`}>›</span>
                 </div>
               </button>
 
@@ -308,7 +308,7 @@ function HandFilterGrid() {
   const drawAction = useRef<'exclude' | 'include'>('exclude')
 
   return (
-    <div className="max-w-xl mx-auto border border-gray-700 p-3 rounded-xl bg-gray-800/60 mb-6">
+    <div className="max-w-xl mx-auto border border-warm-700 p-3 rounded-xl bg-warm-800/60 mb-6">
       {/* Controles em uma linha compacta */}
       <div className="flex items-center gap-2 flex-wrap mb-3">
         {/* Seleção rápida */}
@@ -318,30 +318,30 @@ function HandFilterGrid() {
           onSetExcluded={setExcluded}
         />
 
-        <div className="h-4 border-l border-gray-600 mx-0.5" />
+        <div className="h-4 border-l border-warm-600 mx-0.5" />
 
         {/* Tudo / Nada */}
         <button
           onClick={() => setExcluded([])}
-          className="px-2.5 py-1 text-xs border border-gray-600 bg-gray-800 rounded-md hover:bg-gray-700 text-gray-300 transition-colors"
+          className="px-2.5 py-1 text-xs border border-warm-600 bg-warm-800 rounded-md hover:bg-warm-700 text-warm-300 transition-colors"
         >
           Tudo ✓
         </button>
         <button
           onClick={() => setExcluded([...ALL_HANDS])}
-          className="px-2.5 py-1 text-xs border border-gray-600 bg-gray-800 rounded-md hover:bg-gray-700 text-gray-300 transition-colors"
+          className="px-2.5 py-1 text-xs border border-warm-600 bg-warm-800 rounded-md hover:bg-warm-700 text-warm-300 transition-colors"
         >
           Nada ✗
         </button>
 
-        <div className="h-4 border-l border-gray-600 mx-0.5" />
+        <div className="h-4 border-l border-warm-600 mx-0.5" />
 
         {/* RNG */}
-        <span className="text-xs text-gray-500">RNG:</span>
+        <span className="text-xs text-warm-500">RNG:</span>
         <button
           onClick={() => setUseRng(true)}
           className={['px-2.5 py-1 text-xs rounded-md border font-semibold transition-colors',
-            useRng ? 'bg-brand-600 border-brand-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700',
+            useRng ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:bg-warm-700',
           ].join(' ')}
         >
           Sim
@@ -349,7 +349,7 @@ function HandFilterGrid() {
         <button
           onClick={() => setUseRng(false)}
           className={['px-2.5 py-1 text-xs rounded-md border font-semibold transition-colors',
-            !useRng ? 'bg-brand-600 border-brand-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700',
+            !useRng ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:bg-warm-700',
           ].join(' ')}
         >
           Não
@@ -381,8 +381,8 @@ function HandFilterGrid() {
             return (
               <div
                 key={hand}
-                className="aspect-square flex items-center justify-center text-[0.55rem] font-bold text-gray-800 rounded-sm cursor-pointer border border-gray-600"
-                style={{ background: isExcluded ? '#374151' : baseBg, opacity: isExcluded ? 0.3 : 1 }}
+                className="aspect-square flex items-center justify-center text-[0.55rem] font-bold text-warm-800 rounded-sm cursor-pointer border border-warm-600"
+                style={{ background: isExcluded ? '#2f2c25' : baseBg, opacity: isExcluded ? 0.3 : 1 }}
                 onMouseDown={e => {
                   e.preventDefault()
                   drawAction.current = isExcluded ? 'include' : 'exclude'
@@ -451,12 +451,12 @@ function DrillRangeSelect() {
       <div className="space-y-4 max-w-2xl mx-auto">
         <div>
           <h2 className="text-2xl font-extrabold text-white mb-1">Drill</h2>
-          <p className="text-gray-400 text-sm">Selecione os ranges para o treino. Clique em uma posição para expandir.</p>
+          <p className="text-warm-400 text-sm">Selecione os ranges para o treino. Clique em uma posição para expandir.</p>
         </div>
 
         {ranges.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-gray-400 mb-4">Nenhum range criado.</p>
+            <p className="text-warm-400 mb-4">Nenhum range criado.</p>
             <button
               onClick={() => setPage('ranges')}
               className="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2.5 rounded-lg text-sm font-semibold"
@@ -485,36 +485,36 @@ function DrillRangeSelect() {
                 }
 
                 return (
-                  <div key={pos} className="border border-gray-700 rounded-xl overflow-hidden">
+                  <div key={pos} className="border border-warm-700 rounded-xl overflow-hidden">
                     {/* Header */}
                     <button
                       onClick={() => toggleGroup(pos)}
-                      className="w-full flex items-center justify-between px-4 py-3 bg-gray-800 hover:bg-gray-750 transition-colors"
+                      className="w-full flex items-center justify-between px-4 py-3 bg-warm-800 hover:bg-warm-750 transition-colors"
                     >
                       <div className="flex items-center gap-3">
                         <span className="font-extrabold text-white text-sm w-10 text-left">{pos}</span>
-                        <span className="text-gray-400 text-xs">{group.length} range{group.length !== 1 ? 's' : ''}</span>
+                        <span className="text-warm-400 text-xs">{group.length} range{group.length !== 1 ? 's' : ''}</span>
                         {selectedInGroup > 0 && (
                           <span className="bg-brand-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                             {selectedInGroup} selecionado{selectedInGroup !== 1 ? 's' : ''}
                           </span>
                         )}
                       </div>
-                      <span className={`text-gray-400 text-lg transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
+                      <span className={`text-warm-400 text-lg transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
                         ›
                       </span>
                     </button>
 
                     {/* Ranges list */}
                     {isOpen && (
-                      <div className="border-t border-gray-700 bg-gray-900/40 p-3 space-y-2">
+                      <div className="border-t border-warm-700 bg-warm-900/40 p-3 space-y-2">
                         <button
                           onClick={toggleAllInGroup}
                           className={[
                             'w-full py-1.5 rounded-lg text-xs font-semibold border transition-colors',
                             allGroupSelected
                               ? 'bg-brand-900/30 border-brand-600/50 text-brand-400 hover:bg-brand-900/50'
-                              : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700 hover:text-gray-200',
+                              : 'bg-warm-800 border-warm-600 text-warm-400 hover:bg-warm-700 hover:text-warm-200',
                           ].join(' ')}
                         >
                           {allGroupSelected ? 'Desfazer seleção' : 'Selecionar todos'}
@@ -530,7 +530,7 @@ function DrillRangeSelect() {
                                 'border rounded-lg p-3 cursor-pointer transition-all relative',
                                 selected
                                   ? 'border-brand-500 bg-brand-900/20'
-                                  : 'border-gray-700 bg-gray-800/60 hover:border-gray-500',
+                                  : 'border-warm-700 bg-warm-800/60 hover:border-warm-500',
                               ].join(' ')}
                             >
                               {selected && (
@@ -555,13 +555,13 @@ function DrillRangeSelect() {
                                 </div>
                                 <button
                                   onClick={e => { e.stopPropagation(); setPreviewId(r.id) }}
-                                  className="flex-shrink-0 text-gray-500 hover:text-blue-400 transition-colors"
+                                  className="flex-shrink-0 text-warm-500 hover:text-blue-400 transition-colors"
                                   title="Visualizar range"
                                 >
                                   <Eye size={13} />
                                 </button>
                               </div>
-                              <div className="text-xs text-gray-500 mt-1">{r.tableSize}-max · {r.scenarios.length} cenário{r.scenarios.length !== 1 ? 's' : ''}</div>
+                              <div className="text-xs text-warm-500 mt-1">{r.tableSize}-max · {r.scenarios.length} cenário{r.scenarios.length !== 1 ? 's' : ''}</div>
                             </div>
                           )
                         })}
@@ -574,7 +574,7 @@ function DrillRangeSelect() {
             </div>
 
             <div className="flex items-center justify-between pt-2">
-              <span className="text-sm text-gray-400">
+              <span className="text-sm text-warm-400">
                 {selectedIds.length > 0 ? `${selectedIds.length} range${selectedIds.length !== 1 ? 's' : ''} selecionado${selectedIds.length !== 1 ? 's' : ''}` : 'Nenhum selecionado'}
               </span>
               <button
@@ -602,7 +602,7 @@ function DrillRangeSelect() {
     <div className="space-y-6 max-w-2xl mx-auto">
       <div className="text-center">
         <h2 className="text-2xl font-extrabold text-white mb-1">Filtro de Mãos</h2>
-        <p className="text-gray-400 text-sm">Arraste para selecionar/remover várias mãos.</p>
+        <p className="text-warm-400 text-sm">Arraste para selecionar/remover várias mãos.</p>
       </div>
       <HandFilterGrid />
       <div className="flex gap-3 justify-center">
@@ -614,7 +614,7 @@ function DrillRangeSelect() {
         </button>
         <button
           onClick={() => setStep('select')}
-          className="px-4 py-2 border border-gray-600 bg-gray-800 text-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-700"
+          className="px-4 py-2 border border-warm-600 bg-warm-800 text-warm-300 rounded-lg text-sm font-semibold hover:bg-warm-700"
         >
           Voltar
         </button>
@@ -671,7 +671,7 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-extrabold text-white mb-1">Resumo do Treino</h2>
-          <p className="text-gray-400 text-sm">Clique em um range para ver o desempenho por mão.</p>
+          <p className="text-warm-400 text-sm">Clique em um range para ver o desempenho por mão.</p>
         </div>
         <div className="flex gap-2">
           {onBack && (
@@ -684,32 +684,32 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
           )}
           <button
             onClick={onClose}
-            className="px-4 py-2 border border-gray-600 bg-gray-800 text-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-700 transition-colors"
+            className="px-4 py-2 border border-warm-600 bg-warm-800 text-warm-300 rounded-lg text-sm font-semibold hover:bg-warm-700 transition-colors"
           >
             Encerrar
           </button>
         </div>
       </div>
 
-      <div className="bg-gray-800 border border-gray-700 rounded-xl p-4">
+      <div className="bg-warm-800 border border-warm-700 rounded-xl p-4">
         <div className="grid grid-cols-4 gap-3 text-center">
           <div>
             <div className="text-2xl font-extrabold text-white">{sessionStats.hands}</div>
-            <div className="text-xs text-gray-400">Mãos</div>
+            <div className="text-xs text-warm-400">Mãos</div>
           </div>
           <div>
             <div className="text-2xl font-extrabold text-emerald-400">{sessionStats.correct}</div>
-            <div className="text-xs text-gray-400">Acertos</div>
+            <div className="text-xs text-warm-400">Acertos</div>
           </div>
           <div>
             <div className="text-2xl font-extrabold text-red-400">{sessionStats.errors}</div>
-            <div className="text-xs text-gray-400">Erros</div>
+            <div className="text-xs text-warm-400">Erros</div>
           </div>
           <div>
-            <div className={`text-2xl font-extrabold ${sessionAccuracy !== null ? (sessionAccuracy >= 80 ? 'text-emerald-400' : sessionAccuracy >= 50 ? 'text-yellow-400' : 'text-red-400') : 'text-gray-600'}`}>
+            <div className={`text-2xl font-extrabold ${sessionAccuracy !== null ? (sessionAccuracy >= 80 ? 'text-emerald-400' : sessionAccuracy >= 50 ? 'text-yellow-400' : 'text-red-400') : 'text-warm-600'}`}>
               {sessionAccuracy !== null ? `${sessionAccuracy}%` : '—'}
             </div>
-            <div className="text-xs text-gray-400">Precisão</div>
+            <div className="text-xs text-warm-400">Precisão</div>
           </div>
         </div>
       </div>
@@ -727,15 +727,15 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
           const heatmap  = handPerformance[heatmapKey]
 
           return (
-            <div key={r.id} className="border border-gray-700 rounded-xl overflow-hidden">
+            <div key={r.id} className="border border-warm-700 rounded-xl overflow-hidden">
               <button
                 onClick={() => setOpenId(isOpen ? null : r.id)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-gray-800 hover:bg-gray-750 transition-colors"
+                className="w-full flex items-center justify-between px-4 py-3 bg-warm-800 hover:bg-warm-750 transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <span className="font-bold text-white text-sm">{r.name}</span>
                   {r.positions.length > 0 && (
-                    <span className="text-gray-400 text-xs">{r.positions.join(', ')}</span>
+                    <span className="text-warm-400 text-xs">{r.positions.join(', ')}</span>
                   )}
                 </div>
                 <div className="flex items-center gap-3">
@@ -744,16 +744,16 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
                       {accuracy}% · {sess.total} mão{sess.total !== 1 ? 's' : ''}
                     </span>
                   ) : (
-                    <span className="text-gray-600 text-xs">sem dados</span>
+                    <span className="text-warm-600 text-xs">sem dados</span>
                   )}
-                  <span className={`text-gray-400 text-lg transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>›</span>
+                  <span className={`text-warm-400 text-lg transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>›</span>
                 </div>
               </button>
 
               {isOpen && (
-                <div className="border-t border-gray-700 bg-gray-900/40 p-4">
+                <div className="border-t border-warm-700 bg-warm-900/40 p-4">
                   {sess.total === 0 ? (
-                    <p className="text-gray-500 text-sm text-center py-4">Nenhuma mão treinada neste range nesta sessão.</p>
+                    <p className="text-warm-500 text-sm text-center py-4">Nenhuma mão treinada neste range nesta sessão.</p>
                   ) : (
                     <>
                       {stackRanges.length > 0 && (
@@ -763,7 +763,7 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
                               key={sr}
                               onClick={() => setSelectedStack(sr)}
                               className={['px-2.5 py-1 text-xs font-semibold rounded-lg border transition-colors',
-                                selectedStack === sr ? 'bg-brand-600 border-brand-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700',
+                                selectedStack === sr ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:bg-warm-700',
                               ].join(' ')}
                             >
                               {sr}
@@ -774,13 +774,13 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
                       <div className="flex justify-end gap-1.5 mb-3">
                         <button
                           onClick={() => setViewMode('heatmap')}
-                          className={`px-2 py-0.5 text-xs border rounded-lg transition-colors ${viewMode === 'heatmap' ? 'border-brand-500 bg-brand-900/30 text-brand-300' : 'border-gray-600 bg-gray-900/80 text-gray-300 hover:bg-gray-700'}`}
+                          className={`px-2 py-0.5 text-xs border rounded-lg transition-colors ${viewMode === 'heatmap' ? 'border-brand-500 bg-brand-900/30 text-brand-300' : 'border-warm-600 bg-warm-900/80 text-warm-300 hover:bg-warm-700'}`}
                         >
                           Erro / Acerto
                         </button>
                         <button
                           onClick={() => setViewMode('actions')}
-                          className={`px-2 py-0.5 text-xs border rounded-lg transition-colors ${viewMode === 'actions' ? 'border-brand-500 bg-brand-900/30 text-brand-300' : 'border-gray-600 bg-gray-900/80 text-gray-300 hover:bg-gray-700'}`}
+                          className={`px-2 py-0.5 text-xs border rounded-lg transition-colors ${viewMode === 'actions' ? 'border-brand-500 bg-brand-900/30 text-brand-300' : 'border-warm-600 bg-warm-900/80 text-warm-300 hover:bg-warm-700'}`}
                         >
                           Ver Range
                         </button>
@@ -924,14 +924,14 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
 
           {/* Dark box: botões, mesa, cartas, resposta, ações */}
           <div
-            className="rounded-2xl border border-gray-800 flex flex-col"
-            style={{ background: '#030712', boxShadow: 'inset 0 0 60px rgba(0,0,0,0.9)' }}
+            className="rounded-2xl border border-warm-800 flex flex-col"
+            style={{ background: '#16140f', boxShadow: 'inset 0 0 60px rgba(0,0,0,0.9)' }}
           >
             {/* Botões topo */}
             <div className="flex-shrink-0 flex items-center justify-between gap-1.5 pt-1.5 px-2">
               <div>
                 {useRng && (
-                  <span className="bg-gray-800 border border-gray-600 text-white text-xs rounded-full font-bold px-2.5 py-1 tracking-wider whitespace-nowrap">
+                  <span className="bg-warm-800 border border-warm-600 text-white text-xs rounded-full font-bold px-2.5 py-1 tracking-wider whitespace-nowrap">
                     RNG {displayRng}
                   </span>
                 )}
@@ -939,13 +939,13 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
               <div className="flex gap-1.5">
                 <button
                   onClick={() => setModalViewMode('heatmap')}
-                  className="px-2 py-0.5 text-xs border border-gray-600 bg-gray-900/80 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
+                  className="px-2 py-0.5 text-xs border border-warm-600 bg-warm-900/80 text-warm-300 rounded-lg hover:bg-warm-700 transition-colors"
                 >
                   Erro / Acerto
                 </button>
                 <button
                   onClick={() => { setModalViewMode('actions'); incrementConsults() }}
-                  className="px-2 py-0.5 text-xs border border-gray-600 bg-gray-900/80 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
+                  className="px-2 py-0.5 text-xs border border-warm-600 bg-warm-900/80 text-warm-300 rounded-lg hover:bg-warm-700 transition-colors"
                 >
                   Ver Range
                 </button>
@@ -967,9 +967,9 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                     {showFeedback}
                   </div>
                   {!!showFreqLabel && (
-                    <div className="text-gray-400 text-sm mt-0.5">
-                      <span className="text-gray-300 font-semibold">{displayHand}</span>
-                      <span className="text-gray-500"> — </span>
+                    <div className="text-warm-400 text-sm mt-0.5">
+                      <span className="text-warm-300 font-semibold">{displayHand}</span>
+                      <span className="text-warm-500"> — </span>
                       {showFreqLabel}
                     </div>
                   )}
@@ -998,7 +998,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                 onClick={doGoNext}
                 className={[
                   'px-6 py-2 rounded-xl font-bold text-sm transition-colors',
-                  isAnswered ? 'bg-brand-600 hover:bg-brand-500 text-white' : 'bg-gray-700 hover:bg-gray-600 text-white',
+                  isAnswered ? 'bg-brand-600 hover:bg-brand-500 text-white' : 'bg-warm-700 hover:bg-warm-600 text-white',
                 ].join(' ')}
               >
                 {viewingPrev ? '← Mão atual' : 'Próxima Mão →'}
@@ -1007,7 +1007,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                 onClick={() => setAutoAdvance(a => !a)}
                 className={[
                   'relative overflow-hidden px-6 py-2 rounded-xl border font-semibold text-sm transition-colors',
-                  autoAdvance ? 'bg-brand-600/40 border-brand-500 text-brand-300' : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700',
+                  autoAdvance ? 'bg-brand-600/40 border-brand-500 text-brand-300' : 'bg-warm-800 border-warm-600 text-warm-400 hover:bg-warm-700',
                 ].join(' ')}
               >
                 {autoAdvance && answered && !viewingPrev && (
@@ -1019,7 +1019,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
               <button
                 onClick={() => setViewingPrev(true)}
                 disabled={!prevSnapshot || viewingPrev}
-                className="px-4 py-2 rounded-xl border border-gray-600 bg-gray-800 text-gray-400 hover:bg-gray-700 font-semibold text-xs transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                className="px-4 py-2 rounded-xl border border-warm-600 bg-warm-800 text-warm-400 hover:bg-warm-700 font-semibold text-xs transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 ← Anterior
               </button>
@@ -1032,7 +1032,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
           {sidebarCollapsed ? (
             <button
               onClick={() => setSidebarCollapsed(false)}
-              className="flex-1 min-h-0 bg-gray-800 border border-gray-700 rounded-xl flex items-center justify-center text-gray-500 hover:text-white hover:bg-gray-700 transition-colors"
+              className="flex-1 min-h-0 bg-warm-800 border border-warm-700 rounded-xl flex items-center justify-center text-warm-500 hover:text-white hover:bg-warm-700 transition-colors"
               title="Expandir histórico"
             >
               <span className="font-bold tracking-wider" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', fontSize: 10 }}>HIST ›</span>
@@ -1043,13 +1043,13 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                 <HandHistorySidebar onOpenModal={onShowHistory} onReplayEntry={handleReplayEntry} />
                 <button
                   onClick={() => setSidebarCollapsed(true)}
-                  className="absolute top-2 right-2 z-10 w-5 h-5 rounded-full bg-gray-700 text-gray-400 hover:text-white hover:bg-gray-600 flex items-center justify-center text-xs transition-colors"
+                  className="absolute top-2 right-2 z-10 w-5 h-5 rounded-full bg-warm-700 text-warm-400 hover:text-white hover:bg-warm-600 flex items-center justify-center text-xs transition-colors"
                   title="Minimizar histórico"
                 >‹</button>
               </div>
 
               {/* Stats + info */}
-              <div className="flex-shrink-0 bg-gray-800 border border-gray-700 rounded-xl p-3 space-y-2">
+              <div className="flex-shrink-0 bg-warm-800 border border-warm-700 rounded-xl p-3 space-y-2">
                 <div className="text-xs font-bold text-white leading-tight truncate" title={activeDrillRange.name}>
                   {activeDrillRange.name}
                 </div>
@@ -1059,19 +1059,19 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                   </span>
                 )}
                 <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
-                  <span className="text-gray-400">Mãos</span>
+                  <span className="text-warm-400">Mãos</span>
                   <span className="text-white font-bold text-right">{stats.hands}</span>
                   <span className="text-emerald-400">Acertos</span>
                   <span className="text-emerald-400 font-bold text-right">{stats.correct}</span>
                   <span className="text-red-400">Erros</span>
                   <span className="text-red-400 font-bold text-right">{stats.errors}</span>
-                  <span className="text-gray-400">Consultas</span>
+                  <span className="text-warm-400">Consultas</span>
                   <span className="text-white font-bold text-right">{stats.consults}</span>
                 </div>
-                <div className="pt-1 border-t border-gray-700 space-y-1.5">
+                <div className="pt-1 border-t border-warm-700 space-y-1.5">
                   <button
                     onClick={stopDrill}
-                    className="w-full py-1.5 text-xs border border-gray-700 bg-gray-900 text-gray-500 rounded-lg hover:bg-gray-700 hover:text-gray-200 font-semibold transition-colors"
+                    className="w-full py-1.5 text-xs border border-warm-700 bg-warm-900 text-warm-500 rounded-lg hover:bg-warm-700 hover:text-warm-200 font-semibold transition-colors"
                   >
                     Encerrar Treino
                   </button>
@@ -1091,10 +1091,10 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
       {/* Modal range */}
       {modalViewMode !== null && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setModalViewMode(null)}>
-          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-3xl w-full" onClick={e => e.stopPropagation()}>
+          <div className="bg-warm-900 border border-warm-700 rounded-2xl p-6 max-w-3xl w-full" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold text-white text-lg">{activeDrillRange!.name}</h3>
-              <button onClick={() => setModalViewMode(null)} className="text-gray-400 hover:text-white text-xl">✕</button>
+              <button onClick={() => setModalViewMode(null)} className="text-warm-400 hover:text-white text-xl">✕</button>
             </div>
             <HandMatrix
               readOnly

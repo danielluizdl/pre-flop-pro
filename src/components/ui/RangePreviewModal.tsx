@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import type { Range } from '../../types'
 
@@ -20,18 +20,18 @@ export function RangePreviewModal({ range, onClose }: Props) {
       onClick={onClose}
     >
       <div
-        className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+        className="bg-warm-900 border border-warm-700 rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex justify-between items-start mb-5">
           <div>
             <h3 className="font-bold text-white text-lg">{range.name}</h3>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <p className="text-xs text-warm-400 mt-0.5">
               {range.tableSize}-max · {range.positions.join(', ')} · {range.scenarios.length} cenário{range.scenarios.length !== 1 ? 's' : ''}
               {!!displayStackRange && <span className="ml-1 text-brand-400">· {displayStackRange}</span>}
             </p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-white text-xl ml-4 flex-shrink-0">✕</button>
+          <button onClick={onClose} className="text-warm-400 hover:text-white text-xl ml-4 flex-shrink-0">✕</button>
         </div>
 
         {/* Stack grid selector */}
@@ -45,7 +45,7 @@ export function RangePreviewModal({ range, onClose }: Props) {
                   'px-3 py-1.5 rounded-lg text-sm font-semibold border transition-colors',
                   selectedIdx === i
                     ? 'bg-brand-600 border-brand-500 text-white'
-                    : 'bg-gray-800 border-gray-600 text-gray-400 hover:text-gray-200 hover:border-gray-500',
+                    : 'bg-warm-800 border-warm-600 text-warm-400 hover:text-warm-200 hover:border-warm-500',
                 ].join(' ')}
               >
                 {sg.stackRange || `Grid ${i + 1}`}
@@ -60,18 +60,18 @@ export function RangePreviewModal({ range, onClose }: Props) {
           </div>
 
           <div className="flex-1 min-w-[200px]">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Cenários</p>
+            <p className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-3">Cenários</p>
             <div className="space-y-2">
               {range.scenarios.map((s, i) => (
-                <div key={s.id} className="bg-gray-800 border border-gray-700/50 rounded-lg p-3">
+                <div key={s.id} className="bg-warm-800 border border-warm-700/50 rounded-lg p-3">
                   <div className="flex items-center gap-2 mb-1.5">
-                    <span className="text-xs font-bold bg-gray-700 text-gray-300 rounded px-1.5 py-0.5">#{i + 1}</span>
+                    <span className="text-xs font-bold bg-warm-700 text-warm-300 rounded px-1.5 py-0.5">#{i + 1}</span>
                     <span className="text-xs text-brand-400 font-medium">Pot: {s.pot}bb</span>
                     {!!s.heroRaiseSize && (
-                      <span className="text-xs text-gray-500">Raise: {s.heroRaiseSize}bb</span>
+                      <span className="text-xs text-warm-500">Raise: {s.heroRaiseSize}bb</span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-300 leading-relaxed">{s.summary}</p>
+                  <p className="text-xs text-warm-300 leading-relaxed">{s.summary}</p>
                 </div>
               ))}
             </div>

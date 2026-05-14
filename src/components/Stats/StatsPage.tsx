@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useStore } from '../../store/useStore'
 import type { Range, TrainingSession } from '../../types'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
@@ -52,40 +52,40 @@ function SessionDetailView({ session, ranges, onBack }: {
         <div>
           <button
             onClick={onBack}
-            className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm font-semibold transition-colors mb-1"
+            className="flex items-center gap-1.5 text-warm-400 hover:text-white text-sm font-semibold transition-colors mb-1"
           >
             ← Voltar
           </button>
           <h2 className="text-xl font-extrabold text-white">{formatDate(session.timestamp)}</h2>
-          <p className="text-gray-400 text-xs">{session.tableSize}-max · {formatDuration(session.durationSeconds)} · {session.rangeNames.join(', ')}</p>
+          <p className="text-warm-400 text-xs">{session.tableSize}-max · {formatDuration(session.durationSeconds)} · {session.rangeNames.join(', ')}</p>
         </div>
       </div>
 
-      <div className="bg-gray-800 border border-gray-700 rounded-xl p-4">
+      <div className="bg-warm-800 border border-warm-700 rounded-xl p-4">
         <div className="grid grid-cols-4 gap-3 text-center">
           <div>
             <div className="text-2xl font-extrabold text-white">{session.hands}</div>
-            <div className="text-xs text-gray-400">Mãos</div>
+            <div className="text-xs text-warm-400">Mãos</div>
           </div>
           <div>
             <div className="text-2xl font-extrabold text-emerald-400">{session.correct}</div>
-            <div className="text-xs text-gray-400">Acertos</div>
+            <div className="text-xs text-warm-400">Acertos</div>
           </div>
           <div>
             <div className="text-2xl font-extrabold text-red-400">{session.errors}</div>
-            <div className="text-xs text-gray-400">Erros</div>
+            <div className="text-xs text-warm-400">Erros</div>
           </div>
           <div>
-            <div className={`text-2xl font-extrabold ${acc !== null ? (acc >= 80 ? 'text-emerald-400' : acc >= 50 ? 'text-yellow-400' : 'text-red-400') : 'text-gray-600'}`}>
+            <div className={`text-2xl font-extrabold ${acc !== null ? (acc >= 80 ? 'text-emerald-400' : acc >= 50 ? 'text-yellow-400' : 'text-red-400') : 'text-warm-600'}`}>
               {acc !== null ? `${acc}%` : '—'}
             </div>
-            <div className="text-xs text-gray-400">Precisão</div>
+            <div className="text-xs text-warm-400">Precisão</div>
           </div>
         </div>
       </div>
 
       {sessionRanges.length === 0 ? (
-        <p className="text-gray-500 text-sm text-center py-4">Ranges desta sessão não encontrados.</p>
+        <p className="text-warm-500 text-sm text-center py-4">Ranges desta sessão não encontrados.</p>
       ) : (
         <div className="space-y-2">
           {sessionRanges.map(r => {
@@ -103,15 +103,15 @@ function SessionDetailView({ session, ranges, onBack }: {
             const grid     = r.stackGrids && gridIdx >= 0 ? r.stackGrids[gridIdx].grid : (r.stackGrids?.[0]?.grid ?? r.grid)
 
             return (
-              <div key={r.id} className="border border-gray-700 rounded-xl overflow-hidden">
+              <div key={r.id} className="border border-warm-700 rounded-xl overflow-hidden">
                 <button
                   onClick={() => setOpenRangeId(isOpen ? null : r.id)}
-                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-800 hover:bg-gray-750 transition-colors text-left"
+                  className="w-full flex items-center justify-between px-4 py-3 bg-warm-800 hover:bg-warm-750 transition-colors text-left"
                 >
                   <div className="flex items-center gap-3">
                     <span className="font-bold text-white text-sm">{r.name}</span>
                     {r.positions.length > 0 && (
-                      <span className="text-gray-400 text-xs">{r.positions.join(', ')}</span>
+                      <span className="text-warm-400 text-xs">{r.positions.join(', ')}</span>
                     )}
                   </div>
                   <div className="flex items-center gap-3">
@@ -120,16 +120,16 @@ function SessionDetailView({ session, ranges, onBack }: {
                         {accuracy}%
                       </span>
                     ) : (
-                      <span className="text-gray-600 text-xs">sem dados</span>
+                      <span className="text-warm-600 text-xs">sem dados</span>
                     )}
-                    <span className={`text-gray-400 text-lg transition-transform duration-200 inline-block ${isOpen ? 'rotate-180' : ''}`}>›</span>
+                    <span className={`text-warm-400 text-lg transition-transform duration-200 inline-block ${isOpen ? 'rotate-180' : ''}`}>›</span>
                   </div>
                 </button>
 
                 {isOpen && (
-                  <div className="border-t border-gray-700 bg-gray-900/40 p-4">
+                  <div className="border-t border-warm-700 bg-warm-900/40 p-4">
                     {sessionPerf === null ? (
-                      <p className="text-gray-500 text-xs text-center py-4">Dados por mão não disponíveis para sessões anteriores.</p>
+                      <p className="text-warm-500 text-xs text-center py-4">Dados por mão não disponíveis para sessões anteriores.</p>
                     ) : (
                       <>
                         {stackRanges.length > 0 && (
@@ -139,7 +139,7 @@ function SessionDetailView({ session, ranges, onBack }: {
                                 key={sr}
                                 onClick={() => setSelectedStack(sr)}
                                 className={['px-2.5 py-1 text-xs font-semibold rounded-lg border transition-colors',
-                                  selectedStack === sr ? 'bg-brand-600 border-brand-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700',
+                                  selectedStack === sr ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:bg-warm-700',
                                 ].join(' ')}
                               >
                                 {sr}
@@ -152,7 +152,7 @@ function SessionDetailView({ session, ranges, onBack }: {
                             <button
                               key={mode}
                               onClick={() => setViewMode(mode)}
-                              className={`px-2 py-0.5 text-xs border rounded-lg transition-colors ${viewMode === mode ? 'border-brand-500 bg-brand-900/30 text-brand-300' : 'border-gray-600 bg-gray-900/80 text-gray-300 hover:bg-gray-700'}`}
+                              className={`px-2 py-0.5 text-xs border rounded-lg transition-colors ${viewMode === mode ? 'border-brand-500 bg-brand-900/30 text-brand-300' : 'border-warm-600 bg-warm-900/80 text-warm-300 hover:bg-warm-700'}`}
                             >
                               {mode === 'heatmap' ? 'Erro / Acerto' : 'Ver Range'}
                             </button>
@@ -184,34 +184,34 @@ function SessionCard({ session, onView }: { session: TrainingSession; onView: ()
   const color = accuracy >= 70 ? 'text-emerald-400' : accuracy >= 50 ? 'text-yellow-400' : 'text-red-400'
 
   return (
-    <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-4 flex gap-4 items-start">
+    <div className="bg-warm-800/60 border border-warm-700 rounded-xl p-4 flex gap-4 items-start">
       <div className={`text-3xl font-extrabold w-14 text-center flex-shrink-0 ${color}`}>
         {accuracy}%
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1 flex-wrap">
-          <span className="text-xs text-gray-400">{formatDate(session.timestamp)}</span>
-          <span className="text-xs text-gray-600">·</span>
-          <span className="text-xs text-gray-400">{session.tableSize}-max</span>
-          <span className="text-xs text-gray-600">·</span>
-          <span className="text-xs text-gray-400">{formatDuration(session.durationSeconds)}</span>
+          <span className="text-xs text-warm-400">{formatDate(session.timestamp)}</span>
+          <span className="text-xs text-warm-600">·</span>
+          <span className="text-xs text-warm-400">{session.tableSize}-max</span>
+          <span className="text-xs text-warm-600">·</span>
+          <span className="text-xs text-warm-400">{formatDuration(session.durationSeconds)}</span>
         </div>
         <div className="text-sm font-semibold text-white truncate mb-2">
           {session.rangeNames.join(', ') || 'Sem nome'}
         </div>
         <div className="flex gap-4 text-sm flex-wrap">
-          <span className="text-gray-300">Mãos: <strong className="text-white">{session.hands}</strong></span>
+          <span className="text-warm-300">Mãos: <strong className="text-white">{session.hands}</strong></span>
           <span className="text-emerald-400">Acertos: <strong>{session.correct}</strong></span>
           <span className="text-red-400">Erros: <strong>{session.errors}</strong></span>
           {session.consults > 0 && (
-            <span className="text-gray-500">Consultas: <strong>{session.consults}</strong></span>
+            <span className="text-warm-500">Consultas: <strong>{session.consults}</strong></span>
           )}
         </div>
       </div>
       <button
         onClick={onView}
         title="Ver detalhes"
-        className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border border-gray-600 bg-gray-900/60 text-gray-400 hover:text-white hover:border-gray-400 transition-colors"
+        className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border border-warm-600 bg-warm-900/60 text-warm-400 hover:text-white hover:border-warm-400 transition-colors"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -270,8 +270,8 @@ function GlobalHistoryPanel() {
   if (orderedKeys.length === 0) {
     return (
       <div className="text-center py-16">
-        <p className="text-gray-400 text-sm">Nenhum dado de treino ainda.</p>
-        <p className="text-gray-500 text-xs mt-1">Complete um treino para ver o desempenho aqui.</p>
+        <p className="text-warm-400 text-sm">Nenhum dado de treino ainda.</p>
+        <p className="text-warm-500 text-xs mt-1">Complete um treino para ver o desempenho aqui.</p>
       </div>
     )
   }
@@ -283,20 +283,20 @@ function GlobalHistoryPanel() {
         const isPosOpen = openPositions.has(pos)
 
         return (
-          <div key={pos} className="border border-gray-700 rounded-xl overflow-hidden">
+          <div key={pos} className="border border-warm-700 rounded-xl overflow-hidden">
             <button
               onClick={() => togglePosition(pos)}
-              className="w-full flex items-center justify-between px-4 py-3 bg-gray-800 hover:bg-gray-750 transition-colors"
+              className="w-full flex items-center justify-between px-4 py-3 bg-warm-800 hover:bg-warm-750 transition-colors"
             >
               <div className="flex items-center gap-3">
                 <span className="font-extrabold text-white text-sm w-10 text-left">{pos}</span>
-                <span className="text-gray-400 text-xs">{group.length} range{group.length !== 1 ? 's' : ''}</span>
+                <span className="text-warm-400 text-xs">{group.length} range{group.length !== 1 ? 's' : ''}</span>
               </div>
-              <span className={`text-gray-400 text-lg transition-transform duration-200 inline-block ${isPosOpen ? 'rotate-180' : ''}`}>›</span>
+              <span className={`text-warm-400 text-lg transition-transform duration-200 inline-block ${isPosOpen ? 'rotate-180' : ''}`}>›</span>
             </button>
 
             {isPosOpen && (
-              <div className="border-t border-gray-700 bg-gray-900/40 p-3 space-y-2">
+              <div className="border-t border-warm-700 bg-warm-900/40 p-3 space-y-2">
                 {group.map(r => {
                   const mergedPerf = handPerformance[r.id] ?? {}
                   const vals     = Object.values(mergedPerf)
@@ -312,10 +312,10 @@ function GlobalHistoryPanel() {
                   const grid     = r.stackGrids && gridIdx >= 0 ? r.stackGrids[gridIdx].grid : (r.stackGrids?.[0]?.grid ?? r.grid)
 
                   return (
-                    <div key={r.id} className="border border-gray-700 rounded-xl overflow-hidden">
+                    <div key={r.id} className="border border-warm-700 rounded-xl overflow-hidden">
                       <button
                         onClick={() => setOpenRangeId(isOpen ? null : r.id)}
-                        className="w-full flex items-center justify-between px-4 py-3 bg-gray-800 hover:bg-gray-750 transition-colors text-left"
+                        className="w-full flex items-center justify-between px-4 py-3 bg-warm-800 hover:bg-warm-750 transition-colors text-left"
                       >
                         <span className="font-bold text-white text-sm">{r.name}</span>
                         <div className="flex items-center gap-3">
@@ -324,14 +324,14 @@ function GlobalHistoryPanel() {
                               {accuracy}%
                             </span>
                           ) : (
-                            <span className="text-gray-600 text-xs">sem dados</span>
+                            <span className="text-warm-600 text-xs">sem dados</span>
                           )}
-                          <span className={`text-gray-400 text-lg transition-transform duration-200 inline-block ${isOpen ? 'rotate-180' : ''}`}>›</span>
+                          <span className={`text-warm-400 text-lg transition-transform duration-200 inline-block ${isOpen ? 'rotate-180' : ''}`}>›</span>
                         </div>
                       </button>
 
                       {isOpen && (
-                        <div className="border-t border-gray-700 bg-gray-900/40 p-4">
+                        <div className="border-t border-warm-700 bg-warm-900/40 p-4">
                           {stackRanges.length > 0 && (
                             <div className="flex gap-1.5 flex-wrap mb-3">
                               {stackRanges.map(sr => (
@@ -339,7 +339,7 @@ function GlobalHistoryPanel() {
                                   key={sr}
                                   onClick={() => setSelectedStack(sr)}
                                   className={['px-2.5 py-1 text-xs font-semibold rounded-lg border transition-colors',
-                                    selectedStack === sr ? 'bg-brand-600 border-brand-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700',
+                                    selectedStack === sr ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:bg-warm-700',
                                   ].join(' ')}
                                 >
                                   {sr}
@@ -352,7 +352,7 @@ function GlobalHistoryPanel() {
                               <button
                                 key={mode}
                                 onClick={() => setViewMode(mode)}
-                                className={`px-2 py-0.5 text-xs border rounded-lg transition-colors ${viewMode === mode ? 'border-brand-500 bg-brand-900/30 text-brand-300' : 'border-gray-600 bg-gray-900/80 text-gray-300 hover:bg-gray-700'}`}
+                                className={`px-2 py-0.5 text-xs border rounded-lg transition-colors ${viewMode === mode ? 'border-brand-500 bg-brand-900/30 text-brand-300' : 'border-warm-600 bg-warm-900/80 text-warm-300 hover:bg-warm-700'}`}
                               >
                                 {mode === 'heatmap' ? 'Erro / Acerto' : 'Ver Range'}
                               </button>
@@ -397,11 +397,11 @@ export function StatsPage() {
       {/* Cabeçalho */}
       <div>
         <h1 className="text-xl font-bold text-white">Histórico de Treinos</h1>
-        <p className="text-xs text-gray-400">{sessions.length} sessão(ões) registrada(s)</p>
+        <p className="text-xs text-warm-400">{sessions.length} sessão(ões) registrada(s)</p>
       </div>
 
       {/* Abas */}
-      <div className="flex border-b border-gray-700">
+      <div className="flex border-b border-warm-700">
         {([
           { key: 'sessions', label: 'Histórico de Sessões' },
           { key: 'global',   label: 'Desempenho Global'   },
@@ -413,7 +413,7 @@ export function StatsPage() {
               'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors',
               activeTab === tab.key
                 ? 'border-brand-500 text-white'
-                : 'border-transparent text-gray-400 hover:text-gray-200',
+                : 'border-transparent text-warm-400 hover:text-warm-200',
             ].join(' ')}
           >
             {tab.label}
@@ -439,22 +439,22 @@ export function StatsPage() {
                   {
                     label: 'Precisão Global',
                     value: globalAccuracy !== null ? `${globalAccuracy}%` : '—',
-                    color: globalAccuracy === null ? 'text-gray-500'
+                    color: globalAccuracy === null ? 'text-warm-500'
                          : globalAccuracy >= 70 ? 'text-emerald-400'
                          : globalAccuracy >= 50 ? 'text-yellow-400' : 'text-red-400',
                   },
                 ].map(item => (
-                  <div key={item.label} className="bg-gray-800/60 border border-gray-700 rounded-xl p-4 text-center">
+                  <div key={item.label} className="bg-warm-800/60 border border-warm-700 rounded-xl p-4 text-center">
                     <div className={`text-2xl font-bold ${item.color}`}>{item.value}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{item.label}</div>
+                    <div className="text-xs text-warm-400 mt-0.5">{item.label}</div>
                   </div>
                 ))}
               </div>
             )}
             {sessions.length === 0 ? (
               <div className="text-center py-16">
-                <p className="text-gray-400 text-sm">Nenhuma sessão registrada ainda.</p>
-                <p className="text-gray-500 text-xs mt-1">Complete um treino para ver o histórico aqui.</p>
+                <p className="text-warm-400 text-sm">Nenhuma sessão registrada ainda.</p>
+                <p className="text-warm-500 text-xs mt-1">Complete um treino para ver o histórico aqui.</p>
               </div>
             ) : (
               <div className="flex flex-col gap-3">

@@ -1,4 +1,4 @@
-import { useStore } from '../../store/useStore'
+﻿import { useStore } from '../../store/useStore'
 import { LayoutDashboard, Layers, Edit3, PlayCircle, Clock, Moon, Sun, LogOut } from 'lucide-react'
 import { clsx } from 'clsx'
 import type { Page } from '../../types'
@@ -21,12 +21,12 @@ export function Sidebar({ collapsed }: Props) {
 
   return (
     <aside className={clsx(
-      'flex flex-col bg-gray-900 border-r border-gray-700/50 h-full transition-all duration-300',
+      'flex flex-col bg-warm-900 border-r border-warm-700/50 h-full transition-all duration-300',
       collapsed ? 'w-14' : 'w-52',
     )}>
       {/* Logo */}
       <div className={clsx(
-        'flex items-center gap-2 px-3 py-4 border-b border-gray-700/50',
+        'flex items-center gap-2 px-3 py-4 border-b border-warm-700/50',
         collapsed && 'justify-center',
       )}>
         <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center flex-shrink-0 font-black text-white text-sm">
@@ -54,7 +54,7 @@ export function Sidebar({ collapsed }: Props) {
                 'w-full flex items-center gap-3 px-2 py-2.5 rounded-lg text-sm transition-all',
                 active
                   ? 'bg-brand-600/20 text-brand-400 font-semibold'
-                  : 'text-gray-400 hover:bg-gray-800 hover:text-white',
+                  : 'text-warm-400 hover:bg-warm-800 hover:text-white',
                 collapsed && 'justify-center px-0',
               )}
               title={collapsed ? item.label : undefined}
@@ -70,11 +70,11 @@ export function Sidebar({ collapsed }: Props) {
       </nav>
 
       {/* Bottom */}
-      <div className="px-2 py-3 border-t border-gray-700/50 space-y-0.5">
+      <div className="px-2 py-3 border-t border-warm-700/50 space-y-0.5">
         <button
           onClick={toggleDarkMode}
           className={clsx(
-            'w-full flex items-center gap-3 px-2 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all',
+            'w-full flex items-center gap-3 px-2 py-2.5 rounded-lg text-sm text-warm-400 hover:bg-warm-800 hover:text-white transition-all',
             collapsed && 'justify-center px-0',
           )}
           title={darkMode ? 'Modo claro' : 'Modo escuro'}
@@ -88,7 +88,7 @@ export function Sidebar({ collapsed }: Props) {
         {userMode === 'visitor' && !collapsed && (
           <button
             onClick={logout}
-            className="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-800 hover:text-gray-400 transition-all"
+            className="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg text-sm text-warm-600 hover:bg-warm-800 hover:text-warm-400 transition-all"
             title="Sair"
           >
             <LogOut size={16} className="flex-shrink-0" />
@@ -99,7 +99,7 @@ export function Sidebar({ collapsed }: Props) {
         {collapsed && (
           <button
             onClick={logout}
-            className="w-full flex items-center justify-center px-0 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-800 hover:text-gray-400 transition-all"
+            className="w-full flex items-center justify-center px-0 py-2.5 rounded-lg text-sm text-warm-600 hover:bg-warm-800 hover:text-warm-400 transition-all"
             title="Sair"
           >
             <LogOut size={16} />

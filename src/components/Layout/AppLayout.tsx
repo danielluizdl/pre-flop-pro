@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { Sidebar } from './Sidebar'
 import { Dashboard } from './Dashboard'
@@ -42,14 +42,14 @@ export function AppLayout() {
 
   return (
     <div className={darkMode ? 'dark' : ''}>
-      <div className="flex h-screen bg-gray-950 text-gray-100 overflow-hidden">
+      <div className="flex h-screen bg-warm-950 text-warm-100 overflow-hidden">
         <Sidebar collapsed={sidebarCollapsed} />
 
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="flex items-center gap-3 px-5 py-3 border-b border-gray-700/50 bg-gray-900/50 flex-shrink-0">
+          <header className="flex items-center gap-3 px-5 py-3 border-b border-warm-700/50 bg-warm-900/50 flex-shrink-0">
             <button
               onClick={() => setSidebarCollapsed(v => !v)}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
+              className="p-1.5 rounded-lg text-warm-400 hover:text-white hover:bg-warm-700 transition-colors"
             >
               <Menu size={18} />
             </button>

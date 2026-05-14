@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { PokerTableEditor } from '../ui/PokerTableEditor'
 import { SEAT_ROLE_LABELS } from '../../types'
@@ -123,7 +123,7 @@ export function TableEditorPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-bold text-white">Configurar Cenários</h1>
-        <p className="text-xs text-gray-400 mt-0.5">
+        <p className="text-xs text-warm-400 mt-0.5">
           Configure as ações de cada posição na mesa. Você pode salvar múltiplos cenários por range.
         </p>
       </div>
@@ -132,23 +132,23 @@ export function TableEditorPage() {
         {/* Left: config panel */}
         <div className="lg:w-80 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="font-bold text-sm text-gray-300">Ação na Mesa</h3>
+            <h3 className="font-bold text-sm text-warm-300">Ação na Mesa</h3>
             <button
               onClick={initTableConfig}
-              className="text-xs px-2 py-1 border border-gray-600 bg-gray-800 rounded text-gray-400 hover:bg-gray-700"
+              className="text-xs px-2 py-1 border border-warm-600 bg-warm-800 rounded text-warm-400 hover:bg-warm-700"
             >
               ↺ Resetar
             </button>
           </div>
 
           {/* Global stack setter */}
-          <div className="flex items-center gap-1.5 py-2 border-b border-gray-700 flex-wrap">
-            <span className="text-xs text-gray-400 flex-shrink-0">Todos os stacks:</span>
+          <div className="flex items-center gap-1.5 py-2 border-b border-warm-700 flex-wrap">
+            <span className="text-xs text-warm-400 flex-shrink-0">Todos os stacks:</span>
             {[100, 250].map(v => (
               <button
                 key={v}
                 onClick={() => setAllStacks(v)}
-                className="px-2 py-1 text-xs border border-gray-600 bg-gray-800 rounded hover:bg-gray-700 text-gray-300 flex-shrink-0"
+                className="px-2 py-1 text-xs border border-warm-600 bg-warm-800 rounded hover:bg-warm-700 text-warm-300 flex-shrink-0"
               >
                 {v}bb
               </button>
@@ -156,14 +156,14 @@ export function TableEditorPage() {
             <div className="flex items-center gap-1 flex-1 min-w-0">
               <input
                 type="number" min={1}
-                className="flex-1 min-w-0 p-1 border border-gray-600 rounded text-xs bg-gray-900 text-gray-200 text-center"
+                className="flex-1 min-w-0 p-1 border border-warm-600 rounded text-xs bg-warm-900 text-warm-200 text-center"
                 placeholder="Preencher"
                 value={customStack || ''}
                 onChange={e => setCustomStack(Number(e.target.value))}
               />
               <button
                 onClick={() => { if (customStack > 0) setAllStacks(customStack) }}
-                className="px-2 py-1 text-xs border border-gray-600 bg-gray-700 rounded hover:bg-gray-600 text-gray-200 flex-shrink-0"
+                className="px-2 py-1 text-xs border border-warm-600 bg-warm-700 rounded hover:bg-warm-600 text-warm-200 flex-shrink-0"
                 title="Aplicar"
               >
                 ✓
@@ -174,10 +174,10 @@ export function TableEditorPage() {
           {/* Column headers */}
           <div className="grid items-center gap-1 px-2" style={{ gridTemplateColumns: '20px 44px 1fr 56px 56px' }}>
             <span className="text-[10px] text-amber-400 font-bold text-center" title="Clique para definir como HERO">H</span>
-            <span className="text-[10px] text-gray-500 text-center">Pos</span>
-            <span className="text-[10px] text-gray-500">Ação</span>
-            <span className="text-[10px] text-gray-500 text-center">Stack</span>
-            <span className="text-[10px] text-gray-500 text-center">Aposta</span>
+            <span className="text-[10px] text-warm-500 text-center">Pos</span>
+            <span className="text-[10px] text-warm-500">Ação</span>
+            <span className="text-[10px] text-warm-500 text-center">Stack</span>
+            <span className="text-[10px] text-warm-500 text-center">Aposta</span>
           </div>
 
           {/* Position rows */}
@@ -188,8 +188,8 @@ export function TableEditorPage() {
               <div
                 key={pos.id}
                 className={[
-                  'flex flex-col p-2 bg-gray-800 border rounded-lg gap-1.5',
-                  data.isHero ? 'border-amber-600/60' : 'border-gray-700',
+                  'flex flex-col p-2 bg-warm-800 border rounded-lg gap-1.5',
+                  data.isHero ? 'border-amber-600/60' : 'border-warm-700',
                 ].join(' ')}
               >
                 <div className="grid items-center gap-1" style={{ gridTemplateColumns: '20px 44px 1fr 56px 56px' }}>
@@ -201,13 +201,13 @@ export function TableEditorPage() {
                   />
                   <div className={[
                     'font-extrabold text-xs text-center leading-tight',
-                    data.isHero ? 'text-amber-400' : 'text-gray-300',
+                    data.isHero ? 'text-amber-400' : 'text-warm-300',
                   ].join(' ')}>
                     {pos.label}
                     {data.isHero && <div className="text-[8px] text-amber-500 font-bold">HERO</div>}
                   </div>
                   <select
-                    className="w-full p-1 rounded border border-gray-600 text-xs bg-gray-900 text-gray-200 cursor-pointer"
+                    className="w-full p-1 rounded border border-warm-600 text-xs bg-warm-900 text-warm-200 cursor-pointer"
                     value={data.role}
                     onChange={e => updateRole(pos.id, e.target.value)}
                   >
@@ -217,14 +217,14 @@ export function TableEditorPage() {
                   </select>
                   <input
                     type="number"
-                    className="p-1 text-center border border-gray-600 rounded text-xs bg-gray-900 text-gray-200"
+                    className="p-1 text-center border border-warm-600 rounded text-xs bg-warm-900 text-warm-200"
                     value={data.stack}
                     onChange={e => updateStack(pos.id, Number(e.target.value))}
                     title="Stack (bb)"
                   />
                   <input
                     type="number" step={0.1}
-                    className="p-1 text-center border border-gray-600 rounded text-xs bg-gray-900 text-gray-200"
+                    className="p-1 text-center border border-warm-600 rounded text-xs bg-warm-900 text-warm-200"
                     value={data.bet}
                     onChange={e => updateBet(pos.id, parseFloat(e.target.value) || 0)}
                     placeholder="bb"
@@ -237,12 +237,12 @@ export function TableEditorPage() {
                     <label className="text-xs text-amber-400 flex-shrink-0">Raise futuro:</label>
                     <input
                       type="number" min={0} step={0.5}
-                      className="w-20 p-1 border border-amber-600/50 rounded text-xs bg-gray-900 text-amber-200 text-center"
+                      className="w-20 p-1 border border-amber-600/50 rounded text-xs bg-warm-900 text-amber-200 text-center"
                       placeholder="bb"
                       value={currentHeroRaiseSize || ''}
                       onChange={e => setHeroRaiseSize(parseFloat(e.target.value) || 0)}
                     />
-                    <span className="text-xs text-gray-500">bb</span>
+                    <span className="text-xs text-warm-500">bb</span>
                   </div>
                 )}
               </div>
@@ -250,7 +250,7 @@ export function TableEditorPage() {
           })}
 
           {/* Summary */}
-          <div className="text-xs text-gray-500 pt-1 border-t border-gray-700">
+          <div className="text-xs text-warm-500 pt-1 border-t border-warm-700">
             {getScenarioSummary(currentScenario, activePositions)}
           </div>
         </div>
@@ -261,8 +261,8 @@ export function TableEditorPage() {
           <div className="flex justify-center">
             <div className="w-full" style={{ maxWidth: 575 }}>
               <div
-                className="rounded-2xl border border-gray-800 px-10 pt-8 pb-16"
-                style={{ background: '#030712', boxShadow: 'inset 0 0 50px rgba(0,0,0,0.8)' }}
+                className="rounded-2xl border border-warm-800 px-10 pt-8 pb-16"
+                style={{ background: '#1b1a17', boxShadow: 'inset 0 0 50px rgba(0,0,0,0.8)' }}
               >
                 <PokerTableEditor />
               </div>
@@ -280,7 +280,7 @@ export function TableEditorPage() {
               </button>
               <button
                 onClick={() => setEditingIdx(null)}
-                className="px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-bold transition-colors"
+                className="px-4 py-3 bg-warm-700 hover:bg-warm-600 text-white rounded-lg font-bold transition-colors"
               >
                 Cancelar
               </button>
@@ -297,7 +297,7 @@ export function TableEditorPage() {
           {/* Saved scenarios */}
           {tempScenarios.length > 0 && (
             <div className="space-y-1.5">
-              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+              <h4 className="text-xs font-bold text-warm-400 uppercase tracking-wider">
                 Cenários Salvos ({tempScenarios.length})
               </h4>
               {tempScenarios.map((scen, idx) => (
@@ -308,13 +308,13 @@ export function TableEditorPage() {
                     'border p-2.5 rounded-lg text-sm flex justify-between items-center cursor-pointer transition-colors',
                     editingIdx === idx
                       ? 'bg-emerald-900/20 border-emerald-600/60'
-                      : 'bg-gray-800 border-gray-700 hover:border-gray-500',
+                      : 'bg-warm-800 border-warm-700 hover:border-warm-500',
                   ].join(' ')}
                 >
-                  <span className="text-gray-200">
-                    <span className="font-bold text-gray-400">#{idx + 1}</span>{' '}
+                  <span className="text-warm-200">
+                    <span className="font-bold text-warm-400">#{idx + 1}</span>{' '}
                     {scen.summary}{' '}
-                    <span className="text-gray-500">(Pote: {scen.pot}bb)</span>
+                    <span className="text-warm-500">(Pote: {scen.pot}bb)</span>
                     {!!scen.heroRaiseSize && <span className="text-amber-500"> · Raise: {scen.heroRaiseSize}bb</span>}
                     <span className="text-blue-400"> · {getStackLabel(scen.data)}</span>
                   </span>
@@ -330,7 +330,7 @@ export function TableEditorPage() {
           )}
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4 border-t border-gray-700">
+          <div className="flex gap-3 pt-4 border-t border-warm-700">
             <button
               onClick={handleFinalize}
               className="flex-1 py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-lg font-bold transition-colors"
@@ -339,7 +339,7 @@ export function TableEditorPage() {
             </button>
             <button
               onClick={() => setPage('editor')}
-              className="w-28 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-bold transition-colors"
+              className="w-28 py-3 bg-warm-700 hover:bg-warm-600 text-white rounded-lg font-bold transition-colors"
             >
               ← Voltar
             </button>
@@ -354,29 +354,29 @@ export function TableEditorPage() {
           onClick={() => setNameModalOpen(false)}
         >
           <div
-            className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-md w-full"
+            className="bg-warm-900 border border-warm-700 rounded-2xl p-6 max-w-md w-full"
             onClick={e => e.stopPropagation()}
           >
             <h3 className="font-bold text-white text-lg mb-1">Nome do Range</h3>
-            <p className="text-xs text-gray-400 mb-4">
+            <p className="text-xs text-warm-400 mb-4">
               {modalEntries.length} variações de stack serão salvas em um único range. Escolha o nome principal.
             </p>
 
             {/* Preview das variações */}
             <div className="flex flex-wrap gap-2 mb-4">
               {modalEntries.map((entry, i) => (
-                <div key={i} className="relative flex items-center gap-1.5 bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5 pr-7">
-                  <span className="text-xs text-gray-300">{entry.name}</span>
+                <div key={i} className="relative flex items-center gap-1.5 bg-warm-800 border border-warm-700 rounded-lg px-2.5 py-1.5 pr-7">
+                  <span className="text-xs text-warm-300">{entry.name}</span>
                   {entry.stackRange && (
                     <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-900/40 border border-brand-700/50 text-brand-400 leading-tight">
                       {entry.stackRange}
                     </span>
                   )}
-                  <span className="text-xs text-gray-500">{countNonFoldHands(entry.grid)} mãos</span>
+                  <span className="text-xs text-warm-500">{countNonFoldHands(entry.grid)} mãos</span>
                   {entry.sessionIdx >= 0 && (
                     <button
                       onClick={() => removeSessionGrid(entry.sessionIdx)}
-                      className="absolute top-1 right-1 p-0.5 rounded text-gray-500 hover:text-red-400 hover:bg-red-900/20 transition-colors"
+                      className="absolute top-1 right-1 p-0.5 rounded text-warm-500 hover:text-red-400 hover:bg-red-900/20 transition-colors"
                     >
                       <X size={10} />
                     </button>
@@ -388,7 +388,7 @@ export function TableEditorPage() {
             <input
               type="text"
               autoFocus
-              className="w-full px-3 py-2.5 border border-gray-600 rounded-lg text-sm bg-gray-800 text-white placeholder-gray-500 focus:border-brand-500 focus:outline-none mb-4"
+              className="w-full px-3 py-2.5 border border-warm-600 rounded-lg text-sm bg-warm-800 text-white placeholder-warm-500 focus:border-brand-500 focus:outline-none mb-4"
               placeholder="Ex: Defesa BB vs UTG"
               value={primaryName}
               onChange={e => setPrimaryName(e.target.value)}
@@ -404,7 +404,7 @@ export function TableEditorPage() {
               </button>
               <button
                 onClick={() => setNameModalOpen(false)}
-                className="px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-bold transition-colors"
+                className="px-4 py-2.5 bg-warm-700 hover:bg-warm-600 text-white rounded-lg font-bold transition-colors"
               >
                 Cancelar
               </button>
