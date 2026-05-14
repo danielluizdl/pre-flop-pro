@@ -368,7 +368,7 @@ export function TableEditorPage() {
                 <div key={i} className="relative flex items-center gap-1.5 bg-warm-800 border border-warm-700 rounded-lg px-2.5 py-1.5 pr-7">
                   <span className="text-xs text-warm-300">{entry.name}</span>
                   {entry.stackRange && (
-                    <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-900/40 border border-brand-700/50 text-brand-400 leading-tight">
+                    <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-500/10 border border-brand-500/40 text-brand-400 leading-tight">
                       {entry.stackRange}
                     </span>
                   )}

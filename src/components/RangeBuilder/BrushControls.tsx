@@ -43,7 +43,10 @@ function ActionRow({ label, color, field, value, onChange, extra }: ActionRowPro
           <button
             key={p}
             onClick={() => onChange(field, p)}
-            className="flex-1 py-1 text-xs border border-warm-600 bg-warm-900 rounded cursor-pointer text-warm-400 hover:bg-warm-700 hover:text-white transition-colors"
+            className="flex-1 border transition-colors cursor-pointer"
+            style={{ height:24, borderRadius:999, fontFamily:"'Bebas Neue',sans-serif", fontSize:13, letterSpacing:'0.06em', background:'#1f1d1a', borderColor:'#4a463e', color:'#6a655b' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor='#c95f3a'; (e.currentTarget as HTMLElement).style.color='#ede8de' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor='#4a463e'; (e.currentTarget as HTMLElement).style.color='#6a655b' }}
           >
             {p}%
           </button>
@@ -161,7 +164,10 @@ export function BrushControls() {
               <button
                 key={p}
                 onClick={() => setBrush('extra', p)}
-                className="flex-1 py-1 text-xs border border-warm-600 bg-warm-900 rounded cursor-pointer text-warm-400 hover:bg-warm-700 hover:text-white transition-colors"
+                className="flex-1 border transition-colors cursor-pointer"
+            style={{ height:24, borderRadius:999, fontFamily:"'Bebas Neue',sans-serif", fontSize:13, letterSpacing:'0.06em', background:'#1f1d1a', borderColor:'#4a463e', color:'#6a655b' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor='#c95f3a'; (e.currentTarget as HTMLElement).style.color='#ede8de' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor='#4a463e'; (e.currentTarget as HTMLElement).style.color='#6a655b' }}
               >
                 {p}%
               </button>

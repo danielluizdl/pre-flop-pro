@@ -41,18 +41,18 @@ function RangeCard({ r, allRanges, onViewHeatmap, onPreview }: CardProps) {
   const prereqRange = r.prereqRangeId !== undefined ? allRanges.find(x => x.id === r.prereqRangeId) : undefined
 
   return (
-    <div className="bg-warm-800/60 border border-warm-700 rounded-lg p-3 hover:border-warm-500 transition-all flex flex-col gap-2">
+    <div className="card-surface rounded-lg p-3 hover:border-warm-500 transition-all flex flex-col gap-2">
       <div>
         <div className="flex items-start gap-1.5 flex-wrap">
           <h3 className="font-bold text-white text-sm leading-tight">{r.name}</h3>
           {r.stackGrids && r.stackGrids.length > 0 ? (
             r.stackGrids.map((sg, i) => sg.stackRange && (
-              <span key={i} className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-900/40 border border-brand-700/50 text-brand-400 flex-shrink-0 leading-tight">
+              <span key={i} className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-500/10 border border-brand-500/40 text-brand-400 flex-shrink-0 leading-tight">
                 {sg.stackRange}
               </span>
             ))
           ) : r.stackRange ? (
-            <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-900/40 border border-brand-700/50 text-brand-400 flex-shrink-0 leading-tight">
+            <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-500/10 border border-brand-500/40 text-brand-400 flex-shrink-0 leading-tight">
               {r.stackRange}
             </span>
           ) : null}

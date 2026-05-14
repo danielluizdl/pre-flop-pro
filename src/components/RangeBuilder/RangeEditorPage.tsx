@@ -154,7 +154,7 @@ export function RangeEditorPage() {
 
       {/* Preview da sessão */}
       {sessionGrids.length > 0 && (
-        <div className="bg-warm-800/60 border border-warm-700 rounded-xl p-3 space-y-2">
+        <div className="card-surface p-3 space-y-2">
           <p className="text-xs font-semibold text-warm-400 uppercase tracking-wide">
             Salvos nesta sessão ({sessionGrids.length})
           </p>
@@ -172,7 +172,7 @@ export function RangeEditorPage() {
               >
                 <span className="text-xs font-semibold text-white">{sg.name}</span>
                 {sg.stackRange && (
-                  <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-900/40 border border-brand-700/50 text-brand-400 leading-tight">
+                  <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-500/10 border border-brand-500/40 text-brand-400 leading-tight">
                     {sg.stackRange}
                   </span>
                 )}

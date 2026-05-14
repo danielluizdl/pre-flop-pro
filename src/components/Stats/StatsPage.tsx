@@ -61,27 +61,19 @@ function SessionDetailView({ session, ranges, onBack }: {
         </div>
       </div>
 
-      <div className="bg-warm-800 border border-warm-700 rounded-xl p-4">
-        <div className="grid grid-cols-4 gap-3 text-center">
-          <div>
-            <div className="text-2xl font-extrabold text-white">{session.hands}</div>
-            <div className="text-xs text-warm-400">Mãos</div>
+      <div className="grid grid-cols-4 gap-px bg-warm-700/30 rounded-2xl overflow-hidden">
+        {[
+          { label:'Mãos',    value: String(session.hands),    color:'text-warm-100' },
+          { label:'Acertos', value: String(session.correct),  color:'text-result-good' },
+          { label:'Erros',   value: String(session.errors),   color:'text-result-bad' },
+          { label:'Precisão',value: acc !== null ? `${acc}%` : '—',
+            color: acc === null ? 'text-warm-500' : acc >= 80 ? 'text-brand-500' : acc >= 50 ? 'text-gold' : 'text-result-bad' },
+        ].map(item => (
+          <div key={item.label} className="bg-warm-900 p-4 text-center">
+            <div className="eyebrow mb-1">{item.label}</div>
+            <div className={`font-display tabular-nums leading-none ${item.color}`} style={{ fontSize:36, letterSpacing:'0.01em' }}>{item.value}</div>
           </div>
-          <div>
-            <div className="text-2xl font-extrabold text-emerald-400">{session.correct}</div>
-            <div className="text-xs text-warm-400">Acertos</div>
-          </div>
-          <div>
-            <div className="text-2xl font-extrabold text-red-400">{session.errors}</div>
-            <div className="text-xs text-warm-400">Erros</div>
-          </div>
-          <div>
-            <div className={`text-2xl font-extrabold ${acc !== null ? (acc >= 80 ? 'text-emerald-400' : acc >= 50 ? 'text-yellow-400' : 'text-red-400') : 'text-warm-600'}`}>
-              {acc !== null ? `${acc}%` : '—'}
-            </div>
-            <div className="text-xs text-warm-400">Precisão</div>
-          </div>
-        </div>
+        ))}
       </div>
 
       {sessionRanges.length === 0 ? (
@@ -184,7 +176,7 @@ function SessionCard({ session, onView }: { session: TrainingSession; onView: ()
   const color = accuracy >= 80 ? 'text-brand-500' : accuracy >= 50 ? 'text-gold' : 'text-result-bad'
 
   return (
-    <div className="bg-warm-800/60 border border-warm-700 rounded-xl p-4 flex gap-4 items-start">
+    <div className="card-surface p-4 flex gap-4 items-start">
       <div className={`font-stat font-black tabular-nums text-3xl w-14 text-center flex-shrink-0 leading-none ${color}`}>
         {accuracy}%
       </div>
@@ -196,8 +188,8 @@ function SessionCard({ session, onView }: { session: TrainingSession; onView: ()
           <span className="text-xs text-warm-600">·</span>
           <span className="text-xs text-warm-400">{formatDuration(session.durationSeconds)}</span>
         </div>
-        <div className="text-sm font-semibold text-white truncate mb-2">
-          {session.rangeNames.join(', ') || 'Sem nome'}
+        <div className="font-display uppercase text-warm-100 truncate mb-1.5 leading-none" style={{ fontSize:18, letterSpacing:'0.03em' }}>
+          {session.rangeNames.join(' · ') || 'Sem nome'}
         </div>
         <div className="flex gap-4 text-sm flex-wrap">
           <span className="text-warm-300">Mãos: <strong className="text-white">{session.hands}</strong></span>
@@ -317,10 +309,10 @@ function GlobalHistoryPanel() {
                         onClick={() => setOpenRangeId(isOpen ? null : r.id)}
                         className="w-full flex items-center justify-between px-4 py-3 bg-warm-800 hover:bg-warm-750 transition-colors text-left"
                       >
-                        <span className="font-bold text-white text-sm">{r.name}</span>
+                        <span className="font-display uppercase text-warm-100 leading-none" style={{ fontSize:18, letterSpacing:'0.03em' }}>{r.name}</span>
                         <div className="flex items-center gap-3">
                           {accuracy !== null ? (
-                            <span className={`text-sm font-bold ${accuracy >= 80 ? 'text-emerald-400' : accuracy >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+                            <span className={`font-stat font-black tabular-nums text-base leading-none ${accuracy >= 80 ? 'text-brand-500' : accuracy >= 50 ? 'text-gold' : 'text-result-bad'}`}>
                               {accuracy}%
                             </span>
                           ) : (
@@ -444,9 +436,9 @@ export function StatsPage() {
                          : globalAccuracy >= 50 ? 'text-yellow-400' : 'text-red-400',
                   },
                 ].map(item => (
-                  <div key={item.label} className="bg-warm-800/60 border border-warm-700 rounded-xl p-4 text-center">
-                    <div className={`text-2xl font-bold ${item.color}`}>{item.value}</div>
-                    <div className="text-xs text-warm-400 mt-0.5">{item.label}</div>
+                  <div key={item.label} className="card-surface p-5 text-center">
+                    <div className="eyebrow mb-1.5">{item.label}</div>
+                    <div className={`font-display tabular-nums leading-none ${item.color}`} style={{ fontSize:40, letterSpacing:'0.01em' }}>{item.value}</div>
                   </div>
                 ))}
               </div>

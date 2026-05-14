@@ -543,12 +543,12 @@ function DrillRangeSelect() {
                                   <h3 className="font-bold text-white text-sm leading-tight">{r.name}</h3>
                                   {r.stackGrids && r.stackGrids.length > 0 ? (
                                     r.stackGrids.map((sg, i) => sg.stackRange && (
-                                      <span key={i} className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-900/40 border border-brand-700/50 text-brand-400 flex-shrink-0 leading-tight">
+                                      <span key={i} className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-500/10 border border-brand-500/40 text-brand-400 flex-shrink-0 leading-tight">
                                         {sg.stackRange}
                                       </span>
                                     ))
                                   ) : r.stackRange ? (
-                                    <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-900/40 border border-brand-700/50 text-brand-400 flex-shrink-0 leading-tight">
+                                    <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-500/10 border border-brand-500/40 text-brand-400 flex-shrink-0 leading-tight">
                                       {r.stackRange}
                                     </span>
                                   ) : null}
@@ -1121,7 +1121,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                   {activeDrillRange.name}
                 </div>
                 {!!activeDrillStackRange && (
-                  <span className="inline-block px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-900/40 border border-brand-700/50 text-brand-400 leading-tight">
+                  <span className="inline-block px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-500/10 border border-brand-500/40 text-brand-400 leading-tight">
                     {activeDrillStackRange}
                   </span>
                 )}
