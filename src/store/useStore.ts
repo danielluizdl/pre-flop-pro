@@ -30,7 +30,7 @@ function addDeletedAdminId(id: number) {
   localStorage.setItem(DELETED_ADMIN_KEY, JSON.stringify([...ids]))
 }
 
-type HandPerfMap = Record<number, Record<string, { c: number; t: number }>>
+type HandPerfMap = Record<string, Record<string, { c: number; t: number }>>
 
 const adminPayload  = adminRangesRaw as unknown as { version: number; ranges: Range[] }
 const ADMIN_VERSION = adminPayload.version ?? 0
@@ -699,6 +699,8 @@ export const useStore = create<AppState>()(
         const { handPerformance } = get()
         const next = { ...handPerformance }
         delete next[rangeId]
+        const prefix = `${rangeId}|||`
+        Object.keys(next).forEach(k => { if (k.startsWith(prefix)) delete next[k] })
         saveHandPerf(next)
         set({ handPerformance: next })
       },
@@ -910,6 +912,7 @@ export const useStore = create<AppState>()(
         const stats = { ...sessionStats, hands: sessionStats.hands + 1 }
         if (correct) stats.correct++; else stats.errors++
 
+        const { activeDrillStackRange: stackRange } = get()
         const entry: HandHistoryEntry = {
           id: Date.now(),
           hand: activeHand,
@@ -920,6 +923,7 @@ export const useStore = create<AppState>()(
           correct,
           rangeName: activeDrillRange.name,
           raiseSize: d?.size,
+          stackRange: stackRange || undefined,
         }
         const { handPerformance } = get()
         const rid = activeDrillRange.id
@@ -927,6 +931,11 @@ export const useStore = create<AppState>()(
         const newPerf: HandPerfMap = {
           ...handPerformance,
           [rid]: { ...handPerformance[rid], [activeHand]: { c: prev.c + (correct ? 1 : 0), t: prev.t + 1 } },
+        }
+        if (stackRange) {
+          const sk = `${rid}|||${stackRange}`
+          const prevSk = handPerformance[sk]?.[activeHand] ?? { c: 0, t: 0 }
+          newPerf[sk] = { ...handPerformance[sk], [activeHand]: { c: prevSk.c + (correct ? 1 : 0), t: prevSk.t + 1 } }
         }
         saveHandPerf(newPerf)
         set({ sessionStats: stats, handHistory: [...handHistory, entry].slice(-50), handPerformance: newPerf })
@@ -949,6 +958,12 @@ export const useStore = create<AppState>()(
             if (!handPerf[e.rangeName]) handPerf[e.rangeName] = {}
             const cur = handPerf[e.rangeName][e.hand] ?? { c: 0, t: 0 }
             handPerf[e.rangeName][e.hand] = { c: cur.c + (e.correct ? 1 : 0), t: cur.t + 1 }
+            if (e.stackRange) {
+              const sk = `${e.rangeName}|||${e.stackRange}`
+              if (!handPerf[sk]) handPerf[sk] = {}
+              const curSk = handPerf[sk][e.hand] ?? { c: 0, t: 0 }
+              handPerf[sk][e.hand] = { c: curSk.c + (e.correct ? 1 : 0), t: curSk.t + 1 }
+            }
           })
           const session: TrainingSession = {
             id: Date.now(),

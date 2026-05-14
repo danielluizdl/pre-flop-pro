@@ -96,6 +96,7 @@ export interface HandHistoryEntry {
   correct: boolean
   rangeName: string
   raiseSize?: number | string
+  stackRange?: string
 }
 
 export interface StackGrid {

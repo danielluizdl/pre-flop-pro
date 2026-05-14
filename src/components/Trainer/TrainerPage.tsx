@@ -79,8 +79,17 @@ function SessionDetail({ session, ranges }: {
 }) {
   const [openRangeId, setOpenRangeId] = useState<number | null>(null)
   const [viewMode, setViewMode]       = useState<'actions' | 'heatmap'>('heatmap')
+  const [selectedStack, setSelectedStack] = useState('')
 
   useEffect(() => { setViewMode('heatmap') }, [openRangeId])
+  useEffect(() => {
+    if (openRangeId !== null) {
+      const r = ranges.find(x => x.id === openRangeId)
+      setSelectedStack(r?.stackGrids && r.stackGrids.length > 1 ? r.stackGrids[0].stackRange : '')
+    } else {
+      setSelectedStack('')
+    }
+  }, [openRangeId])
 
   const sessionRanges = session.rangeNames
     .map(name => ranges.find(r => r.name === name))
@@ -91,7 +100,6 @@ function SessionDetail({ session, ranges }: {
 
   return (
     <div className="border-t border-gray-700 bg-gray-900/40 p-4 space-y-4">
-      {/* Stats box idêntico ao DrillSummary */}
       <div className="bg-gray-800 border border-gray-700 rounded-xl p-4">
         <div className="grid grid-cols-4 gap-3 text-center">
           <div>
@@ -115,18 +123,23 @@ function SessionDetail({ session, ranges }: {
         </div>
       </div>
 
-      {/* Acordeão por range */}
       {sessionRanges.length === 0 ? (
         <p className="text-gray-500 text-sm text-center py-2">Ranges desta sessão não encontrados.</p>
       ) : (
         <div className="space-y-2">
           {sessionRanges.map(r => {
-            const perf     = sessionPerf?.[r.name] ?? {}
-            const vals     = Object.values(perf)
+            const mergedPerf = sessionPerf?.[r.name] ?? {}
+            const vals     = Object.values(mergedPerf)
             const total    = vals.reduce((s, v) => s + v.t, 0)
             const correct  = vals.reduce((s, v) => s + v.c, 0)
             const accuracy = total > 0 ? Math.round(correct / total * 100) : null
             const isOpenR  = openRangeId === r.id
+            const stackRanges = r.stackGrids && r.stackGrids.length > 1 ? r.stackGrids.map(sg => sg.stackRange).filter(Boolean) : []
+            const activeStack = isOpenR && stackRanges.length > 0 ? selectedStack : ''
+            const perfKey  = activeStack ? `${r.name}|||${activeStack}` : r.name
+            const perf     = sessionPerf?.[perfKey] ?? {}
+            const gridIdx  = activeStack ? r.stackGrids!.findIndex(sg => sg.stackRange === activeStack) : 0
+            const grid     = r.stackGrids && gridIdx >= 0 ? r.stackGrids[gridIdx].grid : (r.stackGrids?.[0]?.grid ?? r.grid)
 
             return (
               <div key={r.id} className="border border-gray-700/60 rounded-xl overflow-hidden">
@@ -158,6 +171,21 @@ function SessionDetail({ session, ranges }: {
                       <p className="text-gray-500 text-xs text-center py-4">Dados por mão não disponíveis para sessões anteriores.</p>
                     ) : (
                       <>
+                        {stackRanges.length > 0 && (
+                          <div className="flex gap-1.5 flex-wrap mb-3">
+                            {stackRanges.map(sr => (
+                              <button
+                                key={sr}
+                                onClick={() => setSelectedStack(sr)}
+                                className={['px-2.5 py-1 text-xs font-semibold rounded-lg border transition-colors',
+                                  selectedStack === sr ? 'bg-brand-600 border-brand-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700',
+                                ].join(' ')}
+                              >
+                                {sr}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                         <div className="flex justify-end gap-1.5 mb-3">
                           {(['heatmap', 'actions'] as const).map(mode => (
                             <button
@@ -171,7 +199,7 @@ function SessionDetail({ session, ranges }: {
                         </div>
                         <HandMatrix
                           readOnly
-                          grid={r.stackGrids?.[0]?.grid ?? r.grid}
+                          grid={grid}
                           heatmap={Object.keys(perf).length > 0 ? perf : undefined}
                           customActionColor={r.customAction?.color}
                           forceViewMode={viewMode}
@@ -607,10 +635,19 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
   const handPerformance = useStore(s => s.handPerformance)
   const sessionStats    = useStore(s => s.sessionStats)
   const handHistory     = useStore(s => s.handHistory)
-  const [openId, setOpenId]     = useState<number | null>(null)
-  const [viewMode, setViewMode] = useState<'actions' | 'heatmap'>('heatmap')
+  const [openId, setOpenId]         = useState<number | null>(null)
+  const [viewMode, setViewMode]     = useState<'actions' | 'heatmap'>('heatmap')
+  const [selectedStack, setSelectedStack] = useState('')
 
   useEffect(() => { setViewMode('heatmap') }, [openId])
+  useEffect(() => {
+    if (openId !== null) {
+      const r = ranges.find(x => x.id === openId)
+      setSelectedStack(r?.stackGrids && r.stackGrids.length > 1 ? r.stackGrids[0].stackRange : '')
+    } else {
+      setSelectedStack('')
+    }
+  }, [openId])
 
   const trainedRanges = ranges.filter(r => selectedIds.includes(r.id))
 
@@ -677,8 +714,13 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
         {trainedRanges.map(r => {
           const sess     = sessionByRange[r.name] ?? { total: 0, correct: 0 }
           const accuracy = sess.total > 0 ? Math.round(sess.correct / sess.total * 100) : null
-          const isOpen = openId === r.id
-          const grid   = r.stackGrids?.[0]?.grid ?? r.grid
+          const isOpen   = openId === r.id
+          const stackRanges = r.stackGrids && r.stackGrids.length > 1 ? r.stackGrids.map(sg => sg.stackRange).filter(Boolean) : []
+          const activeStack = isOpen && stackRanges.length > 0 ? selectedStack : ''
+          const gridIdx  = activeStack ? r.stackGrids!.findIndex(sg => sg.stackRange === activeStack) : 0
+          const grid     = r.stackGrids && gridIdx >= 0 ? r.stackGrids[gridIdx].grid : (r.stackGrids?.[0]?.grid ?? r.grid)
+          const heatmapKey = activeStack ? `${r.id}|||${activeStack}` : String(r.id)
+          const heatmap  = handPerformance[heatmapKey]
 
           return (
             <div key={r.id} className="border border-gray-700 rounded-xl overflow-hidden">
@@ -710,6 +752,21 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
                     <p className="text-gray-500 text-sm text-center py-4">Nenhuma mão treinada neste range nesta sessão.</p>
                   ) : (
                     <>
+                      {stackRanges.length > 0 && (
+                        <div className="flex gap-1.5 flex-wrap mb-3">
+                          {stackRanges.map(sr => (
+                            <button
+                              key={sr}
+                              onClick={() => setSelectedStack(sr)}
+                              className={['px-2.5 py-1 text-xs font-semibold rounded-lg border transition-colors',
+                                selectedStack === sr ? 'bg-brand-600 border-brand-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700',
+                              ].join(' ')}
+                            >
+                              {sr}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                       <div className="flex justify-end gap-1.5 mb-3">
                         <button
                           onClick={() => setViewMode('heatmap')}
@@ -727,7 +784,7 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
                       <HandMatrix
                         readOnly
                         grid={grid}
-                        heatmap={handPerformance[r.id]}
+                        heatmap={heatmap}
                         customActionColor={r.customAction?.color}
                         forceViewMode={viewMode}
                       />

@@ -3,6 +3,8 @@ import { useStore } from '../../store/useStore'
 import type { Range, TrainingSession } from '../../types'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
 
+const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'EP', 'LJ', 'UTG']
+
 function formatDate(ts: number): string {
   return new Date(ts).toLocaleDateString('pt-BR', {
     day: '2-digit', month: '2-digit', year: 'numeric',
@@ -24,8 +26,17 @@ function SessionDetailView({ session, ranges, onBack }: {
 }) {
   const [openRangeId, setOpenRangeId] = useState<number | null>(null)
   const [viewMode, setViewMode]       = useState<'actions' | 'heatmap'>('heatmap')
+  const [selectedStack, setSelectedStack] = useState('')
 
   useEffect(() => { setViewMode('heatmap') }, [openRangeId])
+  useEffect(() => {
+    if (openRangeId !== null) {
+      const r = ranges.find(x => x.id === openRangeId)
+      setSelectedStack(r?.stackGrids && r.stackGrids.length > 1 ? r.stackGrids[0].stackRange : '')
+    } else {
+      setSelectedStack('')
+    }
+  }, [openRangeId])
 
   const sessionRanges = session.rangeNames
     .map(name => ranges.find(r => r.name === name))
@@ -37,7 +48,6 @@ function SessionDetailView({ session, ranges, onBack }: {
   return (
     <div className="space-y-4 max-w-2xl">
 
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <button
@@ -51,7 +61,6 @@ function SessionDetailView({ session, ranges, onBack }: {
         </div>
       </div>
 
-      {/* Stats box */}
       <div className="bg-gray-800 border border-gray-700 rounded-xl p-4">
         <div className="grid grid-cols-4 gap-3 text-center">
           <div>
@@ -75,18 +84,23 @@ function SessionDetailView({ session, ranges, onBack }: {
         </div>
       </div>
 
-      {/* Ranges */}
       {sessionRanges.length === 0 ? (
         <p className="text-gray-500 text-sm text-center py-4">Ranges desta sessão não encontrados.</p>
       ) : (
         <div className="space-y-2">
           {sessionRanges.map(r => {
-            const perf     = sessionPerf?.[r.name] ?? {}
-            const vals     = Object.values(perf)
+            const mergedPerf = sessionPerf?.[r.name] ?? {}
+            const vals     = Object.values(mergedPerf)
             const total    = vals.reduce((s, v) => s + v.t, 0)
             const correct  = vals.reduce((s, v) => s + v.c, 0)
             const accuracy = total > 0 ? Math.round(correct / total * 100) : null
             const isOpen   = openRangeId === r.id
+            const stackRanges = r.stackGrids && r.stackGrids.length > 1 ? r.stackGrids.map(sg => sg.stackRange).filter(Boolean) : []
+            const activeStack = isOpen && stackRanges.length > 0 ? selectedStack : ''
+            const perfKey  = activeStack ? `${r.name}|||${activeStack}` : r.name
+            const perf     = sessionPerf?.[perfKey] ?? {}
+            const gridIdx  = activeStack ? r.stackGrids!.findIndex(sg => sg.stackRange === activeStack) : 0
+            const grid     = r.stackGrids && gridIdx >= 0 ? r.stackGrids[gridIdx].grid : (r.stackGrids?.[0]?.grid ?? r.grid)
 
             return (
               <div key={r.id} className="border border-gray-700 rounded-xl overflow-hidden">
@@ -118,6 +132,21 @@ function SessionDetailView({ session, ranges, onBack }: {
                       <p className="text-gray-500 text-xs text-center py-4">Dados por mão não disponíveis para sessões anteriores.</p>
                     ) : (
                       <>
+                        {stackRanges.length > 0 && (
+                          <div className="flex gap-1.5 flex-wrap mb-3">
+                            {stackRanges.map(sr => (
+                              <button
+                                key={sr}
+                                onClick={() => setSelectedStack(sr)}
+                                className={['px-2.5 py-1 text-xs font-semibold rounded-lg border transition-colors',
+                                  selectedStack === sr ? 'bg-brand-600 border-brand-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700',
+                                ].join(' ')}
+                              >
+                                {sr}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                         <div className="flex justify-end gap-1.5 mb-3">
                           {(['heatmap', 'actions'] as const).map(mode => (
                             <button
@@ -131,7 +160,7 @@ function SessionDetailView({ session, ranges, onBack }: {
                         </div>
                         <HandMatrix
                           readOnly
-                          grid={r.stackGrids?.[0]?.grid ?? r.grid}
+                          grid={grid}
                           heatmap={Object.keys(perf).length > 0 ? perf : undefined}
                           customActionColor={r.customAction?.color}
                           forceViewMode={viewMode}
@@ -198,86 +227,183 @@ function GlobalHistoryPanel() {
   const ranges          = useStore(s => s.ranges)
   const handPerformance = useStore(s => s.handPerformance)
 
-  const [open, setOpen]         = useState(false)
+  const [open, setOpen]               = useState(false)
+  const [openPositions, setOpenPositions] = useState<Set<string>>(new Set())
   const [openRangeId, setOpenRangeId] = useState<number | null>(null)
-  const [viewMode, setViewMode] = useState<'actions' | 'heatmap'>('heatmap')
+  const [viewMode, setViewMode]       = useState<'actions' | 'heatmap'>('heatmap')
+  const [selectedStack, setSelectedStack] = useState('')
 
   useEffect(() => { setViewMode('heatmap') }, [openRangeId])
+  useEffect(() => {
+    if (openRangeId !== null) {
+      const r = ranges.find(x => x.id === openRangeId)
+      setSelectedStack(r?.stackGrids && r.stackGrids.length > 1 ? r.stackGrids[0].stackRange : '')
+    } else {
+      setSelectedStack('')
+    }
+  }, [openRangeId])
 
   const trainedRanges = ranges.filter(r => {
     const perf = handPerformance[r.id]
     return perf && Object.values(perf).some(v => v.t > 0)
   })
 
-  return (
-    <div className="flex-shrink-0 w-72 sticky top-0 self-start">
-      <div className="bg-gray-800/60 border border-gray-700 rounded-xl overflow-hidden">
+  const grouped: Record<string, Range[]> = {}
+  for (const r of trainedRanges) {
+    for (const pos of r.positions) {
+      if (!grouped[pos]) grouped[pos] = []
+      grouped[pos].push(r)
+    }
+  }
+  const orderedKeys = [
+    ...POSITION_ORDER.filter(p => grouped[p]),
+    ...Object.keys(grouped).filter(p => !POSITION_ORDER.includes(p)).sort(),
+  ]
+
+  function togglePosition(pos: string) {
+    setOpenPositions(prev => {
+      const next = new Set(prev)
+      next.has(pos) ? next.delete(pos) : next.add(pos)
+      return next
+    })
+  }
+
+  if (!open) {
+    return (
+      <div className="flex-shrink-0 sticky top-0 self-start">
         <button
-          onClick={() => setOpen(o => !o)}
-          className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-700/40 transition-colors"
+          onClick={() => setOpen(true)}
+          className="flex flex-col items-center justify-center gap-2 px-2 py-4 bg-gray-800/60 border border-gray-700 rounded-xl text-gray-500 hover:text-gray-300 hover:bg-gray-700/60 transition-colors"
+          style={{ minHeight: '80px' }}
         >
-          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Histórico Geral</span>
-          <span className={`text-gray-400 text-lg transition-transform duration-200 inline-block ${open ? 'rotate-180' : ''}`}>›</span>
+          <span
+            className="text-[10px] font-bold uppercase tracking-widest text-gray-400"
+            style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+          >
+            Histórico Geral
+          </span>
+          <span className="text-base leading-none">›</span>
         </button>
+      </div>
+    )
+  }
 
-        {open && (
-          <div className="border-t border-gray-700 p-3 space-y-2 max-h-[calc(100vh-160px)] overflow-y-auto">
-            {trainedRanges.length === 0 ? (
-              <p className="text-gray-600 text-xs text-center py-4">Nenhum dado de treino ainda.</p>
-            ) : (
-              trainedRanges.map(r => {
-                const perf     = handPerformance[r.id] ?? {}
-                const vals     = Object.values(perf)
-                const total    = vals.reduce((s, v) => s + v.t, 0)
-                const correct  = vals.reduce((s, v) => s + v.c, 0)
-                const accuracy = total > 0 ? Math.round(correct / total * 100) : null
-                const isOpen   = openRangeId === r.id
+  return (
+    <div className="flex-shrink-0 w-[640px] sticky top-0 self-start max-h-[calc(100vh-90px)] overflow-y-auto">
+      <div className="bg-gray-800/60 border border-gray-700 rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700">
+          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Histórico Geral</span>
+          <button
+            onClick={() => setOpen(false)}
+            className="text-gray-500 hover:text-gray-300 transition-colors text-lg leading-none"
+          >
+            ‹
+          </button>
+        </div>
 
-                return (
-                  <div key={r.id} className="border border-gray-700/60 rounded-lg overflow-hidden">
-                    <button
-                      onClick={() => setOpenRangeId(isOpen ? null : r.id)}
-                      className="w-full flex items-center justify-between px-3 py-2 bg-gray-900/40 hover:bg-gray-800 transition-colors text-left"
-                    >
-                      <span className="text-xs font-semibold text-white truncate flex-1 mr-2">{r.name}</span>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {accuracy !== null && (
-                          <span className={`text-xs font-bold ${accuracy >= 80 ? 'text-emerald-400' : accuracy >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
-                            {accuracy}%
-                          </span>
-                        )}
-                        <span className={`text-gray-500 text-base transition-transform duration-200 inline-block ${isOpen ? 'rotate-180' : ''}`}>›</span>
-                      </div>
-                    </button>
+        <div className="p-3 space-y-2">
+          {orderedKeys.length === 0 ? (
+            <p className="text-gray-600 text-xs text-center py-4">Nenhum dado de treino ainda.</p>
+          ) : (
+            orderedKeys.map(pos => {
+              const group     = grouped[pos]
+              const isPosOpen = openPositions.has(pos)
 
-                    {isOpen && (
-                      <div className="border-t border-gray-700/60 bg-gray-900/40 p-2">
-                        <div className="flex gap-1 justify-end mb-2">
-                          {(['heatmap', 'actions'] as const).map(mode => (
+              return (
+                <div key={pos} className="border border-gray-700 rounded-xl overflow-hidden">
+                  <button
+                    onClick={() => togglePosition(pos)}
+                    className="w-full flex items-center justify-between px-4 py-3 bg-gray-800 hover:bg-gray-750 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="font-extrabold text-white text-sm w-10 text-left">{pos}</span>
+                      <span className="text-gray-400 text-xs">{group.length} range{group.length !== 1 ? 's' : ''}</span>
+                    </div>
+                    <span className={`text-gray-400 text-lg transition-transform duration-200 inline-block ${isPosOpen ? 'rotate-180' : ''}`}>›</span>
+                  </button>
+
+                  {isPosOpen && (
+                    <div className="border-t border-gray-700 bg-gray-900/40 p-3 space-y-2">
+                      {group.map(r => {
+                        const mergedPerf = handPerformance[r.id] ?? {}
+                        const vals     = Object.values(mergedPerf)
+                        const total    = vals.reduce((s, v) => s + v.t, 0)
+                        const correct  = vals.reduce((s, v) => s + v.c, 0)
+                        const accuracy = total > 0 ? Math.round(correct / total * 100) : null
+                        const isOpen   = openRangeId === r.id
+                        const stackRanges = r.stackGrids && r.stackGrids.length > 1 ? r.stackGrids.map(sg => sg.stackRange).filter(Boolean) : []
+                        const activeStack = isOpen && stackRanges.length > 0 ? selectedStack : ''
+                        const heatmapKey = activeStack ? `${r.id}|||${activeStack}` : String(r.id)
+                        const perf     = handPerformance[heatmapKey] ?? {}
+                        const gridIdx  = activeStack ? r.stackGrids!.findIndex(sg => sg.stackRange === activeStack) : 0
+                        const grid     = r.stackGrids && gridIdx >= 0 ? r.stackGrids[gridIdx].grid : (r.stackGrids?.[0]?.grid ?? r.grid)
+
+                        return (
+                          <div key={r.id} className="border border-gray-700 rounded-xl overflow-hidden">
                             <button
-                              key={mode}
-                              onClick={() => setViewMode(mode)}
-                              className={`px-1.5 py-0.5 text-[10px] border rounded transition-colors ${viewMode === mode ? 'border-brand-500 bg-brand-900/30 text-brand-300' : 'border-gray-600 bg-gray-900/80 text-gray-400 hover:bg-gray-700'}`}
+                              onClick={() => setOpenRangeId(isOpen ? null : r.id)}
+                              className="w-full flex items-center justify-between px-4 py-3 bg-gray-800 hover:bg-gray-750 transition-colors text-left"
                             >
-                              {mode === 'heatmap' ? 'Erro/Acerto' : 'Ver Range'}
+                              <span className="font-bold text-white text-sm">{r.name}</span>
+                              <div className="flex items-center gap-3">
+                                {accuracy !== null ? (
+                                  <span className={`text-sm font-bold ${accuracy >= 80 ? 'text-emerald-400' : accuracy >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                    {accuracy}%
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-600 text-xs">sem dados</span>
+                                )}
+                                <span className={`text-gray-400 text-lg transition-transform duration-200 inline-block ${isOpen ? 'rotate-180' : ''}`}>›</span>
+                              </div>
                             </button>
-                          ))}
-                        </div>
-                        <HandMatrix
-                          readOnly
-                          grid={r.stackGrids?.[0]?.grid ?? r.grid}
-                          heatmap={perf}
-                          customActionColor={r.customAction?.color}
-                          forceViewMode={viewMode}
-                        />
-                      </div>
-                    )}
-                  </div>
-                )
-              })
-            )}
-          </div>
-        )}
+
+                            {isOpen && (
+                              <div className="border-t border-gray-700 bg-gray-900/40 p-4">
+                                {stackRanges.length > 0 && (
+                                  <div className="flex gap-1.5 flex-wrap mb-3">
+                                    {stackRanges.map(sr => (
+                                      <button
+                                        key={sr}
+                                        onClick={() => setSelectedStack(sr)}
+                                        className={['px-2.5 py-1 text-xs font-semibold rounded-lg border transition-colors',
+                                          selectedStack === sr ? 'bg-brand-600 border-brand-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700',
+                                        ].join(' ')}
+                                      >
+                                        {sr}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                                <div className="flex justify-end gap-1.5 mb-3">
+                                  {(['heatmap', 'actions'] as const).map(mode => (
+                                    <button
+                                      key={mode}
+                                      onClick={() => setViewMode(mode)}
+                                      className={`px-2 py-0.5 text-xs border rounded-lg transition-colors ${viewMode === mode ? 'border-brand-500 bg-brand-900/30 text-brand-300' : 'border-gray-600 bg-gray-900/80 text-gray-300 hover:bg-gray-700'}`}
+                                    >
+                                      {mode === 'heatmap' ? 'Erro / Acerto' : 'Ver Range'}
+                                    </button>
+                                  ))}
+                                </div>
+                                <HandMatrix
+                                  readOnly
+                                  grid={grid}
+                                  heatmap={Object.keys(perf).length > 0 ? perf : undefined}
+                                  customActionColor={r.customAction?.color}
+                                  forceViewMode={viewMode}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )
+            })
+          )}
+        </div>
       </div>
     </div>
   )
