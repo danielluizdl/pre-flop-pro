@@ -204,24 +204,28 @@ export function RangeEditorPage() {
         <div className="flex-1 min-w-0 space-y-3">
           {/* Posição do HERO — single select */}
           <div>
-            <label className="block text-xs font-semibold text-warm-400 mb-1.5 uppercase tracking-wider">
-              Posição do HERO
-            </label>
+            <label className="eyebrow mb-2 block">Posição do HERO</label>
             <div className="flex gap-1.5 flex-wrap">
-              {activePositions.map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => togglePosition(p.label)}
-                  className={[
-                    'px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors',
-                    selectedPositions.includes(p.label)
-                      ? 'bg-brand-600 text-white border-brand-600'
-                      : 'bg-warm-800 text-warm-300 border-warm-600 hover:bg-warm-700',
-                  ].join(' ')}
-                >
-                  {p.label}
-                </button>
-              ))}
+              {activePositions.map(p => {
+                const active = selectedPositions.includes(p.label)
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => togglePosition(p.label)}
+                    className="border transition-colors"
+                    style={{
+                      minWidth: 42, height: 26, padding: '0 10px',
+                      borderRadius: 999,
+                      fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: '0.06em',
+                      background: active ? '#c95f3a' : '#1f1d1a',
+                      borderColor: active ? '#d97757' : '#4a463e',
+                      color: active ? '#fff' : '#8a857a',
+                    }}
+                  >
+                    {p.label}
+                  </button>
+                )
+              })}
             </div>
           </div>
 
@@ -232,7 +236,7 @@ export function RangeEditorPage() {
             </label>
             <input
               type="text"
-              className="flex-1 min-w-0 px-2.5 py-1.5 border border-warm-600 rounded-lg text-sm bg-warm-800 text-white placeholder-warm-500 focus:border-brand-500 focus:outline-none"
+              className="input flex-1 min-w-0"
               placeholder="Ex: Defesa BB vs UTG"
               value={rangeData.name}
               onChange={e => setRangeName(e.target.value)}
@@ -247,7 +251,7 @@ export function RangeEditorPage() {
               </label>
               <input
                 type="text"
-                className="w-52 px-2.5 py-1.5 border border-warm-600 rounded-lg text-sm bg-warm-800 text-white placeholder-warm-500 focus:border-brand-500 focus:outline-none"
+                className="input w-52"
                 placeholder="Ex: <= 250, ou 250-300"
                 value={rangeData.stackRange}
                 onChange={e => setStackRange(e.target.value)}
