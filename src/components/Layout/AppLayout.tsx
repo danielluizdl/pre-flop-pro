@@ -9,17 +9,6 @@ import { SituationsPage } from '../Situations/SituationsPage'
 import { TrainerPage } from '../Trainer/TrainerPage'
 import { StatsPage } from '../Stats/StatsPage'
 import { LoginPage } from '../Auth/LoginPage'
-import { Menu } from 'lucide-react'
-
-const PAGE_TITLES: Record<string, string> = {
-  dashboard:     'Dashboard',
-  ranges:        'Meus Ranges',
-  'range-setup': 'Novo Range',
-  editor:        'Editor de Range',
-  'table-editor': 'Configurar Cenários',
-  drill:         'Drill',
-  history:       'Histórico',
-}
 
 export function AppLayout() {
   const { page, darkMode, userMode } = useStore()
@@ -43,23 +32,11 @@ export function AppLayout() {
   return (
     <div className={darkMode ? 'dark' : ''}>
       <div className="flex h-screen bg-warm-950 text-warm-100 overflow-hidden">
-        <Sidebar collapsed={sidebarCollapsed} />
+        <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(v => !v)} />
 
-        <div className="flex-1 flex flex-col min-w-0">
-          <header className="flex items-center gap-3 px-5 py-3 border-b border-warm-700/50 bg-warm-900/50 flex-shrink-0">
-            <button
-              onClick={() => setSidebarCollapsed(v => !v)}
-              className="p-1.5 rounded-lg text-warm-400 hover:text-white hover:bg-warm-700 transition-colors"
-            >
-              <Menu size={18} />
-            </button>
-            <h1 className="font-semibold text-white text-sm">{PAGE_TITLES[page] ?? 'Pre-Flop Pro'}</h1>
-          </header>
-
-          <main className="flex-1 overflow-auto p-5 lg:p-6">
-            {renderPage()}
-          </main>
-        </div>
+        <main className="flex-1 overflow-y-auto px-8 py-6 min-w-0">
+          {renderPage()}
+        </main>
       </div>
     </div>
   )
