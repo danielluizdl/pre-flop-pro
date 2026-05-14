@@ -1,28 +1,52 @@
 ﻿import { useStore } from '../../store/useStore'
 import type { PositionConfig, Slot } from '../../types'
 
-function chipColor(amount: number) {
-  if (amount >= 25) return { bg: 'radial-gradient(circle,#424242 0%,#000 100%)', border: '#ffd700' }
-  if (amount >= 5)  return { bg: 'radial-gradient(circle,#448aff 0%,#0d47a1 100%)', border: '#bbdefb' }
-  return                   { bg: 'radial-gradient(circle,#ff5252 0%,#b71c1c 100%)', border: '#ffcdd2' }
+const CHIP_DENOM: Record<string, { chip: string; stripe: string; ring: string }> = {
+  cream:  { chip: '#ede8de', stripe: '#4a463e',  ring: 'rgba(0,0,0,0.22)' },
+  tan:    { chip: '#c95f3a', stripe: '#f5f0e6',  ring: 'rgba(255,255,255,0.32)' },
+  orange: { chip: '#d97757', stripe: '#ede8de',  ring: 'rgba(255,255,255,0.36)' },
+  cocoa:  { chip: '#2f2c25', stripe: '#d97757',  ring: 'rgba(217,119,87,0.55)' },
+}
+function chipDenom(amount: number) {
+  if (amount >= 100) return 'cocoa'
+  if (amount >= 25)  return 'orange'
+  if (amount >= 5)   return 'tan'
+  return 'cream'
+}
+function chipStripe(chip: string, stripe: string) {
+  const s = stripe; const c = chip
+  return `conic-gradient(${s} 0 4deg,${c} 4deg 41deg,${s} 41deg 49deg,${c} 49deg 86deg,${s} 86deg 94deg,${c} 94deg 131deg,${s} 131deg 139deg,${c} 139deg 176deg,${s} 176deg 184deg,${c} 184deg 221deg,${s} 221deg 229deg,${c} 229deg 266deg,${s} 266deg 274deg,${c} 274deg 311deg,${s} 311deg 319deg,${c} 319deg 356deg,${s} 356deg 360deg)`
+}
+
+function CasinoDisc({ denom, offset }: { denom: string; offset: number }) {
+  const { chip, stripe, ring } = CHIP_DENOM[denom]
+  const W = 22
+  return (
+    <div style={{
+      position: 'absolute', left: 0, width: W, height: W, bottom: offset,
+      borderRadius: '50%', background: chipStripe(chip, stripe),
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20),inset 0 -2px 4px rgba(0,0,0,0.30),0 1px 2px rgba(0,0,0,0.55)',
+    }}>
+      {/* inner solid field */}
+      <div style={{ position:'absolute', inset:3, borderRadius:'50%', background: chip, border:'1px solid rgba(0,0,0,0.22)', boxShadow:'inset 0 1px 0 rgba(255,255,255,0.14)' }} />
+      {/* dashed ring */}
+      <div style={{ position:'absolute', inset:6, borderRadius:'50%', border:`1.5px dashed ${ring}` }} />
+    </div>
+  )
 }
 
 function ChipStack({ amount }: { amount: number }) {
-  const { bg, border } = chipColor(amount)
-  const count = amount >= 25 ? 5 : amount >= 5 ? 3 : 2
+  const denom = chipDenom(amount)
+  const count = amount >= 100 ? 5 : amount >= 25 ? 4 : amount >= 5 ? 3 : 2
+  const W = 22
   return (
-    <div className="flex items-center gap-1.5">
-      <div className="relative w-6 h-6">
+    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+      <div style={{ position:'relative', width: W, height: W + (count - 1) * 4 }}>
         {Array.from({ length: count }, (_, i) => (
-          <div
-            key={i}
-            className="absolute w-full h-full rounded-full border-2 border-dashed"
-            style={{ background: bg, borderColor: border, bottom: i * 2.5 }}
-          />
+          <CasinoDisc key={i} denom={denom} offset={i * 4} />
         ))}
       </div>
-      <span className="text-white text-xs font-extrabold bg-black/60 px-1.5 py-0.5 rounded-lg"
-            style={{ textShadow: '0 1px 2px black' }}>
+      <span style={{ color:'#ede8de', fontSize:11, fontWeight:700, background:'rgba(0,0,0,0.65)', padding:'1px 6px', borderRadius:6, textShadow:'0 1px 2px black', whiteSpace:'nowrap' }}>
         {amount} bb
       </span>
     </div>

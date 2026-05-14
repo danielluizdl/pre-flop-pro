@@ -26,16 +26,18 @@ export function Sidebar({ collapsed }: Props) {
     )}>
       {/* Logo */}
       <div className={clsx(
-        'flex items-center gap-2 px-3 py-4 border-b border-warm-700/50',
+        'flex items-center gap-3 px-3 py-4 border-b border-warm-700/50',
         collapsed && 'justify-center',
       )}>
-        <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center flex-shrink-0 font-black text-white text-sm">
-          PF
+        {/* Range mark: upper-left triangle of 4×4 grid */}
+        <div className="inline-grid grid-cols-4 flex-shrink-0" style={{ gap: 1, width: 22 }}>
+          {[true,true,true,true, true,true,true,false, true,true,false,false, true,false,false,false].map((on, i) => (
+            <span key={i} style={{ aspectRatio:'1', borderRadius:1, background: on ? '#d97757' : 'transparent', outline: on ? 'none' : '1px solid rgba(217,119,87,0.18)', outlineOffset: -1 }} />
+          ))}
         </div>
         {!collapsed && (
-          <span className="font-bold text-white text-sm leading-tight">
-            Pre-Flop<br />
-            <span className="text-brand-400 font-black">Pro</span>
+          <span className="font-display uppercase text-warm-100 whitespace-nowrap leading-none" style={{ fontSize: 20, letterSpacing: '0.015em' }}>
+            Pre-Flop <span className="text-brand-500">Pro</span>
           </span>
         )}
       </div>

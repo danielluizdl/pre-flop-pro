@@ -1,144 +1,246 @@
-﻿import { useStore } from '../../store/useStore'
-import { PlayCircle, Edit3, Plus, ChevronRight } from 'lucide-react'
+import { useStore } from '../../store/useStore'
 import { countNonFoldHands } from '../../utils/hands'
+
+const RANGE_MARK_CELLS = [
+  true,true,true,true,
+  true,true,true,false,
+  true,true,false,false,
+  true,false,false,false,
+]
+
+function RangeMark({ size, color = '#d97757' }: { size: number; color?: string }) {
+  const gap = 2
+  return (
+    <div style={{ display:'inline-grid', gridTemplateColumns:`repeat(4,1fr)`, gap, width: size }}>
+      {RANGE_MARK_CELLS.map((on, i) => (
+        <span key={i} style={{
+          aspectRatio: '1', borderRadius: 2,
+          background: on ? color : 'transparent',
+          outline: on ? 'none' : `1px solid ${color}1a`,
+          outlineOffset: -1,
+        }} />
+      ))}
+    </div>
+  )
+}
+
+const CATEGORY_POSITIONS: Record<string, string[]> = {
+  EARLY: ['UTG','EP','MP','HJ','LJ'],
+  LATE:  ['CO','BTN'],
+  BLINDS:['SB','BB','STR'],
+}
 
 export function Dashboard() {
   const ranges          = useStore(s => s.ranges)
   const setPage         = useStore(s => s.setPage)
   const trainingHistory = useStore(s => s.trainingHistory)
+  const handPerformance = useStore(s => s.handPerformance)
 
-  const totalHands = trainingHistory.reduce((s, x) => s + x.hands, 0)
+  const totalHands   = trainingHistory.reduce((s, x) => s + x.hands, 0)
   const totalCorrect = trainingHistory.reduce((s, x) => s + x.correct, 0)
   const globalAccuracy = totalHands > 0 ? Math.round((totalCorrect / totalHands) * 100) : null
 
-  const recentRanges = [...ranges].slice(-3).reverse()
+  const recentRanges = [...ranges].slice(-6).reverse().map(r => {
+    const perf = handPerformance[r.id]
+    const entries = perf ? Object.values(perf) : []
+    const t = entries.reduce((a, v) => a + v.t, 0)
+    const c = entries.reduce((a, v) => a + v.c, 0)
+    const accuracy = t > 0 ? Math.round((c / t) * 100) : null
+    return { ...r, nonFold: countNonFoldHands(r.grid), accuracy }
+  })
+
+  const categories = [
+    { key:'early',  cat:'POSIÇÃO', name:'EARLY',  sub:'UTG · MP · HJ',  accent:'#d97757', count: ranges.filter(r => r.positions.some(p => CATEGORY_POSITIONS.EARLY.includes(p))).length },
+    { key:'late',   cat:'POSIÇÃO', name:'LATE',   sub:'CO · BTN',        accent:'#e5916e', count: ranges.filter(r => r.positions.some(p => CATEGORY_POSITIONS.LATE.includes(p))).length },
+    { key:'blinds', cat:'POSIÇÃO', name:'BLINDS', sub:'SB · BB · STR',   accent:'#f5b855', count: ranges.filter(r => r.positions.some(p => CATEGORY_POSITIONS.BLINDS.includes(p))).length },
+    { key:'short',  cat:'STACK',   name:'SHORT',  sub:'≤ 25 bb',          accent:'#a8a193', count: ranges.filter(r => r.stackRange && /<=?\s*2[0-5]|[0-9]+\s*-\s*2[0-5]/.test(r.stackRange)).length },
+  ]
+
+  const statItems = [
+    { label: 'Ranges',         value: ranges.length.toString(), accent: false },
+    { label: 'Mãos treinadas', value: totalHands > 0 ? totalHands.toLocaleString() : '0', accent: false },
+    { label: 'Precisão global', value: globalAccuracy !== null ? `${globalAccuracy}%` : '—', accent: globalAccuracy !== null && globalAccuracy >= 60 },
+  ]
 
   return (
-    <div className="space-y-8">
+    <div className="min-h-full pb-12">
+
       {/* Hero */}
-      <div className="bg-gradient-to-br from-brand-900/40 to-warm-800/60 border border-brand-800/50 rounded-2xl p-6">
-        <h1 className="text-3xl font-black text-white mb-1">
-          Pre-Flop<span className="text-brand-400">Pro</span>
-        </h1>
-        <p className="text-warm-400 mb-5">Treine seus ranges pré-flop e melhore suas decisões na mesa.</p>
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => setPage('drill')}
-            className="flex items-center gap-2 bg-brand-600 hover:bg-brand-500 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all hover:scale-105"
-          >
-            <PlayCircle size={18} /> Iniciar Treino
-          </button>
-          <button
-            onClick={() => setPage('range-setup')}
-            className="flex items-center gap-2 bg-warm-700 hover:bg-warm-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm"
-          >
-            <Plus size={18} /> Novo Range
-          </button>
+      <section className="relative overflow-hidden rounded-3xl bg-warm-900 mb-4" style={{ minHeight: 300 }}>
+        <div className="absolute -right-12 -top-8 opacity-25 pointer-events-none">
+          <RangeMark size={280} />
         </div>
-      </div>
-
-      {/* Stats summary */}
-      <div className="grid grid-cols-3 gap-4">
-        {[
-          { label: 'Ranges', value: ranges.length.toString(), color: 'text-brand-400' },
-          { label: 'Mãos Treinadas', value: totalHands > 0 ? totalHands.toLocaleString() : '0', color: 'text-blue-400' },
-          {
-            label: 'Precisão Global',
-            value: globalAccuracy !== null ? `${globalAccuracy}%` : '—',
-            color: globalAccuracy === null ? 'text-warm-500'
-                 : globalAccuracy >= 70 ? 'text-emerald-400'
-                 : globalAccuracy >= 50 ? 'text-yellow-400' : 'text-red-400',
-          },
-        ].map(item => (
-          <div key={item.label} className="bg-warm-800/60 border border-warm-700 rounded-xl p-4 text-center">
-            <div className={`text-2xl font-bold ${item.color}`}>{item.value}</div>
-            <div className="text-xs text-warm-400 mt-0.5">{item.label}</div>
+        <div className="relative h-full flex flex-col justify-end p-10">
+          <div className="text-brand-500 mb-3 uppercase" style={{ fontWeight: 700, fontSize: 11, letterSpacing: '0.25em' }}>
+            Sessão de hoje
           </div>
-        ))}
-      </div>
-
-      {/* Recent ranges */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-white">Ranges Recentes</h2>
-          <button
-            onClick={() => setPage('ranges')}
-            className="flex items-center gap-1 text-xs text-brand-400 hover:text-brand-300"
-          >
-            Ver todos <ChevronRight size={12} />
-          </button>
-        </div>
-
-        {recentRanges.length === 0 ? (
-          <div className="bg-warm-800/40 border border-dashed border-warm-600 rounded-xl p-8 text-center">
-            <p className="text-warm-400 text-sm mb-3">Nenhum range criado.</p>
+          <h1 className="text-warm-100 uppercase mb-4 font-display"
+              style={{ fontSize: 76, lineHeight: 0.88, letterSpacing: '0.005em' }}>
+            Drill your<br />pre-flop.
+          </h1>
+          <p className="text-warm-300 text-base mb-6 max-w-md leading-relaxed">
+            100 mãos por dia. Toda posição, todo stack — domine antes do flop.
+          </p>
+          <div className="flex gap-2 flex-wrap">
             <button
-              onClick={() => setPage('range-setup')}
-              className="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-lg text-sm"
+              onClick={() => setPage('drill')}
+              className="btn-commit"
             >
-              Criar primeiro range
+              Iniciar treino →
+            </button>
+            <button
+              onClick={() => setPage('ranges')}
+              className="btn-commit-outline"
+            >
+              Ver ranges
             </button>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {recentRanges.map(r => {
-              const nonFold = countNonFoldHands(r.grid)
-              return (
-                <div
-                  key={r.id}
-                  className="bg-warm-800/60 border border-warm-700 rounded-xl p-4 flex flex-col gap-3"
-                >
-                  <div>
-                    <div className="text-xs text-warm-500 mb-0.5">
-                      {r.positions.join(', ')} · {r.tableSize}-max
-                    </div>
-                    <div className="font-semibold text-white text-sm">{r.name}</div>
-                    <div className="text-xs text-warm-400 mt-0.5">{nonFold} mãos não-fold · {r.scenarios.length} cenário(s)</div>
-                  </div>
-                  <div className="flex gap-2 mt-auto">
-                    <button
-                      onClick={() => {
-                        useStore.setState({ selectedDrillRangeIds: [r.id], drillExcludedHands: [] })
-                        useStore.getState().startDrillSession()
-                        const ok = useStore.getState().nextDrillHand()
-                        if (ok) setPage('drill')
-                      }}
-                      className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-brand-700 hover:bg-brand-600 text-xs text-white"
-                    >
-                      <PlayCircle size={11} /> Treinar
-                    </button>
-                    <button
-                      onClick={() => useStore.getState().loadRangeForEdit(r.id)}
-                      className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-warm-700 hover:bg-warm-600 text-xs text-warm-200"
-                    >
-                      <Edit3 size={11} /> Editar
-                    </button>
-                  </div>
-                </div>
-              )
-            })}
+        </div>
+      </section>
+
+      {/* Stat strip */}
+      <section className="grid grid-cols-3 gap-px bg-warm-700/30 rounded-2xl overflow-hidden mb-8">
+        {statItems.map(s => (
+          <div key={s.label} className="bg-warm-900 p-6">
+            <div className="text-warm-500 mb-1.5 uppercase" style={{ fontWeight: 700, fontSize: 10, letterSpacing: '0.18em' }}>
+              {s.label}
+            </div>
+            <div className={s.accent ? 'text-brand-500' : 'text-warm-100'}
+                 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 52, lineHeight: 0.9, letterSpacing: '0.01em' }}>
+              {s.value}
+            </div>
           </div>
-        )}
+        ))}
+      </section>
+
+      {/* Category grid */}
+      <div className="flex items-baseline justify-between mb-4">
+        <h2 className="text-warm-100 uppercase font-display" style={{ fontSize: 28, lineHeight: 1, letterSpacing: '0.03em' }}>
+          Treine por categoria
+        </h2>
       </div>
 
-      {/* Feature highlights */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {[
-          { icon: '🎯', title: 'Treino com RNG', desc: 'Veja uma mão, o RNG sorteado e escolha a ação correta', page: 'drill' as const },
-          { icon: '🛠️', title: 'Editor de Ranges', desc: 'Crie ranges com frequências por ação (Call/Raise/All-In) e configure múltiplos cenários de mesa', onClick: () => setPage('range-setup') },
-          { icon: '📊', title: 'Histórico', desc: 'Acompanhe sua precisão, sessões e evolução ao longo do tempo', page: 'history' as const },
-        ].map(feature => (
+      <section className="grid grid-cols-4 gap-3 mb-10">
+        {categories.map(c => (
           <button
-            key={feature.title}
-            onClick={feature.onClick ?? (() => feature.page && setPage(feature.page))}
-            className="bg-warm-800/40 hover:bg-warm-800/80 border border-warm-700 hover:border-warm-500 rounded-xl p-4 text-left transition-all group"
+            key={c.key}
+            onClick={() => setPage('ranges')}
+            className="group relative rounded-2xl overflow-hidden bg-warm-900 hover:bg-warm-800 transition-colors text-left p-5 flex flex-col justify-between"
+            style={{ aspectRatio: '4/5' }}
           >
-            <div className="text-2xl mb-2">{feature.icon}</div>
-            <div className="font-semibold text-white text-sm group-hover:text-brand-400 transition-colors">{feature.title}</div>
-            <div className="text-xs text-warm-400 mt-1">{feature.desc}</div>
+            <div>
+              <div className="text-warm-500 uppercase" style={{ fontWeight: 700, fontSize: 10, letterSpacing: '0.2em' }}>
+                {c.cat}
+              </div>
+            </div>
+            <div className="absolute right-3 top-3 opacity-30 group-hover:opacity-50 transition-opacity">
+              <RangeMark size={60} color={c.accent} />
+            </div>
+            <div className="relative">
+              <h3 className="text-warm-100 uppercase mb-1.5 font-display" style={{ fontSize: 36, lineHeight: 0.9, letterSpacing: '0.02em' }}>
+                {c.name}
+              </h3>
+              <p className="text-xs text-warm-400 mb-3">{c.sub}</p>
+              <div className="flex items-center gap-1 text-warm-300 text-xs">
+                <span className="tabular-nums" style={{ fontWeight: 600 }}>{c.count}</span>
+                <span>ranges</span>
+                <span className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+              </div>
+            </div>
           </button>
         ))}
-      </div>
+      </section>
+
+      {/* Recentes */}
+      {recentRanges.length > 0 && (
+        <>
+          <div className="flex items-baseline justify-between mb-4">
+            <h2 className="text-warm-100 uppercase font-display" style={{ fontSize: 28, lineHeight: 1, letterSpacing: '0.03em' }}>
+              Recentes
+            </h2>
+            <button
+              onClick={() => setPage('ranges')}
+              className="text-brand-500 hover:text-brand-400 text-sm transition-colors font-semibold"
+            >
+              Ver todos →
+            </button>
+          </div>
+
+          <section className="grid grid-cols-3 gap-3">
+            {recentRanges.slice(0, 3).map(r => (
+              <button
+                key={r.id}
+                onClick={() => setPage('drill')}
+                className="group relative rounded-2xl bg-warm-900 hover:bg-warm-800 transition-colors text-left p-5 flex flex-col overflow-hidden"
+                style={{ aspectRatio: '1' }}
+              >
+                <div className="absolute -right-6 -bottom-6 opacity-20 group-hover:opacity-40 transition-opacity pointer-events-none">
+                  <RangeMark size={110} />
+                </div>
+                <div className="text-warm-500 mb-2 uppercase" style={{ fontWeight: 700, fontSize: 10, letterSpacing: '0.2em' }}>
+                  {r.positions.join(' · ')} · {r.tableSize}-MAX
+                </div>
+                <div className="text-warm-100 uppercase relative max-w-[80%] font-display"
+                     style={{ fontSize: 24, lineHeight: 0.95, letterSpacing: '0.02em' }}>
+                  {r.name}
+                </div>
+                <div className="text-xs text-warm-400 mt-2 relative">
+                  {r.nonFold} mãos · {r.scenarios.length} cenário{r.scenarios.length !== 1 ? 's' : ''}
+                </div>
+                <div className="mt-auto flex items-end justify-between relative">
+                  <div>
+                    <div className="text-warm-500 uppercase" style={{ fontWeight: 700, fontSize: 10, letterSpacing: '0.18em' }}>Precisão</div>
+                    <div className={'tabular-nums mt-1 font-display ' +
+                      (r.accuracy !== null && r.accuracy >= 80 ? 'text-brand-500' : r.accuracy !== null && r.accuracy >= 50 ? 'text-gold' : 'text-warm-400')}
+                      style={{ fontSize: 40, lineHeight: 0.85, letterSpacing: '0.01em' }}>
+                      {r.accuracy !== null ? `${r.accuracy}%` : '—'}
+                    </div>
+                  </div>
+                  <div className="text-warm-100 text-xl opacity-0 group-hover:opacity-100 transition-opacity">→</div>
+                </div>
+              </button>
+            ))}
+          </section>
+
+          {recentRanges.length > 3 && (
+            <section className="mt-3 grid grid-cols-3 gap-3">
+              {recentRanges.slice(3, 6).map(r => (
+                <button
+                  key={r.id}
+                  onClick={() => setPage('drill')}
+                  className="group flex items-center justify-between gap-3 px-5 py-4 rounded-2xl bg-warm-900 hover:bg-warm-800 transition-colors text-left"
+                >
+                  <div className="min-w-0">
+                    <div className="text-warm-100 truncate uppercase font-display"
+                         style={{ fontSize: 18, letterSpacing: '0.03em' }}>
+                      {r.name}
+                    </div>
+                    <div className="text-xs text-warm-500 mt-0.5">{r.positions.join(', ')} · {r.tableSize}-max</div>
+                  </div>
+                  <div className="flex-shrink-0 text-right">
+                    <div className={'tabular-nums font-display ' +
+                      (r.accuracy !== null && r.accuracy >= 80 ? 'text-brand-500' : r.accuracy !== null && r.accuracy >= 50 ? 'text-gold' : 'text-warm-300')}
+                      style={{ fontSize: 24, letterSpacing: '0.01em' }}>
+                      {r.accuracy !== null ? `${r.accuracy}%` : '—'}
+                    </div>
+                    <div className="text-[10px] text-warm-500">{r.nonFold} mãos</div>
+                  </div>
+                </button>
+              ))}
+            </section>
+          )}
+        </>
+      )}
+
+      {recentRanges.length === 0 && (
+        <div className="card-surface p-8 text-center">
+          <p className="text-warm-400 text-sm mb-4">Nenhum range criado ainda.</p>
+          <button onClick={() => setPage('range-setup')} className="btn-commit">
+            Criar primeiro range
+          </button>
+        </div>
+      )}
+
     </div>
   )
 }

@@ -804,6 +804,70 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
   )
 }
 
+/* ── Drill action button with LED perimeter trace ──────────────────────────── */
+const LED: Record<string, { color: string; glow: string }> = {
+  Call:  { color: '#22c55e', glow: 'rgba(34,197,94,0.55)' },
+  Raise: { color: '#ef4444', glow: 'rgba(239,68,68,0.55)' },
+  Allin: { color: '#c95f3a', glow: 'rgba(201,95,58,0.65)' },
+}
+function DrillActionButton({ name, sub, action, isPressed, isDisabled, onClick }: {
+  name: string; sub?: string; action: string; isPressed: boolean; isDisabled: boolean; onClick: () => void
+}) {
+  const [hovered, setHovered] = useState(false)
+  const led = LED[action]
+  const active = hovered || isPressed
+  const isFold = action === 'Fold'
+  return (
+    <button
+      onClick={onClick}
+      disabled={isDisabled && !isPressed}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        minWidth: 132, height: 54, padding: '0 22px',
+        background: isPressed ? 'linear-gradient(180deg,#252220 0%,#16140f 100%)' : 'linear-gradient(180deg,#1f1d1a 0%,#16140f 100%)',
+        border: `1px solid ${isPressed ? 'rgba(217,119,87,0.45)' : hovered ? '#4a463e' : '#2f2c25'}`,
+        borderRadius: 8,
+        boxShadow: isPressed
+          ? 'inset 0 1px 0 rgba(255,255,255,0.06),0 0 0 1px rgba(217,119,87,0.35),0 0 22px rgba(217,119,87,0.18)'
+          : 'inset 0 1px 0 rgba(255,255,255,0.04),0 1px 0 rgba(0,0,0,0.5)',
+        cursor: (isDisabled && !isPressed) ? 'not-allowed' : 'pointer',
+        opacity: (isDisabled && !isPressed) ? 0.4 : 1,
+        color: isFold ? (hovered ? '#d4cfc4' : '#8a857a') : '#ede8de',
+        transition: 'transform 0.08s ease',
+      }}
+    >
+      <span style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, lineHeight:1 }}>
+        <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:17, textTransform:'uppercase', letterSpacing:'0.10em' }}>
+          {name}
+        </span>
+        {sub && (
+          <span style={{ fontWeight:600, fontSize:10, letterSpacing:'0.04em', color:'#8a857a', fontVariantNumeric:'tabular-nums' }}>
+            {sub}
+          </span>
+        )}
+      </span>
+      <svg style={{ position:'absolute', inset:0, width:'100%', height:'100%', overflow:'visible', pointerEvents:'none' }}
+           viewBox="0 0 100 100" preserveAspectRatio="none">
+        <rect x="1" y="1" width="98" height="98" rx="5" ry="5" pathLength="100"
+          style={{
+            fill:'none',
+            stroke: isFold ? (hovered ? 'rgba(168,161,147,0.55)' : 'transparent') : (led?.color ?? 'transparent'),
+            strokeWidth: 2, strokeLinecap:'round',
+            strokeDasharray: active ? '100 0' : '10 90',
+            strokeDashoffset: active ? 0 : -33,
+            filter: active
+              ? `drop-shadow(0 0 12px ${isFold ? 'rgba(168,161,147,0.35)' : led?.glow})`
+              : `drop-shadow(0 0 5px ${led?.glow ?? 'transparent'})`,
+            transition: 'stroke-dasharray 0.6s cubic-bezier(0.2,0.7,0.2,1),stroke-dashoffset 0.6s cubic-bezier(0.2,0.7,0.2,1),filter 0.25s ease',
+          }}
+        />
+      </svg>
+    </button>
+  )
+}
+
 /* ── Active drill ──────────────────────────────────────────────────────────── */
 function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => void; onShowHistory: () => void }) {
   const activeDrillRange       = useStore(s => s.activeDrillRange)
@@ -827,6 +891,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
   const [feedback, setFeedback]         = useState('')
   const [feedbackOk, setFeedbackOk]     = useState(true)
   const [answered, setAnswered]         = useState(false)
+  const [pressedAction, setPressedAction] = useState('')
   const answeredRef                     = useRef(false)
   const [freqLabel, setFreqLabel]       = useState('')
   const [autoAdvance, setAutoAdvance]   = useState(false)
@@ -889,6 +954,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
     }
     answeredRef.current = false
     setAnswered(false)
+    setPressedAction('')
     setFeedback('')
     setFreqLabel('')
     const ok = nextHand()
@@ -899,6 +965,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
   function handleAction(act: string) {
     if (answeredRef.current || viewingPrev) return
     answeredRef.current = true
+    setPressedAction(act)
     const { correct, message } = checkAnswer(act)
     setFeedback(message)
     setFeedbackOk(correct)
@@ -908,11 +975,11 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
 
   const customAction = activeDrillRange?.customAction
   const actionBtns = [
-    { label: 'FOLD',                        action: 'Fold',               color: '#6b7280' },
-    { label: 'CALL',                        action: 'Call',               color: '#22c55e' },
-    ...(currentHeroRaiseSize > 0 ? [{ label: `RAISE (${currentHeroRaiseSize}bb)`, action: 'Raise', color: '#ef4444' }] : []),
-    { label: `ALL IN (${heroStack}bb)`,     action: 'Allin',              color: '#6b2d0d' },
-    ...(customAction ? [{ label: customAction.label.toUpperCase(), action: customAction.label, color: customAction.color }] : []),
+    { name: 'FOLD',    sub: undefined,                        action: 'Fold'  },
+    { name: 'CALL',    sub: undefined,                        action: 'Call'  },
+    ...(currentHeroRaiseSize > 0 ? [{ name: 'RAISE', sub: `${currentHeroRaiseSize} BB`, action: 'Raise' }] : []),
+    { name: 'ALL IN',  sub: `${heroStack} BB`,                action: 'Allin' },
+    ...(customAction ? [{ name: customAction.label.toUpperCase(), sub: undefined, action: customAction.label }] : []),
   ]
 
   return (
@@ -978,17 +1045,17 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
             </div>
 
             {/* Botões de ação */}
-            <div className="flex-shrink-0 flex justify-center gap-2">
-              {actionBtns.map(({ label, action, color }) => (
-                <button
+            <div className="flex-shrink-0 flex justify-center gap-2 flex-wrap px-4">
+              {actionBtns.map(({ name, sub, action }) => (
+                <DrillActionButton
                   key={action}
+                  name={name}
+                  sub={sub}
+                  action={action}
+                  isPressed={pressedAction === action}
+                  isDisabled={isAnswered}
                   onClick={() => handleAction(action)}
-                  disabled={isAnswered}
-                  className="text-white font-bold rounded-lg transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed px-5 py-2.5 text-sm"
-                  style={{ backgroundColor: color }}
-                >
-                  {label}
-                </button>
+                />
               ))}
             </div>
 
