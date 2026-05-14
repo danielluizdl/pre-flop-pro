@@ -827,6 +827,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
   const [feedback, setFeedback]         = useState('')
   const [feedbackOk, setFeedbackOk]     = useState(true)
   const [answered, setAnswered]         = useState(false)
+  const answeredRef                     = useRef(false)
   const [freqLabel, setFreqLabel]       = useState('')
   const [autoAdvance, setAutoAdvance]   = useState(false)
   const [prevSnapshot, setPrevSnapshot] = useState<PrevSnapshot | null>(null)
@@ -886,6 +887,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
     if (answered) {
       setPrevSnapshot({ hand: activeHand, suits: currentHandSuits, rng: currentRng, feedback, feedbackOk, freqLabel })
     }
+    answeredRef.current = false
     setAnswered(false)
     setFeedback('')
     setFreqLabel('')
@@ -895,7 +897,8 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
   goNextRef.current = doGoNext
 
   function handleAction(act: string) {
-    if (answered || viewingPrev) return
+    if (answeredRef.current || viewingPrev) return
+    answeredRef.current = true
     const { correct, message } = checkAnswer(act)
     setFeedback(message)
     setFeedbackOk(correct)
@@ -964,7 +967,11 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                     {showFeedback}
                   </div>
                   {!!showFreqLabel && (
-                    <div className="text-gray-400 text-sm mt-0.5">{showFreqLabel}</div>
+                    <div className="text-gray-400 text-sm mt-0.5">
+                      <span className="text-gray-300 font-semibold">{displayHand}</span>
+                      <span className="text-gray-500"> — </span>
+                      {showFreqLabel}
+                    </div>
                   )}
                 </>
               )}

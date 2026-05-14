@@ -30,11 +30,16 @@ export function generateSuits(hand: string): [string, string] {
   return [s1, s2]
 }
 
-export function getRngCorrectAction(data: HandData, rng: number, extraLabel?: string): string {
-  if (rng <= data.raise) return 'Raise'
-  if (rng <= data.raise + data.call) return 'Call'
-  if (rng <= data.raise + data.call + data.allin) return 'Allin'
-  if (extraLabel && data.extra && rng <= data.raise + data.call + data.allin + data.extra) return extraLabel
+export function getRngCorrectAction(data: HandData | undefined, rng: number, extraLabel?: string): string {
+  if (!data) return 'Fold'
+  const raise = data.raise ?? 0
+  const call  = data.call  ?? 0
+  const allin = data.allin ?? 0
+  const extra = data.extra ?? 0
+  if (rng <= raise) return 'Raise'
+  if (rng <= raise + call) return 'Call'
+  if (rng <= raise + call + allin) return 'Allin'
+  if (extraLabel && data.extra && rng <= raise + call + allin + extra) return extraLabel
   return 'Fold'
 }
 
@@ -49,15 +54,17 @@ export function getHighestFrequencyAction(data: HandData, extraLabel?: string): 
   return opts.reduce((best, cur) => (cur.pct > best.pct ? cur : best)).action
 }
 
-export function getTopFrequencyActions(data: HandData, extraLabel?: string): string[] {
+export function getTopFrequencyActions(data: HandData | undefined, extraLabel?: string): string[] {
+  if (!data) return ['Fold']
   const opts = [
-    { action: 'Raise', pct: data.raise },
-    { action: 'Call',  pct: data.call  },
-    { action: 'Allin', pct: data.allin },
-    { action: 'Fold',  pct: data.fold  },
-    ...(extraLabel && data.extra ? [{ action: extraLabel, pct: data.extra }] : []),
+    { action: 'Raise', pct: data.raise ?? 0 },
+    { action: 'Call',  pct: data.call  ?? 0 },
+    { action: 'Allin', pct: data.allin ?? 0 },
+    { action: 'Fold',  pct: data.fold  ?? 100 },
+    ...(extraLabel && data.extra ? [{ action: extraLabel, pct: data.extra ?? 0 }] : []),
   ]
   const max = Math.max(...opts.map(o => o.pct))
+  if (!isFinite(max)) return ['Fold']
   return opts.filter(o => o.pct === max).map(o => o.action)
 }
 
