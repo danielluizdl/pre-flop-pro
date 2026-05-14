@@ -1,28 +1,6 @@
 import { useStore } from '../../store/useStore'
 import { countNonFoldHands } from '../../utils/hands'
-
-const RANGE_MARK_CELLS = [
-  true,true,true,true,
-  true,true,true,false,
-  true,true,false,false,
-  true,false,false,false,
-]
-
-function RangeMark({ size, color = '#d97757' }: { size: number; color?: string }) {
-  const gap = 2
-  return (
-    <div style={{ display:'inline-grid', gridTemplateColumns:`repeat(4,1fr)`, gap, width: size }}>
-      {RANGE_MARK_CELLS.map((on, i) => (
-        <span key={i} style={{
-          aspectRatio: '1', borderRadius: 2,
-          background: on ? color : 'transparent',
-          outline: on ? 'none' : `1px solid ${color}1a`,
-          outlineOffset: -1,
-        }} />
-      ))}
-    </div>
-  )
-}
+import { RangeMark } from '../ui/RangeMark'
 
 const CATEGORY_POSITIONS: Record<string, string[]> = {
   EARLY: ['UTG','EP','MP','HJ','LJ'],
@@ -72,14 +50,14 @@ export function Dashboard() {
         </div>
         <div className="relative h-full flex flex-col justify-end p-10">
           <div className="text-brand-500 mb-3 uppercase" style={{ fontWeight: 700, fontSize: 11, letterSpacing: '0.25em' }}>
-            Sessão de hoje
+            Comece agora
           </div>
           <h1 className="text-warm-100 uppercase mb-4 font-display"
               style={{ fontSize: 76, lineHeight: 0.88, letterSpacing: '0.005em' }}>
             Drill your<br />pre-flop.
           </h1>
           <p className="text-warm-300 text-base mb-6 max-w-md leading-relaxed">
-            100 mãos por dia. Toda posição, todo stack — domine antes do flop.
+            Treine até virar reflexo. Domine antes do flop.
           </p>
           <div className="flex gap-2 flex-wrap">
             <button
@@ -99,9 +77,9 @@ export function Dashboard() {
       </section>
 
       {/* Stat strip */}
-      <section className="grid grid-cols-3 gap-px bg-warm-700/30 rounded-2xl overflow-hidden mb-8">
+      <section className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-warm-700/30 rounded-2xl overflow-hidden mb-8">
         {statItems.map(s => (
-          <div key={s.label} className="bg-warm-900 p-6">
+          <div key={s.label} className="bg-warm-900 p-8">
             <div className="text-warm-500 mb-1.5 uppercase" style={{ fontWeight: 700, fontSize: 10, letterSpacing: '0.18em' }}>
               {s.label}
             </div>
@@ -120,7 +98,7 @@ export function Dashboard() {
         </h2>
       </div>
 
-      <section className="grid grid-cols-4 gap-3 mb-10">
+      <section className="grid grid-cols-2 xl:grid-cols-4 gap-3 xl:gap-4 mb-10">
         {categories.map(c => (
           <button
             key={c.key}
@@ -166,7 +144,7 @@ export function Dashboard() {
             </button>
           </div>
 
-          <section className="grid grid-cols-3 gap-3">
+          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {recentRanges.slice(0, 3).map(r => (
               <button
                 key={r.id}
@@ -203,7 +181,7 @@ export function Dashboard() {
           </section>
 
           {recentRanges.length > 3 && (
-            <section className="mt-3 grid grid-cols-3 gap-3">
+            <section className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {recentRanges.slice(3, 6).map(r => (
                 <button
                   key={r.id}

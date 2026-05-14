@@ -304,8 +304,14 @@ function HandFilterGrid() {
   const setExcluded = useStore(s => s.setDrillExcluded)
   const useRng = useStore(s => s.useRngForFrequency)
   const setUseRng = useStore(s => s.setUseRng)
-  const isDrawing = useRef(false)
-  const drawAction = useRef<'exclude' | 'include'>('exclude')
+  const isDrawing    = useRef(false)
+  const drawAction   = useRef<'exclude' | 'include'>('exclude')
+  const paintedHands = useRef<Set<string>>(new Set())
+
+  function stopDraw() {
+    isDrawing.current = false
+    paintedHands.current = new Set()
+  }
 
   return (
     <div className="max-w-xl mx-auto border border-warm-700 p-3 rounded-xl bg-warm-800/60 mb-6">
@@ -359,9 +365,8 @@ function HandFilterGrid() {
       <div
         className="grid gap-0.5 select-none"
         style={{ gridTemplateColumns: 'repeat(13, 1fr)' }}
-        onMouseDown={() => { isDrawing.current = true }}
-        onMouseUp={() => { isDrawing.current = false }}
-        onMouseLeave={() => { isDrawing.current = false }}
+        onMouseUp={stopDraw}
+        onMouseLeave={stopDraw}
       >
         {RANKS.flatMap((r1, i) =>
           RANKS.map((r2, j) => {
@@ -381,14 +386,37 @@ function HandFilterGrid() {
             return (
               <div
                 key={hand}
-                className="aspect-square flex items-center justify-center text-[0.55rem] font-bold text-warm-800 rounded-sm cursor-pointer border border-warm-600"
-                style={{ background: isExcluded ? '#2f2c25' : baseBg, opacity: isExcluded ? 0.3 : 1 }}
+                className="aspect-square flex items-center justify-center cursor-pointer"
+                style={{
+                  background: baseBg,
+                  borderRadius: 6,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '0.02em',
+                  fontVariantNumeric: 'tabular-nums',
+                  lineHeight: 1,
+                  color: '#1a1714',
+                  ...(isExcluded
+                    ? { opacity: 0.35, filter: 'saturate(0.6)' }
+                    : { outline: '2px solid #d97757', outlineOffset: '-2px', zIndex: 2 }),
+                }}
                 onMouseDown={e => {
                   e.preventDefault()
+                  isDrawing.current = true
+                  paintedHands.current = new Set([hand])
                   drawAction.current = isExcluded ? 'include' : 'exclude'
                   toggle()
                 }}
-                onMouseOver={() => { if (isDrawing.current) toggle() }}
+                onMouseOver={() => {
+                  if (!isDrawing.current) return
+                  if (paintedHands.current.has(hand)) return
+                  paintedHands.current.add(hand)
+                  if (drawAction.current === 'exclude') {
+                    if (!excluded.includes(hand)) setExcluded([...excluded, hand])
+                  } else {
+                    if (excluded.includes(hand)) setExcluded(excluded.filter(h => h !== hand))
+                  }
+                }}
               >
                 {hand}
               </div>
@@ -834,7 +862,7 @@ function DrillActionButton({ name, sub, action, isPressed, isDisabled, onClick }
           : 'inset 0 1px 0 rgba(255,255,255,0.04),0 1px 0 rgba(0,0,0,0.5)',
         cursor: (isDisabled && !isPressed) ? 'not-allowed' : 'pointer',
         opacity: (isDisabled && !isPressed) ? 0.4 : 1,
-        color: isFold ? (hovered ? '#d4cfc4' : '#8a857a') : '#ede8de',
+        color: '#ede8de',
         transition: 'transform 0.08s ease',
       }}
     >
@@ -843,7 +871,7 @@ function DrillActionButton({ name, sub, action, isPressed, isDisabled, onClick }
           {name}
         </span>
         {sub && (
-          <span style={{ fontWeight:600, fontSize:10, letterSpacing:'0.04em', color:'#8a857a', fontVariantNumeric:'tabular-nums' }}>
+          <span style={{ fontWeight:600, fontSize:10, letterSpacing:'0.05em', color:'#8a857a', fontVariantNumeric:'tabular-nums' }}>
             {sub}
           </span>
         )}
@@ -978,12 +1006,12 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
     { name: 'FOLD',    sub: undefined,                        action: 'Fold'  },
     { name: 'CALL',    sub: undefined,                        action: 'Call'  },
     ...(currentHeroRaiseSize > 0 ? [{ name: 'RAISE', sub: `${currentHeroRaiseSize} BB`, action: 'Raise' }] : []),
-    { name: 'ALL IN',  sub: `${heroStack} BB`,                action: 'Allin' },
+    { name: 'ALL-IN',  sub: `${heroStack} BB`,                action: 'Allin' },
     ...(customAction ? [{ name: customAction.label.toUpperCase(), sub: undefined, action: customAction.label }] : []),
   ]
 
   return (
-    <div className="w-full h-[calc(100vh-90px)] overflow-auto">
+    <div className="w-full h-[calc(100vh-96px)] overflow-auto">
       <div className="flex gap-2 min-h-full">
 
         {/* LEFT: dark box + controles */}
@@ -1095,7 +1123,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
         </div>
 
         {/* RIGHT: histórico + stats */}
-        <div className="flex-shrink-0 flex flex-col gap-2 sticky top-0 self-start" style={{ width: sidebarW, height: 'calc(100vh - 90px)' }}>
+        <div className="flex-shrink-0 flex flex-col gap-2 sticky top-0 self-start" style={{ width: sidebarW, height: 'calc(100vh - 96px)' }}>
           {sidebarCollapsed ? (
             <button
               onClick={() => setSidebarCollapsed(false)}

@@ -1,6 +1,5 @@
-﻿import { useState } from 'react'
-import { useStore } from '../../store/useStore'
-import { Sidebar } from './Sidebar'
+﻿import { useStore } from '../../store/useStore'
+import { TopNav } from './TopNav'
 import { Dashboard } from './Dashboard'
 import { RangeEditorPage } from '../RangeBuilder/RangeEditorPage'
 import { RangeSetupPage } from '../RangeBuilder/RangeSetupPage'
@@ -12,7 +11,6 @@ import { LoginPage } from '../Auth/LoginPage'
 
 export function AppLayout() {
   const { page, darkMode, userMode } = useStore()
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   if (userMode === null) return <LoginPage />
 
@@ -31,10 +29,9 @@ export function AppLayout() {
 
   return (
     <div className={darkMode ? 'dark' : ''}>
-      <div className="flex h-screen bg-warm-950 text-warm-100 overflow-hidden">
-        <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(v => !v)} />
-
-        <main className="flex-1 overflow-y-auto px-8 py-6 min-w-0">
+      <div className="min-h-screen bg-warm-950 text-warm-100">
+        <TopNav />
+        <main className="w-full max-w-[1800px] mx-auto px-6 md:px-10 pt-8 pb-16">
           {renderPage()}
         </main>
       </div>

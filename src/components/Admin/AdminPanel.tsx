@@ -1,21 +1,29 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useStore } from '../../store/useStore'
-import { Settings, LogOut } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 
 const PUBLISHED_HASH_KEY = 'pfp-last-published-hash'
 
-export function AdminPanel() {
+interface Props {
+  open?: boolean
+  onClose?: () => void
+}
+
+export function AdminPanel({ open: externalOpen, onClose: externalClose }: Props = {}) {
   const ranges          = useStore(s => s.ranges)
   const adminSaveRanges = useStore(s => s.adminSaveRanges)
   const logout          = useStore(s => s.logout)
 
-  const [open, setOpen]               = useState(false)
-  const [password, setPassword]       = useState('')
-  const [status, setStatus]           = useState<'idle' | 'loading' | 'ok' | 'wrong' | 'error'>('idle')
-  const [publishedHash, setPublishedHash] = useState(() => localStorage.getItem(PUBLISHED_HASH_KEY) ?? '')
+  const [internalOpen, setInternalOpen]       = useState(false)
+  const [password, setPassword]               = useState('')
+  const [status, setStatus]                   = useState<'idle' | 'loading' | 'ok' | 'wrong' | 'error'>('idle')
+  const [publishedHash, setPublishedHash]     = useState(() => localStorage.getItem(PUBLISHED_HASH_KEY) ?? '')
 
-  const currentHash  = JSON.stringify(ranges)
-  const isPublished  = !!publishedHash && publishedHash === currentHash
+  const controlled  = externalOpen !== undefined
+  const isOpen      = controlled ? externalOpen : internalOpen
+
+  const currentHash = JSON.stringify(ranges)
+  const isPublished = !!publishedHash && publishedHash === currentHash
 
   async function handlePublish() {
     if (!password || isPublished) return
@@ -31,31 +39,38 @@ export function AdminPanel() {
   }
 
   function handleClose() {
-    setOpen(false)
+    if (controlled) {
+      externalClose?.()
+    } else {
+      setInternalOpen(false)
+    }
     setStatus('idle')
     setPassword('')
   }
 
   return (
     <>
-      <div className="flex gap-1">
-        <button
-          onClick={() => setOpen(true)}
-          className="flex-1 flex items-center gap-3 px-2 py-2.5 rounded-lg text-sm text-warm-600 hover:bg-warm-800 hover:text-warm-400 transition-all"
-          title="Publicar ranges"
-        >
-          <Settings size={16} className="flex-shrink-0" />
-        </button>
-        <button
-          onClick={logout}
-          className="flex items-center px-2 py-2.5 rounded-lg text-sm text-warm-600 hover:bg-warm-800 hover:text-warm-400 transition-all"
-          title="Sair"
-        >
-          <LogOut size={16} />
-        </button>
-      </div>
+      {/* Botão interno — usado apenas no modo não-controlado (ex: sidebar) */}
+      {!controlled && (
+        <div className="flex gap-1">
+          <button
+            onClick={() => setInternalOpen(true)}
+            className="flex-1 flex items-center gap-3 px-2 py-2.5 rounded-lg text-sm text-warm-600 hover:bg-warm-800 hover:text-warm-400 transition-all"
+            title="Publicar ranges"
+          >
+            Publicar
+          </button>
+          <button
+            onClick={logout}
+            className="flex items-center px-2 py-2.5 rounded-lg text-sm text-warm-600 hover:bg-warm-800 hover:text-warm-400 transition-all"
+            title="Sair"
+          >
+            <LogOut size={16} />
+          </button>
+        </div>
+      )}
 
-      {open && (
+      {isOpen && (
         <div
           className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
           onClick={handleClose}
@@ -82,6 +97,7 @@ export function AdminPanel() {
                 placeholder="••••••••"
                 className="w-full bg-warm-800 border border-warm-600 rounded-lg px-3 py-2 text-sm text-white placeholder-warm-600 focus:outline-none focus:border-brand-500"
                 onKeyDown={e => { if (e.key === 'Enter') handlePublish() }}
+                autoFocus
               />
             </div>
 

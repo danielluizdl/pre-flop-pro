@@ -1,5 +1,6 @@
 ﻿import { useState } from 'react'
 import { useStore } from '../../store/useStore'
+import { RangeMark } from '../ui/RangeMark'
 
 export function LoginPage() {
   const login         = useStore(s => s.login)
@@ -19,14 +20,17 @@ export function LoginPage() {
   return (
     <div className="min-h-screen bg-warm-950 flex items-center justify-center p-4">
       <div className="w-full max-w-sm space-y-8">
-        <div className="text-center">
-          <div className="w-14 h-14 rounded-2xl bg-brand-600 flex items-center justify-center mx-auto mb-4 font-black text-white text-xl">
-            PF
+        <div className="flex flex-col items-center mb-8">
+          <div className="flex items-center gap-3">
+            <RangeMark size={56} />
+            <span
+              className="text-warm-100 tracking-tight whitespace-nowrap"
+              style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: '44px', lineHeight: 1 }}
+            >
+              Pre-Flop <em className="not-italic" style={{ color: '#d97757' }}>Pro</em>
+            </span>
           </div>
-          <h1 className="text-2xl font-black text-white">
-            Pre-Flop<span className="text-brand-400">Pro</span>
-          </h1>
-          <p className="text-warm-500 text-sm mt-1">Treine seus ranges pré-flop</p>
+          <p className="text-warm-500 text-sm mt-4">Treine seus ranges pré-flop</p>
         </div>
 
         <div className="bg-warm-900 border border-warm-700/50 rounded-2xl p-6 space-y-4">

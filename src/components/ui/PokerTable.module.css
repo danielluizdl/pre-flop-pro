@@ -1,0 +1,219 @@
+/* ── Felt table ──────────────────────────────────────────────────────────── */
+.table {
+  position: relative;
+  width: 100%;
+  padding-bottom: 63%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 30%, #2a2622 0%, #1a1714 70%, #14110e 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.04),
+    inset 0 0 0 6px rgba(0,0,0,0.5),
+    inset 0 0 60px rgba(0,0,0,0.6),
+    0 0 0 1px rgba(217,119,87,0.08),
+    0 20px 50px rgba(0,0,0,0.7);
+}
+
+.table::before {
+  content: '';
+  position: absolute;
+  inset: 14px;
+  border-radius: 50%;
+  border: 1px dashed rgba(217,119,87,0.10);
+  pointer-events: none;
+}
+
+/* ── Pot ─────────────────────────────────────────────────────────────────── */
+.potWrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 4%;
+  pointer-events: none;
+}
+
+.potInner {
+  text-align: center;
+}
+
+.potEyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.25em;
+  color: rgba(237, 232, 222, 0.35);
+  text-transform: uppercase;
+}
+
+.potValue {
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 34px;
+  font-weight: 400;
+  color: #f5b855;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.potUnit {
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0.7;
+  margin-left: 3px;
+}
+
+/* ── Seat position wrapper ───────────────────────────────────────────────── */
+.seatPos {
+  position: absolute;
+  width: 96px;
+  height: 110px;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Seat circle — z:2 within seatPos stacking context ──────────────────── */
+.seat {
+  position: relative;
+  z-index: 2;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 30%, #1a1b20 0%, #050608 100%);
+  border: 1px solid rgba(255,255,255,0.10);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    0 6px 14px rgba(0,0,0,0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pos {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+  color: #f1eee7;
+  line-height: 1;
+}
+
+/* ── Hero seat ───────────────────────────────────────────────────────────── */
+.hero .seat {
+  background: radial-gradient(circle at 50% 30%, #2a1a14 0%, #0d0606 100%);
+  border-color: #d97757;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 0 0 1px rgba(217,119,87,0.5),
+    0 0 22px rgba(217,119,87,0.55),
+    0 6px 14px rgba(0,0,0,0.6);
+}
+
+.hero .pos {
+  color: #f5b855;
+}
+
+/* ── Folded seat ─────────────────────────────────────────────────────────── */
+.folded {
+  opacity: 0.45;
+}
+
+.folded .cards {
+  display: none;
+}
+
+/* ── Villain cards — z:3, peek bottom-left of circle ────────────────────── */
+.cards {
+  position: absolute;
+  bottom: 26px;
+  left: -2px;
+  z-index: 3;
+  width: 36px;
+  height: 34px;
+  pointer-events: none;
+}
+
+.cardBack {
+  position: absolute;
+  width: 22px;
+  height: 30px;
+  border-radius: 3px;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='6' viewBox='0 0 6 6'%3E%3Cpath d='M3 0 L6 3 L3 6 L0 3 Z' fill='none' stroke='%23484848' stroke-width='0.5'/%3E%3Ccircle cx='3' cy='3' r='0.7' fill='%23404040'/%3E%3C/svg%3E") repeat,
+    linear-gradient(180deg, #0c0c0c, #050505);
+  background-size: 6px 6px, auto;
+  border: 1px solid #d4af37;
+  box-shadow:
+    inset 0 0 0 1px #050505,
+    inset 0 0 0 2px rgba(212,175,55,0.55),
+    0 2px 5px rgba(0,0,0,0.75);
+}
+
+.cardBack:nth-child(1) {
+  bottom: 0;
+  left: 0;
+  transform: rotate(-12deg);
+}
+
+.cardBack:nth-child(2) {
+  bottom: 4px;
+  left: 12px;
+  transform: rotate(0deg);
+}
+
+/* ── Stack box — z:4, above cards ───────────────────────────────────────── */
+.stackBox {
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  min-width: 72px;
+  padding: 5px 12px;
+  background: linear-gradient(180deg, #0e0f12, #050608);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 6px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    0 4px 10px rgba(0,0,0,0.8);
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: #f5b855;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.stackUnit {
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.85;
+  margin-left: 2px;
+}
+
+/* ── Dealer button — rendered on the felt, z:5 ───────────────────────────── */
+.dealerButton {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  background: radial-gradient(circle at 35% 30%, #f5f0e6 0%, #d4cfc4 70%, #a8a193 100%);
+  border: 1px solid rgba(0,0,0,0.25);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.5),
+    inset 0 -2px 4px rgba(0,0,0,0.2),
+    0 3px 6px rgba(0,0,0,0.7);
+  font: 900 11px/1 'Helvetica Neue', sans-serif;
+  color: #1a1714;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
