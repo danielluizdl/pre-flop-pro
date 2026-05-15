@@ -5,6 +5,7 @@ import { RangeEditorPage } from '../RangeBuilder/RangeEditorPage'
 import { RangeSetupPage } from '../RangeBuilder/RangeSetupPage'
 import { TableEditorPage } from '../TableEditor/TableEditorPage'
 import { SituationsPage } from '../Situations/SituationsPage'
+import { CategoryDetailPage } from '../Situations/CategoryDetailPage'
 import { TrainerPage } from '../Trainer/TrainerPage'
 import { StatsPage } from '../Stats/StatsPage'
 import { LoginPage } from '../Auth/LoginPage'
@@ -22,8 +23,9 @@ export function AppLayout() {
       case 'editor':       return <RangeEditorPage />
       case 'table-editor': return <TableEditorPage />
       case 'drill':        return <TrainerPage />
-      case 'history':      return <StatsPage />
-      default:             return <Dashboard />
+      case 'history':         return <StatsPage />
+      case 'category-detail': return <CategoryDetailPage />
+      default:                return <Dashboard />
     }
   }
 

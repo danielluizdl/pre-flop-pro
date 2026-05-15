@@ -100,8 +100,10 @@ interface AppState {
   // ── Navigation ──────────────────────────────────────────────────────────────
   page: Page
   darkMode: boolean
+  activeCategory: string | null
   setPage: (p: Page) => void
   toggleDarkMode: () => void
+  setActiveCategory: (key: string | null) => void
 
   // ── Persistent data ─────────────────────────────────────────────────────────
   ranges: Range[]
@@ -213,8 +215,10 @@ export const useStore = create<AppState>()(
       // ── Navigation ────────────────────────────────────────────────────────────
       page: 'dashboard',
       darkMode: false,
+      activeCategory: null,
       setPage: (page) => set({ page }),
       toggleDarkMode: () => set(s => ({ darkMode: !s.darkMode })),
+      setActiveCategory: (activeCategory) => set({ activeCategory }),
 
       // ── Persistent data ───────────────────────────────────────────────────────
       ranges: loadRanges(),
@@ -841,7 +845,7 @@ export const useStore = create<AppState>()(
 
             if (prereqGrid) {
               ALL_HANDS
-                .filter(h => (prereqGrid[h]?.fold ?? 100) < 100)
+                .filter(h => (prereqGrid[h]?.fold ?? 100) < 100 && !drillExcludedHands.includes(h))
                 .forEach(hand => pool.push({ range: r, hand, scenario: newScenario, ante, heroRaiseSize, stackGridIdx, stackRangeLabel, activeGrid }))
             } else {
               ALL_HANDS
@@ -910,9 +914,10 @@ export const useStore = create<AppState>()(
         } = get()
         if (!activeDrillRange) return { correct: false, message: '' }
 
-        const activeGrid = activeDrillStackGridIdx >= 0 && activeDrillRange.stackGrids
-          ? activeDrillRange.stackGrids[activeDrillStackGridIdx].grid
-          : activeDrillRange.grid
+        const stackGrid = activeDrillStackGridIdx >= 0
+          ? activeDrillRange.stackGrids?.[activeDrillStackGridIdx]
+          : undefined
+        const activeGrid = stackGrid?.grid ?? activeDrillRange.grid
         const d = activeGrid[activeHand]
 
         const correct = useRngForFrequency

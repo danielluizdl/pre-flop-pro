@@ -3,14 +3,16 @@ import { countNonFoldHands } from '../../utils/hands'
 import { RangeMark } from '../ui/RangeMark'
 
 const CATEGORY_POSITIONS: Record<string, string[]> = {
-  EARLY: ['UTG','EP','MP','HJ','LJ'],
-  LATE:  ['CO','BTN'],
-  BLINDS:['SB','BB','STR'],
+  EARLY:    ['UTG','EP','MP','HJ','LJ'],
+  LATE:     ['CO','BTN'],
+  BLINDS:   ['SB','BB'],
+  STRADDLE: ['STR'],
 }
 
 export function Dashboard() {
   const ranges          = useStore(s => s.ranges)
-  const setPage         = useStore(s => s.setPage)
+  const setPage             = useStore(s => s.setPage)
+  const setActiveCategory   = useStore(s => s.setActiveCategory)
   const trainingHistory = useStore(s => s.trainingHistory)
   const handPerformance = useStore(s => s.handPerformance)
 
@@ -28,10 +30,10 @@ export function Dashboard() {
   })
 
   const categories = [
-    { key:'early',  cat:'POSIÇÃO', name:'EARLY',  sub:'UTG · MP · HJ',  accent:'#d97757', count: ranges.filter(r => r.positions.some(p => CATEGORY_POSITIONS.EARLY.includes(p))).length },
-    { key:'late',   cat:'POSIÇÃO', name:'LATE',   sub:'CO · BTN',        accent:'#e5916e', count: ranges.filter(r => r.positions.some(p => CATEGORY_POSITIONS.LATE.includes(p))).length },
-    { key:'blinds', cat:'POSIÇÃO', name:'BLINDS', sub:'SB · BB · STR',   accent:'#f5b855', count: ranges.filter(r => r.positions.some(p => CATEGORY_POSITIONS.BLINDS.includes(p))).length },
-    { key:'short',  cat:'STACK',   name:'SHORT',  sub:'≤ 25 bb',          accent:'#a8a193', count: ranges.filter(r => r.stackRange && /<=?\s*2[0-5]|[0-9]+\s*-\s*2[0-5]/.test(r.stackRange)).length },
+    { key:'early',    cat:'POSIÇÃO', name:'EARLY',    sub:'UTG · MP · HJ', accent:'#d97757', count: ranges.filter(r => r.positions.some(p => CATEGORY_POSITIONS.EARLY.includes(p))).length },
+    { key:'late',     cat:'POSIÇÃO', name:'LATE',     sub:'CO · BTN',      accent:'#e5916e', count: ranges.filter(r => r.positions.some(p => CATEGORY_POSITIONS.LATE.includes(p))).length },
+    { key:'blinds',   cat:'POSIÇÃO', name:'BLINDS',   sub:'SB · BB',       accent:'#f5b855', count: ranges.filter(r => r.positions.some(p => CATEGORY_POSITIONS.BLINDS.includes(p))).length },
+    { key:'straddle', cat:'POSIÇÃO', name:'STRADDLE', sub:'STR',           accent:'#a8a193', count: ranges.filter(r => r.positions.some(p => CATEGORY_POSITIONS.STRADDLE.includes(p))).length },
   ]
 
   const statItems = [
@@ -102,7 +104,7 @@ export function Dashboard() {
         {categories.map(c => (
           <button
             key={c.key}
-            onClick={() => setPage('ranges')}
+            onClick={() => { setActiveCategory(c.key); setPage('category-detail') }}
             className="group relative rounded-2xl overflow-hidden bg-warm-900 hover:bg-warm-800 transition-colors text-left p-5 flex flex-col justify-between"
             style={{ aspectRatio: '4/5' }}
           >
