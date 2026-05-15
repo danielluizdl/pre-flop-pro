@@ -1,6 +1,7 @@
 import { useStore } from '../../store/useStore'
 import type { PositionConfig, Slot } from '../../types'
 import styles from './PokerTable.module.css'
+import { chipAnchor, dealerAnchor } from './tableGeometry'
 
 /* ── Casino chip ─────────────────────────────────────────────────────────── */
 const CHIP_DENOM: Record<string, { chip: string; stripe: string; ring: string }> = {
@@ -37,18 +38,18 @@ function CasinoDisc({ denom, offset }: { denom: string; offset: number }) {
   )
 }
 
-function ChipStack({ amount }: { amount: number }) {
+function ChipStack({ amount, labelLeft = false }: { amount: number; labelLeft?: boolean }) {
   const denom = chipDenom(amount)
   const count = amount >= 100 ? 5 : amount >= 25 ? 4 : amount >= 5 ? 3 : 2
   const W = 22
   return (
-    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+    <div style={{ display:'flex', flexDirection: labelLeft ? 'row-reverse' : 'row', alignItems:'center', gap:6 }}>
       <div style={{ position:'relative', width: W, height: W + (count - 1) * 4 }}>
         {Array.from({ length: count }, (_, i) => (
           <CasinoDisc key={i} denom={denom} offset={i * 4} />
         ))}
       </div>
-      <span style={{ color:'#ede8de', fontSize:11, fontWeight:600, fontVariantNumeric:'tabular-nums', textShadow:'0 1px 2px rgba(0,0,0,0.8)', whiteSpace:'nowrap' }}>
+      <span style={{ color:'#ede8de', fontSize:12, fontWeight:700, fontVariantNumeric:'tabular-nums', letterSpacing:'0.02em', textShadow:'0 1px 2px rgba(0,0,0,0.85)', whiteSpace:'nowrap' }}>
         {amount} bb
       </span>
     </div>
@@ -78,9 +79,11 @@ interface SeatProps {
   label: string
   data: PositionConfig
   slot: Slot
+  visualIdx: number
+  tableSize: 6 | 8
 }
 
-function Seat({ label, data, slot }: SeatProps) {
+function Seat({ label, data, slot, visualIdx, tableSize }: SeatProps) {
   const { role, bet, stack, isHero } = data
   const isFolded    = (role === 'fold' || role === 'limp-fold') && !isHero
   const hasCards    = !isHero && !isFolded
@@ -91,6 +94,8 @@ function Seat({ label, data, slot }: SeatProps) {
     isHero   ? styles.hero   : '',
     isFolded ? styles.folded : '',
   ].filter(Boolean).join(' ')
+
+  const ca = chipAnchor(slot, visualIdx, tableSize)
 
   return (
     <>
@@ -112,17 +117,12 @@ function Seat({ label, data, slot }: SeatProps) {
         </div>
       </div>
 
-      {/* Chip stack toward center */}
       {displayBet > 0 && (
         <div
           className="absolute z-[15] pointer-events-none"
-          style={{
-            top: `${slot.t + (50 - slot.t) * 0.3}%`,
-            left: `${slot.l + (50 - slot.l) * 0.3}%`,
-            transform: 'translate(-50%,-50%)',
-          }}
+          style={{ top: `${ca.t}%`, left: `${ca.l}%`, transform: 'translate(-50%,-50%)' }}
         >
-          <ChipStack amount={displayBet} />
+          <ChipStack amount={displayBet} labelLeft={ca.l < 50} />
         </div>
       )}
     </>
@@ -137,6 +137,7 @@ export function PokerTableEditor({ heroCards }: { heroCards?: HeroCards } = {}) 
   const activeSlots     = useStore(s => s.activeSlots)
   const currentScenario = useStore(s => s.currentScenario)
   const currentAnte     = useStore(s => s.currentAnte)
+  const currentTableSize = useStore(s => s.currentTableSize)
 
   const heroPosIndex = activePositions.findIndex(p => currentScenario[p.id]?.isHero)
   const numPlayers   = activePositions.length
@@ -177,13 +178,11 @@ export function PokerTableEditor({ heroCards }: { heroCards?: HeroCards } = {}) 
           : btnPosIndex
         const s = activeSlots[btnVisualIdx]
         if (!s) return null
+        const dp = dealerAnchor(s, btnVisualIdx, currentTableSize)
         return (
           <div
             className={styles.dealerButton}
-            style={{
-              left: `${s.l + (50 - s.l) * 0.30}%`,
-              top:  `${s.t + (50 - s.t) * 0.30}%`,
-            }}
+            style={{ left: `${dp.l}%`, top: `${dp.t}%` }}
           >D</div>
         )
       })()}
@@ -196,7 +195,7 @@ export function PokerTableEditor({ heroCards }: { heroCards?: HeroCards } = {}) 
         if (!data) return null
         const slot         = activeSlots[i]
         return (
-          <Seat key={pos.id} label={pos.label} data={data} slot={slot} />
+          <Seat key={pos.id} label={pos.label} data={data} slot={slot} visualIdx={i} tableSize={currentTableSize} />
         )
       })}
 
