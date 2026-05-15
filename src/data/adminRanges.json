@@ -1,5 +1,5 @@
 {
-  "version": 1778850004667,
+  "version": 1778850833139,
   "ranges": [
     {
       "id": 1778029184940,
@@ -78464,19 +78464,19 @@
           "id": 1778112822270,
           "data": {
             "sb": {
-              "role": "post",
+              "role": "fold",
               "bet": 0.5,
               "isHero": false,
               "stack": 250
             },
             "bb": {
-              "role": "post",
+              "role": "fold",
               "bet": 1,
               "isHero": false,
               "stack": 250
             },
             "str": {
-              "role": "post",
+              "role": "fold",
               "bet": 2,
               "isHero": false,
               "stack": 250
@@ -81080,63 +81080,6 @@
       },
       "scenarios": [
         {
-          "id": 1778113667336,
-          "data": {
-            "sb": {
-              "role": "3bet",
-              "bet": 35,
-              "isHero": false,
-              "stack": 250
-            },
-            "bb": {
-              "role": "post",
-              "bet": 1,
-              "isHero": false,
-              "stack": 250
-            },
-            "str": {
-              "role": "post",
-              "bet": 2,
-              "isHero": false,
-              "stack": 250
-            },
-            "utg": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            },
-            "utg1": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            },
-            "mp": {
-              "role": "open",
-              "bet": 6,
-              "isHero": false,
-              "stack": 250
-            },
-            "co": {
-              "role": "call",
-              "bet": 6,
-              "isHero": true,
-              "stack": 250
-            },
-            "btn": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            }
-          },
-          "pot": "54.0",
-          "ante": 0.5,
-          "summary": "SB 3bet (35bb) → HJ Open (6bb) → CO Call (6bb)",
-          "heroRaiseSize": 75
-        },
-        {
           "id": 1778113683000,
           "data": {
             "sb": {
@@ -81146,13 +81089,13 @@
               "stack": 250
             },
             "bb": {
-              "role": "post",
+              "role": "fold",
               "bet": 1,
               "isHero": false,
               "stack": 250
             },
             "str": {
-              "role": "post",
+              "role": "fold",
               "bet": 2,
               "isHero": false,
               "stack": 250
@@ -81209,7 +81152,7 @@
               "stack": 250
             },
             "str": {
-              "role": "post",
+              "role": "fold",
               "bet": 2,
               "isHero": false,
               "stack": 250
@@ -81251,7 +81194,7 @@
           "heroRaiseSize": 75
         },
         {
-          "id": 1778113773424,
+          "id": 1778850403385,
           "data": {
             "sb": {
               "role": "fold",
@@ -81260,134 +81203,20 @@
               "stack": 250
             },
             "bb": {
-              "role": "3bet",
-              "bet": 35,
-              "isHero": false,
-              "stack": 250
-            },
-            "str": {
-              "role": "post",
-              "bet": 2,
-              "isHero": false,
-              "stack": 250
-            },
-            "utg": {
-              "role": "open",
-              "bet": 6,
-              "isHero": false,
-              "stack": 250
-            },
-            "utg1": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            },
-            "mp": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            },
-            "co": {
-              "role": "open",
-              "bet": 6,
-              "isHero": true,
-              "stack": 250
-            },
-            "btn": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            }
-          },
-          "pot": "53.5",
-          "ante": 0.5,
-          "summary": "BB 3bet (35bb) → UTG Open (6bb) → CO Open (6bb)",
-          "heroRaiseSize": 75
-        },
-        {
-          "id": 1778113781361,
-          "data": {
-            "sb": {
-              "role": "3bet",
-              "bet": 35,
-              "isHero": false,
-              "stack": 250
-            },
-            "bb": {
               "role": "fold",
               "bet": 1,
               "isHero": false,
               "stack": 250
             },
             "str": {
-              "role": "post",
-              "bet": 2,
-              "isHero": false,
-              "stack": 250
-            },
-            "utg": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            },
-            "utg1": {
-              "role": "open",
-              "bet": 6,
-              "isHero": false,
-              "stack": 250
-            },
-            "mp": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            },
-            "co": {
-              "role": "call",
-              "bet": 6,
-              "isHero": true,
-              "stack": 250
-            },
-            "btn": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            }
-          },
-          "pot": "54.0",
-          "ante": 0.5,
-          "summary": "SB 3bet (35bb) → MP Open (6bb) → CO Call (6bb)",
-          "heroRaiseSize": 75
-        },
-        {
-          "id": 1778113798359,
-          "data": {
-            "sb": {
               "role": "3bet",
               "bet": 35,
               "isHero": false,
               "stack": 250
             },
-            "bb": {
-              "role": "fold",
-              "bet": 1,
-              "isHero": false,
-              "stack": 250
-            },
-            "str": {
-              "role": "post",
-              "bet": 2,
-              "isHero": false,
-              "stack": 250
-            },
             "utg": {
-              "role": "open",
-              "bet": 6,
+              "role": "fold",
+              "bet": 0,
               "isHero": false,
               "stack": 250
             },
@@ -81404,21 +81233,21 @@
               "stack": 250
             },
             "co": {
-              "role": "call",
+              "role": "open",
               "bet": 6,
               "isHero": true,
               "stack": 250
             },
             "btn": {
-              "role": "fold",
-              "bet": 0,
+              "role": "call",
+              "bet": 6,
               "isHero": false,
               "stack": 250
             }
           },
-          "pot": "54.0",
+          "pot": "52.5",
           "ante": 0.5,
-          "summary": "SB 3bet (35bb) → UTG Open (6bb) → CO Call (6bb)",
+          "summary": "STR 3bet (35bb) → CO Open (6bb) → BTN Call (6bb)",
           "heroRaiseSize": 75
         }
       ],
@@ -83999,7 +83828,7 @@
               "stack": 250
             },
             "str": {
-              "role": "post",
+              "role": "fold",
               "bet": 2,
               "isHero": false,
               "stack": 250
@@ -84038,118 +83867,6 @@
           "pot": "82.0",
           "ante": 0.5,
           "summary": "SB 3bet (32bb) → BB Call (32bb) → CO Open (6bb) → BTN Call (6bb)"
-        },
-        {
-          "id": 1778186333225,
-          "data": {
-            "sb": {
-              "role": "3bet",
-              "bet": 32,
-              "isHero": false,
-              "stack": 250
-            },
-            "bb": {
-              "role": "call",
-              "bet": 32,
-              "isHero": false,
-              "stack": 250
-            },
-            "str": {
-              "role": "post",
-              "bet": 2,
-              "isHero": false,
-              "stack": 250
-            },
-            "utg": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            },
-            "utg1": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            },
-            "mp": {
-              "role": "open",
-              "bet": 6,
-              "isHero": false,
-              "stack": 250
-            },
-            "co": {
-              "role": "call",
-              "bet": 6,
-              "isHero": true,
-              "stack": 250
-            },
-            "btn": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            }
-          },
-          "pot": "82.0",
-          "ante": 0.5,
-          "summary": "SB 3bet (32bb) → BB Call (32bb) → HJ Open (6bb) → CO Call (6bb)"
-        },
-        {
-          "id": 1778186338089,
-          "data": {
-            "sb": {
-              "role": "3bet",
-              "bet": 32,
-              "isHero": false,
-              "stack": 250
-            },
-            "bb": {
-              "role": "fold",
-              "bet": 1,
-              "isHero": false,
-              "stack": 250
-            },
-            "str": {
-              "role": "call",
-              "bet": 32,
-              "isHero": false,
-              "stack": 250
-            },
-            "utg": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            },
-            "utg1": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            },
-            "mp": {
-              "role": "open",
-              "bet": 6,
-              "isHero": false,
-              "stack": 250
-            },
-            "co": {
-              "role": "call",
-              "bet": 6,
-              "isHero": true,
-              "stack": 250
-            },
-            "btn": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            }
-          },
-          "pot": "81.0",
-          "ante": 0.5,
-          "summary": "SB 3bet (32bb) → STR Call (32bb) → HJ Open (6bb) → CO Call (6bb)"
         },
         {
           "id": 1778186352613,
@@ -84262,62 +83979,6 @@
           "pot": "80.5",
           "ante": 0.5,
           "summary": "BB 3bet (32bb) → STR Call (32bb) → CO Open (6bb) → BTN Call (6bb)"
-        },
-        {
-          "id": 1778186372779,
-          "data": {
-            "sb": {
-              "role": "fold",
-              "bet": 0.5,
-              "isHero": false,
-              "stack": 250
-            },
-            "bb": {
-              "role": "3bet",
-              "bet": 32,
-              "isHero": false,
-              "stack": 250
-            },
-            "str": {
-              "role": "call",
-              "bet": 32,
-              "isHero": false,
-              "stack": 250
-            },
-            "utg": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            },
-            "utg1": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            },
-            "mp": {
-              "role": "open",
-              "bet": 6,
-              "isHero": false,
-              "stack": 250
-            },
-            "co": {
-              "role": "call",
-              "bet": 6,
-              "isHero": true,
-              "stack": 250
-            },
-            "btn": {
-              "role": "fold",
-              "bet": 0,
-              "isHero": false,
-              "stack": 250
-            }
-          },
-          "pot": "80.5",
-          "ante": 0.5,
-          "summary": "BB 3bet (32bb) → STR Call (32bb) → HJ Open (6bb) → CO Call (6bb)"
         }
       ],
       "tableSize": 8,
@@ -158585,13 +158246,13 @@
               "stack": 250
             },
             "bb": {
-              "role": "post",
+              "role": "fold",
               "bet": 1,
               "isHero": false,
               "stack": 250
             },
             "str": {
-              "role": "post",
+              "role": "fold",
               "bet": 2,
               "isHero": false,
               "stack": 250
@@ -158648,7 +158309,7 @@
               "stack": 275
             },
             "str": {
-              "role": "post",
+              "role": "fold",
               "bet": 2,
               "isHero": false,
               "stack": 275
@@ -158756,13 +158417,13 @@
               "stack": 320
             },
             "bb": {
-              "role": "post",
+              "role": "fold",
               "bet": 1,
               "isHero": false,
               "stack": 320
             },
             "str": {
-              "role": "post",
+              "role": "fold",
               "bet": 2,
               "isHero": false,
               "stack": 320
@@ -158819,7 +158480,7 @@
               "stack": 350
             },
             "str": {
-              "role": "post",
+              "role": "fold",
               "bet": 2,
               "isHero": false,
               "stack": 350
