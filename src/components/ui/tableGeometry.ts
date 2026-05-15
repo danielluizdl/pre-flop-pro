@@ -26,7 +26,7 @@ export const CHIP_ANCHORS_6MAX: Slot[] = [
 // ─── EDITE AQUI: posição do botão dealer (t=vertical%, l=horizontal%) ────────
 // Índice 0 = visual slot do BTN quando hero está embaixo, sentido horário.
 export const DEALER_ANCHORS_8MAX: Slot[] = [
-  { t: 95, l: 58 },  // 0
+  { t: 94, l: 42 },  // 0
   { t: 90, l: 26 },  // 1
   { t: 70, l: 8 },  // 2
   { t: 28, l: 9 },  // 3
