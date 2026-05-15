@@ -941,9 +941,10 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
   if (!activeDrillRange || !activeHand) return null
 
   function getFreqLabel(hand: string): string {
-    const activeGrid = activeDrillStackGridIdx >= 0 && activeDrillRange!.stackGrids
-      ? activeDrillRange!.stackGrids[activeDrillStackGridIdx].grid
-      : activeDrillRange!.grid
+    const stackGrid = activeDrillStackGridIdx >= 0
+      ? activeDrillRange!.stackGrids?.[activeDrillStackGridIdx]
+      : undefined
+    const activeGrid = stackGrid?.grid ?? activeDrillRange!.grid
     const d = activeGrid[hand]
     if (!d) return ''
     const parts: string[] = []
@@ -1193,7 +1194,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
             </div>
             <HandMatrix
               readOnly
-              grid={activeDrillStackGridIdx >= 0 && activeDrillRange!.stackGrids ? activeDrillRange!.stackGrids[activeDrillStackGridIdx].grid : activeDrillRange!.grid}
+              grid={(activeDrillStackGridIdx >= 0 ? activeDrillRange!.stackGrids?.[activeDrillStackGridIdx]?.grid : undefined) ?? activeDrillRange!.grid}
               heatmap={handPerformance[activeDrillRange!.id]}
               customActionColor={activeDrillRange!.customAction?.color}
               forceViewMode={modalViewMode ?? undefined}
