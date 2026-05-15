@@ -2,7 +2,7 @@ import { useStore } from '../../store/useStore'
 import { countNonFoldHands } from '../../utils/hands'
 
 const CATEGORY_POSITIONS: Record<string, string[]> = {
-  early:    ['UTG', 'EP', 'MP', 'HJ', 'LJ'],
+  early:    ['UTG', 'MP', 'HJ'],
   late:     ['CO', 'BTN'],
   blinds:   ['SB', 'BB'],
   straddle: ['STR'],

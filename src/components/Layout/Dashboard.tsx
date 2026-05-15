@@ -3,7 +3,7 @@ import { countNonFoldHands } from '../../utils/hands'
 import { RangeMark } from '../ui/RangeMark'
 
 const CATEGORY_POSITIONS: Record<string, string[]> = {
-  EARLY:    ['UTG','EP','MP','HJ','LJ'],
+  EARLY:    ['UTG','MP','HJ'],
   LATE:     ['CO','BTN'],
   BLINDS:   ['SB','BB'],
   STRADDLE: ['STR'],
