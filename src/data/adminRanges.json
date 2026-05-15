@@ -1,5 +1,5 @@
 {
-  "version": 1778719011554,
+  "version": 1778850004667,
   "ranges": [
     {
       "id": 1778029184940,
@@ -34529,7 +34529,7 @@
               "stack": 225
             },
             "bb": {
-              "role": "post",
+              "role": "fold",
               "bet": 1,
               "isHero": false,
               "stack": 225
@@ -34582,7 +34582,7 @@
               "stack": 200
             },
             "bb": {
-              "role": "post",
+              "role": "fold",
               "bet": 1,
               "isHero": false,
               "stack": 200
@@ -34639,7 +34639,7 @@
               "stack": 300
             },
             "bb": {
-              "role": "post",
+              "role": "fold",
               "bet": 1,
               "isHero": false,
               "stack": 300
@@ -34696,7 +34696,7 @@
               "stack": 285
             },
             "bb": {
-              "role": "post",
+              "role": "fold",
               "bet": 1,
               "isHero": false,
               "stack": 285
@@ -81133,7 +81133,7 @@
           },
           "pot": "54.0",
           "ante": 0.5,
-          "summary": "SB 3bet (35bb) → MP Open (6bb) → CO Call (6bb)",
+          "summary": "SB 3bet (35bb) → HJ Open (6bb) → CO Call (6bb)",
           "heroRaiseSize": 75
         },
         {
@@ -81348,7 +81348,7 @@
             },
             "co": {
               "role": "call",
-              "bet": 35,
+              "bet": 6,
               "isHero": true,
               "stack": 250
             },
@@ -81359,9 +81359,9 @@
               "stack": 250
             }
           },
-          "pot": "83.0",
+          "pot": "54.0",
           "ante": 0.5,
-          "summary": "SB 3bet (35bb) → UTG+1 Open (6bb) → CO Call (35bb)",
+          "summary": "SB 3bet (35bb) → MP Open (6bb) → CO Call (6bb)",
           "heroRaiseSize": 75
         },
         {
