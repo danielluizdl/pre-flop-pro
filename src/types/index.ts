@@ -95,6 +95,8 @@ export interface HandHistoryEntry {
   rng: number
   correct: boolean
   rangeName: string
+  rangeId: number
+  stackGridIdx: number
   raiseSize?: number | string
   stackRange?: string
 }

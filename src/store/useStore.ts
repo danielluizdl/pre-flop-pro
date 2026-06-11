@@ -10,6 +10,7 @@ import type {
 import {
   POS_6MAX, POS_8MAX, SLOTS_6MAX, SLOTS_8MAX,
 } from '../types'
+import { validateRanges } from '../utils/validateRanges'
 import { DEFAULT_RANGES } from '../data/defaultRanges'
 import adminRangesRaw from '../data/adminRanges.json'
 
@@ -72,6 +73,15 @@ function loadRanges(): Range[] {
     }
     return saved
   } catch { return [...SEEDED_DEFAULTS] }
+}
+
+function loadRangesValidated(): Range[] {
+  const ranges = loadRanges()
+  const problems = validateRanges(ranges)
+  if (problems.length > 0) {
+    console.warn(`[validateRanges] ${problems.length} problema(s) nos ranges:\n` + problems.join('\n'))
+  }
+  return ranges
 }
 
 function saveRanges(ranges: Range[]) {
@@ -185,6 +195,9 @@ interface AppState {
 
   useRngForFrequency: boolean
   setUseRng: (val: boolean) => void
+  acceptAnyFreq: boolean
+  setAcceptAnyFreq: (val: boolean) => void
+  sessionHandPerf: HandPerfMap
 
   toggleDrillRange: (id: number) => void
   clearDrillRanges: () => void
@@ -222,7 +235,7 @@ export const useStore = create<AppState>()(
       setActiveCategory: (activeCategory) => set({ activeCategory }),
 
       // ── Persistent data ───────────────────────────────────────────────────────
-      ranges: loadRanges(),
+      ranges: loadRangesValidated(),
       trainingHistory: loadHistory(),
 
       // ── Table config ──────────────────────────────────────────────────────────
@@ -735,6 +748,9 @@ export const useStore = create<AppState>()(
       // ── Drill ─────────────────────────────────────────────────────────────────
       useRngForFrequency: false,
       setUseRng: (val) => set({ useRngForFrequency: val }),
+      acceptAnyFreq: false,
+      setAcceptAnyFreq: (val) => set({ acceptAnyFreq: val }),
+      sessionHandPerf: {},
 
       selectedDrillRangeIds: [],
       drillExcludedHands: [],
@@ -778,6 +794,7 @@ export const useStore = create<AppState>()(
         set({
           sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 },
           handHistory: [],
+          sessionHandPerf: {},
           sessionStartTime: Date.now(),
         })
       },
@@ -845,8 +862,10 @@ export const useStore = create<AppState>()(
               : null
 
             if (prereqGrid) {
+              // Com prereq, o filtro manual de mãos (drillExcludedHands) é ignorado:
+              // os candidatos vêm das mãos não-fold do prereqGrid.
               ALL_HANDS
-                .filter(h => (prereqGrid[h]?.fold ?? 100) < 100 && !drillExcludedHands.includes(h))
+                .filter(h => (prereqGrid[h]?.fold ?? 100) < 100)
                 .forEach(hand => pool.push({ range: r, hand, scenario: newScenario, ante, heroRaiseSize, stackGridIdx, stackRangeLabel, activeGrid }))
             } else {
               ALL_HANDS
@@ -910,7 +929,7 @@ export const useStore = create<AppState>()(
       checkDrillAnswer: (action) => {
         const {
           activeDrillRange, activeDrillStackGridIdx, activeHand, sessionStats,
-          currentRng, currentHandSuits, handHistory, useRngForFrequency,
+          currentRng, currentHandSuits, handHistory, useRngForFrequency, acceptAnyFreq,
         } = get()
         if (!activeDrillRange) return { correct: false, message: '' }
 
@@ -932,12 +951,26 @@ export const useStore = create<AppState>()(
           correctAction = correctActions.join(' ou ')
         }
 
-        const correct = correctActions.includes(action)
+        const freqOf = (act: string): number => {
+          if (!d) return act === 'Fold' ? 100 : 0
+          if (act === 'Fold') return d.fold ?? 0
+          if (act === 'Call') return d.call ?? 0
+          if (act === 'Raise') return d.raise ?? 0
+          if (act === 'Allin') return d.allin ?? 0
+          if (extraLabel && act === extraLabel) return d.extra ?? 0
+          return 0
+        }
+
+        const isPrincipal = correctActions.includes(action)
+        // Modo menos binário (RNG off): qualquer ação com frequência > 0 é aceita.
+        const validNotPrincipal = !isPrincipal && !useRngForFrequency && acceptAnyFreq && freqOf(action) > 0
+        const correct = isPrincipal || validNotPrincipal
 
         const stats = { ...sessionStats, hands: sessionStats.hands + 1 }
         if (correct) stats.correct++; else stats.errors++
 
         const { activeDrillStackRange: stackRange } = get()
+        const rid = activeDrillRange.id
         const entry: HandHistoryEntry = {
           id: Date.now(),
           hand: activeHand,
@@ -947,55 +980,57 @@ export const useStore = create<AppState>()(
           rng: currentRng,
           correct,
           rangeName: activeDrillRange.name,
+          rangeId: rid,
+          stackGridIdx: activeDrillStackGridIdx,
           raiseSize: d?.size,
           stackRange: stackRange || undefined,
         }
-        const { handPerformance } = get()
-        const rid = activeDrillRange.id
-        const prev = handPerformance[rid]?.[activeHand] ?? { c: 0, t: 0 }
-        const newPerf: HandPerfMap = {
-          ...handPerformance,
-          [rid]: { ...handPerformance[rid], [activeHand]: { c: prev.c + (correct ? 1 : 0), t: prev.t + 1 } },
+        const accumulate = (map: HandPerfMap): HandPerfMap => {
+          const prev = map[rid]?.[activeHand] ?? { c: 0, t: 0 }
+          const next: HandPerfMap = {
+            ...map,
+            [rid]: { ...map[rid], [activeHand]: { c: prev.c + (correct ? 1 : 0), t: prev.t + 1 } },
+          }
+          if (stackRange) {
+            const sk = `${rid}|||${stackRange}`
+            const prevSk = map[sk]?.[activeHand] ?? { c: 0, t: 0 }
+            next[sk] = { ...map[sk], [activeHand]: { c: prevSk.c + (correct ? 1 : 0), t: prevSk.t + 1 } }
+          }
+          return next
         }
-        if (stackRange) {
-          const sk = `${rid}|||${stackRange}`
-          const prevSk = handPerformance[sk]?.[activeHand] ?? { c: 0, t: 0 }
-          newPerf[sk] = { ...handPerformance[sk], [activeHand]: { c: prevSk.c + (correct ? 1 : 0), t: prevSk.t + 1 } }
-        }
+        const { handPerformance, sessionHandPerf } = get()
+        const newPerf = accumulate(handPerformance)
+        const newSessionPerf = accumulate(sessionHandPerf)
         saveHandPerf(newPerf)
         set({
           sessionStats: stats,
           handHistory: [...handHistory, entry].slice(-50),
           handPerformance: newPerf,
+          sessionHandPerf: newSessionPerf,
           correctActionForCurrentHand: correctAction,
           correctActionsForCurrentHand: correctActions,
         })
 
         const rngTag = useRngForFrequency ? ` (RNG: ${currentRng})` : ''
-        return {
-          correct,
-          message: correct
-            ? `✓ ${action}!${rngTag}`
-            : `✗ Correto: ${correctAction}${rngTag}`,
+        let message: string
+        if (validNotPrincipal) {
+          const principalLabel = correctActions.map(a => `${a} ${freqOf(a)}%`).join(' ou ')
+          message = `~ Válido — ação principal: ${principalLabel}`
+        } else if (correct) {
+          message = `✓ ${action}!${rngTag}`
+        } else {
+          message = `✗ Correto: ${correctAction}${rngTag}`
         }
+        return { correct, message }
       },
 
       stopDrill: () => {
-        const { sessionStats, selectedDrillRangeIds, ranges, currentTableSize, sessionStartTime, trainingHistory, handHistory } = get()
+        const { sessionStats, selectedDrillRangeIds, ranges, currentTableSize, sessionStartTime, trainingHistory, sessionHandPerf } = get()
         let newHistory = trainingHistory
         if (sessionStats.hands > 0) {
-          const handPerf: Record<string, Record<string, { c: number; t: number }>> = {}
-          handHistory.forEach(e => {
-            if (!handPerf[e.rangeName]) handPerf[e.rangeName] = {}
-            const cur = handPerf[e.rangeName][e.hand] ?? { c: 0, t: 0 }
-            handPerf[e.rangeName][e.hand] = { c: cur.c + (e.correct ? 1 : 0), t: cur.t + 1 }
-            if (e.stackRange) {
-              const sk = `${e.rangeName}|||${e.stackRange}`
-              if (!handPerf[sk]) handPerf[sk] = {}
-              const curSk = handPerf[sk][e.hand] ?? { c: 0, t: 0 }
-              handPerf[sk][e.hand] = { c: curSk.c + (e.correct ? 1 : 0), t: curSk.t + 1 }
-            }
-          })
+          // sessionHandPerf é o acumulador da sessão inteira (não limitado ao cap de 50 do histórico visual),
+          // chaveado por rangeId e rangeId|||stackRange.
+          const handPerf: Record<string, Record<string, { c: number; t: number }>> = JSON.parse(JSON.stringify(sessionHandPerf))
           const session: TrainingSession = {
             id: Date.now(),
             timestamp: Date.now(),
