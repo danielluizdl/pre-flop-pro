@@ -910,8 +910,7 @@ export const useStore = create<AppState>()(
       checkDrillAnswer: (action) => {
         const {
           activeDrillRange, activeDrillStackGridIdx, activeHand, sessionStats,
-          currentRng, correctActionForCurrentHand, correctActionsForCurrentHand,
-          currentHandSuits, handHistory, useRngForFrequency,
+          currentRng, currentHandSuits, handHistory, useRngForFrequency,
         } = get()
         if (!activeDrillRange) return { correct: false, message: '' }
 
@@ -920,10 +919,20 @@ export const useStore = create<AppState>()(
           : undefined
         const activeGrid = stackGrid?.grid ?? activeDrillRange.grid
         const d = activeGrid[activeHand]
+        const extraLabel = activeDrillRange.customAction?.label
 
-        const correct = useRngForFrequency
-          ? action === correctActionForCurrentHand
-          : correctActionsForCurrentHand.includes(action)
+        // Recompute from grid at check time — trava de segurança contra estado desatualizado
+        let correctAction: string
+        let correctActions: string[]
+        if (useRngForFrequency) {
+          correctAction = getRngCorrectAction(d, currentRng, extraLabel)
+          correctActions = [correctAction]
+        } else {
+          correctActions = getTopFrequencyActions(d, extraLabel)
+          correctAction = correctActions.join(' ou ')
+        }
+
+        const correct = correctActions.includes(action)
 
         const stats = { ...sessionStats, hands: sessionStats.hands + 1 }
         if (correct) stats.correct++; else stats.errors++
@@ -934,7 +943,7 @@ export const useStore = create<AppState>()(
           hand: activeHand,
           suits: currentHandSuits,
           actionTaken: action,
-          correctAction: correctActionForCurrentHand,
+          correctAction,
           rng: currentRng,
           correct,
           rangeName: activeDrillRange.name,
@@ -954,14 +963,20 @@ export const useStore = create<AppState>()(
           newPerf[sk] = { ...handPerformance[sk], [activeHand]: { c: prevSk.c + (correct ? 1 : 0), t: prevSk.t + 1 } }
         }
         saveHandPerf(newPerf)
-        set({ sessionStats: stats, handHistory: [...handHistory, entry].slice(-50), handPerformance: newPerf })
+        set({
+          sessionStats: stats,
+          handHistory: [...handHistory, entry].slice(-50),
+          handPerformance: newPerf,
+          correctActionForCurrentHand: correctAction,
+          correctActionsForCurrentHand: correctActions,
+        })
 
         const rngTag = useRngForFrequency ? ` (RNG: ${currentRng})` : ''
         return {
           correct,
           message: correct
             ? `✓ ${action}!${rngTag}`
-            : `✗ Correto: ${correctActionForCurrentHand}${rngTag}`,
+            : `✗ Correto: ${correctAction}${rngTag}`,
         }
       },
 
