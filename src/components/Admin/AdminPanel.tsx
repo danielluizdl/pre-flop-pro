@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useStore } from '../../store/useStore'
+import { validateRanges } from '../../utils/validateRanges'
 import { LogOut } from 'lucide-react'
 
 const PUBLISHED_HASH_KEY = 'pfp-last-published-hash'
@@ -19,6 +20,7 @@ export function AdminPanel({ open: externalOpen, onClose: externalClose }: Props
   const [password, setPassword]               = useState('')
   const [status, setStatus]                   = useState<'idle' | 'loading' | 'ok' | 'wrong' | 'error' | 'invalid_token' | 'missing_token' | 'too_large'>('idle')
   const [publishedHash, setPublishedHash]     = useState(() => localStorage.getItem(PUBLISHED_HASH_KEY) ?? '')
+  const [confirmedAnyway, setConfirmedAnyway] = useState(false)
 
   const controlled  = externalOpen !== undefined
   const isOpen      = controlled ? externalOpen : internalOpen
@@ -26,8 +28,11 @@ export function AdminPanel({ open: externalOpen, onClose: externalClose }: Props
   const currentHash = JSON.stringify(ranges)
   const isPublished = !!publishedHash && publishedHash === currentHash
 
+  const problems = validateRanges(ranges)
+  const blockedByValidation = problems.length > 0 && !confirmedAnyway
+
   async function handlePublish() {
-    if (!password || isPublished) return
+    if (!password || isPublished || blockedByValidation) return
     setStatus('loading')
     const result = await adminSaveRanges(password)
     if (result === 'ok') {
@@ -55,6 +60,7 @@ export function AdminPanel({ open: externalOpen, onClose: externalClose }: Props
     }
     setStatus('idle')
     setPassword('')
+    setConfirmedAnyway(false)
   }
 
   return (
@@ -97,6 +103,27 @@ export function AdminPanel({ open: externalOpen, onClose: externalClose }: Props
               Envia todos os {ranges.length} ranges atuais como padrão nativo. Aguarde ~2 min para o deploy.
             </p>
 
+            {problems.length > 0 && (
+              <div className="space-y-2 border border-red-700/50 bg-red-900/15 rounded-lg p-3">
+                <p className="text-xs text-red-400 font-semibold">
+                  {problems.length} problema{problems.length !== 1 ? 's' : ''} de validação encontrado{problems.length !== 1 ? 's' : ''}:
+                </p>
+                <div className="max-h-40 overflow-y-auto space-y-1">
+                  {problems.map((p, i) => (
+                    <p key={i} className="text-[0.7rem] text-red-300 leading-snug break-words">• {p}</p>
+                  ))}
+                </div>
+                <label className="flex items-center gap-2 text-xs text-warm-300 cursor-pointer pt-1">
+                  <input
+                    type="checkbox"
+                    checked={confirmedAnyway}
+                    onChange={e => setConfirmedAnyway(e.target.checked)}
+                  />
+                  Publicar mesmo assim
+                </label>
+              </div>
+            )}
+
             <div className="space-y-2">
               <label className="text-xs text-warm-400 block">Confirme a senha</label>
               <input
@@ -133,10 +160,10 @@ export function AdminPanel({ open: externalOpen, onClose: externalClose }: Props
 
             <button
               onClick={handlePublish}
-              disabled={!password || status === 'loading' || isPublished}
+              disabled={!password || status === 'loading' || isPublished || blockedByValidation}
               className="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
             >
-              {status === 'loading' ? 'Publicando...' : isPublished ? 'Publicado' : 'Publicar'}
+              {status === 'loading' ? 'Publicando...' : isPublished ? 'Publicado' : blockedByValidation ? 'Corrija a validação' : 'Publicar'}
             </button>
           </div>
         </div>
