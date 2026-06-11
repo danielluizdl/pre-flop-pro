@@ -181,6 +181,106 @@ describe('drill — histórico grava rangeId e stackGridIdx', () => {
   })
 })
 
+describe('drill — customAction (ação extra)', () => {
+  it('RNG ligado: faixa extra responde com o label customizado', () => {
+    const grid = makeEmptyGrid()
+    grid['AA'] = { fold: 0, call: 0, raise: 60, allin: 0, extra: 40 }
+    const r = range({ id: 1, grid, customAction: { label: 'ISO', color: '#a855f7' } })
+    resetDrill([r], [1], { useRngForFrequency: true, drillExcludedHands: ALL_HANDS.filter(h => h !== 'AA') })
+    for (let i = 0; i < 40; i++) {
+      useStore.getState().nextDrillHand()
+      const s = useStore.getState()
+      const expected = s.currentRng <= 60 ? 'Raise' : 'ISO'
+      expect(s.correctActionForCurrentHand).toBe(expected)
+      expect(useStore.getState().checkDrillAnswer(expected).correct).toBe(true)
+    }
+  })
+
+  it('RNG desligado: extra majoritário vira ação principal', () => {
+    const grid = makeEmptyGrid()
+    grid['AA'] = { fold: 0, call: 0, raise: 30, allin: 0, extra: 70 }
+    const r = range({ id: 1, grid, customAction: { label: 'ISO', color: '#a855f7' } })
+    resetDrill([r], [1], { drillExcludedHands: ALL_HANDS.filter(h => h !== 'AA') })
+    useStore.getState().nextDrillHand()
+    expect(useStore.getState().correctActionsForCurrentHand).toEqual(['ISO'])
+    expect(useStore.getState().checkDrillAnswer('ISO').correct).toBe(true)
+  })
+})
+
+describe('drill — sessão mista (vários ranges, 6-max e 8-max, com e sem stackGrids)', () => {
+  it('toda resposta correta bate com o grid vigente e os totais por range fecham', () => {
+    const r6 = range({ id: 1, name: '6max', tableSize: 6, grid: uniformGrid({ raise: 50, fold: 50 }) })
+
+    const grid8 = uniformGrid({ allin: 40, fold: 60 })
+    const r8: Range = {
+      id: 2, name: '8max', positions: ['UTG'], grid: grid8, tableSize: 8,
+      scenarios: [{ id: 1, data: { utg: { role: 'open', bet: 6, isHero: true, stack: 100 }, bb: { role: 'post', bet: 1, isHero: false, stack: 100 } }, pot: '0', ante: 0.5, summary: '' }],
+    }
+
+    const gridLow = uniformGrid({ allin: 100 })
+    const gridHigh = uniformGrid({ raise: 100 })
+    const rStack = range({
+      id: 3, name: 'stacks',
+      stackGrids: [{ stackRange: '<=40', grid: gridLow }, { stackRange: '>40', grid: gridHigh }],
+      scenarios: [
+        { id: 1, data: { btn: { role: 'allin', bet: 30, isHero: true, stack: 30 }, bb: { role: 'post', bet: 1, isHero: false, stack: 30 } }, pot: '0', ante: 0, summary: '' },
+        { id: 2, data: { btn: { role: 'open', bet: 2.5, isHero: true, stack: 100 }, bb: { role: 'post', bet: 1, isHero: false, stack: 100 } }, pot: '0', ante: 0, summary: '' },
+      ],
+    })
+
+    resetDrill([r6, r8, rStack], [1, 2, 3], { useRngForFrequency: true })
+    useStore.getState().startDrillSession()
+
+    let played = 0
+    for (let i = 0; i < 120; i++) {
+      useStore.getState().nextDrillHand()
+      const s = useStore.getState()
+      // grid vigente = stackGrid resolvido pelo idx, senão grid base
+      const sg = s.activeDrillStackGridIdx >= 0 ? s.activeDrillRange!.stackGrids![s.activeDrillStackGridIdx] : undefined
+      const grid = sg?.grid ?? s.activeDrillRange!.grid
+      const expected = getRngCorrectAction(grid[s.activeHand], s.currentRng, s.activeDrillRange!.customAction?.label)
+      expect(s.correctActionForCurrentHand).toBe(expected)
+      expect(useStore.getState().checkDrillAnswer(expected).correct).toBe(true)
+      played++
+    }
+
+    const s = useStore.getState()
+    const totalAcc = Object.entries(s.sessionHandPerf)
+      .filter(([k]) => !k.includes('|||'))
+      .reduce((acc, [, hands]) => acc + Object.values(hands).reduce((a, v) => a + v.t, 0), 0)
+    expect(totalAcc).toBe(played)
+    expect(s.sessionStats.hands).toBe(played)
+    expect(s.sessionStats.correct).toBe(played)
+  })
+})
+
+describe('drill — replay aponta para o stackGrid correto da mão revisada', () => {
+  it('o stackGridIdx gravado identifica o grid cuja resposta foi mostrada', () => {
+    const gridLow = uniformGrid({ allin: 100 })
+    const gridHigh = uniformGrid({ raise: 100 })
+    const r = range({
+      id: 5,
+      stackGrids: [{ stackRange: '<=40', grid: gridLow }, { stackRange: '>40', grid: gridHigh }],
+      scenarios: [
+        { id: 1, data: { btn: { role: 'allin', bet: 30, isHero: true, stack: 30 }, bb: { role: 'post', bet: 1, isHero: false, stack: 30 } }, pot: '0', ante: 0, summary: '' },
+        { id: 2, data: { btn: { role: 'open', bet: 2.5, isHero: true, stack: 100 }, bb: { role: 'post', bet: 1, isHero: false, stack: 100 } }, pot: '0', ante: 0, summary: '' },
+      ],
+    })
+    resetDrill([r], [5], { drillExcludedHands: ALL_HANDS.filter(h => h !== 'AA') })
+    for (let i = 0; i < 30; i++) {
+      useStore.getState().nextDrillHand()
+      useStore.getState().checkDrillAnswer('Allin')
+      const hist = useStore.getState().handHistory
+      const entry = hist[hist.length - 1]
+      // A célula AA do stackGrid apontado pela entry deve produzir a correctAction registrada
+      const grid = r.stackGrids![entry.stackGridIdx].grid
+      const cell = grid['AA']
+      const topAction = cell.allin === 100 ? 'Allin' : 'Raise'
+      expect(entry.correctAction).toBe(topAction)
+    }
+  })
+})
+
 describe('drill — stats por range não corrompem acima de 50 mãos', () => {
   it('sessionHandPerf acumula o total real além do cap de 50 do histórico visual', () => {
     const r = range({ id: 9, grid: uniformGrid({ raise: 100 }) })
