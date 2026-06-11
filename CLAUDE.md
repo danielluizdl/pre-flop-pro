@@ -4,6 +4,7 @@
 - **Vite + React + TypeScript + Tailwind CSS + Zustand**
 - Sem backend. Dados persistidos via `localStorage` manualmente (exceto `darkMode` que usa `zustand/persist`).
 - Deploy: GitHub Pages via GitHub Actions ao fazer push para `main` (`https://github.com/danielluizdl/pre-flop-pro`)
+- Testes: **Vitest** (`npm test` → `vitest run`), ambiente jsdom. Specs em `src/**/*.test.ts`.
 
 ## Estrutura de Pastas
 ```
@@ -18,7 +19,8 @@ src/
     ui/           PokerTableEditor.tsx, HandQuickSelect.tsx, RangePreviewModal.tsx
   store/          useStore.ts  (toda a lógica de estado)
   types/          index.ts     (tipos, constantes de posições/slots)
-  utils/          hands.ts     (ALL_HANDS, makeEmptyGrid, getRngCorrectAction, getTopFrequencyActions, stackMatchesRange, generateSuits)
+  utils/          hands.ts     (ALL_HANDS, makeEmptyGrid, getRngCorrectAction, getRngBands, formatRngBands, getTopFrequencyActions, stackMatchesRange, generateSuits)
+                  validateRanges.ts (validateRanges(Range[]) → string[] de problemas legíveis)
   data/           defaultRanges.ts  (ranges nativos, seed no localStorage)
 ```
 
@@ -35,7 +37,7 @@ interface Scenario         { id:number; data:Record<string,PositionConfig>; pot:
 interface Range            { id:number; name:string; positions:string[]; grid:Record<string,HandData>; scenarios:Scenario[]; tableSize:TableSize; customAction?:{label:string;color:string}; stackRange?:string; stackGrids?:StackGrid[]; prereqRangeId?:number }
 interface StackGrid        { stackRange:string; grid:Record<string,HandData>; name?:string }
 interface BrushState       { call:number; raise:number; allin:number; extra:number; raiseSize:string; extraLabel:string; extraColor:string }
-interface HandHistoryEntry { id:number; hand:string; suits:[string,string]; actionTaken:string; correctAction:string; rng:number; correct:boolean; rangeName:string; raiseSize?:number|string }
+interface HandHistoryEntry { id:number; hand:string; suits:[string,string]; actionTaken:string; correctAction:string; rng:number; correct:boolean; rangeName:string; rangeId:number; stackGridIdx:number; raiseSize?:number|string; stackRange?:string }
 interface SessionStats     { hands:number; correct:number; errors:number; consults:number }
 interface TrainingSession  { id:number; timestamp:number; rangeNames:string[]; tableSize:number; hands:number; correct:number; errors:number; consults:number; durationSeconds:number }
 
@@ -57,6 +59,7 @@ SLOTS_6MAX / SLOTS_8MAX: Slot[]              // {t:%, l:%} posição visual dos 
 - Seed no `loadRanges()` do store: injeta ranges com IDs ausentes sem sobrescrever os do usuário
 - Versionamento via `ADMIN_VERSION`: ao publicar nova versão, sobrescreve ranges admin preservando os do usuário
 - Para atualizar: exportar `localStorage.getItem('fbr-ranges-v1')` do browser → processar com PowerShell → substituir o arquivo
+- `validateRanges` roda em `loadRanges` (apenas `console.warn`) e no `AdminPanel` antes de publicar (lista problemas e bloqueia até marcar "Publicar mesmo assim")
 
 ## Store (`src/store/useStore.ts`) — Estado Principal
 Estado relevante (não persistido entre sessões, exceto darkMode):
@@ -74,6 +77,8 @@ Estado relevante (não persistido entre sessões, exceto darkMode):
 - `activeHand` / `sessionStats` / `handHistory` / `currentRng`
 - `correctActionForCurrentHand` / `correctActionsForCurrentHand` / `currentHandSuits`
 - `useRngForFrequency` — true=RNG, false=ação de maior frequência
+- `acceptAnyFreq` — (RNG off) aceita qualquer ação com frequência > 0 como acerto (feedback "Válido — ação principal: ...")
+- `sessionHandPerf: HandPerfMap` — acumulador por id da sessão atual (fora do `handHistory`, que tem cap de 50). `stopDrill`/`DrillSummary` usam ele para stats por range; `TrainingSession.handPerf` é gravado por id (leitura com fallback por nome para sessões antigas)
 - `handPerformance: HandPerfMap` — carregado do localStorage na inicialização
 - `selectedDrillRangeIds` / `drillExcludedHands`
 - `trainingHistory: TrainingSession[]` — carregado do localStorage
@@ -184,6 +189,7 @@ Para cada range selecionado, por cenário:
 ```
 - Cenário-first: resolve stackGrid baseado no heroStack do cenário antes de filtrar mãos
 - `correctAction` calculado de `activeGrid[hand]` via `getRngCorrectAction` ou `getTopFrequencyActions`
+- `getRngCorrectAction` ordena as faixas por agressividade: **Allin > Raise > Call > extra > Fold** (ex: 20% allin/50% raise/30% fold → 1–20 Allin, 21–70 Raise, 71–100 Fold). Com prereq, `drillExcludedHands` é ignorado ao montar candidatos.
 
 ### DrillActive — Layout
 Container: `w-full h-[calc(100vh-90px)] overflow-auto`
