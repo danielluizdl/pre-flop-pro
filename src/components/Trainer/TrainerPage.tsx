@@ -658,6 +658,8 @@ type PrevSnapshot = {
   feedback: string
   feedbackOk: boolean
   freqLabel: string
+  range: import('../../types').Range
+  stackGridIdx: number
 }
 
 /* ── Drill summary ───────────────────────────────────────────────────────────── */
@@ -898,6 +900,7 @@ function DrillActionButton({ name, sub, action, isPressed, isDisabled, onClick }
 
 /* ── Active drill ──────────────────────────────────────────────────────────── */
 function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => void; onShowHistory: () => void }) {
+  const ranges                 = useStore(s => s.ranges)
   const activeDrillRange       = useStore(s => s.activeDrillRange)
   const activeDrillStackRange  = useStore(s => s.activeDrillStackRange)
   const activeDrillStackGridIdx = useStore(s => s.activeDrillStackGridIdx)
@@ -972,14 +975,15 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
 
   function handleReplayEntry(entry: HandHistoryEntry) {
     const feedbackMsg = entry.correct ? `✓ ${entry.actionTaken}!` : `✗ Correto: ${entry.correctAction}`
-    setPrevSnapshot({ hand: entry.hand, suits: entry.suits, rng: entry.rng, feedback: feedbackMsg, feedbackOk: entry.correct, freqLabel: '' })
+    const entryRange = ranges.find(r => r.name === entry.rangeName) ?? activeDrillRange!
+    setPrevSnapshot({ hand: entry.hand, suits: entry.suits, rng: entry.rng, feedback: feedbackMsg, feedbackOk: entry.correct, freqLabel: '', range: entryRange, stackGridIdx: -1 })
     setViewingPrev(true)
   }
 
   function doGoNext() {
     if (viewingPrev) { setViewingPrev(false); return }
     if (answered) {
-      setPrevSnapshot({ hand: activeHand, suits: currentHandSuits, rng: currentRng, feedback, feedbackOk, freqLabel })
+      setPrevSnapshot({ hand: activeHand, suits: currentHandSuits, rng: currentRng, feedback, feedbackOk, freqLabel, range: activeDrillRange!, stackGridIdx: activeDrillStackGridIdx })
     }
     answeredRef.current = false
     setAnswered(false)
@@ -1185,23 +1189,27 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
       </div>
 
       {/* Modal range */}
-      {modalViewMode !== null && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setModalViewMode(null)}>
-          <div className="bg-warm-900 border border-warm-700 rounded-2xl p-6 max-w-3xl w-full" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-white text-lg">{activeDrillRange!.name}</h3>
-              <button onClick={() => setModalViewMode(null)} className="text-warm-400 hover:text-white text-xl">✕</button>
+      {modalViewMode !== null && (() => {
+        const modalRange = viewingPrev ? prevSnapshot!.range : activeDrillRange!
+        const modalStackIdx = viewingPrev ? prevSnapshot!.stackGridIdx : activeDrillStackGridIdx
+        return (
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setModalViewMode(null)}>
+            <div className="bg-warm-900 border border-warm-700 rounded-2xl p-6 max-w-3xl w-full" onClick={e => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-bold text-white text-lg">{modalRange.name}</h3>
+                <button onClick={() => setModalViewMode(null)} className="text-warm-400 hover:text-white text-xl">✕</button>
+              </div>
+              <HandMatrix
+                readOnly
+                grid={(modalStackIdx >= 0 ? modalRange.stackGrids?.[modalStackIdx]?.grid : undefined) ?? modalRange.grid}
+                heatmap={handPerformance[modalRange.id]}
+                customActionColor={modalRange.customAction?.color}
+                forceViewMode={modalViewMode ?? undefined}
+              />
             </div>
-            <HandMatrix
-              readOnly
-              grid={(activeDrillStackGridIdx >= 0 ? activeDrillRange!.stackGrids?.[activeDrillStackGridIdx]?.grid : undefined) ?? activeDrillRange!.grid}
-              heatmap={handPerformance[activeDrillRange!.id]}
-              customActionColor={activeDrillRange!.customAction?.color}
-              forceViewMode={modalViewMode ?? undefined}
-            />
           </div>
-        </div>
-      )}
+        )
+      })()}
     </div>
   )
 }
