@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useStore } from '../../store/useStore'
-import { LayoutDashboard, Layers, PlayCircle, Clock, Moon, Sun, Settings, Plus } from 'lucide-react'
+import { LayoutDashboard, Layers, PlayCircle, Clock, Moon, Sun, Settings, Plus, LogOut } from 'lucide-react'
 import { clsx } from 'clsx'
 import type { Page } from '../../types'
 import { AdminPanel } from '../Admin/AdminPanel'
@@ -20,9 +20,22 @@ export function TopNav() {
   const toggleDarkMode = useStore(s => s.toggleDarkMode)
   const userMode       = useStore(s => s.userMode)
 
-  const [adminOpen, setAdminOpen] = useState(false)
+  const logout         = useStore(s => s.logout)
 
-  // TODO: ligar com auth store quando existir
+  const [adminOpen, setAdminOpen]     = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
+  const profileRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
   const role    = userMode === 'admin' ? 'Admin' : 'Visitante'
   const initial = role[0]
 
@@ -118,16 +131,33 @@ export function TopNav() {
         </button>
 
         {/* Profile */}
-        <div className="flex items-center gap-2.5 pl-4 ml-3 border-l border-warm-700">
-          <div
-            className="w-[30px] h-[30px] rounded-full flex items-center justify-center flex-shrink-0"
-            style={{ background: 'linear-gradient(135deg, #d97757, #c95f3a)' }}
+        <div ref={profileRef} className="relative flex items-center gap-2.5 pl-4 ml-3 border-l border-warm-700">
+          <button
+            onClick={() => setProfileOpen(o => !o)}
+            className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
           >
-            <span className="text-white leading-none" style={{ fontSize: 11, fontWeight: 700 }}>{initial}</span>
-          </div>
-          <span className="text-warm-300 uppercase leading-none whitespace-nowrap" style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.18em' }}>
-            {role}
-          </span>
+            <div
+              className="w-[30px] h-[30px] rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ background: 'linear-gradient(135deg, #d97757, #c95f3a)' }}
+            >
+              <span className="text-white leading-none" style={{ fontSize: 11, fontWeight: 700 }}>{initial}</span>
+            </div>
+            <span className="text-warm-300 uppercase leading-none whitespace-nowrap" style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.18em' }}>
+              {role}
+            </span>
+          </button>
+
+          {profileOpen && (
+            <div className="absolute right-0 top-full mt-2 w-36 bg-warm-900 border border-warm-700 rounded-xl shadow-xl overflow-hidden z-50">
+              <button
+                onClick={() => { setProfileOpen(false); logout() }}
+                className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-warm-300 hover:bg-warm-800 hover:text-white transition-colors"
+              >
+                <LogOut size={15} />
+                Sair
+              </button>
+            </div>
+          )}
         </div>
         </div>
       </header>
