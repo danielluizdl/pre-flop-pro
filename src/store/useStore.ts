@@ -206,7 +206,7 @@ interface AppState {
   // ── Admin ─────────────────────────────────────────────────────────────────────
   adminWorkerUrl: string
   setAdminWorkerUrl: (url: string) => void
-  adminSaveRanges: (password: string) => Promise<'ok' | 'wrong_password' | 'error'>
+  adminSaveRanges: (password: string) => Promise<'ok' | 'wrong_password' | 'error' | 'invalid_token' | 'missing_token' | 'too_large'>
 }
 
 export const useStore = create<AppState>()(
@@ -1046,6 +1046,12 @@ export const useStore = create<AppState>()(
           })
           if (res.status === 401) return 'wrong_password'
           if (res.ok) return 'ok'
+          try {
+            const data = await res.json()
+            if (data.code === 'invalid_token') return 'invalid_token'
+            if (data.code === 'missing_token') return 'missing_token'
+            if (data.code === 'too_large') return 'too_large'
+          } catch {}
           return 'error'
         } catch { return 'error' }
       },

@@ -16,7 +16,7 @@ export function AdminPanel({ open: externalOpen, onClose: externalClose }: Props
 
   const [internalOpen, setInternalOpen]       = useState(false)
   const [password, setPassword]               = useState('')
-  const [status, setStatus]                   = useState<'idle' | 'loading' | 'ok' | 'wrong' | 'error'>('idle')
+  const [status, setStatus]                   = useState<'idle' | 'loading' | 'ok' | 'wrong' | 'error' | 'invalid_token' | 'missing_token' | 'too_large'>('idle')
   const [publishedHash, setPublishedHash]     = useState(() => localStorage.getItem(PUBLISHED_HASH_KEY) ?? '')
 
   const controlled  = externalOpen !== undefined
@@ -33,8 +33,16 @@ export function AdminPanel({ open: externalOpen, onClose: externalClose }: Props
       localStorage.setItem(PUBLISHED_HASH_KEY, currentHash)
       setPublishedHash(currentHash)
       setStatus('ok')
+    } else if (result === 'wrong_password') {
+      setStatus('wrong')
+    } else if (result === 'invalid_token') {
+      setStatus('invalid_token')
+    } else if (result === 'missing_token') {
+      setStatus('missing_token')
+    } else if (result === 'too_large') {
+      setStatus('too_large')
     } else {
-      setStatus(result === 'wrong_password' ? 'wrong' : 'error')
+      setStatus('error')
     }
   }
 
@@ -108,6 +116,15 @@ export function AdminPanel({ open: externalOpen, onClose: externalClose }: Props
             )}
             {status === 'wrong' && (
               <p className="text-xs text-red-400">Senha incorreta.</p>
+            )}
+            {status === 'invalid_token' && (
+              <p className="text-xs text-red-400">GITHUB_TOKEN expirado. Gere um novo token e atualize no Cloudflare Worker.</p>
+            )}
+            {status === 'missing_token' && (
+              <p className="text-xs text-red-400">GITHUB_TOKEN não configurado no Worker. Verifique as variáveis de ambiente.</p>
+            )}
+            {status === 'too_large' && (
+              <p className="text-xs text-red-400">JSON muito grande para a GitHub API ({'>'} 900KB). Remova ranges antes de publicar.</p>
             )}
             {status === 'error' && (
               <p className="text-xs text-red-400">Erro ao publicar. Tente novamente.</p>
