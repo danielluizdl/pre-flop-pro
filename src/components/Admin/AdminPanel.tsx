@@ -12,6 +12,7 @@ interface Props {
 export function AdminPanel({ open: externalOpen, onClose: externalClose }: Props = {}) {
   const ranges          = useStore(s => s.ranges)
   const adminSaveRanges = useStore(s => s.adminSaveRanges)
+  const adminLastError  = useStore(s => s.adminLastError)
   const logout          = useStore(s => s.logout)
 
   const [internalOpen, setInternalOpen]       = useState(false)
@@ -127,7 +128,7 @@ export function AdminPanel({ open: externalOpen, onClose: externalClose }: Props
               <p className="text-xs text-red-400">JSON muito grande para a GitHub API ({'>'} 900KB). Remova ranges antes de publicar.</p>
             )}
             {status === 'error' && (
-              <p className="text-xs text-red-400">Erro ao publicar. Tente novamente.</p>
+              <p className="text-xs text-red-400 break-all">{adminLastError || 'Erro ao publicar. Tente novamente.'}</p>
             )}
 
             <button

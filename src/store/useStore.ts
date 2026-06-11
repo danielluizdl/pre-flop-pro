@@ -206,6 +206,7 @@ interface AppState {
   // ── Admin ─────────────────────────────────────────────────────────────────────
   adminWorkerUrl: string
   setAdminWorkerUrl: (url: string) => void
+  adminLastError: string
   adminSaveRanges: (password: string) => Promise<'ok' | 'wrong_password' | 'error' | 'invalid_token' | 'missing_token' | 'too_large'>
 }
 
@@ -1031,6 +1032,7 @@ export const useStore = create<AppState>()(
 
       // ── Admin ───────────────────────────────────────────────────────────────────
       adminWorkerUrl: localStorage.getItem('admin-worker-url') ?? 'https://preflop-admin.loureirodlg.workers.dev',
+      adminLastError: '',
       setAdminWorkerUrl: (url) => {
         localStorage.setItem('admin-worker-url', url)
         set({ adminWorkerUrl: url })
@@ -1048,12 +1050,13 @@ export const useStore = create<AppState>()(
           if (res.ok) return 'ok'
           try {
             const data = await res.json()
+            set({ adminLastError: data.message ?? `HTTP ${res.status}` })
             if (data.code === 'invalid_token') return 'invalid_token'
             if (data.code === 'missing_token') return 'missing_token'
             if (data.code === 'too_large') return 'too_large'
-          } catch {}
+          } catch { set({ adminLastError: `HTTP ${res.status}` }) }
           return 'error'
-        } catch { return 'error' }
+        } catch (e) { set({ adminLastError: String(e) }); return 'error' }
       },
     }),
     {
