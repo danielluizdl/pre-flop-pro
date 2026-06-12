@@ -10,6 +10,7 @@ import { TrainerPage } from '../Trainer/TrainerPage'
 import { StatsPage } from '../Stats/StatsPage'
 import { LoginPage } from '../Auth/LoginPage'
 import CoachPanel from '../Admin/CoachPanel'
+import { WelcomeModal } from '../Auth/WelcomeModal'
 
 export function AppLayout() {
   const { page, darkMode, userMode } = useStore()
@@ -41,6 +42,7 @@ export function AppLayout() {
             Armazenamento cheio: seus dados NÃO estão sendo salvos. Exporte um backup no Dashboard e libere espaço.
           </div>
         )}
+        {currentUser?.firstLogin === true && <WelcomeModal />}
         <TopNav />
         <main className="w-full max-w-[1800px] mx-auto px-6 md:px-10 pt-8 pb-16">
           {renderPage()}

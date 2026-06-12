@@ -5,7 +5,6 @@ import { clsx } from 'clsx'
 import type { Page } from '../../types'
 import { AdminPanel } from '../Admin/AdminPanel'
 import { RangeMark } from '../ui/RangeMark'
-import { ChangePasswordModal } from '../Auth/ChangePasswordModal'
 
 const NAV_ITEMS: { id: Page; label: string; icon: React.ElementType }[] = [
   { id: 'dashboard', label: 'Dashboard',   icon: LayoutDashboard },
@@ -179,7 +178,6 @@ export function TopNav() {
         <AdminPanel open={adminOpen} onClose={() => setAdminOpen(false)} />
       )}
 
-      {currentUser?.firstLogin === true && <ChangePasswordModal />}
     </>
   )
 }
