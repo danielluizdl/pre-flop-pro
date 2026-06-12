@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import {
   ALL_HANDS, makeEmptyGrid, generateSuits, getRngCorrectAction, getTopFrequencyActions, stackMatchesRange,
+  focusWeight, weightedPick,
 } from '../utils/hands'
 import type {
   BrushState, HandData, HandHistoryEntry, PokerPosition, PositionConfig,
@@ -219,7 +220,10 @@ interface AppState {
   setUseRng: (val: boolean) => void
   acceptAnyFreq: boolean
   setAcceptAnyFreq: (val: boolean) => void
+  focusErrors: boolean
+  setFocusErrors: (val: boolean) => void
   sessionHandPerf: HandPerfMap
+  sessionSeverity: { grave: number; impreciso: number }
 
   toggleDrillRange: (id: number) => void
   clearDrillRanges: () => void
@@ -228,7 +232,7 @@ interface AppState {
   setAllDrillHands: (included: boolean) => void
   startDrillSession: () => void
   nextDrillHand: () => boolean
-  checkDrillAnswer: (action: string) => { correct: boolean; message: string }
+  checkDrillAnswer: (action: string) => { correct: boolean; message: string; severity?: 'grave' | 'impreciso' }
   stopDrill: () => void
   incrementConsults: () => void
 
@@ -808,7 +812,10 @@ export const useStore = create<AppState>()(
       setUseRng: (val) => set({ useRngForFrequency: val }),
       acceptAnyFreq: false,
       setAcceptAnyFreq: (val) => set({ acceptAnyFreq: val }),
+      focusErrors: false,
+      setFocusErrors: (val) => set({ focusErrors: val }),
       sessionHandPerf: {},
+      sessionSeverity: { grave: 0, impreciso: 0 },
 
       selectedDrillRangeIds: [],
       drillExcludedHands: [],
@@ -853,6 +860,7 @@ export const useStore = create<AppState>()(
           sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 },
           handHistory: [],
           sessionHandPerf: {},
+          sessionSeverity: { grave: 0, impreciso: 0 },
           sessionStartTime: Date.now(),
         })
       },
@@ -942,8 +950,17 @@ export const useStore = create<AppState>()(
         const pickedId = eligibleIds[Math.floor(Math.random() * eligibleIds.length)]
         const pool = byRange.get(pickedId)!
 
-        // Level 2: uniform (scenario, hand) selection within the range
-        const pick = pool[Math.floor(Math.random() * pool.length)]
+        // Level 2: (scenario, hand) selection within the range. Uniforme por padrão;
+        // com "Focar erros" ligado, ponderado pelo desempenho acumulado do range.
+        const { focusErrors, handPerformance } = get()
+        let pick: Candidate
+        if (focusErrors) {
+          const perfMap = handPerformance[pickedId] ?? {}
+          const weights = pool.map(c => focusWeight(perfMap[c.hand]))
+          pick = weightedPick(pool, weights)
+        } else {
+          pick = pool[Math.floor(Math.random() * pool.length)]
+        }
         const { range, hand, scenario: newScenario, ante: newAnte, heroRaiseSize: heroRaiseFromScen, stackGridIdx: finalStackGridIdx, stackRangeLabel, activeGrid } = pick
 
         const rSize: TableSize = range.tableSize || 6
@@ -1024,6 +1041,11 @@ export const useStore = create<AppState>()(
         const validNotPrincipal = !isPrincipal && !useRngForFrequency && acceptAnyFreq && freqOf(action) > 0
         const correct = isPrincipal || validNotPrincipal
 
+        // Severidade do erro: 'grave' = ação respondida tem 0% na mão; 'impreciso' = freq > 0 mas não é a principal.
+        const severity: 'grave' | 'impreciso' | undefined = correct
+          ? undefined
+          : (freqOf(action) > 0 ? 'impreciso' : 'grave')
+
         const stats = { ...sessionStats, hands: sessionStats.hands + 1 }
         if (correct) stats.correct++; else stats.errors++
 
@@ -1042,6 +1064,7 @@ export const useStore = create<AppState>()(
           stackGridIdx: activeDrillStackGridIdx,
           raiseSize: d?.size,
           stackRange: stackRange || undefined,
+          ...(severity ? { severity } : {}),
         }
         const accumulate = (map: HandPerfMap): HandPerfMap => {
           const prev = map[rid]?.[activeHand] ?? { c: 0, t: 0 }
@@ -1056,7 +1079,7 @@ export const useStore = create<AppState>()(
           }
           return next
         }
-        const { handPerformance, sessionHandPerf } = get()
+        const { handPerformance, sessionHandPerf, sessionSeverity } = get()
         const newPerf = accumulate(handPerformance)
         const newSessionPerf = accumulate(sessionHandPerf)
         saveHandPerf(newPerf)
@@ -1065,6 +1088,9 @@ export const useStore = create<AppState>()(
           handHistory: [...handHistory, entry].slice(-50),
           handPerformance: newPerf,
           sessionHandPerf: newSessionPerf,
+          sessionSeverity: severity
+            ? { grave: sessionSeverity.grave + (severity === 'grave' ? 1 : 0), impreciso: sessionSeverity.impreciso + (severity === 'impreciso' ? 1 : 0) }
+            : sessionSeverity,
           correctActionForCurrentHand: correctAction,
           correctActionsForCurrentHand: correctActions,
         })
@@ -1076,10 +1102,13 @@ export const useStore = create<AppState>()(
           message = `~ Válido — ação principal: ${principalLabel}`
         } else if (correct) {
           message = `✓ ${action}!${rngTag}`
+        } else if (severity === 'grave') {
+          message = `✗ Erro grave — ${action} tinha 0%. Correto: ${correctAction}${rngTag}`
         } else {
-          message = `✗ Correto: ${correctAction}${rngTag}`
+          const principalLabel = correctActions.map(a => `${a} ${freqOf(a)}%`).join(' ou ')
+          message = `✗ Impreciso — ${action} tinha ${freqOf(action)}%. Principal: ${principalLabel}${rngTag}`
         }
-        return { correct, message }
+        return { correct, message, severity }
       },
 
       stopDrill: () => {

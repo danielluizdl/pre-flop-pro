@@ -99,6 +99,7 @@ export interface HandHistoryEntry {
   stackGridIdx: number
   raiseSize?: number | string
   stackRange?: string
+  severity?: 'grave' | 'impreciso'
 }
 
 export interface StackGrid {
