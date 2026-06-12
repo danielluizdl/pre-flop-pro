@@ -333,6 +333,8 @@ function HandFilterGrid() {
   const setUseRng = useStore(s => s.setUseRng)
   const acceptAnyFreq = useStore(s => s.acceptAnyFreq)
   const setAcceptAnyFreq = useStore(s => s.setAcceptAnyFreq)
+  const focusErrors = useStore(s => s.focusErrors)
+  const setFocusErrors = useStore(s => s.setFocusErrors)
   const isDrawing    = useRef(false)
   const drawAction   = useRef<'exclude' | 'include'>('exclude')
   const paintedHands = useRef<Set<string>>(new Set())
@@ -404,6 +406,17 @@ function HandFilterGrid() {
             </button>
           </>
         )}
+
+        <div className="h-4 border-l border-warm-600 mx-0.5" />
+        <button
+          onClick={() => setFocusErrors(!focusErrors)}
+          title="Sorteia mais as mãos em que você erra mais (e as nunca treinadas)"
+          className={['px-2.5 py-1 text-xs rounded-md border font-semibold transition-colors',
+            focusErrors ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:bg-warm-700',
+          ].join(' ')}
+        >
+          Focar erros
+        </button>
       </div>
 
       <div
@@ -714,6 +727,7 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
   const handPerformance = useStore(s => s.handPerformance)
   const sessionStats    = useStore(s => s.sessionStats)
   const sessionHandPerf = useStore(s => s.sessionHandPerf)
+  const sessionSeverity = useStore(s => s.sessionSeverity)
   const [openId, setOpenId]         = useState<number | null>(null)
   const [viewMode, setViewMode]     = useState<'actions' | 'heatmap'>('heatmap')
   const [selectedStack, setSelectedStack] = useState('')
@@ -789,6 +803,12 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
             <div className="text-xs text-warm-400">Precisão</div>
           </div>
         </div>
+        {sessionStats.errors > 0 && (
+          <div className="mt-3 pt-3 border-t border-warm-700 flex justify-center gap-6 text-xs">
+            <span className="text-warm-400">Erros graves: <span className="text-red-400 font-bold">{sessionSeverity.grave}</span></span>
+            <span className="text-warm-400">Imprecisos: <span className="text-yellow-400 font-bold">{sessionSeverity.impreciso}</span></span>
+          </div>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -887,8 +907,8 @@ const LED: Record<string, { color: string; glow: string }> = {
   Raise: { color: '#ef4444', glow: 'rgba(239,68,68,0.55)' },
   Allin: { color: '#c95f3a', glow: 'rgba(201,95,58,0.65)' },
 }
-function DrillActionButton({ name, sub, action, isPressed, isDisabled, onClick }: {
-  name: string; sub?: string; action: string; isPressed: boolean; isDisabled: boolean; onClick: () => void
+function DrillActionButton({ name, sub, action, hotkey, isPressed, isDisabled, onClick }: {
+  name: string; sub?: string; action: string; hotkey?: string; isPressed: boolean; isDisabled: boolean; onClick: () => void
 }) {
   const [hovered, setHovered] = useState(false)
   const led = LED[action]
@@ -915,6 +935,11 @@ function DrillActionButton({ name, sub, action, isPressed, isDisabled, onClick }
         transition: 'transform 0.08s ease',
       }}
     >
+      {hotkey && (
+        <span style={{ position:'absolute', top:4, right:6, fontSize:9, fontWeight:700, color:'#6b665c', letterSpacing:'0.05em', pointerEvents:'none' }}>
+          {hotkey}
+        </span>
+      )}
       <span style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, lineHeight:1 }}>
         <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:17, textTransform:'uppercase', letterSpacing:'0.10em' }}>
           {name}
@@ -943,6 +968,14 @@ function DrillActionButton({ name, sub, action, isPressed, isDisabled, onClick }
       </svg>
     </button>
   )
+}
+
+/* Escolhe a primeira letra do label que não colida com as teclas já usadas */
+function pickHotkey(label: string, used: Set<string>): string | undefined {
+  for (const ch of label.toUpperCase()) {
+    if (/[A-Z]/.test(ch) && !used.has(ch)) return ch
+  }
+  return undefined
 }
 
 /* ── Active drill ──────────────────────────────────────────────────────────── */
@@ -980,6 +1013,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   const goNextRef = useRef<() => void>(() => {})
+  const keyHandlerRef = useRef<(e: KeyboardEvent) => void>(() => {})
 
   const sidebarW = sidebarCollapsed ? 28 : 208
 
@@ -988,6 +1022,12 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
     const t = setTimeout(() => goNextRef.current(), 2000)
     return () => clearTimeout(t)
   }, [answered, viewingPrev, autoAdvance])
+
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => keyHandlerRef.current(e)
+    window.addEventListener('keydown', h)
+    return () => window.removeEventListener('keydown', h)
+  }, [])
 
   if (!activeDrillRange || !activeHand) return null
 
@@ -1048,13 +1088,37 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
   }
 
   const customAction = activeDrillRange?.customAction
-  const actionBtns = [
-    { name: 'FOLD',    sub: undefined,                        action: 'Fold'  },
-    { name: 'CALL',    sub: undefined,                        action: 'Call'  },
-    ...(currentHeroRaiseSize > 0 ? [{ name: 'RAISE', sub: `${currentHeroRaiseSize} BB`, action: 'Raise' }] : []),
-    { name: 'ALL-IN',  sub: `${heroStack} BB`,                action: 'Allin' },
-    ...(customAction ? [{ name: customAction.label.toUpperCase(), sub: undefined, action: customAction.label }] : []),
+  const baseBtns = [
+    { name: 'FOLD',    sub: undefined,                        action: 'Fold',  hotkey: 'F' },
+    { name: 'CALL',    sub: undefined,                        action: 'Call',  hotkey: 'C' },
+    ...(currentHeroRaiseSize > 0 ? [{ name: 'RAISE', sub: `${currentHeroRaiseSize} BB`, action: 'Raise', hotkey: 'R' }] : []),
+    { name: 'ALL-IN',  sub: `${heroStack} BB`,                action: 'Allin', hotkey: 'A' },
   ]
+  const usedKeys = new Set(baseBtns.map(b => b.hotkey))
+  const customHotkey = customAction ? pickHotkey(customAction.label, usedKeys) : undefined
+  const actionBtns: { name: string; sub?: string; action: string; hotkey?: string }[] = [
+    ...baseBtns,
+    ...(customAction ? [{ name: customAction.label.toUpperCase(), sub: undefined, action: customAction.label, hotkey: customHotkey }] : []),
+  ]
+  const hotkeyMap: Record<string, string> = {}
+  actionBtns.forEach(b => { if (b.hotkey) hotkeyMap[b.hotkey.toLowerCase()] = b.action })
+
+  keyHandlerRef.current = (e: KeyboardEvent) => {
+    const el = e.target as HTMLElement | null
+    if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return
+    const key = e.key.toLowerCase()
+    if (key === 'v') {
+      e.preventDefault()
+      if (modalViewMode === null) { setModalViewMode('actions'); incrementConsults() }
+      else setModalViewMode(null)
+      return
+    }
+    if (modalViewMode !== null) return
+    if (e.code === 'Space' || key === ' ') { e.preventDefault(); doGoNext(); return }
+    if (key === 'arrowleft') { e.preventDefault(); if (prevSnapshot && !viewingPrev) setViewingPrev(true); return }
+    const action = hotkeyMap[key]
+    if (action) { e.preventDefault(); handleAction(action) }
+  }
 
   return (
     <div className="w-full h-[calc(100vh-96px)] overflow-auto">
@@ -1125,12 +1189,13 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
 
             {/* Botões de ação */}
             <div className="flex-shrink-0 flex justify-center gap-2 flex-wrap px-4">
-              {actionBtns.map(({ name, sub, action }) => (
+              {actionBtns.map(({ name, sub, action, hotkey }) => (
                 <DrillActionButton
                   key={action}
                   name={name}
                   sub={sub}
                   action={action}
+                  hotkey={hotkey}
                   isPressed={pressedAction === action}
                   isDisabled={isAnswered}
                   onClick={() => handleAction(action)}
