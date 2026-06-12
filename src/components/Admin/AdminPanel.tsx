@@ -1,9 +1,21 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { validateRanges } from '../../utils/validateRanges'
+import { djb2 } from '../../utils/hash'
 import { LogOut } from 'lucide-react'
 
 const PUBLISHED_HASH_KEY = 'pfp-last-published-hash'
+
+// Versões antigas guardavam o JSON inteiro dos ranges nesta chave (megabytes).
+// Se o valor armazenado não parecer um hash djb2 curto, descarta para liberar storage.
+function loadPublishedHash(): string {
+  const stored = localStorage.getItem(PUBLISHED_HASH_KEY) ?? ''
+  if (stored.length > 16 || stored.startsWith('[') || stored.startsWith('{')) {
+    localStorage.removeItem(PUBLISHED_HASH_KEY)
+    return ''
+  }
+  return stored
+}
 
 interface Props {
   open?: boolean
@@ -20,7 +32,7 @@ export function AdminPanel({ open: externalOpen, onClose: externalClose }: Props
   const [internalOpen, setInternalOpen]       = useState(false)
   const [password, setPassword]               = useState('')
   const [status, setStatus]                   = useState<'idle' | 'loading' | 'ok' | 'wrong' | 'error' | 'invalid_token' | 'missing_token' | 'token_expired'>('idle')
-  const [publishedHash, setPublishedHash]     = useState(() => localStorage.getItem(PUBLISHED_HASH_KEY) ?? '')
+  const [publishedHash, setPublishedHash]     = useState(loadPublishedHash)
   const [confirmedAnyway, setConfirmedAnyway] = useState(false)
 
   const controlled  = externalOpen !== undefined
@@ -29,7 +41,7 @@ export function AdminPanel({ open: externalOpen, onClose: externalClose }: Props
   const hasValidToken = !!adminToken && adminToken.expiresAt > Date.now()
   const needPassword  = !hasValidToken
 
-  const currentHash = JSON.stringify(ranges)
+  const currentHash = useMemo(() => djb2(JSON.stringify(ranges)), [ranges])
   const isPublished = !!publishedHash && publishedHash === currentHash
 
   const problems = validateRanges(ranges)
