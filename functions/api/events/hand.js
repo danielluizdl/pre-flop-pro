@@ -1,4 +1,20 @@
-import { getAuthUser, json, handleOptions } from '../_utils.js'
+import { getAuthUser, json, handleOptions, isUuidOrNull, isHand, isShortStr } from '../_utils.js'
+
+export function validateHandPayload(body) {
+  if (!body || typeof body !== 'object') return false
+  const { rangeId, hand, actionTaken, correctAction, isCorrect, severity, rng, stackGridIdx } = body
+  if (!Number.isInteger(rangeId) || rangeId < 0) return false
+  if (!isHand(hand)) return false
+  if (!isShortStr(actionTaken, 30)) return false
+  if (!isShortStr(correctAction, 30)) return false
+  if (isCorrect !== 0 && isCorrect !== 1) return false
+  if (severity !== null && severity !== undefined && severity !== 'grave' && severity !== 'impreciso') return false
+  if (rng !== null && rng !== undefined && (!Number.isInteger(rng) || rng < 1 || rng > 100)) return false
+  if (!Number.isInteger(stackGridIdx) || stackGridIdx < -1) return false
+  if (!isUuidOrNull(body.session_uuid)) return false
+  if (!isUuidOrNull(body.client_event_id)) return false
+  return true
+}
 
 export async function onRequest(context) {
   const { request, env } = context
@@ -14,11 +30,17 @@ export async function onRequest(context) {
   } catch {
     return json({ error: 'Body inválido' }, 400)
   }
-  const { rangeId, rangeName, hand, actionTaken, correctAction, isCorrect, severity, rng, stackRange, stackGridIdx } = body ?? {}
+  if (!validateHandPayload(body)) return json({ ok: false, code: 'invalid_payload' }, 400)
+
+  const { rangeId, rangeName, hand, actionTaken, correctAction, isCorrect, severity, rng, stackRange, stackGridIdx } = body
 
   await env.DB.prepare(
-    'INSERT INTO hand_events (user_id, range_id, range_name, hand, action_taken, correct_action, is_correct, severity, rng, stack_range, stack_grid_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-  ).bind(user.id, rangeId, rangeName, hand, actionTaken, correctAction, isCorrect, severity ?? null, rng ?? null, stackRange ?? null, stackGridIdx ?? -1).run()
+    'INSERT OR IGNORE INTO hand_events (user_id, range_id, range_name, hand, action_taken, correct_action, is_correct, severity, rng, stack_range, stack_grid_idx, session_uuid, client_event_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(
+    user.id, rangeId, String(rangeName ?? ''), hand, actionTaken, correctAction, isCorrect,
+    severity ?? null, rng ?? null, stackRange ?? null, stackGridIdx,
+    body.session_uuid ?? null, body.client_event_id ?? null
+  ).run()
 
   return json({ ok: true })
 }

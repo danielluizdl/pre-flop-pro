@@ -38,6 +38,19 @@ export async function emailDomainExists(domain) {
   } catch { return true }
 }
 
+export function isUuidOrNull(v) {
+  if (v === null || v === undefined) return true
+  return typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
+}
+
+export function isHand(v) {
+  return typeof v === 'string' && v.length <= 4 && /^[AKQJT2-9]{2}[so]?$/.test(v)
+}
+
+export function isShortStr(v, max) {
+  return typeof v === 'string' && v.length <= max
+}
+
 export const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',

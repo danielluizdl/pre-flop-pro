@@ -12,6 +12,7 @@ import {
   POS_6MAX, POS_8MAX, SLOTS_6MAX, SLOTS_8MAX,
 } from '../types'
 import { validateRanges } from '../utils/validateRanges'
+import { enqueue, flush } from '../utils/eventQueue'
 import { decodeRanges, encodeRanges } from '../utils/sparseGrid'
 import { DEFAULT_RANGES } from '../data/defaultRanges'
 import adminRangesRaw from '../data/adminRanges.json'
@@ -215,6 +216,7 @@ interface AppState {
   correctActionsForCurrentHand: string[]
   currentHandSuits: [string, string]
   sessionStartTime: number
+  sessionUuid: string
 
   useRngForFrequency: boolean
   setUseRng: (val: boolean) => void
@@ -258,15 +260,8 @@ interface AppState {
   adminSaveRanges: (password?: string) => Promise<'ok' | 'wrong_password' | 'token_expired' | 'error' | 'invalid_token' | 'missing_token'>
 }
 
-async function fireEvent(path: string, body: object, token: string | null) {
-  if (!token) return
-  try {
-    await fetch(`/api/events/${path}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify(body),
-    })
-  } catch { /* fire-and-forget */ }
+function fireEvent(path: string, body: object, token: string | null) {
+  enqueue(path, body, token)
 }
 
 export const useStore = create<AppState>()(
@@ -849,6 +844,7 @@ export const useStore = create<AppState>()(
       correctActionsForCurrentHand: ['Fold'],
       currentHandSuits: ['h', 's'],
       sessionStartTime: 0,
+      sessionUuid: '',
 
       toggleDrillRange: (id) => {
         const { selectedDrillRangeIds } = get()
@@ -881,6 +877,7 @@ export const useStore = create<AppState>()(
           sessionHandPerf: {},
           sessionSeverity: { grave: 0, impreciso: 0 },
           sessionStartTime: Date.now(),
+          sessionUuid: crypto.randomUUID(),
         })
       },
 
@@ -1125,6 +1122,8 @@ export const useStore = create<AppState>()(
           rng: useRngForFrequency ? currentRng : null,
           stackRange: stackGrid?.stackRange ?? null,
           stackGridIdx: activeDrillStackGridIdx,
+          session_uuid: get().sessionUuid || null,
+          client_event_id: crypto.randomUUID(),
         }, get().authToken)
 
         const rngTag = useRngForFrequency ? ` (RNG: ${currentRng})` : ''
@@ -1172,6 +1171,7 @@ export const useStore = create<AppState>()(
             consults: session.consults,
             durationSeconds: session.durationSeconds,
             startedAt: Math.floor(sessionStartTime / 1000),
+            session_uuid: get().sessionUuid || null,
           }, get().authToken)
         }
         set({
@@ -1186,7 +1186,7 @@ export const useStore = create<AppState>()(
 
       logConsult: (rangeId, rangeName, hand) => {
         // increment de sessionStats.consults já acontece via incrementConsults nos call sites
-        fireEvent('consult', { rangeId, rangeName, hand: hand ?? null }, get().authToken)
+        fireEvent('consult', { rangeId, rangeName, hand: hand ?? null, session_uuid: get().sessionUuid || null }, get().authToken)
       },
 
       incrementConsults: () => {
@@ -1217,6 +1217,7 @@ export const useStore = create<AppState>()(
             currentUser: { id: data.user.id, username: data.user.username, name: data.user.name ?? '', email: data.user.email ?? '', role: data.user.role, firstLogin: !!data.user.first_login },
             userMode: data.user.role === 'coach' ? 'admin' : 'visitor',
           })
+          void flush(data.token)
           return { ok: true }
         } catch { return { ok: false, error: 'Erro de conexão' } }
       },
@@ -1283,6 +1284,7 @@ export const useStore = create<AppState>()(
             currentUser: { id: data.user.id, username: data.user.username, name: data.user.name ?? '', email: data.user.email ?? '', role: data.user.role, firstLogin: !!data.user.first_login },
             userMode: data.user.role === 'coach' ? 'admin' : 'visitor',
           })
+          void flush(token)
         } catch { sessionStorage.removeItem('pfp-auth-token') }
       },
 
