@@ -2,6 +2,7 @@
 import { useStore } from '../../store/useStore'
 import type { Range, TrainingSession } from '../../types'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
+import { MyAccountStats } from './MyAccountStats'
 
 const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'EP', 'LJ', 'UTG']
 
@@ -424,8 +425,9 @@ function GlobalHistoryPanel() {
 export function StatsPage() {
   const trainingHistory = useStore(s => s.trainingHistory)
   const ranges          = useStore(s => s.ranges)
+  const currentUser     = useStore(s => s.currentUser)
 
-  const [activeTab, setActiveTab]         = useState<'sessions' | 'global'>('sessions')
+  const [activeTab, setActiveTab]         = useState<'sessions' | 'global' | 'cloud'>('sessions')
   const [selectedSession, setSelectedSession] = useState<TrainingSession | null>(null)
 
   const sessions = [...trainingHistory].reverse()
@@ -444,9 +446,10 @@ export function StatsPage() {
       {/* Abas */}
       <div className="flex border-b border-warm-700">
         {([
-          { key: 'sessions', label: 'Histórico de Sessões' },
-          { key: 'global',   label: 'Desempenho Global'   },
-        ] as const).map(tab => (
+          ...(currentUser ? [{ key: 'cloud' as const, label: 'Meus dados na nuvem' }] : []),
+          { key: 'sessions' as const, label: 'Histórico de Sessões' },
+          { key: 'global' as const,   label: 'Desempenho Global'   },
+        ]).map(tab => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
@@ -463,7 +466,9 @@ export function StatsPage() {
       </div>
 
       {/* Conteúdo por aba */}
-      {activeTab === 'sessions' ? (
+      {activeTab === 'cloud' ? (
+        <MyAccountStats />
+      ) : activeTab === 'sessions' ? (
         selectedSession ? (
           <SessionDetailView
             session={selectedSession}
