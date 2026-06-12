@@ -11,6 +11,7 @@ import {
   POS_6MAX, POS_8MAX, SLOTS_6MAX, SLOTS_8MAX,
 } from '../types'
 import { validateRanges } from '../utils/validateRanges'
+import { decodeRanges, encodeRanges } from '../utils/sparseGrid'
 import { DEFAULT_RANGES } from '../data/defaultRanges'
 import adminRangesRaw from '../data/adminRanges.json'
 
@@ -38,14 +39,16 @@ const ADMIN_VERSION = adminPayload.version ?? 0
 const ADMIN_RANGES  = adminPayload.ranges ?? []
 
 const SEEDED_DEFAULTS: Range[] = (() => {
-  if (ADMIN_RANGES.length === 0) return DEFAULT_RANGES
+  // decodeRanges aceita o adminRanges.json em formato denso (atual) ou esparso (após o próximo publish)
+  if (ADMIN_RANGES.length === 0) return decodeRanges(DEFAULT_RANGES)
   const adminIds = new Set(ADMIN_RANGES.map(r => r.id))
-  return [...ADMIN_RANGES, ...DEFAULT_RANGES.filter(r => !adminIds.has(r.id))]
+  return decodeRanges([...ADMIN_RANGES, ...DEFAULT_RANGES.filter(r => !adminIds.has(r.id))])
 })()
 
 function loadRanges(): Range[] {
   try {
-    const saved: Range[] = JSON.parse(localStorage.getItem(RANGES_KEY) ?? '[]') ?? []
+    // decodeRanges torna formato esparso e denso transparentes ao restante do app
+    const saved: Range[] = decodeRanges(JSON.parse(localStorage.getItem(RANGES_KEY) ?? '[]') ?? [])
     const seenVersion = Number(localStorage.getItem(ADMIN_VERSION_KEY) ?? '0')
     const deletedIds = loadDeletedAdminIds()
 
@@ -56,7 +59,7 @@ function loadRanges(): Range[] {
       const userRanges = saved.filter(r => !adminIds.has(r.id))
       const toSeed = SEEDED_DEFAULTS.filter(r => !deletedIds.has(r.id))
       const merged = [...toSeed, ...userRanges]
-      localStorage.setItem(RANGES_KEY, JSON.stringify(merged))
+      saveRanges(merged)
       localStorage.setItem(ADMIN_VERSION_KEY, String(ADMIN_VERSION))
       // Versão nova publicada: limpa a lista de deletados (admin decidiu manter esses ranges)
       localStorage.removeItem(DELETED_ADMIN_KEY)
@@ -68,7 +71,7 @@ function loadRanges(): Range[] {
     const missing = SEEDED_DEFAULTS.filter(r => !existingIds.has(r.id) && !deletedIds.has(r.id))
     if (missing.length > 0) {
       const merged = [...missing, ...saved]
-      localStorage.setItem(RANGES_KEY, JSON.stringify(merged))
+      saveRanges(merged)
       return merged
     }
     return saved
@@ -98,7 +101,7 @@ function trySave(fn: () => void) {
 }
 
 function saveRanges(ranges: Range[]) {
-  trySave(() => localStorage.setItem(RANGES_KEY, JSON.stringify(ranges)))
+  trySave(() => localStorage.setItem(RANGES_KEY, JSON.stringify(encodeRanges(ranges))))
 }
 
 function loadHistory(): TrainingSession[] {
@@ -276,7 +279,7 @@ export const useStore = create<AppState>()(
         try { problems = validateRanges(data.ranges as Range[]) }
         catch { return { ok: false, error: 'Ranges com estrutura inválida.' } }
         if (problems.length > 0) return { ok: false, error: `Ranges inválidos: ${problems[0]}` }
-        const ranges = data.ranges as Range[]
+        const ranges = decodeRanges(data.ranges as Range[])
         const trainingHistory = Array.isArray(data.trainingHistory) ? data.trainingHistory as TrainingSession[] : []
         const handPerformance = (data.handPerformance && typeof data.handPerformance === 'object')
           ? data.handPerformance as HandPerfMap : {}
@@ -1158,10 +1161,11 @@ export const useStore = create<AppState>()(
         const headers: Record<string, string> = { 'Content-Type': 'application/json' }
         if (usingToken) headers.Authorization = `Bearer ${adminToken!.token}`
         try {
+          const sparse = encodeRanges(ranges)
           const res = await fetch(adminWorkerUrl, {
             method: 'POST',
             headers,
-            body: JSON.stringify(usingToken ? { ranges } : { password, ranges }),
+            body: JSON.stringify(usingToken ? { ranges: sparse } : { password, ranges: sparse }),
           })
           if (res.status === 401) {
             if (usingToken) { set({ adminToken: null }); return 'token_expired' }
