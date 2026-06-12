@@ -108,6 +108,26 @@ export function countNonFoldHands(grid: Record<string, HandData>): number {
   return Object.values(grid).filter(d => d.fold < 100).length
 }
 
+// ── Amostragem ponderada por desempenho ("Focar erros") ────────────────────
+
+/** Peso de sorteio: mãos nunca treinadas = 3; treinadas = 1 + 4*(1 - acerto). */
+export function focusWeight(perf: { c: number; t: number } | undefined): number {
+  if (!perf || perf.t <= 0) return 3
+  const accuracy = perf.c / perf.t
+  return 1 + 4 * (1 - accuracy)
+}
+
+export function weightedPick<T>(items: T[], weights: number[], rnd: number = Math.random()): T {
+  const total = weights.reduce((a, b) => a + b, 0)
+  if (total <= 0) return items[Math.floor(rnd * items.length)]
+  let r = rnd * total
+  for (let i = 0; i < items.length; i++) {
+    r -= weights[i]
+    if (r < 0) return items[i]
+  }
+  return items[items.length - 1]
+}
+
 
 // ── Hand group helpers ─────────────────────────────────────────────────────
 
