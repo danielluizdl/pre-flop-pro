@@ -1,0 +1,7 @@
+name = "pre-flop-pro"
+pages_build_output_dir = "dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "preflop-db"
+database_id = "4da5ef76-674a-48de-9b46-06789bb76513"
