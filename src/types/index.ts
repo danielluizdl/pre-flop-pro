@@ -12,6 +12,8 @@ export type Page = 'dashboard' | 'editor' | 'table-editor' | 'ranges' | 'drill' 
 export interface CurrentUser {
   id: number
   username: string
+  name: string
+  email: string
   role: 'player' | 'coach'
   firstLogin: boolean
 }

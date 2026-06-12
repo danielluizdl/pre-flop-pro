@@ -1,6 +1,8 @@
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   username TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  name TEXT NOT NULL DEFAULT '',
+  email TEXT NOT NULL DEFAULT '' COLLATE NOCASE,
   password_hash TEXT NOT NULL,
   salt TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'player',
@@ -49,6 +51,7 @@ CREATE TABLE IF NOT EXISTS training_sessions (
   started_at INTEGER NOT NULL,
   ended_at INTEGER NOT NULL DEFAULT (unixepoch())
 );
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email) WHERE email != '';
 CREATE INDEX IF NOT EXISTS idx_hand_events_user ON hand_events(user_id);
 CREATE INDEX IF NOT EXISTS idx_consult_events_user ON consult_events(user_id);
 CREATE INDEX IF NOT EXISTS idx_training_sessions_user ON training_sessions(user_id);

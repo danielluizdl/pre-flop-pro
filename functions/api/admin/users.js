@@ -10,7 +10,7 @@ export async function onRequest(context) {
   if (user.role !== 'coach') return json({ error: 'Forbidden' }, 403)
 
   const result = await env.DB.prepare(`
-    SELECT u.id, u.username, u.created_at,
+    SELECT u.id, u.username, u.name, u.email, u.created_at,
       COUNT(h.id) as total_hands,
       CAST(SUM(h.is_correct) AS INTEGER) as correct_hands
     FROM users u

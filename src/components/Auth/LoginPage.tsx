@@ -12,12 +12,14 @@ export function LoginPage() {
 
   const [view, setView]         = useState<View>('login')
   const [username, setUsername] = useState('')
+  const [name, setName]         = useState('')
+  const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [teamCode, setTeamCode] = useState('')
   const [error, setError]       = useState('')
   const [loading, setLoading]   = useState(false)
 
-  const canSubmit = !!username && !!password && (view !== 'signup' || !!teamCode)
+  const canSubmit = !!username && !!password && (view !== 'signup' || (!!teamCode && !!name && !!email))
 
   async function handleSubmit() {
     if (!canSubmit || loading) return
@@ -25,7 +27,7 @@ export function LoginPage() {
     setError('')
     const result = view === 'login'
       ? await authLogin(username, password)
-      : await authSignup(username, password, teamCode)
+      : await authSignup(username, password, teamCode, name, email)
     setLoading(false)
     if (!result.ok) setError(result.error ?? 'Erro inesperado')
   }
@@ -67,6 +69,31 @@ export function LoginPage() {
             </>
           ) : (
             <>
+              {view === 'signup' && (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-xs text-warm-400 block">Nome</label>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={e => { setName(e.target.value); setError('') }}
+                      className={INPUT_CLASS}
+                      onKeyDown={e => { if (e.key === 'Enter') handleSubmit() }}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs text-warm-400 block">E-mail</label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={e => { setEmail(e.target.value); setError('') }}
+                      className={INPUT_CLASS}
+                      onKeyDown={e => { if (e.key === 'Enter') handleSubmit() }}
+                    />
+                  </div>
+                </>
+              )}
+
               <div className="space-y-2">
                 <label className="text-xs text-warm-400 block">Usuário</label>
                 <input

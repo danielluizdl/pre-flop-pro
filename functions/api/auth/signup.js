@@ -11,17 +11,22 @@ export async function onRequest(context) {
   } catch {
     return json({ error: 'Body inválido' }, 400)
   }
-  const { username, password, teamCode } = body ?? {}
-  if (!username || !password || !teamCode) return json({ error: 'Campos obrigatórios: username, password, teamCode' }, 400)
+  const { username, password, teamCode, name, email } = body ?? {}
+  if (!username || !password || !teamCode || !name || !email) {
+    return json({ error: 'Campos obrigatórios: username, password, teamCode, name, email' }, 400)
+  }
+  if (!/^\S+@\S+\.\S+$/.test(email)) return json({ error: 'E-mail inválido' }, 400)
   if (teamCode.toLowerCase() !== env.TEAM_CODE.toLowerCase()) return json({ error: 'Código do time inválido' }, 403)
 
   const existing = await env.DB.prepare('SELECT id FROM users WHERE username = ?').bind(username).first()
   if (existing) return json({ error: 'Usuário já existe' }, 409)
+  const emailTaken = await env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(email).first()
+  if (emailTaken) return json({ error: 'E-mail já cadastrado' }, 409)
 
   const salt = randomHex(16)
   const hash = await hashPassword(password, salt)
-  const result = await env.DB.prepare('INSERT INTO users (username, password_hash, salt) VALUES (?, ?, ?)')
-    .bind(username, hash, salt).run()
+  const result = await env.DB.prepare('INSERT INTO users (username, name, email, password_hash, salt) VALUES (?, ?, ?, ?, ?)')
+    .bind(username, name, email, hash, salt).run()
 
   const token = randomHex(32)
   const tokenHash = await sha256Hex(token)
@@ -29,5 +34,5 @@ export async function onRequest(context) {
   await env.DB.prepare('INSERT INTO sessions (user_id, token_hash, expires_at) VALUES (?, ?, ?)')
     .bind(result.meta.last_row_id, tokenHash, expiresAt).run()
 
-  return json({ ok: true, token, user: { id: result.meta.last_row_id, username, role: 'player', first_login: 1 } })
+  return json({ ok: true, token, user: { id: result.meta.last_row_id, username, name, email, role: 'player', first_login: 1 } })
 }

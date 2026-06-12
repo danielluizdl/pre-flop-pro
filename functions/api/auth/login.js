@@ -15,7 +15,7 @@ export async function onRequest(context) {
   if (!username || !password) return json({ error: 'Campos obrigatórios: username, password' }, 400)
 
   const user = await env.DB.prepare(
-    'SELECT id, username, password_hash, salt, role, first_login FROM users WHERE username = ? COLLATE NOCASE'
+    'SELECT id, username, name, email, password_hash, salt, role, first_login FROM users WHERE username = ? COLLATE NOCASE'
   ).bind(username).first()
   if (!user) return json({ error: 'Credenciais inválidas' }, 401)
 
@@ -28,5 +28,5 @@ export async function onRequest(context) {
   await env.DB.prepare('INSERT INTO sessions (user_id, token_hash, expires_at) VALUES (?, ?, ?)')
     .bind(user.id, tokenHash, expiresAt).run()
 
-  return json({ ok: true, token, user: { id: user.id, username: user.username, role: user.role, first_login: user.first_login } })
+  return json({ ok: true, token, user: { id: user.id, username: user.username, name: user.name, email: user.email, role: user.role, first_login: user.first_login } })
 }

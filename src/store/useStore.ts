@@ -245,7 +245,7 @@ interface AppState {
   currentUser: CurrentUser | null
   authToken: string | null
   authLogin: (username: string, password: string) => Promise<{ ok: boolean; error?: string }>
-  authSignup: (username: string, password: string, teamCode: string) => Promise<{ ok: boolean; error?: string }>
+  authSignup: (username: string, password: string, teamCode: string, name: string, email: string) => Promise<{ ok: boolean; error?: string }>
   authLogout: () => Promise<void>
   changePassword: (newPassword: string) => Promise<{ ok: boolean; error?: string }>
   restoreSession: () => Promise<void>
@@ -1214,25 +1214,25 @@ export const useStore = create<AppState>()(
           sessionStorage.setItem('pfp-auth-token', data.token)
           set({
             authToken: data.token,
-            currentUser: { id: data.user.id, username: data.user.username, role: data.user.role, firstLogin: !!data.user.first_login },
+            currentUser: { id: data.user.id, username: data.user.username, name: data.user.name ?? '', email: data.user.email ?? '', role: data.user.role, firstLogin: !!data.user.first_login },
             userMode: data.user.role === 'coach' ? 'admin' : 'visitor',
           })
           return { ok: true }
         } catch { return { ok: false, error: 'Erro de conexão' } }
       },
-      authSignup: async (username, password, teamCode) => {
+      authSignup: async (username, password, teamCode, name, email) => {
         try {
           const res = await fetch('/api/auth/signup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password, teamCode }),
+            body: JSON.stringify({ username, password, teamCode, name, email }),
           })
           const data = await res.json()
           if (!res.ok) return { ok: false, error: data?.error ?? 'Erro ao criar conta' }
           sessionStorage.setItem('pfp-auth-token', data.token)
           set({
             authToken: data.token,
-            currentUser: { id: data.user.id, username: data.user.username, role: data.user.role, firstLogin: !!data.user.first_login },
+            currentUser: { id: data.user.id, username: data.user.username, name: data.user.name ?? '', email: data.user.email ?? '', role: data.user.role, firstLogin: !!data.user.first_login },
             userMode: data.user.role === 'coach' ? 'admin' : 'visitor',
           })
           return { ok: true }
@@ -1280,7 +1280,7 @@ export const useStore = create<AppState>()(
           const data = await res.json()
           set({
             authToken: token,
-            currentUser: { id: data.user.id, username: data.user.username, role: data.user.role, firstLogin: !!data.user.first_login },
+            currentUser: { id: data.user.id, username: data.user.username, name: data.user.name ?? '', email: data.user.email ?? '', role: data.user.role, firstLogin: !!data.user.first_login },
             userMode: data.user.role === 'coach' ? 'admin' : 'visitor',
           })
         } catch { sessionStorage.removeItem('pfp-auth-token') }

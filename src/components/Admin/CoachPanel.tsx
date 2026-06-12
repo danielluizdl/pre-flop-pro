@@ -4,6 +4,8 @@ import { useStore } from '../../store/useStore'
 interface CoachUser {
   id: number
   username: string
+  name: string
+  email: string
   created_at: number
   total_hands: number
   correct_hands: number | null
@@ -83,7 +85,8 @@ export default function CoachPanel() {
               onClick={() => setSelectedUserId(u.id)}
               className={`w-full text-left px-4 py-3 border-b border-warm-800 transition-colors ${selectedUserId === u.id ? 'bg-warm-800' : 'hover:bg-warm-900'}`}
             >
-              <span className="block text-sm font-medium text-warm-100">{u.username}</span>
+              <span className="block text-sm font-medium text-warm-100">{u.name || u.username}</span>
+              <span className="block text-xs text-warm-500">{u.username}</span>
               <span className="block text-xs text-warm-400">{u.total_hands} mãos · {accuracyOf(u)}</span>
             </button>
           ))
@@ -95,7 +98,8 @@ export default function CoachPanel() {
           <p className="text-sm text-warm-500">Selecione um jogador.</p>
         ) : (
           <>
-            <h2 className="text-xl font-semibold text-white mb-3">{selectedUser.username}</h2>
+            <h2 className="text-xl font-semibold text-white">{selectedUser.name || selectedUser.username}</h2>
+            <p className="text-sm text-warm-400 mb-3">{selectedUser.username}{selectedUser.email ? ` · ${selectedUser.email}` : ''}</p>
             <div className="flex gap-1 mb-4">
               {(['hands', 'consults', 'sessions'] as const).map(tab => (
                 <button

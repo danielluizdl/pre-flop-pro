@@ -19,7 +19,7 @@ export async function getAuthUser(request, env) {
   const tokenHash = await sha256Hex(bearer)
   const now = Math.floor(Date.now() / 1000)
   return await env.DB.prepare(
-    'SELECT u.id, u.username, u.role, u.first_login FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ? AND s.expires_at > ?'
+    'SELECT u.id, u.username, u.name, u.email, u.role, u.first_login FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ? AND s.expires_at > ?'
   ).bind(tokenHash, now).first() ?? null
 }
 
