@@ -5,7 +5,6 @@ import { clsx } from 'clsx'
 import type { Page } from '../../types'
 import { AdminPanel } from '../Admin/AdminPanel'
 import { RangeMark } from '../ui/RangeMark'
-import { AuthModal } from '../Auth/AuthModal'
 import { ChangePasswordModal } from '../Auth/ChangePasswordModal'
 
 const NAV_ITEMS: { id: Page; label: string; icon: React.ElementType }[] = [
@@ -22,11 +21,9 @@ export function TopNav() {
   const toggleDarkMode = useStore(s => s.toggleDarkMode)
   const userMode       = useStore(s => s.userMode)
 
-  const logout         = useStore(s => s.logout)
   const currentUser    = useStore(s => s.currentUser)
   const authLogout     = useStore(s => s.authLogout)
 
-  const [isAuthOpen, setIsAuthOpen]   = useState(false)
   const [adminOpen, setAdminOpen]     = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const profileRef = useRef<HTMLDivElement>(null)
@@ -41,8 +38,8 @@ export function TopNav() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  const role    = userMode === 'admin' ? 'Admin' : 'Visitante'
-  const initial = role[0]
+  const role    = currentUser?.username ?? (userMode === 'admin' ? 'Admin' : 'Visitante')
+  const initial = role[0].toUpperCase()
 
   return (
     <>
@@ -101,35 +98,14 @@ export function TopNav() {
         <div className="flex-1" />
 
         {/* Conta */}
-        <div className="flex items-center gap-2 mr-2">
-          {!currentUser && (
-            <button
-              onClick={() => setIsAuthOpen(true)}
-              className="text-[13px] font-medium text-warm-300 hover:text-warm-100 transition-colors px-2.5 py-1.5"
-            >
-              Entrar
-            </button>
-          )}
-          {currentUser && (
-            <>
-              <span className="text-[13px] text-warm-300 whitespace-nowrap">Olá, {currentUser.username}</span>
-              {currentUser.role === 'coach' && (
-                <button
-                  onClick={() => setPage('admin')}
-                  className="text-[13px] font-medium text-brand-500 hover:text-brand-400 transition-colors px-2 py-1.5 whitespace-nowrap"
-                >
-                  Painel Coach
-                </button>
-              )}
-              <button
-                onClick={authLogout}
-                className="text-[13px] font-medium text-warm-400 hover:text-warm-100 transition-colors px-2 py-1.5"
-              >
-                Sair
-              </button>
-            </>
-          )}
-        </div>
+        {currentUser?.role === 'coach' && (
+          <button
+            onClick={() => setPage('admin')}
+            className="mr-2 text-[13px] font-medium text-brand-500 hover:text-brand-400 transition-colors px-2 py-1.5 whitespace-nowrap"
+          >
+            Painel Coach
+          </button>
+        )}
 
         {/* Util buttons */}
         <div className="flex items-center gap-1">
@@ -186,7 +162,7 @@ export function TopNav() {
           {profileOpen && (
             <div className="absolute right-0 top-full mt-2 w-36 bg-warm-900 border border-warm-700 rounded-xl shadow-xl overflow-hidden z-50">
               <button
-                onClick={() => { setProfileOpen(false); logout() }}
+                onClick={() => { setProfileOpen(false); authLogout() }}
                 className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-warm-300 hover:bg-warm-800 hover:text-white transition-colors"
               >
                 <LogOut size={15} />
@@ -203,7 +179,6 @@ export function TopNav() {
         <AdminPanel open={adminOpen} onClose={() => setAdminOpen(false)} />
       )}
 
-      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
       {currentUser?.firstLogin === true && <ChangePasswordModal />}
     </>
   )

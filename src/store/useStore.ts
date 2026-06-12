@@ -239,8 +239,6 @@ interface AppState {
   // ── Auth ──────────────────────────────────────────────────────────────────────
   userMode: 'visitor' | 'admin' | null
   adminToken: { token: string; expiresAt: number } | null
-  login: (password: string) => Promise<'ok' | 'wrong_password' | 'error'>
-  enterAsVisitor: () => void
   logout: () => void
 
   // ── Conta (opt-in, D1) ────────────────────────────────────────────────────────
@@ -1199,29 +1197,6 @@ export const useStore = create<AppState>()(
       // ── Auth ────────────────────────────────────────────────────────────────────
       userMode: null,
       adminToken: null,
-      login: async (password) => {
-        const { adminWorkerUrl } = get()
-        if (!adminWorkerUrl) return 'error'
-        try {
-          const res = await fetch(adminWorkerUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password, action: 'validate' }),
-          })
-          if (res.status === 401) return 'wrong_password'
-          if (res.ok) {
-            let adminToken: { token: string; expiresAt: number } | null = null
-            try {
-              const data = await res.json()
-              if (data?.token && data?.expiresAt) adminToken = { token: data.token, expiresAt: data.expiresAt }
-            } catch { adminToken = null }
-            set({ userMode: 'admin', adminToken })
-            return 'ok'
-          }
-          return 'error'
-        } catch { return 'error' }
-      },
-      enterAsVisitor: () => set({ userMode: 'visitor' }),
       logout: () => set({ userMode: null, adminToken: null }),
 
       // ── Conta (opt-in, D1) ──────────────────────────────────────────────────────
@@ -1240,6 +1215,7 @@ export const useStore = create<AppState>()(
           set({
             authToken: data.token,
             currentUser: { id: data.user.id, username: data.user.username, role: data.user.role, firstLogin: !!data.user.first_login },
+            userMode: data.user.role === 'coach' ? 'admin' : 'visitor',
           })
           return { ok: true }
         } catch { return { ok: false, error: 'Erro de conexão' } }
@@ -1257,6 +1233,7 @@ export const useStore = create<AppState>()(
           set({
             authToken: data.token,
             currentUser: { id: data.user.id, username: data.user.username, role: data.user.role, firstLogin: !!data.user.first_login },
+            userMode: data.user.role === 'coach' ? 'admin' : 'visitor',
           })
           return { ok: true }
         } catch { return { ok: false, error: 'Erro de conexão' } }
@@ -1272,7 +1249,7 @@ export const useStore = create<AppState>()(
           } catch { /* logout local mesmo offline */ }
         }
         sessionStorage.removeItem('pfp-auth-token')
-        set({ currentUser: null, authToken: null })
+        set({ currentUser: null, authToken: null, userMode: null, adminToken: null })
       },
       changePassword: async (newPassword) => {
         const { authToken, currentUser } = get()
@@ -1304,6 +1281,7 @@ export const useStore = create<AppState>()(
           set({
             authToken: token,
             currentUser: { id: data.user.id, username: data.user.username, role: data.user.role, firstLogin: !!data.user.first_login },
+            userMode: data.user.role === 'coach' ? 'admin' : 'visitor',
           })
         } catch { sessionStorage.removeItem('pfp-auth-token') }
       },
