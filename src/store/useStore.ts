@@ -212,6 +212,7 @@ interface AppState {
 
   // ── Auth ──────────────────────────────────────────────────────────────────────
   userMode: 'visitor' | 'admin' | null
+  adminToken: { token: string; expiresAt: number } | null
   login: (password: string) => Promise<'ok' | 'wrong_password' | 'error'>
   enterAsVisitor: () => void
   logout: () => void
@@ -220,7 +221,7 @@ interface AppState {
   adminWorkerUrl: string
   setAdminWorkerUrl: (url: string) => void
   adminLastError: string
-  adminSaveRanges: (password: string) => Promise<'ok' | 'wrong_password' | 'error' | 'invalid_token' | 'missing_token' | 'too_large'>
+  adminSaveRanges: (password?: string) => Promise<'ok' | 'wrong_password' | 'token_expired' | 'error' | 'invalid_token' | 'missing_token'>
 }
 
 export const useStore = create<AppState>()(
@@ -1063,6 +1064,7 @@ export const useStore = create<AppState>()(
 
       // ── Auth ────────────────────────────────────────────────────────────────────
       userMode: null,
+      adminToken: null,
       login: async (password) => {
         const { adminWorkerUrl } = get()
         if (!adminWorkerUrl) return 'error'
@@ -1073,12 +1075,20 @@ export const useStore = create<AppState>()(
             body: JSON.stringify({ password, action: 'validate' }),
           })
           if (res.status === 401) return 'wrong_password'
-          if (res.ok) { set({ userMode: 'admin' }); return 'ok' }
+          if (res.ok) {
+            let adminToken: { token: string; expiresAt: number } | null = null
+            try {
+              const data = await res.json()
+              if (data?.token && data?.expiresAt) adminToken = { token: data.token, expiresAt: data.expiresAt }
+            } catch { adminToken = null }
+            set({ userMode: 'admin', adminToken })
+            return 'ok'
+          }
           return 'error'
         } catch { return 'error' }
       },
       enterAsVisitor: () => set({ userMode: 'visitor' }),
-      logout: () => set({ userMode: null }),
+      logout: () => set({ userMode: null, adminToken: null }),
 
       // ── Admin ───────────────────────────────────────────────────────────────────
       adminWorkerUrl: localStorage.getItem('admin-worker-url') ?? 'https://preflop-admin.loureirodlg.workers.dev',
@@ -1088,22 +1098,27 @@ export const useStore = create<AppState>()(
         set({ adminWorkerUrl: url })
       },
       adminSaveRanges: async (password) => {
-        const { ranges, adminWorkerUrl } = get()
+        const { ranges, adminWorkerUrl, adminToken } = get()
         if (!adminWorkerUrl) return 'error'
+        const usingToken = !password && !!adminToken
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+        if (usingToken) headers.Authorization = `Bearer ${adminToken!.token}`
         try {
           const res = await fetch(adminWorkerUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password, ranges }),
+            headers,
+            body: JSON.stringify(usingToken ? { ranges } : { password, ranges }),
           })
-          if (res.status === 401) return 'wrong_password'
+          if (res.status === 401) {
+            if (usingToken) { set({ adminToken: null }); return 'token_expired' }
+            return 'wrong_password'
+          }
           if (res.ok) return 'ok'
           try {
             const data = await res.json()
             set({ adminLastError: data.message ?? `HTTP ${res.status}` })
             if (data.code === 'invalid_token') return 'invalid_token'
             if (data.code === 'missing_token') return 'missing_token'
-            if (data.code === 'too_large') return 'too_large'
           } catch { set({ adminLastError: `HTTP ${res.status}` }) }
           return 'error'
         } catch (e) { set({ adminLastError: String(e) }); return 'error' }
