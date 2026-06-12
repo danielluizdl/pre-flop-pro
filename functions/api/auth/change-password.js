@@ -15,7 +15,7 @@ export async function onRequest(context) {
     return json({ error: 'Body inválido' }, 400)
   }
   const { newPassword } = body ?? {}
-  if (!newPassword || newPassword.length < 6) return json({ error: 'Senha deve ter ao menos 6 caracteres' }, 400)
+  if (!newPassword || newPassword.length < 8) return json({ error: 'Senha deve ter ao menos 8 caracteres' }, 400)
 
   const salt = randomHex(16)
   const hash = await hashPassword(newPassword, salt)

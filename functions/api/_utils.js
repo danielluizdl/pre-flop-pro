@@ -23,6 +23,21 @@ export async function getAuthUser(request, env) {
   ).bind(tokenHash, now).first() ?? null
 }
 
+export async function emailDomainExists(domain) {
+  // DNS over HTTPS: domínio precisa ter MX ou A. Fail-open se o DoH falhar.
+  try {
+    for (const type of ['MX', 'A']) {
+      const res = await fetch(`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=${type}`, {
+        headers: { Accept: 'application/dns-json' },
+      })
+      if (!res.ok) return true
+      const data = await res.json()
+      if (Array.isArray(data.Answer) && data.Answer.length > 0) return true
+    }
+    return false
+  } catch { return true }
+}
+
 export const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',

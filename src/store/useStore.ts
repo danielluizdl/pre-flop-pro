@@ -1209,8 +1209,8 @@ export const useStore = create<AppState>()(
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password }),
           })
-          const data = await res.json()
-          if (!res.ok) return { ok: false, error: data?.error ?? 'Erro ao entrar' }
+          const data = await res.json().catch(() => null)
+          if (!res.ok || !data) return { ok: false, error: data?.error ?? `Erro do servidor (${res.status})` }
           sessionStorage.setItem('pfp-auth-token', data.token)
           set({
             authToken: data.token,
@@ -1227,8 +1227,8 @@ export const useStore = create<AppState>()(
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password, teamCode, name, email }),
           })
-          const data = await res.json()
-          if (!res.ok) return { ok: false, error: data?.error ?? 'Erro ao criar conta' }
+          const data = await res.json().catch(() => null)
+          if (!res.ok || !data) return { ok: false, error: data?.error ?? `Erro do servidor (${res.status})` }
           sessionStorage.setItem('pfp-auth-token', data.token)
           set({
             authToken: data.token,
@@ -1260,8 +1260,8 @@ export const useStore = create<AppState>()(
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
             body: JSON.stringify({ newPassword }),
           })
-          const data = await res.json()
-          if (!res.ok) return { ok: false, error: data?.error ?? 'Erro ao alterar senha' }
+          const data = await res.json().catch(() => null)
+          if (!res.ok) return { ok: false, error: data?.error ?? `Erro do servidor (${res.status})` }
           if (currentUser) set({ currentUser: { ...currentUser, firstLogin: false } })
           return { ok: true }
         } catch { return { ok: false, error: 'Erro de conexão' } }

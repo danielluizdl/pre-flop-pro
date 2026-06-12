@@ -10,8 +10,8 @@ export function ChangePasswordModal() {
   const [loading, setLoading]         = useState(false)
 
   async function handleSubmit() {
-    if (newPassword.length < 6) {
-      setError('Senha deve ter ao menos 6 caracteres')
+    if (newPassword.length < 8) {
+      setError('Senha deve ter ao menos 8 caracteres')
       return
     }
     if (newPassword !== confirm) {
@@ -32,7 +32,7 @@ export function ChangePasswordModal() {
         <p className="text-xs text-warm-400">Este é seu primeiro acesso. Escolha uma nova senha para continuar.</p>
 
         <div className="space-y-2">
-          <label className="text-xs text-warm-400 block">Nova senha</label>
+          <label className="text-xs text-warm-400 block">Nova senha:</label>
           <input
             type="password"
             value={newPassword}
@@ -42,7 +42,7 @@ export function ChangePasswordModal() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-xs text-warm-400 block">Confirmar senha</label>
+          <label className="text-xs text-warm-400 block">Confirmar senha:</label>
           <input
             type="password"
             value={confirm}

@@ -1,4 +1,4 @@
-import { sha256Hex, hashPassword, randomHex, json, handleOptions } from '../_utils.js'
+import { sha256Hex, hashPassword, randomHex, json, handleOptions, emailDomainExists } from '../_utils.js'
 
 export async function onRequest(context) {
   const { request, env } = context
@@ -15,8 +15,12 @@ export async function onRequest(context) {
   if (!username || !password || !teamCode || !name || !email) {
     return json({ error: 'Campos obrigatórios: username, password, teamCode, name, email' }, 400)
   }
-  if (!/^\S+@\S+\.\S+$/.test(email)) return json({ error: 'E-mail inválido' }, 400)
+  if (!env.TEAM_CODE) return json({ error: 'Servidor sem TEAM_CODE configurado neste ambiente' }, 500)
+  if (username.length < 6) return json({ error: 'Usuário deve ter ao menos 6 caracteres' }, 400)
+  if (password.length < 8) return json({ error: 'Senha deve ter ao menos 8 caracteres' }, 400)
+  if (!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/.test(email)) return json({ error: 'E-mail inválido' }, 400)
   if (teamCode.toLowerCase() !== env.TEAM_CODE.toLowerCase()) return json({ error: 'Código do time inválido' }, 403)
+  if (!(await emailDomainExists(email.split('@')[1]))) return json({ error: 'E-mail inválido: domínio não existe' }, 400)
 
   const existing = await env.DB.prepare('SELECT id FROM users WHERE username = ?').bind(username).first()
   if (existing) return json({ error: 'Usuário já existe' }, 409)
