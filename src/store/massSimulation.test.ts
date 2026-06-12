@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { appendFileSync } from 'node:fs'
+
 import { useStore } from './useStore'
 import { getRngCorrectAction, getTopFrequencyActions, getRngBands, generateSuits, ALL_HANDS } from '../utils/hands'
 import type { HandData } from '../types'
@@ -113,7 +113,7 @@ describe('simulação em massa com os ranges reais publicados', () => {
       })
     })
 
-    appendFileSync('_sim_stats.txt', `exaustivo: ${cells} células, ${probes} sondagens de RNG\n`)
+    console.log(`exaustivo: ${cells} células, ${probes} sondagens de RNG`)
     expect(problems, problems.slice(0, 20).join('\n')).toEqual([])
   }, 120000)
 
@@ -184,9 +184,9 @@ describe('simulação em massa com os ranges reais publicados', () => {
         if (!hit.has(i)) unreachable.push(`[${r.name}#${r.id}] stackGrid[${i}] "${sg.stackRange}" nunca sorteado`)
       })
     })
-    if (unreachable.length > 0) appendFileSync('_sim_stats.txt', 'AVISO — stackGrids não exercitados:\n' + unreachable.join('\n') + '\n')
+    if (unreachable.length > 0) console.log('AVISO — stackGrids não exercitados:\n' + unreachable.join('\n'))
 
-    appendFileSync('_sim_stats.txt', `store por range: ${played} mãos jogadas\n`)
+    console.log(`store por range: ${played} mãos jogadas`)
     expect(problems, problems.slice(0, 20).join('\n')).toEqual([])
   }, 240000)
 
