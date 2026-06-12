@@ -81,7 +81,7 @@ function SessionDetailView({ session, ranges, onBack }: {
       ) : (
         <div className="space-y-2">
           {sessionRanges.map(r => {
-            const mergedPerf = sessionPerf?.[r.name] ?? {}
+            const mergedPerf = sessionPerf?.[String(r.id)] ?? sessionPerf?.[r.name] ?? {}
             const vals     = Object.values(mergedPerf)
             const total    = vals.reduce((s, v) => s + v.t, 0)
             const correct  = vals.reduce((s, v) => s + v.c, 0)
@@ -89,8 +89,9 @@ function SessionDetailView({ session, ranges, onBack }: {
             const isOpen   = openRangeId === r.id
             const stackRanges = r.stackGrids && r.stackGrids.length > 1 ? r.stackGrids.map(sg => sg.stackRange).filter(Boolean) : []
             const activeStack = isOpen && stackRanges.length > 0 ? selectedStack : ''
-            const perfKey  = activeStack ? `${r.name}|||${activeStack}` : r.name
-            const perf     = sessionPerf?.[perfKey] ?? {}
+            const perf     = (activeStack
+              ? (sessionPerf?.[`${r.id}|||${activeStack}`] ?? sessionPerf?.[`${r.name}|||${activeStack}`])
+              : (sessionPerf?.[String(r.id)] ?? sessionPerf?.[r.name])) ?? {}
             const gridIdx  = activeStack ? r.stackGrids!.findIndex(sg => sg.stackRange === activeStack) : 0
             const grid     = r.stackGrids && gridIdx >= 0 ? r.stackGrids[gridIdx].grid : (r.stackGrids?.[0]?.grid ?? r.grid)
 
