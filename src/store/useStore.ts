@@ -6,7 +6,7 @@ import {
 } from '../utils/hands'
 import type {
   BrushState, HandData, HandHistoryEntry, PokerPosition, PositionConfig,
-  Range, Scenario, SessionGrid, SessionStats, Slot, StackGrid, TableSize, TrainingSession, Page,
+  Range, Scenario, SessionGrid, SessionStats, Slot, StackGrid, TableSize, TrainingSession, Page, CurrentUser,
 } from '../types'
 import {
   POS_6MAX, POS_8MAX, SLOTS_6MAX, SLOTS_8MAX,
@@ -242,6 +242,15 @@ interface AppState {
   login: (password: string) => Promise<'ok' | 'wrong_password' | 'error'>
   enterAsVisitor: () => void
   logout: () => void
+
+  // ── Conta (opt-in, D1) ────────────────────────────────────────────────────────
+  currentUser: CurrentUser | null
+  authToken: string | null
+  authLogin: (username: string, password: string) => Promise<{ ok: boolean; error?: string }>
+  authSignup: (username: string, password: string, teamCode: string) => Promise<{ ok: boolean; error?: string }>
+  authLogout: () => Promise<void>
+  changePassword: (newPassword: string) => Promise<{ ok: boolean; error?: string }>
+  restoreSession: () => Promise<void>
 
   // ── Admin ─────────────────────────────────────────────────────────────────────
   adminWorkerUrl: string
@@ -1175,6 +1184,90 @@ export const useStore = create<AppState>()(
       },
       enterAsVisitor: () => set({ userMode: 'visitor' }),
       logout: () => set({ userMode: null, adminToken: null }),
+
+      // ── Conta (opt-in, D1) ──────────────────────────────────────────────────────
+      currentUser: null,
+      authToken: null,
+      authLogin: async (username, password) => {
+        try {
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password }),
+          })
+          const data = await res.json()
+          if (!res.ok) return { ok: false, error: data?.error ?? 'Erro ao entrar' }
+          sessionStorage.setItem('pfp-auth-token', data.token)
+          set({
+            authToken: data.token,
+            currentUser: { id: data.user.id, username: data.user.username, role: data.user.role, firstLogin: !!data.user.first_login },
+          })
+          return { ok: true }
+        } catch { return { ok: false, error: 'Erro de conexão' } }
+      },
+      authSignup: async (username, password, teamCode) => {
+        try {
+          const res = await fetch('/api/auth/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password, teamCode }),
+          })
+          const data = await res.json()
+          if (!res.ok) return { ok: false, error: data?.error ?? 'Erro ao criar conta' }
+          sessionStorage.setItem('pfp-auth-token', data.token)
+          set({
+            authToken: data.token,
+            currentUser: { id: data.user.id, username: data.user.username, role: data.user.role, firstLogin: !!data.user.first_login },
+          })
+          return { ok: true }
+        } catch { return { ok: false, error: 'Erro de conexão' } }
+      },
+      authLogout: async () => {
+        const { authToken } = get()
+        if (authToken) {
+          try {
+            await fetch('/api/auth/logout', {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${authToken}` },
+            })
+          } catch { /* logout local mesmo offline */ }
+        }
+        sessionStorage.removeItem('pfp-auth-token')
+        set({ currentUser: null, authToken: null })
+      },
+      changePassword: async (newPassword) => {
+        const { authToken, currentUser } = get()
+        if (!authToken) return { ok: false, error: 'Não autenticado' }
+        try {
+          const res = await fetch('/api/auth/change-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+            body: JSON.stringify({ newPassword }),
+          })
+          const data = await res.json()
+          if (!res.ok) return { ok: false, error: data?.error ?? 'Erro ao alterar senha' }
+          if (currentUser) set({ currentUser: { ...currentUser, firstLogin: false } })
+          return { ok: true }
+        } catch { return { ok: false, error: 'Erro de conexão' } }
+      },
+      restoreSession: async () => {
+        const token = sessionStorage.getItem('pfp-auth-token')
+        if (!token) return
+        try {
+          const res = await fetch('/api/auth/me', {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          if (!res.ok) {
+            sessionStorage.removeItem('pfp-auth-token')
+            return
+          }
+          const data = await res.json()
+          set({
+            authToken: token,
+            currentUser: { id: data.user.id, username: data.user.username, role: data.user.role, firstLogin: !!data.user.first_login },
+          })
+        } catch { sessionStorage.removeItem('pfp-auth-token') }
+      },
 
       // ── Admin ───────────────────────────────────────────────────────────────────
       adminWorkerUrl: localStorage.getItem('admin-worker-url') ?? 'https://preflop-admin.loureirodlg.workers.dev',

@@ -9,10 +9,12 @@ import { CategoryDetailPage } from '../Situations/CategoryDetailPage'
 import { TrainerPage } from '../Trainer/TrainerPage'
 import { StatsPage } from '../Stats/StatsPage'
 import { LoginPage } from '../Auth/LoginPage'
+import CoachPanel from '../Admin/CoachPanel'
 
 export function AppLayout() {
   const { page, darkMode, userMode } = useStore()
   const storageBlocked = useStore(s => s.storageBlocked)
+  const currentUser = useStore(s => s.currentUser)
 
   if (userMode === null) return <LoginPage />
 
@@ -26,6 +28,7 @@ export function AppLayout() {
       case 'drill':        return <TrainerPage />
       case 'history':         return <StatsPage />
       case 'category-detail': return <CategoryDetailPage />
+      case 'admin':           return currentUser?.role === 'coach' ? <CoachPanel /> : <Dashboard />
       default:                return <Dashboard />
     }
   }
