@@ -251,12 +251,24 @@ interface AppState {
   authLogout: () => Promise<void>
   changePassword: (newPassword: string) => Promise<{ ok: boolean; error?: string }>
   restoreSession: () => Promise<void>
+  logConsult: (rangeId: number, rangeName: string, hand?: string) => void
 
   // ── Admin ─────────────────────────────────────────────────────────────────────
   adminWorkerUrl: string
   setAdminWorkerUrl: (url: string) => void
   adminLastError: string
   adminSaveRanges: (password?: string) => Promise<'ok' | 'wrong_password' | 'token_expired' | 'error' | 'invalid_token' | 'missing_token'>
+}
+
+async function fireEvent(path: string, body: object, token: string | null) {
+  if (!token) return
+  try {
+    await fetch(`/api/events/${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    })
+  } catch { /* fire-and-forget */ }
 }
 
 export const useStore = create<AppState>()(
@@ -1104,6 +1116,19 @@ export const useStore = create<AppState>()(
           correctActionsForCurrentHand: correctActions,
         })
 
+        fireEvent('hand', {
+          rangeId: rid,
+          rangeName: activeDrillRange.name,
+          hand: activeHand,
+          actionTaken: action,
+          correctAction,
+          isCorrect: correct ? 1 : 0,
+          severity: severity ?? null,
+          rng: useRngForFrequency ? currentRng : null,
+          stackRange: stackGrid?.stackRange ?? null,
+          stackGridIdx: activeDrillStackGridIdx,
+        }, get().authToken)
+
         const rngTag = useRngForFrequency ? ` (RNG: ${currentRng})` : ''
         let message: string
         if (validNotPrincipal) {
@@ -1141,6 +1166,15 @@ export const useStore = create<AppState>()(
           }
           newHistory = [...trainingHistory, session]
           saveHistory(newHistory)
+          fireEvent('session-end', {
+            rangeNames: session.rangeNames,
+            hands: session.hands,
+            correct: session.correct,
+            errors: session.errors,
+            consults: session.consults,
+            durationSeconds: session.durationSeconds,
+            startedAt: Math.floor(sessionStartTime / 1000),
+          }, get().authToken)
         }
         set({
           activeDrillRange: null,
@@ -1150,6 +1184,11 @@ export const useStore = create<AppState>()(
           page: 'drill',
           trainingHistory: newHistory,
         })
+      },
+
+      logConsult: (rangeId, rangeName, hand) => {
+        // increment de sessionStats.consults já acontece via incrementConsults nos call sites
+        fireEvent('consult', { rangeId, rangeName, hand: hand ?? null }, get().authToken)
       },
 
       incrementConsults: () => {

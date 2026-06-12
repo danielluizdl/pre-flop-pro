@@ -995,6 +995,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
   const nextHand               = useStore(s => s.nextDrillHand)
   const stopDrill              = useStore(s => s.stopDrill)
   const incrementConsults      = useStore(s => s.incrementConsults)
+  const logConsult             = useStore(s => s.logConsult)
   const stats                  = useStore(s => s.sessionStats)
 
   const heroStack = Object.values(currentScenario).find(p => p.isHero)?.stack ?? 100
@@ -1109,7 +1110,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
     const key = e.key.toLowerCase()
     if (key === 'v') {
       e.preventDefault()
-      if (modalViewMode === null) { setModalViewMode('actions'); incrementConsults() }
+      if (modalViewMode === null) { setModalViewMode('actions'); incrementConsults(); if (activeDrillRange) logConsult(activeDrillRange.id, activeDrillRange.name, activeHand) }
       else setModalViewMode(null)
       return
     }
@@ -1149,7 +1150,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                   Erro / Acerto
                 </button>
                 <button
-                  onClick={() => { setModalViewMode('actions'); incrementConsults() }}
+                  onClick={() => { setModalViewMode('actions'); incrementConsults(); if (activeDrillRange) logConsult(activeDrillRange.id, activeDrillRange.name, activeHand) }}
                   className="px-2 py-0.5 text-xs border border-warm-600 bg-warm-900/80 text-warm-300 rounded-lg hover:bg-warm-700 transition-colors"
                 >
                   Ver Range
