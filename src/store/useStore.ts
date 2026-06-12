@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import {
   ALL_HANDS, makeEmptyGrid, generateSuits, getRngCorrectAction, getTopFrequencyActions, stackMatchesRange,
+  focusWeight, weightedPick,
 } from '../utils/hands'
 import type {
   BrushState, HandData, HandHistoryEntry, PokerPosition, PositionConfig,
@@ -10,6 +11,8 @@ import type {
 import {
   POS_6MAX, POS_8MAX, SLOTS_6MAX, SLOTS_8MAX,
 } from '../types'
+import { validateRanges } from '../utils/validateRanges'
+import { decodeRanges, encodeRanges } from '../utils/sparseGrid'
 import { DEFAULT_RANGES } from '../data/defaultRanges'
 import adminRangesRaw from '../data/adminRanges.json'
 
@@ -37,14 +40,16 @@ const ADMIN_VERSION = adminPayload.version ?? 0
 const ADMIN_RANGES  = adminPayload.ranges ?? []
 
 const SEEDED_DEFAULTS: Range[] = (() => {
-  if (ADMIN_RANGES.length === 0) return DEFAULT_RANGES
+  // decodeRanges aceita o adminRanges.json em formato denso (atual) ou esparso (após o próximo publish)
+  if (ADMIN_RANGES.length === 0) return decodeRanges(DEFAULT_RANGES)
   const adminIds = new Set(ADMIN_RANGES.map(r => r.id))
-  return [...ADMIN_RANGES, ...DEFAULT_RANGES.filter(r => !adminIds.has(r.id))]
+  return decodeRanges([...ADMIN_RANGES, ...DEFAULT_RANGES.filter(r => !adminIds.has(r.id))])
 })()
 
 function loadRanges(): Range[] {
   try {
-    const saved: Range[] = JSON.parse(localStorage.getItem(RANGES_KEY) ?? '[]') ?? []
+    // decodeRanges torna formato esparso e denso transparentes ao restante do app
+    const saved: Range[] = decodeRanges(JSON.parse(localStorage.getItem(RANGES_KEY) ?? '[]') ?? [])
     const seenVersion = Number(localStorage.getItem(ADMIN_VERSION_KEY) ?? '0')
     const deletedIds = loadDeletedAdminIds()
 
@@ -55,7 +60,7 @@ function loadRanges(): Range[] {
       const userRanges = saved.filter(r => !adminIds.has(r.id))
       const toSeed = SEEDED_DEFAULTS.filter(r => !deletedIds.has(r.id))
       const merged = [...toSeed, ...userRanges]
-      localStorage.setItem(RANGES_KEY, JSON.stringify(merged))
+      saveRanges(merged)
       localStorage.setItem(ADMIN_VERSION_KEY, String(ADMIN_VERSION))
       // Versão nova publicada: limpa a lista de deletados (admin decidiu manter esses ranges)
       localStorage.removeItem(DELETED_ADMIN_KEY)
@@ -67,15 +72,37 @@ function loadRanges(): Range[] {
     const missing = SEEDED_DEFAULTS.filter(r => !existingIds.has(r.id) && !deletedIds.has(r.id))
     if (missing.length > 0) {
       const merged = [...missing, ...saved]
-      localStorage.setItem(RANGES_KEY, JSON.stringify(merged))
+      saveRanges(merged)
       return merged
     }
     return saved
   } catch { return [...SEEDED_DEFAULTS] }
 }
 
+function loadRangesValidated(): Range[] {
+  const ranges = loadRanges()
+  const problems = validateRanges(ranges)
+  if (problems.length > 0) {
+    console.warn(`[validateRanges] ${problems.length} problema(s) nos ranges:\n` + problems.join('\n'))
+  }
+  return ranges
+}
+
+// Reporter ligado ao store na criação; sinaliza falha de cota sem que os
+// helpers de save (fora do escopo do store) precisem acessar set/get.
+let storageErrorReporter: ((blocked: boolean) => void) | null = null
+
+function trySave(fn: () => void) {
+  try {
+    fn()
+    storageErrorReporter?.(false)
+  } catch {
+    storageErrorReporter?.(true)
+  }
+}
+
 function saveRanges(ranges: Range[]) {
-  localStorage.setItem(RANGES_KEY, JSON.stringify(ranges))
+  trySave(() => localStorage.setItem(RANGES_KEY, JSON.stringify(encodeRanges(ranges))))
 }
 
 function loadHistory(): TrainingSession[] {
@@ -84,7 +111,7 @@ function loadHistory(): TrainingSession[] {
 }
 
 function saveHistory(sessions: TrainingSession[]) {
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(sessions))
+  trySave(() => localStorage.setItem(HISTORY_KEY, JSON.stringify(sessions)))
 }
 
 function loadHandPerf(): HandPerfMap {
@@ -93,7 +120,7 @@ function loadHandPerf(): HandPerfMap {
 }
 
 function saveHandPerf(perf: HandPerfMap) {
-  localStorage.setItem(HAND_PERF_KEY, JSON.stringify(perf))
+  trySave(() => localStorage.setItem(HAND_PERF_KEY, JSON.stringify(perf)))
 }
 
 interface AppState {
@@ -108,6 +135,12 @@ interface AppState {
   // ── Persistent data ─────────────────────────────────────────────────────────
   ranges: Range[]
   trainingHistory: TrainingSession[]
+  storageBlocked: boolean
+
+  // ── Backup ──────────────────────────────────────────────────────────────────
+  exportData: () => string
+  importData: (json: string) => { ok: boolean; error?: string }
+  resetLocalData: () => void
 
   // ── Table config (shared for editor + drill display) ────────────────────────
   currentTableSize: TableSize
@@ -185,6 +218,12 @@ interface AppState {
 
   useRngForFrequency: boolean
   setUseRng: (val: boolean) => void
+  acceptAnyFreq: boolean
+  setAcceptAnyFreq: (val: boolean) => void
+  focusErrors: boolean
+  setFocusErrors: (val: boolean) => void
+  sessionHandPerf: HandPerfMap
+  sessionSeverity: { grave: number; impreciso: number }
 
   toggleDrillRange: (id: number) => void
   clearDrillRanges: () => void
@@ -193,12 +232,13 @@ interface AppState {
   setAllDrillHands: (included: boolean) => void
   startDrillSession: () => void
   nextDrillHand: () => boolean
-  checkDrillAnswer: (action: string) => { correct: boolean; message: string }
+  checkDrillAnswer: (action: string) => { correct: boolean; message: string; severity?: 'grave' | 'impreciso' }
   stopDrill: () => void
   incrementConsults: () => void
 
   // ── Auth ──────────────────────────────────────────────────────────────────────
   userMode: 'visitor' | 'admin' | null
+  adminToken: { token: string; expiresAt: number } | null
   login: (password: string) => Promise<'ok' | 'wrong_password' | 'error'>
   enterAsVisitor: () => void
   logout: () => void
@@ -207,7 +247,7 @@ interface AppState {
   adminWorkerUrl: string
   setAdminWorkerUrl: (url: string) => void
   adminLastError: string
-  adminSaveRanges: (password: string) => Promise<'ok' | 'wrong_password' | 'error' | 'invalid_token' | 'missing_token' | 'too_large'>
+  adminSaveRanges: (password?: string) => Promise<'ok' | 'wrong_password' | 'token_expired' | 'error' | 'invalid_token' | 'missing_token'>
 }
 
 export const useStore = create<AppState>()(
@@ -222,8 +262,43 @@ export const useStore = create<AppState>()(
       setActiveCategory: (activeCategory) => set({ activeCategory }),
 
       // ── Persistent data ───────────────────────────────────────────────────────
-      ranges: loadRanges(),
+      ranges: loadRangesValidated(),
       trainingHistory: loadHistory(),
+      storageBlocked: false,
+
+      // ── Backup ──────────────────────────────────────────────────────────────
+      exportData: () => {
+        const { ranges, trainingHistory, handPerformance } = get()
+        return JSON.stringify({ version: 1, ranges, trainingHistory, handPerformance }, null, 2)
+      },
+
+      importData: (jsonStr) => {
+        let parsed: unknown
+        try { parsed = JSON.parse(jsonStr) }
+        catch { return { ok: false, error: 'JSON inválido.' } }
+        if (typeof parsed !== 'object' || parsed === null) return { ok: false, error: 'Formato inválido.' }
+        const data = parsed as { ranges?: unknown; trainingHistory?: unknown; handPerformance?: unknown }
+        if (!Array.isArray(data.ranges)) return { ok: false, error: 'Campo "ranges" ausente ou inválido.' }
+        let problems: string[]
+        try { problems = validateRanges(data.ranges as Range[]) }
+        catch { return { ok: false, error: 'Ranges com estrutura inválida.' } }
+        if (problems.length > 0) return { ok: false, error: `Ranges inválidos: ${problems[0]}` }
+        const ranges = decodeRanges(data.ranges as Range[])
+        const trainingHistory = Array.isArray(data.trainingHistory) ? data.trainingHistory as TrainingSession[] : []
+        const handPerformance = (data.handPerformance && typeof data.handPerformance === 'object')
+          ? data.handPerformance as HandPerfMap : {}
+        saveRanges(ranges)
+        saveHistory(trainingHistory)
+        saveHandPerf(handPerformance)
+        set({ ranges, trainingHistory, handPerformance })
+        return { ok: true }
+      },
+
+      resetLocalData: () => {
+        Object.keys(localStorage)
+          .filter(k => k.startsWith('fbr-') || k.startsWith('pfp-'))
+          .forEach(k => localStorage.removeItem(k))
+      },
 
       // ── Table config ──────────────────────────────────────────────────────────
       currentTableSize: 6,
@@ -735,6 +810,12 @@ export const useStore = create<AppState>()(
       // ── Drill ─────────────────────────────────────────────────────────────────
       useRngForFrequency: false,
       setUseRng: (val) => set({ useRngForFrequency: val }),
+      acceptAnyFreq: false,
+      setAcceptAnyFreq: (val) => set({ acceptAnyFreq: val }),
+      focusErrors: false,
+      setFocusErrors: (val) => set({ focusErrors: val }),
+      sessionHandPerf: {},
+      sessionSeverity: { grave: 0, impreciso: 0 },
 
       selectedDrillRangeIds: [],
       drillExcludedHands: [],
@@ -778,6 +859,8 @@ export const useStore = create<AppState>()(
         set({
           sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 },
           handHistory: [],
+          sessionHandPerf: {},
+          sessionSeverity: { grave: 0, impreciso: 0 },
           sessionStartTime: Date.now(),
         })
       },
@@ -845,8 +928,10 @@ export const useStore = create<AppState>()(
               : null
 
             if (prereqGrid) {
+              // Com prereq, o filtro manual de mãos (drillExcludedHands) é ignorado:
+              // os candidatos vêm das mãos não-fold do prereqGrid.
               ALL_HANDS
-                .filter(h => (prereqGrid[h]?.fold ?? 100) < 100 && !drillExcludedHands.includes(h))
+                .filter(h => (prereqGrid[h]?.fold ?? 100) < 100)
                 .forEach(hand => pool.push({ range: r, hand, scenario: newScenario, ante, heroRaiseSize, stackGridIdx, stackRangeLabel, activeGrid }))
             } else {
               ALL_HANDS
@@ -865,8 +950,17 @@ export const useStore = create<AppState>()(
         const pickedId = eligibleIds[Math.floor(Math.random() * eligibleIds.length)]
         const pool = byRange.get(pickedId)!
 
-        // Level 2: uniform (scenario, hand) selection within the range
-        const pick = pool[Math.floor(Math.random() * pool.length)]
+        // Level 2: (scenario, hand) selection within the range. Uniforme por padrão;
+        // com "Focar erros" ligado, ponderado pelo desempenho acumulado do range.
+        const { focusErrors, handPerformance } = get()
+        let pick: Candidate
+        if (focusErrors) {
+          const perfMap = handPerformance[pickedId] ?? {}
+          const weights = pool.map(c => focusWeight(perfMap[c.hand]))
+          pick = weightedPick(pool, weights)
+        } else {
+          pick = pool[Math.floor(Math.random() * pool.length)]
+        }
         const { range, hand, scenario: newScenario, ante: newAnte, heroRaiseSize: heroRaiseFromScen, stackGridIdx: finalStackGridIdx, stackRangeLabel, activeGrid } = pick
 
         const rSize: TableSize = range.tableSize || 6
@@ -910,7 +1004,7 @@ export const useStore = create<AppState>()(
       checkDrillAnswer: (action) => {
         const {
           activeDrillRange, activeDrillStackGridIdx, activeHand, sessionStats,
-          currentRng, currentHandSuits, handHistory, useRngForFrequency,
+          currentRng, currentHandSuits, handHistory, useRngForFrequency, acceptAnyFreq,
         } = get()
         if (!activeDrillRange) return { correct: false, message: '' }
 
@@ -932,12 +1026,31 @@ export const useStore = create<AppState>()(
           correctAction = correctActions.join(' ou ')
         }
 
-        const correct = correctActions.includes(action)
+        const freqOf = (act: string): number => {
+          if (!d) return act === 'Fold' ? 100 : 0
+          if (act === 'Fold') return d.fold ?? 0
+          if (act === 'Call') return d.call ?? 0
+          if (act === 'Raise') return d.raise ?? 0
+          if (act === 'Allin') return d.allin ?? 0
+          if (extraLabel && act === extraLabel) return d.extra ?? 0
+          return 0
+        }
+
+        const isPrincipal = correctActions.includes(action)
+        // Modo menos binário (RNG off): qualquer ação com frequência > 0 é aceita.
+        const validNotPrincipal = !isPrincipal && !useRngForFrequency && acceptAnyFreq && freqOf(action) > 0
+        const correct = isPrincipal || validNotPrincipal
+
+        // Severidade do erro: 'grave' = ação respondida tem 0% na mão; 'impreciso' = freq > 0 mas não é a principal.
+        const severity: 'grave' | 'impreciso' | undefined = correct
+          ? undefined
+          : (freqOf(action) > 0 ? 'impreciso' : 'grave')
 
         const stats = { ...sessionStats, hands: sessionStats.hands + 1 }
         if (correct) stats.correct++; else stats.errors++
 
         const { activeDrillStackRange: stackRange } = get()
+        const rid = activeDrillRange.id
         const entry: HandHistoryEntry = {
           id: Date.now(),
           hand: activeHand,
@@ -947,55 +1060,64 @@ export const useStore = create<AppState>()(
           rng: currentRng,
           correct,
           rangeName: activeDrillRange.name,
+          rangeId: rid,
+          stackGridIdx: activeDrillStackGridIdx,
           raiseSize: d?.size,
           stackRange: stackRange || undefined,
+          ...(severity ? { severity } : {}),
         }
-        const { handPerformance } = get()
-        const rid = activeDrillRange.id
-        const prev = handPerformance[rid]?.[activeHand] ?? { c: 0, t: 0 }
-        const newPerf: HandPerfMap = {
-          ...handPerformance,
-          [rid]: { ...handPerformance[rid], [activeHand]: { c: prev.c + (correct ? 1 : 0), t: prev.t + 1 } },
+        const accumulate = (map: HandPerfMap): HandPerfMap => {
+          const prev = map[rid]?.[activeHand] ?? { c: 0, t: 0 }
+          const next: HandPerfMap = {
+            ...map,
+            [rid]: { ...map[rid], [activeHand]: { c: prev.c + (correct ? 1 : 0), t: prev.t + 1 } },
+          }
+          if (stackRange) {
+            const sk = `${rid}|||${stackRange}`
+            const prevSk = map[sk]?.[activeHand] ?? { c: 0, t: 0 }
+            next[sk] = { ...map[sk], [activeHand]: { c: prevSk.c + (correct ? 1 : 0), t: prevSk.t + 1 } }
+          }
+          return next
         }
-        if (stackRange) {
-          const sk = `${rid}|||${stackRange}`
-          const prevSk = handPerformance[sk]?.[activeHand] ?? { c: 0, t: 0 }
-          newPerf[sk] = { ...handPerformance[sk], [activeHand]: { c: prevSk.c + (correct ? 1 : 0), t: prevSk.t + 1 } }
-        }
+        const { handPerformance, sessionHandPerf, sessionSeverity } = get()
+        const newPerf = accumulate(handPerformance)
+        const newSessionPerf = accumulate(sessionHandPerf)
         saveHandPerf(newPerf)
         set({
           sessionStats: stats,
           handHistory: [...handHistory, entry].slice(-50),
           handPerformance: newPerf,
+          sessionHandPerf: newSessionPerf,
+          sessionSeverity: severity
+            ? { grave: sessionSeverity.grave + (severity === 'grave' ? 1 : 0), impreciso: sessionSeverity.impreciso + (severity === 'impreciso' ? 1 : 0) }
+            : sessionSeverity,
           correctActionForCurrentHand: correctAction,
           correctActionsForCurrentHand: correctActions,
         })
 
         const rngTag = useRngForFrequency ? ` (RNG: ${currentRng})` : ''
-        return {
-          correct,
-          message: correct
-            ? `✓ ${action}!${rngTag}`
-            : `✗ Correto: ${correctAction}${rngTag}`,
+        let message: string
+        if (validNotPrincipal) {
+          const principalLabel = correctActions.map(a => `${a} ${freqOf(a)}%`).join(' ou ')
+          message = `~ Válido — ação principal: ${principalLabel}`
+        } else if (correct) {
+          message = `✓ ${action}!${rngTag}`
+        } else if (severity === 'grave') {
+          message = `✗ Erro grave — ${action} tinha 0%. Correto: ${correctAction}${rngTag}`
+        } else {
+          const principalLabel = correctActions.map(a => `${a} ${freqOf(a)}%`).join(' ou ')
+          message = `✗ Impreciso — ${action} tinha ${freqOf(action)}%. Principal: ${principalLabel}${rngTag}`
         }
+        return { correct, message, severity }
       },
 
       stopDrill: () => {
-        const { sessionStats, selectedDrillRangeIds, ranges, currentTableSize, sessionStartTime, trainingHistory, handHistory } = get()
+        const { sessionStats, selectedDrillRangeIds, ranges, currentTableSize, sessionStartTime, trainingHistory, sessionHandPerf } = get()
         let newHistory = trainingHistory
         if (sessionStats.hands > 0) {
-          const handPerf: Record<string, Record<string, { c: number; t: number }>> = {}
-          handHistory.forEach(e => {
-            if (!handPerf[e.rangeName]) handPerf[e.rangeName] = {}
-            const cur = handPerf[e.rangeName][e.hand] ?? { c: 0, t: 0 }
-            handPerf[e.rangeName][e.hand] = { c: cur.c + (e.correct ? 1 : 0), t: cur.t + 1 }
-            if (e.stackRange) {
-              const sk = `${e.rangeName}|||${e.stackRange}`
-              if (!handPerf[sk]) handPerf[sk] = {}
-              const curSk = handPerf[sk][e.hand] ?? { c: 0, t: 0 }
-              handPerf[sk][e.hand] = { c: curSk.c + (e.correct ? 1 : 0), t: curSk.t + 1 }
-            }
-          })
+          // sessionHandPerf é o acumulador da sessão inteira (não limitado ao cap de 50 do histórico visual),
+          // chaveado por rangeId e rangeId|||stackRange.
+          const handPerf: Record<string, Record<string, { c: number; t: number }>> = JSON.parse(JSON.stringify(sessionHandPerf))
           const session: TrainingSession = {
             id: Date.now(),
             timestamp: Date.now(),
@@ -1028,6 +1150,7 @@ export const useStore = create<AppState>()(
 
       // ── Auth ────────────────────────────────────────────────────────────────────
       userMode: null,
+      adminToken: null,
       login: async (password) => {
         const { adminWorkerUrl } = get()
         if (!adminWorkerUrl) return 'error'
@@ -1038,12 +1161,20 @@ export const useStore = create<AppState>()(
             body: JSON.stringify({ password, action: 'validate' }),
           })
           if (res.status === 401) return 'wrong_password'
-          if (res.ok) { set({ userMode: 'admin' }); return 'ok' }
+          if (res.ok) {
+            let adminToken: { token: string; expiresAt: number } | null = null
+            try {
+              const data = await res.json()
+              if (data?.token && data?.expiresAt) adminToken = { token: data.token, expiresAt: data.expiresAt }
+            } catch { adminToken = null }
+            set({ userMode: 'admin', adminToken })
+            return 'ok'
+          }
           return 'error'
         } catch { return 'error' }
       },
       enterAsVisitor: () => set({ userMode: 'visitor' }),
-      logout: () => set({ userMode: null }),
+      logout: () => set({ userMode: null, adminToken: null }),
 
       // ── Admin ───────────────────────────────────────────────────────────────────
       adminWorkerUrl: localStorage.getItem('admin-worker-url') ?? 'https://preflop-admin.loureirodlg.workers.dev',
@@ -1053,22 +1184,28 @@ export const useStore = create<AppState>()(
         set({ adminWorkerUrl: url })
       },
       adminSaveRanges: async (password) => {
-        const { ranges, adminWorkerUrl } = get()
+        const { ranges, adminWorkerUrl, adminToken } = get()
         if (!adminWorkerUrl) return 'error'
+        const usingToken = !password && !!adminToken
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+        if (usingToken) headers.Authorization = `Bearer ${adminToken!.token}`
         try {
+          const sparse = encodeRanges(ranges)
           const res = await fetch(adminWorkerUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password, ranges }),
+            headers,
+            body: JSON.stringify(usingToken ? { ranges: sparse } : { password, ranges: sparse }),
           })
-          if (res.status === 401) return 'wrong_password'
+          if (res.status === 401) {
+            if (usingToken) { set({ adminToken: null }); return 'token_expired' }
+            return 'wrong_password'
+          }
           if (res.ok) return 'ok'
           try {
             const data = await res.json()
             set({ adminLastError: data.message ?? `HTTP ${res.status}` })
             if (data.code === 'invalid_token') return 'invalid_token'
             if (data.code === 'missing_token') return 'missing_token'
-            if (data.code === 'too_large') return 'too_large'
           } catch { set({ adminLastError: `HTTP ${res.status}` }) }
           return 'error'
         } catch (e) { set({ adminLastError: String(e) }); return 'error' }
@@ -1080,3 +1217,7 @@ export const useStore = create<AppState>()(
     }
   )
 )
+
+storageErrorReporter = (blocked) => {
+  if (useStore.getState().storageBlocked !== blocked) useStore.setState({ storageBlocked: blocked })
+}

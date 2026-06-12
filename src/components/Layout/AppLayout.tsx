@@ -12,6 +12,7 @@ import { LoginPage } from '../Auth/LoginPage'
 
 export function AppLayout() {
   const { page, darkMode, userMode } = useStore()
+  const storageBlocked = useStore(s => s.storageBlocked)
 
   if (userMode === null) return <LoginPage />
 
@@ -32,6 +33,11 @@ export function AppLayout() {
   return (
     <div className={darkMode ? 'dark' : ''}>
       <div className="min-h-screen bg-warm-950 text-warm-100">
+        {storageBlocked && (
+          <div className="bg-red-900/40 border-b border-red-700 text-red-200 text-sm px-6 py-2.5 text-center">
+            Armazenamento cheio: seus dados NÃO estão sendo salvos. Exporte um backup no Dashboard e libere espaço.
+          </div>
+        )}
         <TopNav />
         <main className="w-full max-w-[1800px] mx-auto px-6 md:px-10 pt-8 pb-16">
           {renderPage()}

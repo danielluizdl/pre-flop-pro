@@ -6,8 +6,33 @@ import { HandQuickSelect } from '../ui/HandQuickSelect'
 import { RangePreviewModal } from '../ui/RangePreviewModal'
 import { Eye } from 'lucide-react'
 import { RANKS, SUIT_ICONS } from '../../types'
-import { ALL_HANDS } from '../../utils/hands'
+import { ALL_HANDS, getRngBands, formatRngBands } from '../../utils/hands'
 import type { HandHistoryEntry, Range, TrainingSession } from '../../types'
+
+/* ── Label helpers (compartilhados entre mão atual e replay do histórico) ─── */
+function gridForRange(range: Range, stackGridIdx: number): Record<string, import('../../types').HandData> {
+  const sg = stackGridIdx >= 0 ? range.stackGrids?.[stackGridIdx] : undefined
+  return sg?.grid ?? range.grid
+}
+
+function freqLabelFor(range: Range, stackGridIdx: number, hand: string): string {
+  const d = gridForRange(range, stackGridIdx)[hand]
+  if (!d) return ''
+  const parts: string[] = []
+  const extraLabel = range.customAction?.label
+  if (d.allin > 0) parts.push(`${d.allin}% All-in`)
+  if (d.raise > 0) parts.push(`${d.raise}% Raise`)
+  if (d.call  > 0) parts.push(`${d.call}% Call`)
+  if (d.extra && d.extra > 0 && extraLabel) parts.push(`${d.extra}% ${extraLabel}`)
+  if (parts.length === 0) return '100% Fold'
+  if (d.fold  > 0) parts.push(`${d.fold}% Fold`)
+  return parts.join(' e ')
+}
+
+function bandLabelFor(range: Range, stackGridIdx: number, hand: string): string {
+  const d = gridForRange(range, stackGridIdx)[hand]
+  return formatRngBands(getRngBands(d, range.customAction?.label))
+}
 
 
 
@@ -133,7 +158,8 @@ function SessionDetail({ session, ranges }: {
       ) : (
         <div className="space-y-2">
           {sessionRanges.map(r => {
-            const mergedPerf = sessionPerf?.[r.name] ?? {}
+            // handPerf de sessões novas é chaveado por rangeId; sessões antigas, por rangeName (fallback).
+            const mergedPerf = sessionPerf?.[String(r.id)] ?? sessionPerf?.[r.name] ?? {}
             const vals     = Object.values(mergedPerf)
             const total    = vals.reduce((s, v) => s + v.t, 0)
             const correct  = vals.reduce((s, v) => s + v.c, 0)
@@ -141,8 +167,9 @@ function SessionDetail({ session, ranges }: {
             const isOpenR  = openRangeId === r.id
             const stackRanges = r.stackGrids && r.stackGrids.length > 1 ? r.stackGrids.map(sg => sg.stackRange).filter(Boolean) : []
             const activeStack = isOpenR && stackRanges.length > 0 ? selectedStack : ''
-            const perfKey  = activeStack ? `${r.name}|||${activeStack}` : r.name
-            const perf     = sessionPerf?.[perfKey] ?? {}
+            const perf     = (activeStack
+              ? (sessionPerf?.[`${r.id}|||${activeStack}`] ?? sessionPerf?.[`${r.name}|||${activeStack}`])
+              : (sessionPerf?.[String(r.id)] ?? sessionPerf?.[r.name])) ?? {}
             const gridIdx  = activeStack ? r.stackGrids!.findIndex(sg => sg.stackRange === activeStack) : 0
             const grid     = r.stackGrids && gridIdx >= 0 ? r.stackGrids[gridIdx].grid : (r.stackGrids?.[0]?.grid ?? r.grid)
 
@@ -304,6 +331,10 @@ function HandFilterGrid() {
   const setExcluded = useStore(s => s.setDrillExcluded)
   const useRng = useStore(s => s.useRngForFrequency)
   const setUseRng = useStore(s => s.setUseRng)
+  const acceptAnyFreq = useStore(s => s.acceptAnyFreq)
+  const setAcceptAnyFreq = useStore(s => s.setAcceptAnyFreq)
+  const focusErrors = useStore(s => s.focusErrors)
+  const setFocusErrors = useStore(s => s.setFocusErrors)
   const isDrawing    = useRef(false)
   const drawAction   = useRef<'exclude' | 'include'>('exclude')
   const paintedHands = useRef<Set<string>>(new Set())
@@ -359,6 +390,32 @@ function HandFilterGrid() {
           ].join(' ')}
         >
           Não
+        </button>
+
+        {!useRng && (
+          <>
+            <div className="h-4 border-l border-warm-600 mx-0.5" />
+            <button
+              onClick={() => setAcceptAnyFreq(!acceptAnyFreq)}
+              title="Aceita como acerto qualquer ação com frequência maior que zero"
+              className={['px-2.5 py-1 text-xs rounded-md border font-semibold transition-colors',
+                acceptAnyFreq ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:bg-warm-700',
+              ].join(' ')}
+            >
+              Aceitar freq. {'>'} 0
+            </button>
+          </>
+        )}
+
+        <div className="h-4 border-l border-warm-600 mx-0.5" />
+        <button
+          onClick={() => setFocusErrors(!focusErrors)}
+          title="Sorteia mais as mãos em que você erra mais (e as nunca treinadas)"
+          className={['px-2.5 py-1 text-xs rounded-md border font-semibold transition-colors',
+            focusErrors ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:bg-warm-700',
+          ].join(' ')}
+        >
+          Focar erros
         </button>
       </div>
 
@@ -658,6 +715,7 @@ type PrevSnapshot = {
   feedback: string
   feedbackOk: boolean
   freqLabel: string
+  bandLabel: string
   range: import('../../types').Range
   stackGridIdx: number
 }
@@ -668,7 +726,8 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
   const selectedIds     = useStore(s => s.selectedDrillRangeIds)
   const handPerformance = useStore(s => s.handPerformance)
   const sessionStats    = useStore(s => s.sessionStats)
-  const handHistory     = useStore(s => s.handHistory)
+  const sessionHandPerf = useStore(s => s.sessionHandPerf)
+  const sessionSeverity = useStore(s => s.sessionSeverity)
   const [openId, setOpenId]         = useState<number | null>(null)
   const [viewMode, setViewMode]     = useState<'actions' | 'heatmap'>('heatmap')
   const [selectedStack, setSelectedStack] = useState('')
@@ -685,10 +744,12 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
 
   const trainedRanges = ranges.filter(r => selectedIds.includes(r.id))
 
-  const sessionByRange = handHistory.reduce((acc, e) => {
-    if (!acc[e.rangeName]) acc[e.rangeName] = { total: 0, correct: 0 }
-    acc[e.rangeName].total++
-    if (e.correct) acc[e.rangeName].correct++
+  // Stats por range vêm do acumulador da sessão (não limitado ao cap de 50 do histórico visual).
+  const sessionByRange = Object.entries(sessionHandPerf).reduce((acc, [key, hands]) => {
+    if (key.includes('|||')) return acc
+    const total = Object.values(hands).reduce((s, v) => s + v.t, 0)
+    const correct = Object.values(hands).reduce((s, v) => s + v.c, 0)
+    acc[key] = { total, correct }
     return acc
   }, {} as Record<string, { total: number; correct: number }>)
 
@@ -742,11 +803,17 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
             <div className="text-xs text-warm-400">Precisão</div>
           </div>
         </div>
+        {sessionStats.errors > 0 && (
+          <div className="mt-3 pt-3 border-t border-warm-700 flex justify-center gap-6 text-xs">
+            <span className="text-warm-400">Erros graves: <span className="text-red-400 font-bold">{sessionSeverity.grave}</span></span>
+            <span className="text-warm-400">Imprecisos: <span className="text-yellow-400 font-bold">{sessionSeverity.impreciso}</span></span>
+          </div>
+        )}
       </div>
 
       <div className="space-y-2">
         {trainedRanges.map(r => {
-          const sess     = sessionByRange[r.name] ?? { total: 0, correct: 0 }
+          const sess     = sessionByRange[String(r.id)] ?? { total: 0, correct: 0 }
           const accuracy = sess.total > 0 ? Math.round(sess.correct / sess.total * 100) : null
           const isOpen   = openId === r.id
           const stackRanges = r.stackGrids && r.stackGrids.length > 1 ? r.stackGrids.map(sg => sg.stackRange).filter(Boolean) : []
@@ -840,8 +907,8 @@ const LED: Record<string, { color: string; glow: string }> = {
   Raise: { color: '#ef4444', glow: 'rgba(239,68,68,0.55)' },
   Allin: { color: '#c95f3a', glow: 'rgba(201,95,58,0.65)' },
 }
-function DrillActionButton({ name, sub, action, isPressed, isDisabled, onClick }: {
-  name: string; sub?: string; action: string; isPressed: boolean; isDisabled: boolean; onClick: () => void
+function DrillActionButton({ name, sub, action, hotkey, isPressed, isDisabled, onClick }: {
+  name: string; sub?: string; action: string; hotkey?: string; isPressed: boolean; isDisabled: boolean; onClick: () => void
 }) {
   const [hovered, setHovered] = useState(false)
   const led = LED[action]
@@ -868,6 +935,11 @@ function DrillActionButton({ name, sub, action, isPressed, isDisabled, onClick }
         transition: 'transform 0.08s ease',
       }}
     >
+      {hotkey && (
+        <span style={{ position:'absolute', top:4, right:6, fontSize:9, fontWeight:700, color:'#6b665c', letterSpacing:'0.05em', pointerEvents:'none' }}>
+          {hotkey}
+        </span>
+      )}
       <span style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, lineHeight:1 }}>
         <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:17, textTransform:'uppercase', letterSpacing:'0.10em' }}>
           {name}
@@ -898,6 +970,14 @@ function DrillActionButton({ name, sub, action, isPressed, isDisabled, onClick }
   )
 }
 
+/* Escolhe a primeira letra do label que não colida com as teclas já usadas */
+function pickHotkey(label: string, used: Set<string>): string | undefined {
+  for (const ch of label.toUpperCase()) {
+    if (/[A-Z]/.test(ch) && !used.has(ch)) return ch
+  }
+  return undefined
+}
+
 /* ── Active drill ──────────────────────────────────────────────────────────── */
 function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => void; onShowHistory: () => void }) {
   const ranges                 = useStore(s => s.ranges)
@@ -925,6 +1005,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
   const [pressedAction, setPressedAction] = useState('')
   const answeredRef                     = useRef(false)
   const [freqLabel, setFreqLabel]       = useState('')
+  const [bandLabel, setBandLabel]       = useState('')
   const [autoAdvance, setAutoAdvance]   = useState(false)
   const [prevSnapshot, setPrevSnapshot] = useState<PrevSnapshot | null>(null)
   const [viewingPrev, setViewingPrev]   = useState(false)
@@ -932,6 +1013,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   const goNextRef = useRef<() => void>(() => {})
+  const keyHandlerRef = useRef<(e: KeyboardEvent) => void>(() => {})
 
   const sidebarW = sidebarCollapsed ? 28 : 208
 
@@ -941,25 +1023,13 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
     return () => clearTimeout(t)
   }, [answered, viewingPrev, autoAdvance])
 
-  if (!activeDrillRange || !activeHand) return null
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => keyHandlerRef.current(e)
+    window.addEventListener('keydown', h)
+    return () => window.removeEventListener('keydown', h)
+  }, [])
 
-  function getFreqLabel(hand: string): string {
-    const stackGrid = activeDrillStackGridIdx >= 0
-      ? activeDrillRange!.stackGrids?.[activeDrillStackGridIdx]
-      : undefined
-    const activeGrid = stackGrid?.grid ?? activeDrillRange!.grid
-    const d = activeGrid[hand]
-    if (!d) return ''
-    const parts: string[] = []
-    const extraLabel = activeDrillRange!.customAction?.label
-    if (d.allin > 0) parts.push(`${d.allin}% All-in`)
-    if (d.raise > 0) parts.push(`${d.raise}% Raise`)
-    if (d.call  > 0) parts.push(`${d.call}% Call`)
-    if (d.extra && d.extra > 0 && extraLabel) parts.push(`${d.extra}% ${extraLabel}`)
-    if (parts.length === 0) return '100% Fold'
-    if (d.fold  > 0) parts.push(`${d.fold}% Fold`)
-    return parts.join(' e ')
-  }
+  if (!activeDrillRange || !activeHand) return null
 
   const displayHand    = viewingPrev ? prevSnapshot!.hand       : activeHand
   const displaySuits   = viewingPrev ? prevSnapshot!.suits      : currentHandSuits
@@ -967,6 +1037,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
   const showFeedback   = viewingPrev ? prevSnapshot!.feedback   : feedback
   const showFeedbackOk = viewingPrev ? prevSnapshot!.feedbackOk : feedbackOk
   const showFreqLabel  = viewingPrev ? prevSnapshot!.freqLabel  : freqLabel
+  const showBandLabel  = viewingPrev ? prevSnapshot!.bandLabel  : bandLabel
   const isAnswered     = viewingPrev || answered
 
   const r1 = displayHand[0]
@@ -975,21 +1046,30 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
 
   function handleReplayEntry(entry: HandHistoryEntry) {
     const feedbackMsg = entry.correct ? `✓ ${entry.actionTaken}!` : `✗ Correto: ${entry.correctAction}`
-    const entryRange = ranges.find(r => r.name === entry.rangeName) ?? activeDrillRange!
-    setPrevSnapshot({ hand: entry.hand, suits: entry.suits, rng: entry.rng, feedback: feedbackMsg, feedbackOk: entry.correct, freqLabel: '', range: entryRange, stackGridIdx: -1 })
+    // Resolve por id (fallback por nome para entradas antigas) e reusa o stackGridIdx gravado.
+    const entryRange = ranges.find(r => r.id === entry.rangeId) ?? ranges.find(r => r.name === entry.rangeName) ?? activeDrillRange!
+    const stackGridIdx = entry.stackGridIdx ?? -1
+    setPrevSnapshot({
+      hand: entry.hand, suits: entry.suits, rng: entry.rng,
+      feedback: feedbackMsg, feedbackOk: entry.correct,
+      freqLabel: freqLabelFor(entryRange, stackGridIdx, entry.hand),
+      bandLabel: bandLabelFor(entryRange, stackGridIdx, entry.hand),
+      range: entryRange, stackGridIdx,
+    })
     setViewingPrev(true)
   }
 
   function doGoNext() {
     if (viewingPrev) { setViewingPrev(false); return }
     if (answered) {
-      setPrevSnapshot({ hand: activeHand, suits: currentHandSuits, rng: currentRng, feedback, feedbackOk, freqLabel, range: activeDrillRange!, stackGridIdx: activeDrillStackGridIdx })
+      setPrevSnapshot({ hand: activeHand, suits: currentHandSuits, rng: currentRng, feedback, feedbackOk, freqLabel, bandLabel, range: activeDrillRange!, stackGridIdx: activeDrillStackGridIdx })
     }
     answeredRef.current = false
     setAnswered(false)
     setPressedAction('')
     setFeedback('')
     setFreqLabel('')
+    setBandLabel('')
     const ok = nextHand()
     if (!ok) { alert('Sem mais mãos!'); stopDrill() }
   }
@@ -1002,18 +1082,43 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
     const { correct, message } = checkAnswer(act)
     setFeedback(message)
     setFeedbackOk(correct)
-    setFreqLabel(getFreqLabel(activeHand))
+    setFreqLabel(freqLabelFor(activeDrillRange!, activeDrillStackGridIdx, activeHand))
+    setBandLabel(bandLabelFor(activeDrillRange!, activeDrillStackGridIdx, activeHand))
     setAnswered(true)
   }
 
   const customAction = activeDrillRange?.customAction
-  const actionBtns = [
-    { name: 'FOLD',    sub: undefined,                        action: 'Fold'  },
-    { name: 'CALL',    sub: undefined,                        action: 'Call'  },
-    ...(currentHeroRaiseSize > 0 ? [{ name: 'RAISE', sub: `${currentHeroRaiseSize} BB`, action: 'Raise' }] : []),
-    { name: 'ALL-IN',  sub: `${heroStack} BB`,                action: 'Allin' },
-    ...(customAction ? [{ name: customAction.label.toUpperCase(), sub: undefined, action: customAction.label }] : []),
+  const baseBtns = [
+    { name: 'FOLD',    sub: undefined,                        action: 'Fold',  hotkey: 'F' },
+    { name: 'CALL',    sub: undefined,                        action: 'Call',  hotkey: 'C' },
+    ...(currentHeroRaiseSize > 0 ? [{ name: 'RAISE', sub: `${currentHeroRaiseSize} BB`, action: 'Raise', hotkey: 'R' }] : []),
+    { name: 'ALL-IN',  sub: `${heroStack} BB`,                action: 'Allin', hotkey: 'A' },
   ]
+  const usedKeys = new Set(baseBtns.map(b => b.hotkey))
+  const customHotkey = customAction ? pickHotkey(customAction.label, usedKeys) : undefined
+  const actionBtns: { name: string; sub?: string; action: string; hotkey?: string }[] = [
+    ...baseBtns,
+    ...(customAction ? [{ name: customAction.label.toUpperCase(), sub: undefined, action: customAction.label, hotkey: customHotkey }] : []),
+  ]
+  const hotkeyMap: Record<string, string> = {}
+  actionBtns.forEach(b => { if (b.hotkey) hotkeyMap[b.hotkey.toLowerCase()] = b.action })
+
+  keyHandlerRef.current = (e: KeyboardEvent) => {
+    const el = e.target as HTMLElement | null
+    if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return
+    const key = e.key.toLowerCase()
+    if (key === 'v') {
+      e.preventDefault()
+      if (modalViewMode === null) { setModalViewMode('actions'); incrementConsults() }
+      else setModalViewMode(null)
+      return
+    }
+    if (modalViewMode !== null) return
+    if (e.code === 'Space' || key === ' ') { e.preventDefault(); doGoNext(); return }
+    if (key === 'arrowleft') { e.preventDefault(); if (prevSnapshot && !viewingPrev) setViewingPrev(true); return }
+    const action = hotkeyMap[key]
+    if (action) { e.preventDefault(); handleAction(action) }
+  }
 
   return (
     <div className="w-full h-[calc(100vh-96px)] overflow-auto">
@@ -1073,18 +1178,24 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                       {showFreqLabel}
                     </div>
                   )}
+                  {useRng && !!showBandLabel && (
+                    <div className="text-warm-500 text-xs mt-0.5 tabular-nums">
+                      RNG {displayRng}: {showBandLabel}
+                    </div>
+                  )}
                 </>
               )}
             </div>
 
             {/* Botões de ação */}
             <div className="flex-shrink-0 flex justify-center gap-2 flex-wrap px-4">
-              {actionBtns.map(({ name, sub, action }) => (
+              {actionBtns.map(({ name, sub, action, hotkey }) => (
                 <DrillActionButton
                   key={action}
                   name={name}
                   sub={sub}
                   action={action}
+                  hotkey={hotkey}
                   isPressed={pressedAction === action}
                   isDisabled={isAnswered}
                   onClick={() => handleAction(action)}

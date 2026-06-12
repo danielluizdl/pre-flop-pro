@@ -4,6 +4,8 @@
 - **Vite + React + TypeScript + Tailwind CSS + Zustand**
 - Sem backend. Dados persistidos via `localStorage` manualmente (exceto `darkMode` que usa `zustand/persist`).
 - Deploy: GitHub Pages via GitHub Actions ao fazer push para `main` (`https://github.com/danielluizdl/pre-flop-pro`)
+- Testes: **Vitest** (`npm test` → `vitest run`), ambiente jsdom. Specs em `src/**/*.test.ts` e `worker/**/*.test.js` (ver `vitest.config.ts`).
+- Bundle: `adminRanges.json` (1.4MB) é separado em chunk próprio via `manualChunks` (`vite.config.ts`). Chunk principal ~480KB.
 
 ## Estrutura de Pastas
 ```
@@ -18,8 +20,15 @@ src/
     ui/           PokerTableEditor.tsx, HandQuickSelect.tsx, RangePreviewModal.tsx
   store/          useStore.ts  (toda a lógica de estado)
   types/          index.ts     (tipos, constantes de posições/slots)
-  utils/          hands.ts     (ALL_HANDS, makeEmptyGrid, getRngCorrectAction, getTopFrequencyActions, stackMatchesRange, generateSuits)
+  utils/          hands.ts     (ALL_HANDS, makeEmptyGrid, getRngCorrectAction, getRngBands, formatRngBands, getTopFrequencyActions, stackMatchesRange, generateSuits, focusWeight, weightedPick)
+                  validateRanges.ts (validateRanges(Range[]) → string[] de problemas legíveis)
+                  sparseGrid.ts (encodeSparse/decodeSparse + encodeRange/decodeRange/encodeRanges/decodeRanges)
+                  hash.ts (djb2 → hash compacto base36)
+                  download.ts (downloadText, backupFilename)
+  components/Layout/ ErrorBoundary.tsx (class component global)
+  components/Admin/  AdminPanel.tsx (publicação de ranges)
   data/           defaultRanges.ts  (ranges nativos, seed no localStorage)
+  worker/         index.js (Cloudflare Worker; deploy manual) + index.test.js
 ```
 
 ## Tipos Principais (`src/types/index.ts`)
@@ -35,7 +44,7 @@ interface Scenario         { id:number; data:Record<string,PositionConfig>; pot:
 interface Range            { id:number; name:string; positions:string[]; grid:Record<string,HandData>; scenarios:Scenario[]; tableSize:TableSize; customAction?:{label:string;color:string}; stackRange?:string; stackGrids?:StackGrid[]; prereqRangeId?:number }
 interface StackGrid        { stackRange:string; grid:Record<string,HandData>; name?:string }
 interface BrushState       { call:number; raise:number; allin:number; extra:number; raiseSize:string; extraLabel:string; extraColor:string }
-interface HandHistoryEntry { id:number; hand:string; suits:[string,string]; actionTaken:string; correctAction:string; rng:number; correct:boolean; rangeName:string; raiseSize?:number|string }
+interface HandHistoryEntry { id:number; hand:string; suits:[string,string]; actionTaken:string; correctAction:string; rng:number; correct:boolean; rangeName:string; rangeId:number; stackGridIdx:number; raiseSize?:number|string; stackRange?:string; severity?:'grave'|'impreciso' }
 interface SessionStats     { hands:number; correct:number; errors:number; consults:number }
 interface TrainingSession  { id:number; timestamp:number; rangeNames:string[]; tableSize:number; hands:number; correct:number; errors:number; consults:number; durationSeconds:number }
 
@@ -46,17 +55,39 @@ SLOTS_6MAX / SLOTS_8MAX: Slot[]              // {t:%, l:%} posição visual dos 
 
 ## LocalStorage Keys
 ```
-'fbr-ranges-v1'           → Range[]          (ranges salvos)
+'fbr-ranges-v1'           → Range[]          (ranges salvos — gravados em FORMATO ESPARSO)
 'fbr-training-history-v1' → TrainingSession[] (histórico de sessões)
 'pfp-hand-perf-v1'        → HandPerfMap       (Record<rangeId, Record<hand, {c,t}>>) — acumulativo
 'fbr-ui-state'            → {darkMode}        (zustand persist)
+'pfp-last-published-hash' → string           (hash djb2 do último publish — antes guardava o JSON inteiro)
+'admin-ranges-version' / 'fbr-deleted-admin-ids' / 'admin-worker-url'
 ```
+
+## Formato Esparso de Grids (`src/utils/sparseGrid.ts`)
+- `encodeSparse(grid)` guarda só as mãos jogáveis (`fold < 100`); `decodeSparse(grid)` expande a partir de `makeEmptyGrid`.
+- **Compat retroativa automática**: `decodeSparse` lê tanto o formato esparso novo quanto o denso antigo (overlay reproduz o denso intacto).
+- `saveRanges` grava esparso (alivia cota); `loadRanges`/seed/`importData`/`adminSaveRanges` decodificam/codificam. **Estado em memória é sempre denso (169 mãos)** — o resto do app não muda.
+- `adminRanges.json` segue denso até o próximo publish, que o encolhe (worker recebe esparso).
+
+## Robustez / Backup
+- **ErrorBoundary** (`src/components/Layout/ErrorBoundary.tsx`) envolve o app em `main.tsx`: em erro de render mostra a mensagem, botão Recarregar e botão "Exportar backup e resetar dados locais" (download do backup + dupla confirmação → limpa chaves `fbr-*`/`pfp-*` e recarrega).
+- **Cota de localStorage**: `saveRanges`/`saveHistory`/`saveHandPerf` passam por `trySave` (try/catch). Falha seta `storageBlocked` no store (via `storageErrorReporter`) e exibe banner persistente no topo (`AppLayout`). Save bem-sucedido limpa o aviso.
+- **Backup** (Dashboard): `exportData()` baixa JSON `{ version, ranges, trainingHistory, handPerformance }`; `importData(json)` valida com `validateRanges` e **substitui** (com confirmação). `resetLocalData()` limpa chaves `fbr-*`/`pfp-*`.
+
+## Worker de Admin (`worker/index.js`) — segurança
+- Arquivo único (deploy manual copiando para o Cloudflare). Funções puras exportadas e testadas em `worker/index.test.js`.
+- **CORS** (`corsOrigin`): ecoa a Origin só se estiver na allowlist (`danielluizdl.github.io`, `localhost:5173`).
+- **Senha** (`passwordMatches`): compara digests SHA-256 byte a byte (constant-time), sem early-return.
+- **Rate limit** (`checkRateLimit`): Map em memória por `CF-Connecting-IP`, 5 tentativas/min → 429. Best-effort (reseta por isolate; complementar com WAF).
+- **Token de sessão** (`generateToken`/`verifyToken`): action `validate` com senha correta retorna `{ ok, token, expiresAt }`, token = HMAC-SHA256 (chave = `ADMIN_PASSWORD`, exp 30 min). Publish aceita `Authorization: Bearer <token>` OU senha no body.
+- Front: `login` guarda `adminToken` **em memória** (não persistido); `AdminPanel` publica via Bearer sem redigitar senha enquanto vale; 401 por expiração (`token_expired`) pede senha de novo.
 
 ## Ranges Nativos (`src/data/defaultRanges.ts`)
 - Ranges nativos definidos com helper `const g = (hands) => ({ ...makeEmptyGrid(), ...hands })`
 - Seed no `loadRanges()` do store: injeta ranges com IDs ausentes sem sobrescrever os do usuário
 - Versionamento via `ADMIN_VERSION`: ao publicar nova versão, sobrescreve ranges admin preservando os do usuário
 - Para atualizar: exportar `localStorage.getItem('fbr-ranges-v1')` do browser → processar com PowerShell → substituir o arquivo
+- `validateRanges` roda em `loadRanges` (apenas `console.warn`) e no `AdminPanel` antes de publicar (lista problemas e bloqueia até marcar "Publicar mesmo assim")
 
 ## Store (`src/store/useStore.ts`) — Estado Principal
 Estado relevante (não persistido entre sessões, exceto darkMode):
@@ -74,6 +105,10 @@ Estado relevante (não persistido entre sessões, exceto darkMode):
 - `activeHand` / `sessionStats` / `handHistory` / `currentRng`
 - `correctActionForCurrentHand` / `correctActionsForCurrentHand` / `currentHandSuits`
 - `useRngForFrequency` — true=RNG, false=ação de maior frequência
+- `acceptAnyFreq` — (RNG off) aceita qualquer ação com frequência > 0 como acerto (feedback "Válido — ação principal: ...")
+- `focusErrors` — (D1) liga amostragem ponderada do nível 2 do `nextDrillHand` (mão dentro do range) por `handPerformance`: peso `3` para mãos nunca treinadas, `1 + 4*(1 - acerto)` para treinadas. Nível 1 (entre ranges) segue uniforme. Desligado (default) = sorteio uniforme atual intacto.
+- `sessionSeverity: { grave, impreciso }` — (D2) contadores da sessão; reset em `startDrillSession`, incrementado em `checkDrillAnswer`. `DrillSummary` exibe as contagens.
+- `sessionHandPerf: HandPerfMap` — acumulador por id da sessão atual (fora do `handHistory`, que tem cap de 50). `stopDrill`/`DrillSummary` usam ele para stats por range; `TrainingSession.handPerf` é gravado por id (leitura com fallback por nome para sessões antigas)
 - `handPerformance: HandPerfMap` — carregado do localStorage na inicialização
 - `selectedDrillRangeIds` / `drillExcludedHands`
 - `trainingHistory: TrainingSession[]` — carregado do localStorage
@@ -184,6 +219,7 @@ Para cada range selecionado, por cenário:
 ```
 - Cenário-first: resolve stackGrid baseado no heroStack do cenário antes de filtrar mãos
 - `correctAction` calculado de `activeGrid[hand]` via `getRngCorrectAction` ou `getTopFrequencyActions`
+- `getRngCorrectAction` ordena as faixas por agressividade: **Allin > Raise > Call > extra > Fold** (ex: 20% allin/50% raise/30% fold → 1–20 Allin, 21–70 Raise, 71–100 Fold). Com prereq, `drillExcludedHands` é ignorado ao montar candidatos.
 
 ### DrillActive — Layout
 Container: `w-full h-[calc(100vh-90px)] overflow-auto`
@@ -208,11 +244,18 @@ Container: `w-full h-[calc(100vh-90px)] overflow-auto`
 - `PrevSnapshot` salva estado da mão anterior (hand, suits, rng, feedback, freqLabel)
 - `viewingPrev` exibe snapshot anterior sem avançar; "← Mão atual" volta
 - `getFreqLabel()` formata "75% Raise e 25% Call"
+- **Atalhos de teclado (D3)** via `keyHandlerRef` (mesmo pattern do `goNextRef`, listener montado uma vez): `F`=Fold, `C`=Call, `R`=Raise (se visível), `A`=All-in, inicial do `customAction` (resolvida por `pickHotkey` evitando colisão com F/C/R/A), `Espaço`=próxima, `ArrowLeft`=anterior, `V`=abre/fecha Ver Range. Ignorados com foco em input/select/textarea ou modal aberto (exceto V para fechar). Legenda discreta da tecla em cada `DrillActionButton`.
+
+### checkDrillAnswer — severidade (D2)
+- Erro `grave` = ação respondida tem 0% na mão; `impreciso` = freq > 0 mas não é a principal (só com `acceptAnyFreq` desligado).
+- Feedback: `✗ Erro grave — Call tinha 0%. Correto: Raise` / `✗ Impreciso — Call tinha 25%. Principal: Raise 75%`.
+- Retorna `{ correct, message, severity? }`; grava `severity` no `HandHistoryEntry` e incrementa `sessionSeverity`.
 
 ### DrillSummary
 - Props: `onClose: () => void` (chama stopDrill + fecha), `onBack?: () => void` (volta ao drill sem encerrar)
 - Botão "← Voltar ao treino" só aparece quando `onBack` é definido (drill ainda ativo)
 - Stats do topo: lê `sessionStats` do store (sessão atual, não acumulativo)
+- Linha extra com contagem de **erros graves** e **imprecisos** (`sessionSeverity`) quando há erros
 - Stats por range: computados de `handHistory` (entries têm `rangeName`) — sessão atual
 - Heatmap por range: usa `handPerformance` (acumulativo histórico — correto por design)
 
@@ -239,6 +282,7 @@ Container: `w-full h-[calc(100vh-90px)] overflow-auto`
 - `SessionCard`: accuracy%, data, tableSize, duração, range names, mãos/acertos/erros + botão olhinho
 - Botão olhinho → `setSelectedSession(session)` → renderiza `SessionDetailView`
 - `SessionDetailView`: cabeçalho com "← Voltar", stats box idêntico ao DrillSummary, acordeão por range com heatmap
+- **`AccuracySparkline` (D4)**: SVG inline (sem biblioteca) com accuracy % por sessão em ordem cronológica (`trainingHistory`), escala fixa 0–100, linha de referência tracejada em 80% e tooltip (data + %) ao passar o mouse nos pontos. Some com menos de 2 sessões.
 
 ## Convenções e Padrões
 - **Sem comentários** no código (exceto WHY não-óbvios)

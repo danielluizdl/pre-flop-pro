@@ -32,15 +32,51 @@ export function generateSuits(hand: string): [string, string] {
 
 export function getRngCorrectAction(data: HandData | undefined, rng: number, extraLabel?: string): string {
   if (!data) return 'Fold'
+  const allin = data.allin ?? 0
   const raise = data.raise ?? 0
   const call  = data.call  ?? 0
-  const allin = data.allin ?? 0
   const extra = data.extra ?? 0
-  if (rng <= raise) return 'Raise'
-  if (rng <= raise + call) return 'Call'
-  if (rng <= raise + call + allin) return 'Allin'
-  if (extraLabel && data.extra && rng <= raise + call + allin + extra) return extraLabel
+  // Faixas por agressividade: Allin > Raise > Call > extra > Fold
+  if (rng <= allin) return 'Allin'
+  if (rng <= allin + raise) return 'Raise'
+  if (rng <= allin + raise + call) return 'Call'
+  if (extraLabel && extra && rng <= allin + raise + call + extra) return extraLabel
   return 'Fold'
+}
+
+export interface RngBand {
+  label: string
+  lo: number
+  hi: number
+}
+
+export function getRngBands(data: HandData | undefined, extraLabel?: string): RngBand[] {
+  if (!data) return [{ label: 'Fold', lo: 1, hi: 100 }]
+  const allin = data.allin ?? 0
+  const raise = data.raise ?? 0
+  const call  = data.call  ?? 0
+  const extra = data.extra ?? 0
+  const segments: { label: string; pct: number }[] = [
+    { label: 'Allin', pct: allin },
+    { label: 'Raise', pct: raise },
+    { label: 'Call',  pct: call  },
+    ...(extraLabel && extra ? [{ label: extraLabel, pct: extra }] : []),
+  ]
+  const bands: RngBand[] = []
+  let cursor = 0
+  segments.forEach(seg => {
+    if (seg.pct <= 0) return
+    const lo = cursor + 1
+    const hi = cursor + seg.pct
+    bands.push({ label: seg.label, lo, hi })
+    cursor = hi
+  })
+  if (cursor < 100) bands.push({ label: 'Fold', lo: cursor + 1, hi: 100 })
+  return bands
+}
+
+export function formatRngBands(bands: RngBand[]): string {
+  return bands.map(b => (b.lo === b.hi ? `${b.lo}` : `${b.lo}–${b.hi}`) + ` ${b.label}`).join(' · ')
 }
 
 export function getHighestFrequencyAction(data: HandData, extraLabel?: string): string {
@@ -70,6 +106,26 @@ export function getTopFrequencyActions(data: HandData | undefined, extraLabel?: 
 
 export function countNonFoldHands(grid: Record<string, HandData>): number {
   return Object.values(grid).filter(d => d.fold < 100).length
+}
+
+// ── Amostragem ponderada por desempenho ("Focar erros") ────────────────────
+
+/** Peso de sorteio: mãos nunca treinadas = 3; treinadas = 1 + 4*(1 - acerto). */
+export function focusWeight(perf: { c: number; t: number } | undefined): number {
+  if (!perf || perf.t <= 0) return 3
+  const accuracy = perf.c / perf.t
+  return 1 + 4 * (1 - accuracy)
+}
+
+export function weightedPick<T>(items: T[], weights: number[], rnd: number = Math.random()): T {
+  const total = weights.reduce((a, b) => a + b, 0)
+  if (total <= 0) return items[Math.floor(rnd * items.length)]
+  let r = rnd * total
+  for (let i = 0; i < items.length; i++) {
+    r -= weights[i]
+    if (r < 0) return items[i]
+  }
+  return items[items.length - 1]
 }
 
 

@@ -1,5 +1,7 @@
+import { useRef, useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { countNonFoldHands } from '../../utils/hands'
+import { downloadText, backupFilename } from '../../utils/download'
 import { RangeMark } from '../ui/RangeMark'
 
 const CATEGORY_POSITIONS: Record<string, string[]> = {
@@ -15,6 +17,28 @@ export function Dashboard() {
   const setActiveCategory   = useStore(s => s.setActiveCategory)
   const trainingHistory = useStore(s => s.trainingHistory)
   const handPerformance = useStore(s => s.handPerformance)
+  const exportData      = useStore(s => s.exportData)
+  const importData      = useStore(s => s.importData)
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [importMsg, setImportMsg] = useState<{ ok: boolean; text: string } | null>(null)
+
+  function handleExport() {
+    downloadText(backupFilename(), exportData())
+  }
+
+  function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (!confirm('Importar vai SUBSTITUIR todos os dados locais (ranges, histórico, estatísticas). Continuar?')) return
+      const result = importData(String(reader.result))
+      setImportMsg(result.ok ? { ok: true, text: 'Dados importados com sucesso.' } : { ok: false, text: result.error ?? 'Falha ao importar.' })
+    }
+    reader.readAsText(file)
+  }
 
   const totalHands   = trainingHistory.reduce((s, x) => s + x.hands, 0)
   const totalCorrect = trainingHistory.reduce((s, x) => s + x.correct, 0)
@@ -91,6 +115,34 @@ export function Dashboard() {
             </div>
           </div>
         ))}
+      </section>
+
+      {/* Backup */}
+      <section className="flex flex-wrap items-center gap-3 mb-8">
+        <button
+          onClick={handleExport}
+          className="px-4 py-2 rounded-xl border border-warm-700 hover:border-warm-500 hover:bg-warm-800 text-warm-300 hover:text-white text-sm font-semibold transition-colors"
+        >
+          Exportar dados
+        </button>
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="px-4 py-2 rounded-xl border border-warm-700 hover:border-warm-500 hover:bg-warm-800 text-warm-300 hover:text-white text-sm font-semibold transition-colors"
+        >
+          Importar dados
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/json,.json"
+          onChange={handleImportFile}
+          className="hidden"
+        />
+        {importMsg && (
+          <span className={importMsg.ok ? 'text-xs text-emerald-400' : 'text-xs text-red-400'}>
+            {importMsg.text}
+          </span>
+        )}
       </section>
 
       {/* Category grid */}
