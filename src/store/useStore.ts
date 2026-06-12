@@ -84,8 +84,21 @@ function loadRangesValidated(): Range[] {
   return ranges
 }
 
+// Reporter ligado ao store na criação; sinaliza falha de cota sem que os
+// helpers de save (fora do escopo do store) precisem acessar set/get.
+let storageErrorReporter: ((blocked: boolean) => void) | null = null
+
+function trySave(fn: () => void) {
+  try {
+    fn()
+    storageErrorReporter?.(false)
+  } catch {
+    storageErrorReporter?.(true)
+  }
+}
+
 function saveRanges(ranges: Range[]) {
-  localStorage.setItem(RANGES_KEY, JSON.stringify(ranges))
+  trySave(() => localStorage.setItem(RANGES_KEY, JSON.stringify(ranges)))
 }
 
 function loadHistory(): TrainingSession[] {
@@ -94,7 +107,7 @@ function loadHistory(): TrainingSession[] {
 }
 
 function saveHistory(sessions: TrainingSession[]) {
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(sessions))
+  trySave(() => localStorage.setItem(HISTORY_KEY, JSON.stringify(sessions)))
 }
 
 function loadHandPerf(): HandPerfMap {
@@ -103,7 +116,7 @@ function loadHandPerf(): HandPerfMap {
 }
 
 function saveHandPerf(perf: HandPerfMap) {
-  localStorage.setItem(HAND_PERF_KEY, JSON.stringify(perf))
+  trySave(() => localStorage.setItem(HAND_PERF_KEY, JSON.stringify(perf)))
 }
 
 interface AppState {
@@ -118,6 +131,12 @@ interface AppState {
   // ── Persistent data ─────────────────────────────────────────────────────────
   ranges: Range[]
   trainingHistory: TrainingSession[]
+  storageBlocked: boolean
+
+  // ── Backup ──────────────────────────────────────────────────────────────────
+  exportData: () => string
+  importData: (json: string) => { ok: boolean; error?: string }
+  resetLocalData: () => void
 
   // ── Table config (shared for editor + drill display) ────────────────────────
   currentTableSize: TableSize
@@ -238,6 +257,41 @@ export const useStore = create<AppState>()(
       // ── Persistent data ───────────────────────────────────────────────────────
       ranges: loadRangesValidated(),
       trainingHistory: loadHistory(),
+      storageBlocked: false,
+
+      // ── Backup ──────────────────────────────────────────────────────────────
+      exportData: () => {
+        const { ranges, trainingHistory, handPerformance } = get()
+        return JSON.stringify({ version: 1, ranges, trainingHistory, handPerformance }, null, 2)
+      },
+
+      importData: (jsonStr) => {
+        let parsed: unknown
+        try { parsed = JSON.parse(jsonStr) }
+        catch { return { ok: false, error: 'JSON inválido.' } }
+        if (typeof parsed !== 'object' || parsed === null) return { ok: false, error: 'Formato inválido.' }
+        const data = parsed as { ranges?: unknown; trainingHistory?: unknown; handPerformance?: unknown }
+        if (!Array.isArray(data.ranges)) return { ok: false, error: 'Campo "ranges" ausente ou inválido.' }
+        let problems: string[]
+        try { problems = validateRanges(data.ranges as Range[]) }
+        catch { return { ok: false, error: 'Ranges com estrutura inválida.' } }
+        if (problems.length > 0) return { ok: false, error: `Ranges inválidos: ${problems[0]}` }
+        const ranges = data.ranges as Range[]
+        const trainingHistory = Array.isArray(data.trainingHistory) ? data.trainingHistory as TrainingSession[] : []
+        const handPerformance = (data.handPerformance && typeof data.handPerformance === 'object')
+          ? data.handPerformance as HandPerfMap : {}
+        saveRanges(ranges)
+        saveHistory(trainingHistory)
+        saveHandPerf(handPerformance)
+        set({ ranges, trainingHistory, handPerformance })
+        return { ok: true }
+      },
+
+      resetLocalData: () => {
+        Object.keys(localStorage)
+          .filter(k => k.startsWith('fbr-') || k.startsWith('pfp-'))
+          .forEach(k => localStorage.removeItem(k))
+      },
 
       // ── Table config ──────────────────────────────────────────────────────────
       currentTableSize: 6,
@@ -1130,3 +1184,7 @@ export const useStore = create<AppState>()(
     }
   )
 )
+
+storageErrorReporter = (blocked) => {
+  if (useStore.getState().storageBlocked !== blocked) useStore.setState({ storageBlocked: blocked })
+}
