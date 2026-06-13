@@ -1,6 +1,6 @@
 # Rotina 4 — concluída
 
-Ultimo commit: 45dd530a5fe4114e1e82104ff044fdad892808b9
+Ultimo commit: 0d897ece6dd27052d1e83921e672c4a143ff262d
 
 ## Migracao do banco (obrigatoria antes do deploy)
 
