@@ -60,8 +60,19 @@ export async function onRequest(context) {
 
     const sConds = []
     const sBinds = []
-    if (filters.playerId !== null) { sConds.push('user_id = ?'); sBinds.push(filters.playerId) }
-    if (filters.days !== null) { sConds.push('ended_at >= unixepoch() - ?'); sBinds.push(filters.days * 86400) }
+    if (filters.rangeId !== null) {
+      // Sem range_id em training_sessions: vincula via session_uuid das maos daquele range.
+      const subConds = ['range_id = ?', 'session_uuid IS NOT NULL']
+      const subBinds = [filters.rangeId]
+      if (filters.playerId !== null) { subConds.push('user_id = ?'); subBinds.push(filters.playerId) }
+      if (filters.days !== null) { subConds.push('created_at >= unixepoch() - ?'); subBinds.push(filters.days * 86400) }
+      sConds.push(`session_uuid IN (SELECT DISTINCT session_uuid FROM hand_events WHERE ${subConds.join(' AND ')})`)
+      sBinds.push(...subBinds)
+      if (filters.playerId !== null) { sConds.push('user_id = ?'); sBinds.push(filters.playerId) }
+    } else {
+      if (filters.playerId !== null) { sConds.push('user_id = ?'); sBinds.push(filters.playerId) }
+      if (filters.days !== null) { sConds.push('ended_at >= unixepoch() - ?'); sBinds.push(filters.days * 86400) }
+    }
     const sessionAgg = await env.DB.prepare(
       `SELECT user_id AS userId, COUNT(*) AS sessions, CAST(COALESCE(SUM(duration_seconds), 0) AS INTEGER) AS duration
        FROM training_sessions ${sConds.length ? 'WHERE ' + sConds.join(' AND ') : ''} GROUP BY user_id`
