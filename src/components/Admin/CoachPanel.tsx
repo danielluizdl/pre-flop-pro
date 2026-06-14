@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '../../store/useStore'
+import { RangeHeatGrid, type GridCell } from './RangeHeatGrid'
 
 interface CoachUser {
   id: number
@@ -96,6 +97,30 @@ function useAnalytics<T>(view: string, filters: Filters, token: string | null) {
   return { rows, team, loading, error }
 }
 
+function useRangeGrid(rangeId: number | null, days: number | null, playerIds: number[], token: string | null) {
+  const [cells, setCells] = useState<GridCell[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const idsKey = playerIds.join(',')
+
+  useEffect(() => {
+    if (!token || rangeId === null) { setCells([]); return }
+    let cancelled = false
+    setLoading(true)
+    setError('')
+    const qs = new URLSearchParams({ view: 'range-grid', rangeId: String(rangeId) })
+    if (idsKey) qs.set('playerIds', idsKey)
+    if (days !== null) qs.set('days', String(days))
+    fetch(`/api/admin/analytics?${qs.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
+      .then(d => { if (!cancelled) { setCells(d.cells ?? []); setLoading(false) } })
+      .catch(() => { if (!cancelled) { setError('Erro ao carregar'); setLoading(false) } })
+    return () => { cancelled = true }
+  }, [token, rangeId, days, idsKey])
+
+  return { cells, loading, error }
+}
+
 function Section({ title, loading, error, empty, children }: {
   title: string
   loading: boolean
@@ -137,6 +162,7 @@ function TeamView({ token }: { token: string | null }) {
   const ranges = useStore(s => s.ranges)
   const [users, setUsers] = useState<CoachUser[]>([])
   const [filters, setFilters] = useState<Filters>({ playerId: null, rangeId: null, days: null })
+  const [gridPlayerIds, setGridPlayerIds] = useState<number[]>([])
 
   useEffect(() => {
     if (!token) return
@@ -150,6 +176,17 @@ function TeamView({ token }: { token: string | null }) {
   const leaks = useAnalytics<LeakRow>('leaks', filters, token)
   const hotspots = useAnalytics<HotspotRow>('consult-hotspots', filters, token)
   const byRange = useAnalytics<ByRangeRow>('by-range', filters, token)
+  const grid = useRangeGrid(filters.rangeId, filters.days, gridPlayerIds, token)
+
+  function toggleGridPlayer(id: number) {
+    setGridPlayerIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
+
+  const selectedRangeName = ranges.find(r => r.id === filters.rangeId)?.name ?? ''
+  const confusionRows = [...grid.cells]
+    .filter(c => c.total >= 3)
+    .sort((a, b) => a.accuracy - b.accuracy)
+    .slice(0, 15)
 
   const selectCls = 'bg-warm-900 border border-warm-600 rounded-lg px-2.5 py-1.5 text-sm text-warm-100'
 
@@ -284,7 +321,11 @@ function TeamView({ token }: { token: string | null }) {
           </thead>
           <tbody>
             {byRange.rows.map((r, i) => (
-              <tr key={i} className="border-t border-warm-700/60">
+              <tr
+                key={i}
+                onClick={() => setFilters(f => ({ ...f, rangeId: r.rangeId }))}
+                className={`border-t border-warm-700/60 cursor-pointer hover:bg-warm-800/50 ${filters.rangeId === r.rangeId ? 'bg-warm-800/70' : ''}`}
+              >
                 <td className={`${TD} text-warm-100 font-semibold`}>{r.rangeName}</td>
                 <td className={`${TDR} text-warm-300`}>{r.hands}</td>
                 <td className={`${TDR} font-bold ${accColor(r.accuracy)}`}>{r.accuracy}%</td>
@@ -296,6 +337,83 @@ function TeamView({ token }: { token: string | null }) {
           </tbody>
         </table>
       </Section>
+
+      <div>
+        <h3 className="text-sm font-semibold text-warm-200 mb-2">
+          Matriz do range {selectedRangeName ? <span className="text-brand-400">· {selectedRangeName}</span> : ''}
+        </h3>
+        {filters.rangeId !== null && (
+          <div className="flex flex-wrap items-center gap-1.5 mb-3">
+            <span className="text-xs text-warm-500 mr-1">Jogadores:</span>
+            <button
+              onClick={() => setGridPlayerIds([])}
+              className={[
+                'px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors',
+                gridPlayerIds.length === 0 ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:text-warm-200',
+              ].join(' ')}
+            >
+              Todos
+            </button>
+            {users.map(u => {
+              const on = gridPlayerIds.includes(u.id)
+              return (
+                <button
+                  key={u.id}
+                  onClick={() => toggleGridPlayer(u.id)}
+                  className={[
+                    'px-2.5 py-1 rounded-full text-xs font-medium border transition-colors',
+                    on ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:text-warm-200',
+                  ].join(' ')}
+                >
+                  {u.name || u.username}
+                </button>
+              )
+            })}
+          </div>
+        )}
+        {filters.rangeId === null ? (
+          <p className="text-sm text-warm-500">Selecione um range no filtro acima (ou clique numa linha da tabela "Por range") para ver a matriz 13×13.</p>
+        ) : grid.loading ? (
+          <p className="text-sm text-warm-500">Carregando…</p>
+        ) : grid.error ? (
+          <p className="text-sm text-red-400">{grid.error}</p>
+        ) : grid.cells.length === 0 ? (
+          <p className="text-sm text-warm-500">Sem dados para este range no período/jogador selecionado.</p>
+        ) : (
+          <div className="flex flex-col lg:flex-row gap-6">
+            <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
+              <RangeHeatGrid cells={grid.cells} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-warm-400 mb-2">Mãos com pior precisão — correto vs. erro mais comum</p>
+              <div className="overflow-x-auto rounded-xl border border-warm-700">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-warm-800 text-warm-400 text-xs uppercase">
+                      <th className={TH}>Mão</th>
+                      <th className={THR}>Tent.</th>
+                      <th className={THR}>Precisão</th>
+                      <th className={TH}>Correto</th>
+                      <th className={TH}>Erram mais</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {confusionRows.map(c => (
+                      <tr key={c.hand} className={`border-t border-warm-700/60 ${c.accuracy < 50 ? 'bg-red-950/30' : ''}`}>
+                        <td className={`${TD} text-warm-100 font-bold`}>{c.hand}</td>
+                        <td className={`${TDR} text-warm-300`}>{c.total}</td>
+                        <td className={`${TDR} font-bold ${accColor(c.accuracy)}`}>{c.accuracy}%</td>
+                        <td className={`${TD} text-emerald-300`}>{c.correctAction ?? '—'}</td>
+                        <td className={`${TD} text-red-300`}>{c.topWrong ? `${c.topWrong.action} (${c.topWrong.n}x)` : '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
