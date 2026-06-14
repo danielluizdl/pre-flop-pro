@@ -7,3 +7,4 @@ dist/
 *.log
 pre-flop-pro/
 .wrangler/
+scripts/
