@@ -185,5 +185,68 @@ export async function onRequest(context) {
     return json({ view, rows })
   }
 
+  if (view === 'range-grid') {
+    if (filters.rangeId === null) return json({ error: 'rangeId obrigatório' }, 400)
+
+    const rawIds = (url.searchParams.get('playerIds') ?? '').split(',').map(s => s.trim()).filter(Boolean)
+    const playerIds = []
+    for (const raw of rawIds) {
+      const p = parseIntParam(raw, { min: 1 })
+      if (!p.ok || p.value === null) return json({ error: 'playerIds inválido' }, 400)
+      playerIds.push(p.value)
+    }
+
+    const conds = ['range_id = ?']
+    const binds = [filters.rangeId]
+    if (playerIds.length) { conds.push(`user_id IN (${playerIds.map(() => '?').join(',')})`); binds.push(...playerIds) }
+    if (filters.days !== null) { conds.push('created_at >= unixepoch() - ?'); binds.push(filters.days * 86400) }
+    const clause = 'WHERE ' + conds.join(' AND ')
+
+    const gridRes = await env.DB.prepare(
+      `SELECT hand, COUNT(*) AS total, CAST(SUM(is_correct) AS INTEGER) AS correct,
+        SUM(CASE WHEN severity = 'grave' THEN 1 ELSE 0 END) AS graves
+       FROM hand_events ${clause} GROUP BY hand`
+    ).bind(...binds).all()
+
+    const wrongRes = await env.DB.prepare(
+      `SELECT hand, action_taken AS action, COUNT(*) AS n
+       FROM hand_events ${clause} AND is_correct = 0
+       GROUP BY hand, action_taken`
+    ).bind(...binds).all()
+
+    const correctRes = await env.DB.prepare(
+      `SELECT hand, correct_action AS action, COUNT(*) AS n
+       FROM hand_events ${clause} GROUP BY hand, correct_action`
+    ).bind(...binds).all()
+
+    const consultRes = await env.DB.prepare(
+      `SELECT hand, COUNT(*) AS n FROM consult_events ${clause} AND hand IS NOT NULL GROUP BY hand`
+    ).bind(...binds).all()
+
+    const topByHand = (rows) => {
+      const map = new Map()
+      for (const r of rows ?? []) {
+        const cur = map.get(r.hand)
+        if (!cur || r.n > cur.n) map.set(r.hand, { action: r.action, n: r.n })
+      }
+      return map
+    }
+    const wrongMap = topByHand(wrongRes.results)
+    const correctMap = topByHand(correctRes.results)
+    const consultMap = new Map((consultRes.results ?? []).map(r => [r.hand, r.n]))
+
+    const cells = (gridRes.results ?? []).map(r => ({
+      hand: r.hand,
+      total: r.total,
+      correct: r.correct,
+      accuracy: ACC(r.correct, r.total),
+      graves: r.graves,
+      consults: consultMap.get(r.hand) ?? 0,
+      correctAction: correctMap.get(r.hand)?.action ?? null,
+      topWrong: wrongMap.get(r.hand) ?? null,
+    }))
+    return json({ view, cells })
+  }
+
   return json({ error: 'view inválida' }, 400)
 }
