@@ -121,24 +121,34 @@ function useRangeGrid(rangeId: number | null, days: number | null, playerIds: nu
   return { cells, loading, error }
 }
 
-function Section({ title, loading, error, empty, children }: {
+function Section({ title, loading, error, empty, children, defaultOpen = true }: {
   title: string
   loading: boolean
   error: string
   empty: boolean
   children: React.ReactNode
+  defaultOpen?: boolean
 }) {
+  const [open, setOpen] = useState(defaultOpen)
   return (
-    <div>
-      <h3 className="text-sm font-semibold text-warm-200 mb-2">{title}</h3>
-      {loading ? (
-        <p className="text-sm text-warm-500">Carregando…</p>
-      ) : error ? (
-        <p className="text-sm text-red-400">{error}</p>
-      ) : empty ? (
-        <p className="text-sm text-warm-500">Sem dados.</p>
-      ) : (
-        <div className="overflow-x-auto rounded-xl border border-warm-700">{children}</div>
+    <div className="rounded-xl border border-warm-700 overflow-hidden">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-3 py-2.5 bg-warm-800/40 hover:bg-warm-800 transition-colors"
+      >
+        <h3 className="text-sm font-semibold text-warm-200">{title}</h3>
+        <span className="text-warm-400 text-xs select-none">{open ? '▾' : '▸'}</span>
+      </button>
+      {open && (
+        loading ? (
+          <p className="text-sm text-warm-500 px-3 py-3">Carregando…</p>
+        ) : error ? (
+          <p className="text-sm text-red-400 px-3 py-3">{error}</p>
+        ) : empty ? (
+          <p className="text-sm text-warm-500 px-3 py-3">Sem dados.</p>
+        ) : (
+          <div className="overflow-x-auto border-t border-warm-700">{children}</div>
+        )
       )}
     </div>
   )
