@@ -1,4 +1,5 @@
 import { sha256Hex, hashPassword, randomHex, json, handleOptions, emailDomainExists, checkRateLimit, verifyTurnstile } from '../_utils.js'
+import { sendEmail } from '../_email.js'
 
 export async function onRequest(context) {
   const { request, env } = context
@@ -41,6 +42,17 @@ export async function onRequest(context) {
   const expiresAt = Math.floor(Date.now() / 1000) + 30 * 24 * 3600
   await env.DB.prepare('INSERT INTO sessions (user_id, token_hash, expires_at) VALUES (?, ?, ?)')
     .bind(result.meta.last_row_id, tokenHash, expiresAt).run()
+
+  try {
+    await sendEmail(env, {
+      to: email,
+      subject: 'Bem-vindo(a) ao Pre-Flop Pro',
+      html: `<p>Olá ${name || username},</p>
+<p>Sua conta no <strong>Pre-Flop Pro</strong> foi criada com sucesso. Treine seus ranges pré-flop até virar reflexo.</p>
+<p>Usuário: <strong>${username}</strong></p>
+<p>Bons estudos e boa sorte nas mesas!</p>`,
+    })
+  } catch { /* best-effort, nunca falha o cadastro */ }
 
   return json({ ok: true, token, user: { id: result.meta.last_row_id, username, name, email, role: 'player', first_login: 0 } })
 }
