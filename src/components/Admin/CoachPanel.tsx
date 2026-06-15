@@ -4,7 +4,7 @@ import { RangeHeatGrid, type GridCell } from './RangeHeatGrid'
 
 const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'EP', 'LJ', 'UTG']
 
-interface RangeOpt { id: number; name: string; positions?: string[] }
+interface RangeOpt { id: number; name: string; positions?: string[]; stackGrids?: { stackRange: string; name?: string }[] }
 function groupRangesByPosition(ranges: RangeOpt[]) {
   const groups = new Map<string, RangeOpt[]>()
   for (const r of ranges) {
@@ -163,7 +163,7 @@ function useAnalytics<T>(view: string, filters: Filters, token: string | null) {
   return { rows, team, loading, error }
 }
 
-function useRangeGrid(rangeId: number | null, days: number | null, playerIds: number[], token: string | null) {
+function useRangeGrid(rangeId: number | null, days: number | null, playerIds: number[], stackIdx: number | null, token: string | null) {
   const [cells, setCells] = useState<GridCell[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -176,13 +176,14 @@ function useRangeGrid(rangeId: number | null, days: number | null, playerIds: nu
     setError('')
     const qs = new URLSearchParams({ view: 'range-grid', rangeId: String(rangeId) })
     if (idsKey) qs.set('playerIds', idsKey)
+    if (stackIdx !== null) qs.set('stackGridIdx', String(stackIdx))
     if (days !== null) qs.set('days', String(days))
     fetch(`/api/admin/analytics?${qs.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
       .then(d => { if (!cancelled) { setCells(d.cells ?? []); setLoading(false) } })
       .catch(() => { if (!cancelled) { setError('Erro ao carregar'); setLoading(false) } })
     return () => { cancelled = true }
-  }, [token, rangeId, days, idsKey])
+  }, [token, rangeId, days, idsKey, stackIdx])
 
   return { cells, loading, error }
 }
@@ -238,6 +239,7 @@ function TeamView({ token }: { token: string | null }) {
   const ranges = useStore(s => s.ranges)
   const [users, setUsers] = useState<CoachUser[]>([])
   const [filters, setFilters] = useState<Filters>({ playerIds: [], rangeId: null, days: null })
+  const [stackIdx, setStackIdx] = useState<number | null>(null)
 
   useEffect(() => {
     if (!token) return
@@ -247,6 +249,8 @@ function TeamView({ token }: { token: string | null }) {
       .catch(() => {})
   }, [token])
 
+  useEffect(() => { setStackIdx(null) }, [filters.rangeId])
+
   const sortedUsers = [...users].sort((a, b) => (a.name || a.username).localeCompare(b.name || b.username))
   const rangeGroups = groupRangesByPosition(ranges)
 
@@ -254,9 +258,11 @@ function TeamView({ token }: { token: string | null }) {
   const leaks = useAnalytics<LeakRow>('leaks', filters, token)
   const hotspots = useAnalytics<HotspotRow>('consult-hotspots', filters, token)
   const byRange = useAnalytics<ByRangeRow>('by-range', filters, token)
-  const grid = useRangeGrid(filters.rangeId, filters.days, filters.playerIds, token)
+  const grid = useRangeGrid(filters.rangeId, filters.days, filters.playerIds, stackIdx, token)
 
-  const selectedRangeName = ranges.find(r => r.id === filters.rangeId)?.name ?? ''
+  const selectedRange = ranges.find(r => r.id === filters.rangeId)
+  const selectedRangeName = selectedRange?.name ?? ''
+  const selectedStackGrids = selectedRange?.stackGrids ?? []
   const confusionRows = [...grid.cells]
     .filter(c => c.total >= 3)
     .sort((a, b) => a.accuracy - b.accuracy)
@@ -280,7 +286,10 @@ function TeamView({ token }: { token: string | null }) {
           <option value="">Todos os ranges</option>
           {rangeGroups.map(g => (
             <optgroup key={g.pos} label={g.pos}>
-              {g.items.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+              {g.items.map(r => {
+                const n = r.stackGrids?.length ?? 0
+                return <option key={r.id} value={r.id}>{r.name}{n > 1 ? ` · ${n} stacks` : ''}</option>
+              })}
             </optgroup>
           ))}
         </select>
@@ -418,6 +427,32 @@ function TeamView({ token }: { token: string | null }) {
           Matriz do range {selectedRangeName ? <span className="text-brand-400">· {selectedRangeName}</span> : ''}
           {filters.playerIds.length > 0 && <span className="text-warm-500 text-xs font-normal"> · {filters.playerIds.length} jogador(es)</span>}
         </h3>
+        {filters.rangeId !== null && selectedStackGrids.length > 1 && (
+          <div className="flex flex-wrap items-center gap-1.5 mb-3">
+            <span className="text-xs text-warm-500 mr-1">Stack efetivo:</span>
+            <button
+              onClick={() => setStackIdx(null)}
+              className={[
+                'px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors',
+                stackIdx === null ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:text-warm-200',
+              ].join(' ')}
+            >
+              Todos
+            </button>
+            {selectedStackGrids.map((sg, i) => (
+              <button
+                key={i}
+                onClick={() => setStackIdx(i)}
+                className={[
+                  'px-2.5 py-1 rounded-full text-xs font-medium border transition-colors',
+                  stackIdx === i ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:text-warm-200',
+                ].join(' ')}
+              >
+                {sg.name || sg.stackRange}
+              </button>
+            ))}
+          </div>
+        )}
         {filters.rangeId === null ? (
           <p className="text-sm text-warm-500">Selecione um range no filtro acima (ou clique numa linha da tabela "Por range") para ver a matriz 13×13.</p>
         ) : grid.loading ? (
