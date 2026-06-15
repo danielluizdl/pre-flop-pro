@@ -147,11 +147,11 @@ export async function onRequest(context) {
   if (view === 'leaks') {
     const hf = handFilters(filters)
     const res = await env.DB.prepare(
-      `SELECT range_id AS rangeId, range_name AS rangeName, hand,
+      `SELECT range_id AS rangeId, MAX(range_name) AS rangeName, hand,
         COUNT(*) AS total, CAST(SUM(is_correct) AS INTEGER) AS correct,
         SUM(CASE WHEN severity = 'grave' THEN 1 ELSE 0 END) AS graves
        FROM hand_events ${hf.clause}
-       GROUP BY range_id, range_name, hand
+       GROUP BY range_id, hand
        HAVING total >= 5
        ORDER BY (CAST(SUM(is_correct) AS REAL) / COUNT(*)) ASC
        LIMIT 100`
@@ -168,9 +168,9 @@ export async function onRequest(context) {
     if (filters.rangeId !== null) { conds.push('range_id = ?'); binds.push(filters.rangeId) }
     if (filters.days !== null) { conds.push('created_at >= unixepoch() - ?'); binds.push(filters.days * 86400) }
     const res = await env.DB.prepare(
-      `SELECT range_id AS rangeId, range_name AS rangeName, hand, COUNT(*) AS count
+      `SELECT range_id AS rangeId, MAX(range_name) AS rangeName, hand, COUNT(*) AS count
        FROM consult_events ${conds.length ? 'WHERE ' + conds.join(' AND ') : ''}
-       GROUP BY range_id, range_name, hand
+       GROUP BY range_id, hand
        ORDER BY count DESC
        LIMIT 100`
     ).bind(...binds).all()
@@ -180,12 +180,12 @@ export async function onRequest(context) {
   if (view === 'by-range') {
     const hf = handFilters(filters)
     const handRes = await env.DB.prepare(
-      `SELECT range_id AS rangeId, range_name AS rangeName,
+      `SELECT range_id AS rangeId, MAX(range_name) AS rangeName,
         COUNT(*) AS hands, CAST(SUM(is_correct) AS INTEGER) AS correct,
         SUM(CASE WHEN severity = 'grave' THEN 1 ELSE 0 END) AS graves,
         COUNT(DISTINCT user_id) AS players
        FROM hand_events ${hf.clause}
-       GROUP BY range_id, range_name
+       GROUP BY range_id
        ORDER BY hands DESC`
     ).bind(...hf.binds).all()
 
