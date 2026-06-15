@@ -82,6 +82,29 @@ SLOTS_6MAX / SLOTS_8MAX: Slot[]              // {t:%, l:%} posição visual dos 
 - **Token de sessão** (`generateToken`/`verifyToken`): action `validate` com senha correta retorna `{ ok, token, expiresAt }`, token = HMAC-SHA256 (chave = `ADMIN_PASSWORD`, exp 30 min). Publish aceita `Authorization: Bearer <token>` OU senha no body.
 - Front: `login` guarda `adminToken` **em memória** (não persistido); `AdminPanel` publica via Bearer sem redigitar senha enquanto vale; 401 por expiração (`token_expired`) pede senha de novo.
 
+## Backend de Nuvem — Auth + Telemetria + Painel Coach (`functions/api/`)
+Cloudflare **Pages Functions** (serverless, cada arquivo exporta `onRequest(context)`) + **D1** (binding `DB`, banco `preflop-db`). Config em `wrangler.toml`. Schema em `schema.sql` (base) e `schema_v2.sql` (migração aditiva: `session_uuid`, `client_event_id`, índices/dedupe). **Deploy automático**: push na branch → Cloudflare Pages builda (preview por branch em `<branch>.pre-flop-pro.pages.dev`; produção em `pre-flop-pro.pages.dev` a partir de `main`).
+
+- **Secrets por ambiente** (Production e Preview separados no dashboard): `TEAM_CODE` (gate de cadastro), `SESSION_SECRET`. Faltando → signup retorna 500 explícito.
+- **Helpers** `functions/api/_utils.js`: `sha256Hex`, `hashPassword` (`SHA-256(salt + ':' + senha)`), `randomHex`, `getAuthUser` (deriva user do `Authorization: Bearer` via `sessions.token_hash`), `emailDomainExists` (DNS sobre HTTPS, fail-open), `isHand`/`isUuidOrNull`/`isShortStr`, `json`, `CORS_HEADERS`, `handleOptions`.
+- **Auth** (`functions/api/auth/`): `signup` (valida TEAM_CODE, username≥6, senha≥8, e-mail regex+DNS, unicidade), `login`, `me`, `logout`, `change-password` (senha≥8). Tabela `users` (role `player`|`coach`, `first_login`, `name`, `email`); `sessions` (token_hash, expira 30 dias).
+- **Telemetria** (`functions/api/events/`): `hand`, `consult`, `session-end`. `user_id` SEMPRE do token (nunca do body); sem auth respondem 200 `{ok:false, code:'unauthenticated'}`. `hand` valida payload e usa `INSERT OR IGNORE` (dedupe por `client_event_id`). Tabelas `hand_events`, `consult_events`, `training_sessions`.
+- **Analytics do coach** (`functions/api/admin/analytics.js`, coach-only 401/403) — query `?view=`:
+  - `team-overview` (por jogador + linha TIME), `leaks` (mãos mais erradas, ≥5 tentativas), `consult-hotspots`, `by-range`, `range-grid` (por mão de UM range: total/acertos/graves/consultas + ação correta predominante + ação errada mais comum).
+  - Filtros: `playerIds` (CSV, multi-jogador), `rangeId`, `days` (1..365), `stackGridIdx` (no range-grid). Agrupam por `range_id` com `MAX(range_name)` para nunca duplicar range com nomes divergentes.
+  - `functions/api/admin/users.js` e `admin/user/[id].js` (tabs hands/consults/sessions por jogador). Import paths: `events/*` e `admin/*` usam `../_utils.js`; `admin/user/*` usa `../../_utils.js`.
+- **Stats do jogador** (`functions/api/me/stats.js`, requer auth): `?view=` overview/by-range/by-hand/sessions, sempre `WHERE user_id = <token>`.
+
+### Frontend de nuvem
+- **Store** (`useStore`): `currentUser` (`CurrentUser`), `authToken` (sessionStorage `pfp-auth-token`), ações `authLogin`/`authSignup`/`authLogout`/`changePassword`/`restoreSession` (chamada em `main.tsx` antes do render). `userMode` derivado (`coach`→`'admin'`) para compat com `AdminPanel`. Telemetria via `fireEvent()` → fila `src/utils/eventQueue.ts` (localStorage `pfp-event-queue`, cap 500, retry, descarte em 400, flush no login/restore). `startDrillSession` gera `session_uuid`; cada evento `hand` envia `client_event_id`.
+- **LoginPage** (porta única: login/signup/forgot; sem gate admin/visitante), **WelcomeModal** (boas-vindas no `first_login`, substitui o antigo force-change-password), **ChangePasswordModal** (ainda existe, usado no fluxo de senha temporária).
+- **CoachPanel** (`src/components/Admin/CoachPanel.tsx`, rota `page==='admin'`, botão "Painel Coach" no TopNav para coach): abas "Visão do time" e "Por jogador". Visão do time: filtros (multi-jogador com checkboxes em ordem alfabética via `MultiPlayerSelect`; range agrupado por posição via `groupRangesByPosition`/`POSITION_ORDER`; período), **matriz 13×13 no topo** (`RangeHeatGrid.tsx`: métricas Precisão/Graves/Consultas/Volume + tooltip de confusão; chips de stack efetivo quando o range tem `stackGrids.length>1`), e caixas **colapsáveis** (default minimizadas) Resumo/Leaks/Hotspots/Por range (clicáveis para selecionar o range).
+- **MyAccountStats** (`src/components/Stats/MyAccountStats.tsx`): "Meus dados na nuvem" na StatsPage.
+
+### Dados demo / utilitários
+- Contas demo: `demo_01`..`demo_15`, senha `demo1234`, role player. Limpeza: `DELETE FROM users WHERE username LIKE 'demo\_%' ESCAPE '\'` (CASCADE apaga eventos). Conta coach: `admin001`.
+- Geradores de seed ficam em `scripts/` (**gitignored**, não vão pro repo): `seedFake.cjs` (geral), `seedFakeRfi.cjs` (RFI >5k/range + multi-stack, realismo via grid real — mãos mistas erram mais). Migração de schema é manual: `npx wrangler d1 execute preflop-db --file=schema_v2.sql --remote`.
+
 ## Ranges Nativos (`src/data/defaultRanges.ts`)
 - Ranges nativos definidos com helper `const g = (hands) => ({ ...makeEmptyGrid(), ...hands })`
 - Seed no `loadRanges()` do store: injeta ranges com IDs ausentes sem sobrescrever os do usuário
