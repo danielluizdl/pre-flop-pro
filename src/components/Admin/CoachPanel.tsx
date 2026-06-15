@@ -716,12 +716,45 @@ function PlayersView({ token }: { token: string | null }) {
   )
 }
 
+function PublishTeamRanges() {
+  const publishTeamRanges = useStore(s => s.publishTeamRanges)
+  const rangeCount = useStore(s => s.ranges.length)
+  const [publishing, setPublishing] = useState(false)
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+
+  async function handlePublish() {
+    if (publishing) return
+    if (!confirm(`Publicar ${rangeCount} range(s) para o time no D1? Os jogadores recebem essa versão no próximo login.`)) return
+    setPublishing(true)
+    setMsg(null)
+    const res = await publishTeamRanges()
+    setPublishing(false)
+    setMsg(res.ok
+      ? { ok: true, text: `Publicado: ${res.count} range(s) · versão ${res.version}` }
+      : { ok: false, text: res.error ?? 'Falha ao publicar' })
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <button
+        onClick={handlePublish}
+        disabled={publishing}
+        className="px-3.5 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-40 text-white text-sm font-semibold transition-colors"
+      >
+        {publishing ? 'Publicando…' : 'Publicar ranges para o time (D1)'}
+      </button>
+      {msg && <span className={msg.ok ? 'text-xs text-emerald-400' : 'text-xs text-red-400'}>{msg.text}</span>}
+    </div>
+  )
+}
+
 export default function CoachPanel() {
   const authToken = useStore(s => s.authToken)
   const [area, setArea] = useState<'team' | 'players'>('team')
 
   return (
     <div className="space-y-4">
+      <PublishTeamRanges />
       <div className="flex gap-1 border-b border-warm-700">
         {([
           { key: 'team', label: 'Visão do time' },

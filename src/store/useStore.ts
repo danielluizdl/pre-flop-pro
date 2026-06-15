@@ -22,6 +22,7 @@ const HISTORY_KEY       = 'fbr-training-history-v1'
 const HAND_PERF_KEY     = 'pfp-hand-perf-v1'
 const ADMIN_VERSION_KEY = 'admin-ranges-version'
 const DELETED_ADMIN_KEY = 'fbr-deleted-admin-ids'
+const TEAM_VERSION_KEY  = 'team-ranges-version'
 
 function loadDeletedAdminIds(): Set<number> {
   try { return new Set(JSON.parse(localStorage.getItem(DELETED_ADMIN_KEY) ?? '[]')) }
@@ -252,6 +253,8 @@ interface AppState {
   authLogout: () => Promise<void>
   changePassword: (newPassword: string) => Promise<{ ok: boolean; error?: string }>
   restoreSession: () => Promise<void>
+  syncTeamRanges: () => Promise<void>
+  publishTeamRanges: () => Promise<{ ok: boolean; error?: string; version?: number; count?: number }>
   logConsult: (rangeId: number, rangeName: string, hand?: string) => void
 
   // ── Admin ─────────────────────────────────────────────────────────────────────
@@ -1221,6 +1224,7 @@ export const useStore = create<AppState>()(
             justSignedUp: false,
           })
           void flush(data.token)
+          void get().syncTeamRanges()
           return { ok: true }
         } catch { return { ok: false, error: 'Erro de conexão' } }
       },
@@ -1290,7 +1294,43 @@ export const useStore = create<AppState>()(
             justSignedUp: false,
           })
           void flush(token)
+          void get().syncTeamRanges()
         } catch { sessionStorage.removeItem('pfp-auth-token') }
+      },
+      syncTeamRanges: async () => {
+        const { authToken } = get()
+        if (!authToken) return
+        try {
+          const res = await fetch('/api/ranges/list', { headers: { Authorization: `Bearer ${authToken}` } })
+          if (!res.ok) return
+          const data = await res.json().catch(() => null)
+          if (!data || !Array.isArray(data.ranges) || data.ranges.length === 0) return
+          const seen = Number(localStorage.getItem(TEAM_VERSION_KEY) ?? '0')
+          if ((data.version ?? 0) <= seen) return
+          const teamRanges = decodeRanges(data.ranges as Range[])
+          const teamIds = new Set(teamRanges.map(r => r.id))
+          const userRanges = get().ranges.filter(r => !teamIds.has(r.id))
+          const merged = [...teamRanges, ...userRanges]
+          saveRanges(merged)
+          localStorage.setItem(TEAM_VERSION_KEY, String(data.version))
+          set({ ranges: merged })
+        } catch { /* fallback: segue com o seed local */ }
+      },
+      publishTeamRanges: async () => {
+        const { authToken, ranges } = get()
+        if (!authToken) return { ok: false, error: 'Não autenticado' }
+        try {
+          const sparse = encodeRanges(ranges)
+          const res = await fetch('/api/admin/ranges/publish', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+            body: JSON.stringify({ ranges: sparse }),
+          })
+          const data = await res.json().catch(() => null)
+          if (!res.ok || !data?.ok) return { ok: false, error: data?.error ?? `Erro do servidor (${res.status})` }
+          localStorage.setItem(TEAM_VERSION_KEY, String(data.version))
+          return { ok: true, version: data.version, count: data.count }
+        } catch { return { ok: false, error: 'Erro de conexão' } }
       },
 
       // ── Admin ───────────────────────────────────────────────────────────────────
