@@ -14,7 +14,7 @@
 
 const FILE_PATH = 'src/data/adminRanges.json'
 
-const ALLOWED_ORIGINS = ['https://danielluizdl.github.io', 'http://localhost:5173']
+const ALLOWED_ORIGINS = ['https://danielluizdl.github.io', 'https://pre-flop-pro.pages.dev', 'http://localhost:5173']
 
 const TOKEN_TTL_MS = 30 * 60 * 1000
 
