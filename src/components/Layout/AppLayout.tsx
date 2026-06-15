@@ -1,4 +1,5 @@
-﻿import { useStore } from '../../store/useStore'
+﻿import { lazy, Suspense } from 'react'
+import { useStore } from '../../store/useStore'
 import { TopNav } from './TopNav'
 import { Dashboard } from './Dashboard'
 import { RangeEditorPage } from '../RangeBuilder/RangeEditorPage'
@@ -6,13 +7,14 @@ import { RangeSetupPage } from '../RangeBuilder/RangeSetupPage'
 import { TableEditorPage } from '../TableEditor/TableEditorPage'
 import { SituationsPage } from '../Situations/SituationsPage'
 import { CategoryDetailPage } from '../Situations/CategoryDetailPage'
-import { TrainerPage } from '../Trainer/TrainerPage'
-import { StatsPage } from '../Stats/StatsPage'
 import { LoginPage } from '../Auth/LoginPage'
-import CoachPanel from '../Admin/CoachPanel'
 import { WelcomeModal } from '../Auth/WelcomeModal'
 import { ChangePasswordModal } from '../Auth/ChangePasswordModal'
 import { RouterSync } from './RouterSync'
+
+const TrainerPage = lazy(() => import('../Trainer/TrainerPage').then(m => ({ default: m.TrainerPage })))
+const StatsPage = lazy(() => import('../Stats/StatsPage').then(m => ({ default: m.StatsPage })))
+const CoachPanel = lazy(() => import('../Admin/CoachPanel'))
 
 export function AppLayout() {
   const { page, darkMode, userMode } = useStore()
@@ -51,7 +53,9 @@ export function AppLayout() {
           : currentUser?.firstLogin === true && <ChangePasswordModal />}
         <TopNav />
         <main className="w-full max-w-[1800px] mx-auto px-6 md:px-10 pt-8 pb-16">
-          {renderPage()}
+          <Suspense fallback={<p className="text-sm text-warm-500">Carregando…</p>}>
+            {renderPage()}
+          </Suspense>
         </main>
       </div>
     </div>

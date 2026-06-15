@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { useStore } from '../../store/useStore'
 import { downloadText, backupFilename } from '../../utils/download'
+import { captureError } from '../../utils/sentry'
 
 interface Props {
   children: ReactNode
@@ -19,6 +20,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('[ErrorBoundary]', error, info.componentStack)
+    captureError(error, { componentStack: info.componentStack })
   }
 
   handleExportAndReset = () => {

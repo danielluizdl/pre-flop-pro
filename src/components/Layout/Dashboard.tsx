@@ -4,7 +4,7 @@ import { countNonFoldHands } from '../../utils/hands'
 import { downloadText, backupFilename } from '../../utils/download'
 import { RangeMark } from '../ui/RangeMark'
 import { MyAccountStats } from '../Stats/MyAccountStats'
-import { AccuracySparkline } from '../Stats/StatsPage'
+import { AccuracySparkline } from '../Stats/AccuracySparkline'
 
 const CATEGORY_POSITIONS: Record<string, string[]> = {
   EARLY:    ['UTG','MP','HJ'],

@@ -8,3 +8,6 @@ dist/
 pre-flop-pro/
 .wrangler/
 scripts/
+test-results/
+playwright-report/
+.playwright/

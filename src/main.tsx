@@ -4,8 +4,10 @@ import { BrowserRouter } from 'react-router-dom'
 import { AppLayout } from './components/Layout/AppLayout'
 import { ErrorBoundary } from './components/Layout/ErrorBoundary'
 import { useStore } from './store/useStore'
+import { initSentry } from './utils/sentry'
 import './index.css'
 
+initSentry()
 useStore.getState().restoreSession()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
