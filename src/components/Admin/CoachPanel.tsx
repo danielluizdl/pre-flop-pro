@@ -507,6 +507,10 @@ function PlayersView({ token }: { token: string | null }) {
   const [detail, setDetail] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [resetting, setResetting] = useState(false)
+  const [resetResult, setResetResult] = useState<{ userId: number; tempPassword: string } | null>(null)
+  const [resetError, setResetError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if (!token) return
@@ -515,6 +519,31 @@ function PlayersView({ token }: { token: string | null }) {
       .then(data => setUsers(data.users ?? []))
       .catch(() => setError('Erro ao carregar usuários'))
   }, [token])
+
+  useEffect(() => { setResetResult(null); setResetError(null); setCopied(false) }, [selectedUserId])
+
+  async function handleResetPassword(userId: number) {
+    if (!token || resetting) return
+    if (!confirm('Resetar a senha deste jogador? A senha atual deixará de funcionar e ele precisará usar a senha temporária.')) return
+    setResetting(true)
+    setResetError(null)
+    setResetResult(null)
+    setCopied(false)
+    try {
+      const res = await fetch('/api/admin/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ userId }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok || !data?.ok) { setResetError(data?.error ?? `Erro do servidor (${res.status})`); return }
+      setResetResult({ userId, tempPassword: data.tempPassword })
+    } catch {
+      setResetError('Erro de conexão')
+    } finally {
+      setResetting(false)
+    }
+  }
 
   useEffect(() => {
     if (!token || selectedUserId === null) return
@@ -559,8 +588,36 @@ function PlayersView({ token }: { token: string | null }) {
           <p className="text-sm text-warm-500">Selecione um jogador.</p>
         ) : (
           <>
-            <h2 className="text-xl font-semibold text-white">{selectedUser.name || selectedUser.username}</h2>
-            <p className="text-sm text-warm-400 mb-3">{selectedUser.username}{selectedUser.email ? ` · ${selectedUser.email}` : ''}</p>
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div>
+                <h2 className="text-xl font-semibold text-white">{selectedUser.name || selectedUser.username}</h2>
+                <p className="text-sm text-warm-400 mb-3">{selectedUser.username}{selectedUser.email ? ` · ${selectedUser.email}` : ''}</p>
+              </div>
+              <button
+                onClick={() => handleResetPassword(selectedUser.id)}
+                disabled={resetting}
+                className="px-3 py-1.5 text-sm rounded-lg border border-warm-600 text-warm-300 hover:bg-warm-800 hover:text-white disabled:opacity-40 transition-colors"
+              >
+                {resetting ? 'Resetando…' : 'Resetar senha'}
+              </button>
+            </div>
+
+            {resetError && <p className="text-sm text-red-400 mb-3">{resetError}</p>}
+            {resetResult && resetResult.userId === selectedUser.id && (
+              <div className="mb-4 rounded-xl border border-brand-600/50 bg-warm-800/60 p-3">
+                <p className="text-xs text-warm-400 mb-1.5">Senha temporária — repasse ao jogador. Ele definirá uma nova senha no próximo acesso.</p>
+                <div className="flex items-center gap-2">
+                  <code className="text-lg font-bold tracking-widest text-brand-300 select-all">{resetResult.tempPassword}</code>
+                  <button
+                    onClick={() => { navigator.clipboard?.writeText(resetResult.tempPassword); setCopied(true) }}
+                    className="px-2.5 py-1 text-xs rounded-lg border border-warm-600 text-warm-300 hover:bg-warm-800 transition-colors"
+                  >
+                    {copied ? 'Copiado' : 'Copiar'}
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="flex gap-1 mb-4">
               {(['hands', 'consults', 'sessions'] as const).map(tab => (
                 <button

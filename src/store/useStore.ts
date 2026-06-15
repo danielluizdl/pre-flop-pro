@@ -246,6 +246,7 @@ interface AppState {
   // ── Conta (opt-in, D1) ────────────────────────────────────────────────────────
   currentUser: CurrentUser | null
   authToken: string | null
+  justSignedUp: boolean
   authLogin: (username: string, password: string) => Promise<{ ok: boolean; error?: string }>
   authSignup: (username: string, password: string, teamCode: string, name: string, email: string) => Promise<{ ok: boolean; error?: string }>
   authLogout: () => Promise<void>
@@ -1202,6 +1203,7 @@ export const useStore = create<AppState>()(
       // ── Conta (opt-in, D1) ──────────────────────────────────────────────────────
       currentUser: null,
       authToken: null,
+      justSignedUp: false,
       authLogin: async (username, password) => {
         try {
           const res = await fetch('/api/auth/login', {
@@ -1216,6 +1218,7 @@ export const useStore = create<AppState>()(
             authToken: data.token,
             currentUser: { id: data.user.id, username: data.user.username, name: data.user.name ?? '', email: data.user.email ?? '', role: data.user.role, firstLogin: !!data.user.first_login },
             userMode: data.user.role === 'coach' ? 'admin' : 'visitor',
+            justSignedUp: false,
           })
           void flush(data.token)
           return { ok: true }
@@ -1235,6 +1238,7 @@ export const useStore = create<AppState>()(
             authToken: data.token,
             currentUser: { id: data.user.id, username: data.user.username, name: data.user.name ?? '', email: data.user.email ?? '', role: data.user.role, firstLogin: !!data.user.first_login },
             userMode: data.user.role === 'coach' ? 'admin' : 'visitor',
+            justSignedUp: true,
           })
           return { ok: true }
         } catch { return { ok: false, error: 'Erro de conexão' } }
@@ -1250,7 +1254,7 @@ export const useStore = create<AppState>()(
           } catch { /* logout local mesmo offline */ }
         }
         sessionStorage.removeItem('pfp-auth-token')
-        set({ currentUser: null, authToken: null, userMode: null, adminToken: null })
+        set({ currentUser: null, authToken: null, userMode: null, adminToken: null, justSignedUp: false })
       },
       changePassword: async (newPassword) => {
         const { authToken, currentUser } = get()
@@ -1283,6 +1287,7 @@ export const useStore = create<AppState>()(
             authToken: token,
             currentUser: { id: data.user.id, username: data.user.username, name: data.user.name ?? '', email: data.user.email ?? '', role: data.user.role, firstLogin: !!data.user.first_login },
             userMode: data.user.role === 'coach' ? 'admin' : 'visitor',
+            justSignedUp: false,
           })
           void flush(token)
         } catch { sessionStorage.removeItem('pfp-auth-token') }

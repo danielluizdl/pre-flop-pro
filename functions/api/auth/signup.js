@@ -29,7 +29,7 @@ export async function onRequest(context) {
 
   const salt = randomHex(16)
   const hash = await hashPassword(password, salt)
-  const result = await env.DB.prepare('INSERT INTO users (username, name, email, password_hash, salt) VALUES (?, ?, ?, ?, ?)')
+  const result = await env.DB.prepare('INSERT INTO users (username, name, email, password_hash, salt, first_login) VALUES (?, ?, ?, ?, ?, 0)')
     .bind(username, name, email, hash, salt).run()
 
   const token = randomHex(32)
@@ -38,5 +38,5 @@ export async function onRequest(context) {
   await env.DB.prepare('INSERT INTO sessions (user_id, token_hash, expires_at) VALUES (?, ?, ?)')
     .bind(result.meta.last_row_id, tokenHash, expiresAt).run()
 
-  return json({ ok: true, token, user: { id: result.meta.last_row_id, username, name, email, role: 'player', first_login: 1 } })
+  return json({ ok: true, token, user: { id: result.meta.last_row_id, username, name, email, role: 'player', first_login: 0 } })
 }
