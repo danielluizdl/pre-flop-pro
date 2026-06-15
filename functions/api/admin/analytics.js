@@ -9,10 +9,28 @@ function parseIntParam(raw, { min, max }) {
   return { ok: true, value: v }
 }
 
-function handFilters({ playerId, rangeId, days }) {
+function parsePlayerIds(raw) {
+  const parts = (raw ?? '').split(',').map(s => s.trim()).filter(Boolean)
+  const out = []
+  for (const p of parts) {
+    if (!/^\d+$/.test(p)) return null
+    const v = parseInt(p, 10)
+    if (v < 1) return null
+    out.push(v)
+  }
+  return out
+}
+
+function playerCond(playerIds) {
+  if (!playerIds.length) return { sql: '', binds: [] }
+  return { sql: `user_id IN (${playerIds.map(() => '?').join(',')})`, binds: [...playerIds] }
+}
+
+function handFilters({ playerIds, rangeId, days }) {
   const conds = []
   const binds = []
-  if (playerId !== null) { conds.push('user_id = ?'); binds.push(playerId) }
+  const pc = playerCond(playerIds)
+  if (pc.sql) { conds.push(pc.sql); binds.push(...pc.binds) }
   if (rangeId !== null) { conds.push('range_id = ?'); binds.push(rangeId) }
   if (days !== null) { conds.push('created_at >= unixepoch() - ?'); binds.push(days * 86400) }
   return { clause: conds.length ? 'WHERE ' + conds.join(' AND ') : '', binds }
@@ -32,11 +50,11 @@ export async function onRequest(context) {
   const url = new URL(request.url)
   const view = url.searchParams.get('view') ?? 'team-overview'
 
-  const pPlayer = parseIntParam(url.searchParams.get('playerId'), { min: 1 })
+  const playerIds = parsePlayerIds(url.searchParams.get('playerIds') ?? url.searchParams.get('playerId'))
   const pRange = parseIntParam(url.searchParams.get('rangeId'), { min: 0 })
   const pDays = parseIntParam(url.searchParams.get('days'), { min: 1, max: 365 })
-  if (!pPlayer.ok || !pRange.ok || !pDays.ok) return json({ error: 'Parâmetro inválido' }, 400)
-  const filters = { playerId: pPlayer.value, rangeId: pRange.value, days: pDays.value }
+  if (playerIds === null || !pRange.ok || !pDays.ok) return json({ error: 'Parâmetro inválido' }, 400)
+  const filters = { playerIds, rangeId: pRange.value, days: pDays.value }
 
   if (view === 'team-overview') {
     const hf = handFilters(filters)
@@ -51,7 +69,8 @@ export async function onRequest(context) {
 
     const cConds = []
     const cBinds = []
-    if (filters.playerId !== null) { cConds.push('user_id = ?'); cBinds.push(filters.playerId) }
+    const cPc = playerCond(filters.playerIds)
+    if (cPc.sql) { cConds.push(cPc.sql); cBinds.push(...cPc.binds) }
     if (filters.rangeId !== null) { cConds.push('range_id = ?'); cBinds.push(filters.rangeId) }
     if (filters.days !== null) { cConds.push('created_at >= unixepoch() - ?'); cBinds.push(filters.days * 86400) }
     const consultAgg = await env.DB.prepare(
@@ -60,17 +79,18 @@ export async function onRequest(context) {
 
     const sConds = []
     const sBinds = []
+    const sPc = playerCond(filters.playerIds)
     if (filters.rangeId !== null) {
       // Sem range_id em training_sessions: vincula via session_uuid das maos daquele range.
       const subConds = ['range_id = ?', 'session_uuid IS NOT NULL']
       const subBinds = [filters.rangeId]
-      if (filters.playerId !== null) { subConds.push('user_id = ?'); subBinds.push(filters.playerId) }
+      if (sPc.sql) { subConds.push(sPc.sql); subBinds.push(...sPc.binds) }
       if (filters.days !== null) { subConds.push('created_at >= unixepoch() - ?'); subBinds.push(filters.days * 86400) }
       sConds.push(`session_uuid IN (SELECT DISTINCT session_uuid FROM hand_events WHERE ${subConds.join(' AND ')})`)
       sBinds.push(...subBinds)
-      if (filters.playerId !== null) { sConds.push('user_id = ?'); sBinds.push(filters.playerId) }
+      if (sPc.sql) { sConds.push(sPc.sql); sBinds.push(...sPc.binds) }
     } else {
-      if (filters.playerId !== null) { sConds.push('user_id = ?'); sBinds.push(filters.playerId) }
+      if (sPc.sql) { sConds.push(sPc.sql); sBinds.push(...sPc.binds) }
       if (filters.days !== null) { sConds.push('ended_at >= unixepoch() - ?'); sBinds.push(filters.days * 86400) }
     }
     const sessionAgg = await env.DB.prepare(
@@ -78,9 +98,10 @@ export async function onRequest(context) {
        FROM training_sessions ${sConds.length ? 'WHERE ' + sConds.join(' AND ') : ''} GROUP BY user_id`
     ).bind(...sBinds).all()
 
+    const uPc = filters.playerIds.length ? ` AND id IN (${filters.playerIds.map(() => '?').join(',')})` : ''
     const usersRes = await env.DB.prepare(
-      `SELECT id, username, name FROM users WHERE role = 'player'${filters.playerId !== null ? ' AND id = ?' : ''} ORDER BY username COLLATE NOCASE`
-    ).bind(...(filters.playerId !== null ? [filters.playerId] : [])).all()
+      `SELECT id, username, name FROM users WHERE role = 'player'${uPc} ORDER BY name COLLATE NOCASE, username COLLATE NOCASE`
+    ).bind(...filters.playerIds).all()
 
     const hMap = new Map((handAgg.results ?? []).map(r => [r.userId, r]))
     const cMap = new Map((consultAgg.results ?? []).map(r => [r.userId, r]))
@@ -142,7 +163,8 @@ export async function onRequest(context) {
   if (view === 'consult-hotspots') {
     const conds = []
     const binds = []
-    if (filters.playerId !== null) { conds.push('user_id = ?'); binds.push(filters.playerId) }
+    const pc = playerCond(filters.playerIds)
+    if (pc.sql) { conds.push(pc.sql); binds.push(...pc.binds) }
     if (filters.rangeId !== null) { conds.push('range_id = ?'); binds.push(filters.rangeId) }
     if (filters.days !== null) { conds.push('created_at >= unixepoch() - ?'); binds.push(filters.days * 86400) }
     const res = await env.DB.prepare(
@@ -169,7 +191,8 @@ export async function onRequest(context) {
 
     const cConds = []
     const cBinds = []
-    if (filters.playerId !== null) { cConds.push('user_id = ?'); cBinds.push(filters.playerId) }
+    const cPc = playerCond(filters.playerIds)
+    if (cPc.sql) { cConds.push(cPc.sql); cBinds.push(...cPc.binds) }
     if (filters.rangeId !== null) { cConds.push('range_id = ?'); cBinds.push(filters.rangeId) }
     if (filters.days !== null) { cConds.push('created_at >= unixepoch() - ?'); cBinds.push(filters.days * 86400) }
     const consultRes = await env.DB.prepare(
@@ -188,17 +211,10 @@ export async function onRequest(context) {
   if (view === 'range-grid') {
     if (filters.rangeId === null) return json({ error: 'rangeId obrigatório' }, 400)
 
-    const rawIds = (url.searchParams.get('playerIds') ?? '').split(',').map(s => s.trim()).filter(Boolean)
-    const playerIds = []
-    for (const raw of rawIds) {
-      const p = parseIntParam(raw, { min: 1 })
-      if (!p.ok || p.value === null) return json({ error: 'playerIds inválido' }, 400)
-      playerIds.push(p.value)
-    }
-
     const conds = ['range_id = ?']
     const binds = [filters.rangeId]
-    if (playerIds.length) { conds.push(`user_id IN (${playerIds.map(() => '?').join(',')})`); binds.push(...playerIds) }
+    const pc = playerCond(filters.playerIds)
+    if (pc.sql) { conds.push(pc.sql); binds.push(...pc.binds) }
     if (filters.days !== null) { conds.push('created_at >= unixepoch() - ?'); binds.push(filters.days * 86400) }
     const clause = 'WHERE ' + conds.join(' AND ')
 
