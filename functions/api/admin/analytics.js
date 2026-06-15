@@ -211,10 +211,14 @@ export async function onRequest(context) {
   if (view === 'range-grid') {
     if (filters.rangeId === null) return json({ error: 'rangeId obrigatório' }, 400)
 
+    const pStack = parseIntParam(url.searchParams.get('stackGridIdx'), { min: -1 })
+    if (!pStack.ok) return json({ error: 'stackGridIdx inválido' }, 400)
+
     const conds = ['range_id = ?']
     const binds = [filters.rangeId]
     const pc = playerCond(filters.playerIds)
     if (pc.sql) { conds.push(pc.sql); binds.push(...pc.binds) }
+    if (pStack.value !== null) { conds.push('stack_grid_idx = ?'); binds.push(pStack.value) }
     if (filters.days !== null) { conds.push('created_at >= unixepoch() - ?'); binds.push(filters.days * 86400) }
     const clause = 'WHERE ' + conds.join(' AND ')
 
