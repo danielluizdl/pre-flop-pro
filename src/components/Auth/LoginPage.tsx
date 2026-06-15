@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { RangeMark } from '../ui/RangeMark'
+import { Turnstile, turnstileEnabled } from './Turnstile'
 
 type View = 'login' | 'signup' | 'forgot'
 
@@ -18,8 +19,10 @@ export function LoginPage() {
   const [teamCode, setTeamCode] = useState('')
   const [error, setError]       = useState('')
   const [loading, setLoading]   = useState(false)
+  const [tsToken, setTsToken]   = useState<string | null>(null)
 
-  const canSubmit = !!username && !!password && (view !== 'signup' || (!!teamCode && !!name && !!email))
+  const tsReady = !turnstileEnabled || !!tsToken
+  const canSubmit = !!username && !!password && (view !== 'signup' || (!!teamCode && !!name && !!email)) && tsReady
 
   async function handleSubmit() {
     if (!canSubmit || loading) return
@@ -31,8 +34,8 @@ export function LoginPage() {
     setLoading(true)
     setError('')
     const result = view === 'login'
-      ? await authLogin(username, password)
-      : await authSignup(username, password, teamCode, name, email)
+      ? await authLogin(username, password, tsToken)
+      : await authSignup(username, password, teamCode, name, email, tsToken)
     setLoading(false)
     if (!result.ok) setError(result.error ?? 'Erro inesperado')
   }
@@ -40,6 +43,7 @@ export function LoginPage() {
   function switchView(next: View) {
     setView(next)
     setError('')
+    setTsToken(null)
   }
 
   return (
@@ -132,6 +136,12 @@ export function LoginPage() {
                     className={INPUT_CLASS}
                     onKeyDown={e => { if (e.key === 'Enter') handleSubmit() }}
                   />
+                </div>
+              )}
+
+              {turnstileEnabled && (
+                <div className="pt-1">
+                  <Turnstile onToken={setTsToken} />
                 </div>
               )}
 

@@ -51,6 +51,43 @@ export function isShortStr(v, max) {
   return typeof v === 'string' && v.length <= max
 }
 
+// Rate limit em memória (Map no escopo do módulo): best-effort, reseta a cada
+// novo isolate do Pages Functions. Complementar com WAF/Turnstile no Cloudflare.
+const RATE_LIMIT_MAX = 8
+const RATE_LIMIT_WINDOW_MS = 60 * 1000
+const authAttempts = new Map()
+
+export function checkRateLimit(ip, now = Date.now(), store = authAttempts) {
+  const recent = (store.get(ip) ?? []).filter(t => now - t < RATE_LIMIT_WINDOW_MS)
+  if (recent.length >= RATE_LIMIT_MAX) {
+    store.set(ip, recent)
+    return false
+  }
+  recent.push(now)
+  store.set(ip, recent)
+  return true
+}
+
+export async function verifyTurnstile(env, token, ip) {
+  if (!env.TURNSTILE_SECRET_KEY) {
+    console.warn('TURNSTILE_SECRET_KEY ausente — validação Turnstile ignorada (fail-open)')
+    return true
+  }
+  if (!token) return false
+  try {
+    const form = new URLSearchParams()
+    form.set('secret', env.TURNSTILE_SECRET_KEY)
+    form.set('response', token)
+    if (ip) form.set('remoteip', ip)
+    const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', { method: 'POST', body: form })
+    const data = await res.json()
+    return !!data.success
+  } catch {
+    console.warn('Turnstile siteverify falhou — fail-open')
+    return true
+  }
+}
+
 export const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',

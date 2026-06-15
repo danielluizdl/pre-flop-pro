@@ -1,9 +1,12 @@
-import { sha256Hex, hashPassword, randomHex, json, handleOptions } from '../_utils.js'
+import { sha256Hex, hashPassword, randomHex, json, handleOptions, checkRateLimit, verifyTurnstile } from '../_utils.js'
 
 export async function onRequest(context) {
   const { request, env } = context
   if (request.method === 'OPTIONS') return handleOptions()
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
+
+  const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown'
+  if (!checkRateLimit(ip)) return json({ error: 'Muitas tentativas. Aguarde um minuto.' }, 429)
 
   let body
   try {
@@ -11,8 +14,9 @@ export async function onRequest(context) {
   } catch {
     return json({ error: 'Body inválido' }, 400)
   }
-  const { username, password } = body ?? {}
+  const { username, password, turnstileToken } = body ?? {}
   if (!username || !password) return json({ error: 'Campos obrigatórios: username, password' }, 400)
+  if (!(await verifyTurnstile(env, turnstileToken, ip))) return json({ error: 'Verificação anti-robô falhou' }, 403)
 
   const user = await env.DB.prepare(
     'SELECT id, username, name, email, password_hash, salt, role, first_login FROM users WHERE username = ? COLLATE NOCASE'

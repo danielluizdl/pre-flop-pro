@@ -247,8 +247,8 @@ interface AppState {
   currentUser: CurrentUser | null
   authToken: string | null
   justSignedUp: boolean
-  authLogin: (username: string, password: string) => Promise<{ ok: boolean; error?: string }>
-  authSignup: (username: string, password: string, teamCode: string, name: string, email: string) => Promise<{ ok: boolean; error?: string }>
+  authLogin: (username: string, password: string, turnstileToken?: string | null) => Promise<{ ok: boolean; error?: string }>
+  authSignup: (username: string, password: string, teamCode: string, name: string, email: string, turnstileToken?: string | null) => Promise<{ ok: boolean; error?: string }>
   authLogout: () => Promise<void>
   changePassword: (newPassword: string) => Promise<{ ok: boolean; error?: string }>
   restoreSession: () => Promise<void>
@@ -1204,12 +1204,12 @@ export const useStore = create<AppState>()(
       currentUser: null,
       authToken: null,
       justSignedUp: false,
-      authLogin: async (username, password) => {
+      authLogin: async (username, password, turnstileToken) => {
         try {
           const res = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password }),
+            body: JSON.stringify({ username, password, turnstileToken: turnstileToken ?? undefined }),
           })
           const data = await res.json().catch(() => null)
           if (!res.ok || !data) return { ok: false, error: data?.error ?? `Erro do servidor (${res.status})` }
@@ -1224,12 +1224,12 @@ export const useStore = create<AppState>()(
           return { ok: true }
         } catch { return { ok: false, error: 'Erro de conexão' } }
       },
-      authSignup: async (username, password, teamCode, name, email) => {
+      authSignup: async (username, password, teamCode, name, email, turnstileToken) => {
         try {
           const res = await fetch('/api/auth/signup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password, teamCode, name, email }),
+            body: JSON.stringify({ username, password, teamCode, name, email, turnstileToken: turnstileToken ?? undefined }),
           })
           const data = await res.json().catch(() => null)
           if (!res.ok || !data) return { ok: false, error: data?.error ?? `Erro do servidor (${res.status})` }

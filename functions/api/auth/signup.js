@@ -1,9 +1,12 @@
-import { sha256Hex, hashPassword, randomHex, json, handleOptions, emailDomainExists } from '../_utils.js'
+import { sha256Hex, hashPassword, randomHex, json, handleOptions, emailDomainExists, checkRateLimit, verifyTurnstile } from '../_utils.js'
 
 export async function onRequest(context) {
   const { request, env } = context
   if (request.method === 'OPTIONS') return handleOptions()
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
+
+  const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown'
+  if (!checkRateLimit(ip)) return json({ error: 'Muitas tentativas. Aguarde um minuto.' }, 429)
 
   let body
   try {
@@ -11,7 +14,8 @@ export async function onRequest(context) {
   } catch {
     return json({ error: 'Body inválido' }, 400)
   }
-  const { username, password, teamCode, name, email } = body ?? {}
+  const { username, password, teamCode, name, email, turnstileToken } = body ?? {}
+  if (!(await verifyTurnstile(env, turnstileToken, ip))) return json({ error: 'Verificação anti-robô falhou' }, 403)
   if (!username || !password || !teamCode || !name || !email) {
     return json({ error: 'Campos obrigatórios: username, password, teamCode, name, email' }, 400)
   }
