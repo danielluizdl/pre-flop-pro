@@ -173,7 +173,7 @@ function SessionDetailView({ session, ranges, onBack }: {
 }
 
 /* ── Sparkline de evolução da precisão ─────────────────────────────────────── */
-function AccuracySparkline({ sessions }: { sessions: TrainingSession[] }) {
+export function AccuracySparkline({ sessions }: { sessions: TrainingSession[] }) {
   const [hover, setHover] = useState<number | null>(null)
   const pts = sessions
     .filter(s => s.hands > 0)

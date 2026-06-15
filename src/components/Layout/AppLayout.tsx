@@ -12,6 +12,7 @@ import { LoginPage } from '../Auth/LoginPage'
 import CoachPanel from '../Admin/CoachPanel'
 import { WelcomeModal } from '../Auth/WelcomeModal'
 import { ChangePasswordModal } from '../Auth/ChangePasswordModal'
+import { RouterSync } from './RouterSync'
 
 export function AppLayout() {
   const { page, darkMode, userMode } = useStore()
@@ -38,6 +39,7 @@ export function AppLayout() {
 
   return (
     <div className={darkMode ? 'dark' : ''}>
+      <RouterSync />
       <div className="min-h-screen bg-warm-950 text-warm-100">
         {storageBlocked && (
           <div className="bg-red-900/40 border-b border-red-700 text-red-200 text-sm px-6 py-2.5 text-center">

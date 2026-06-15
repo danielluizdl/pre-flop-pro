@@ -3,6 +3,8 @@ import { useStore } from '../../store/useStore'
 import { countNonFoldHands } from '../../utils/hands'
 import { downloadText, backupFilename } from '../../utils/download'
 import { RangeMark } from '../ui/RangeMark'
+import { MyAccountStats } from '../Stats/MyAccountStats'
+import { AccuracySparkline } from '../Stats/StatsPage'
 
 const CATEGORY_POSITIONS: Record<string, string[]> = {
   EARLY:    ['UTG','MP','HJ'],
@@ -19,6 +21,7 @@ export function Dashboard() {
   const handPerformance = useStore(s => s.handPerformance)
   const exportData      = useStore(s => s.exportData)
   const importData      = useStore(s => s.importData)
+  const currentUser     = useStore(s => s.currentUser)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [importMsg, setImportMsg] = useState<{ ok: boolean; text: string } | null>(null)
@@ -116,6 +119,14 @@ export function Dashboard() {
           </div>
         ))}
       </section>
+
+      {/* Dados na nuvem do jogador */}
+      {currentUser && (
+        <section className="mb-8 space-y-4">
+          {trainingHistory.length >= 2 && <AccuracySparkline sessions={trainingHistory} />}
+          <MyAccountStats />
+        </section>
+      )}
 
       {/* Backup */}
       <section className="flex flex-wrap items-center gap-3 mb-8">

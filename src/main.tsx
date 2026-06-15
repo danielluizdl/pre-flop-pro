@@ -1,5 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { BrowserRouter } from 'react-router-dom'
 import { AppLayout } from './components/Layout/AppLayout'
 import { ErrorBoundary } from './components/Layout/ErrorBoundary'
 import { useStore } from './store/useStore'
@@ -10,7 +11,9 @@ useStore.getState().restoreSession()
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ErrorBoundary>
-      <AppLayout />
+      <BrowserRouter>
+        <AppLayout />
+      </BrowserRouter>
     </ErrorBoundary>
   </React.StrictMode>,
 )
