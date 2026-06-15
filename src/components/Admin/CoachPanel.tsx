@@ -191,8 +191,8 @@ function TeamView({ token }: { token: string | null }) {
   const selectCls = 'bg-warm-900 border border-warm-600 rounded-lg px-2.5 py-1.5 text-sm text-warm-100'
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap gap-3">
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-wrap gap-3" style={{ order: -2 }}>
         <select
           className={selectCls}
           value={filters.playerId ?? ''}
@@ -338,7 +338,7 @@ function TeamView({ token }: { token: string | null }) {
         </table>
       </Section>
 
-      <div>
+      <div style={{ order: -1 }}>
         <h3 className="text-sm font-semibold text-warm-200 mb-2">
           Matriz do range {selectedRangeName ? <span className="text-brand-400">· {selectedRangeName}</span> : ''}
         </h3>
