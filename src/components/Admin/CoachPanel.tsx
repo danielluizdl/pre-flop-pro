@@ -157,6 +157,37 @@ function confChipBg(acc: number): string {
   return 'rgba(220,38,38,0.92)'
 }
 
+function TopHandsPanel({ cells }: { cells: GridCell[] }) {
+  const [tab, setTab] = useState<'errors' | 'consults'>('errors')
+  const errors = [...cells].filter(c => c.total >= 3).sort((a, b) => a.accuracy - b.accuracy).slice(0, 20)
+  const consults = [...cells].filter(c => c.consults > 0).sort((a, b) => b.consults - a.consults).slice(0, 20)
+  const list = tab === 'errors' ? errors : consults
+  const tabCls = (on: boolean) => `flex-1 px-2 py-1 rounded-md text-[0.7rem] font-semibold border transition-colors ${on ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:text-warm-200'}`
+
+  return (
+    <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-3 w-[320px]">
+      <div className="flex gap-1 mb-2">
+        <button onClick={() => setTab('errors')} className={tabCls(tab === 'errors')}>Top 20 erros</button>
+        <button onClick={() => setTab('consults')} className={tabCls(tab === 'consults')}>Top 20 consultas</button>
+      </div>
+      <div className="space-y-1 max-h-[470px] overflow-y-auto pr-1">
+        {list.length === 0 ? (
+          <p className="text-xs text-warm-500 py-2">Sem dados.</p>
+        ) : list.map((c, i) => (
+          <div key={c.hand} className="flex items-center gap-2 text-xs">
+            <span className="text-warm-600 w-4 text-right tabular-nums">{i + 1}</span>
+            <span className="px-1.5 py-0.5 rounded text-[0.7rem] font-bold text-white" style={{ background: confChipBg(c.accuracy), textShadow: '0 0 3px rgba(0,0,0,0.6)' }}>{c.hand}</span>
+            <span className="flex-1 truncate text-[0.7rem] text-warm-500">{c.correctAction ?? '—'}{c.topWrong ? ` → ${c.topWrong.action}` : ''}</span>
+            {tab === 'errors'
+              ? <span className={`font-bold ${accColor(c.accuracy)}`}>{c.accuracy}%</span>
+              : <span className="font-bold text-warm-200">{c.consults}x</span>}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 interface Filters {
   playerIds: number[]
   rangeId: number | null
@@ -990,6 +1021,7 @@ function TeamView({ token }: { token: string | null }) {
                 <h4 className="text-xs font-semibold text-warm-200 mb-2">Precisão / erros</h4>
                 <RangeHeatGrid cells={grid.cells} />
               </div>
+              <TopHandsPanel cells={grid.cells} />
             </div>
             <div className="min-w-0">
               <p className="text-xs text-warm-400 mb-2">Mãos com pior precisão — correto vs. erro mais comum</p>
