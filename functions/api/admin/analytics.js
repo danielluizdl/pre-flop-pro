@@ -348,6 +348,20 @@ export async function onRequest(context) {
       `SELECT hand, COUNT(*) AS n FROM consult_events ${clause} AND hand IS NOT NULL GROUP BY hand`
     ).bind(...binds).all()
 
+    // Distribuicao das acoes REALMENTE jogadas por mao (reconstroi o "range jogado").
+    // LOWER porque dados antigos/novos variam a capitalizacao de action_taken.
+    const playedRes = await env.DB.prepare(
+      `SELECT hand, LOWER(action_taken) AS action, COUNT(*) AS n FROM hand_events ${clause} GROUP BY hand, LOWER(action_taken)`
+    ).bind(...binds).all()
+    const playedMap = new Map()
+    for (const r of playedRes.results ?? []) {
+      const cur = playedMap.get(r.hand) ?? { fold: 0, call: 0, raise: 0, allin: 0, extra: 0 }
+      const a = (r.action || '').replace(/[\s-]/g, '')
+      const bucket = a === 'fold' ? 'fold' : a === 'call' ? 'call' : a === 'raise' ? 'raise' : a === 'allin' ? 'allin' : 'extra'
+      cur[bucket] += r.n
+      playedMap.set(r.hand, cur)
+    }
+
     const topByHand = (rows) => {
       const map = new Map()
       for (const r of rows ?? []) {
@@ -369,6 +383,7 @@ export async function onRequest(context) {
       consults: consultMap.get(r.hand) ?? 0,
       correctAction: correctMap.get(r.hand)?.action ?? null,
       topWrong: wrongMap.get(r.hand) ?? null,
+      played: playedMap.get(r.hand) ?? { fold: 0, call: 0, raise: 0, allin: 0, extra: 0 },
     }))
     return json({ view, cells })
   }

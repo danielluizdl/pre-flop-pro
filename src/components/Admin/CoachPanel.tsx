@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { RangeHeatGrid, type GridCell } from './RangeHeatGrid'
+import { RangeActionGrid, type ActionFreq } from './RangeActionGrid'
 import { rankLeaks, rankKnowledgeGaps, severityProfile, type Confidence, type SeverityClass } from '../../utils/coachStats'
 import { buildTrend, aggregateTeamBuckets, type PlayerTrend, type TrendDir, type WeekBucket } from '../../utils/coachTrend'
 import { aggregateSegments, type HandRow } from '../../utils/handCategories'
@@ -476,6 +477,30 @@ function TeamView({ token }: { token: string | null }) {
     .sort((a, b) => a.accuracy - b.accuracy)
     .slice(0, 15)
 
+  const realGrid = useMemo<Record<string, ActionFreq>>(() => {
+    if (!selectedRange) return {}
+    const sg = stackIdx !== null ? selectedRange.stackGrids?.[stackIdx]?.grid : undefined
+    return (sg ?? selectedRange.grid ?? {}) as Record<string, ActionFreq>
+  }, [selectedRange, stackIdx])
+
+  const playedGrid = useMemo<Record<string, ActionFreq>>(() => {
+    const out: Record<string, ActionFreq> = {}
+    for (const c of grid.cells) {
+      const p = c.played
+      if (!p) continue
+      const tot = p.fold + p.call + p.raise + p.allin + p.extra
+      if (tot <= 0) continue
+      out[c.hand] = {
+        fold: (p.fold / tot) * 100,
+        call: (p.call / tot) * 100,
+        raise: (p.raise / tot) * 100,
+        allin: (p.allin / tot) * 100,
+        extra: (p.extra / tot) * 100,
+      }
+    }
+    return out
+  }, [grid.cells])
+
   const selectCls = 'bg-warm-900 border border-warm-600 rounded-lg px-2.5 py-1.5 text-sm text-warm-100'
 
   return (
@@ -913,11 +938,26 @@ function TeamView({ token }: { token: string | null }) {
         ) : grid.cells.length === 0 ? (
           <p className="text-sm text-warm-500">Sem dados para este range no período/jogador selecionado.</p>
         ) : (
-          <div className="flex flex-col lg:flex-row gap-6">
-            <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
-              <RangeHeatGrid cells={grid.cells} />
+          <div className="space-y-5">
+            <div className="flex items-center gap-3 text-[0.7rem] text-warm-400">
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded" style={{ background: '#ef4444' }} />Raise</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded" style={{ background: '#22c55e' }} />Call</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded" style={{ background: '#6b2d0d' }} />All-in</span>
+              <span className="text-warm-600">·  fundo escuro = Fold</span>
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap gap-6">
+              <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
+                <RangeActionGrid title="Range real (gabarito)" subtitle="o que o range manda jogar" grid={realGrid} />
+              </div>
+              <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
+                <RangeActionGrid title="Range jogado (time)" subtitle="frequências do que jogaram de fato" grid={playedGrid} />
+              </div>
+              <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
+                <h4 className="text-xs font-semibold text-warm-200 mb-2">Precisão / erros</h4>
+                <RangeHeatGrid cells={grid.cells} />
+              </div>
+            </div>
+            <div className="min-w-0">
               <p className="text-xs text-warm-400 mb-2">Mãos com pior precisão — correto vs. erro mais comum</p>
               <div className="overflow-x-auto rounded-xl border border-warm-700">
                 <table className="w-full text-sm">

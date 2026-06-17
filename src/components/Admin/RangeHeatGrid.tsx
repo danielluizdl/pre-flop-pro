@@ -10,6 +10,7 @@ export interface GridCell {
   consults: number
   correctAction: string | null
   topWrong: { action: string; n: number } | null
+  played?: { fold: number; call: number; raise: number; allin: number; extra: number }
 }
 
 type Metric = 'accuracy' | 'graves' | 'consults' | 'volume'
