@@ -144,7 +144,7 @@ Solução:
 - Backend `analytics.js` view `by-range`: passa a retornar `imprecisos`.
 - `CoachPanel`: coluna "Tipo de erro" na tabela Por range (rótulo + Ng/Ni).
 
-Commit: _(a preencher)_
+Commit: f08cd6b
 
 ---
 
@@ -155,9 +155,23 @@ Commit: _(a preencher)_
 3. **Foco por jogador** — aplicar `buildWeeklyFocus` a um jogador específico.
 4. **Curva de aprendizado** — precisão nas primeiras N tentativas de uma mão/range.
 
+## Estado da sessão (ciclos 1–7)
+- 7 ciclos concluídos, todos com build verde e testes verdes (169 testes).
+- Novos utils puros 100% testados: `coachStats`, `coachTrend`, `handCategories`,
+  `coachFocus`, `coachRelative`.
+- Novas views em `analytics.js`: `trend`, `segments`, `knowledge-gaps`,
+  `player-ranges` (todas coach-only, prepared statements, params validados).
+  Views existentes `leaks`/`by-range` evoluídas (impacto/Wilson, imprecisos).
+- Painel agora tem: Foco da semana, Evolução, Leaks (impacto+Wilson), Segmentos,
+  Lacunas de conhecimento, Por range (tipo de erro), Leaks relativos (z-score).
+
 ## Passos manuais pendentes
-- Nenhuma migração de schema nova até agora (ciclo 1 só usa colunas existentes).
-- Se algum ciclo criar `schema_vN.sql`, rodar manualmente:
+- **Nenhuma migração de schema nova** — todos os ciclos usam apenas colunas já
+  existentes (`severity`, `created_at`, etc.). Não há `schema_v4.sql` a aplicar.
+- **Merge para `main` NÃO foi feito de propósito.** Tudo está em
+  `feature/auth-telemetry` (deploy de preview do Cloudflare Pages). Promover a
+  produção é decisão do Daniel.
+- Se um ciclo futuro criar `schema_vN.sql`, rodar manualmente:
   `npx wrangler d1 execute preflop-db --file=schema_vN.sql --remote` (aditivo, nunca DROP).
 
 ## Metodologia estatística (referência)
