@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { RangeHeatGrid, type GridCell } from './RangeHeatGrid'
 import { rankLeaks, type Confidence } from '../../utils/coachStats'
+import { buildTrend, aggregateTeamBuckets, type PlayerTrend, type TrendDir, type WeekBucket } from '../../utils/coachTrend'
 
 const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'EP', 'LJ', 'UTG']
 
@@ -189,6 +190,89 @@ function useRangeGrid(rangeId: number | null, days: number | null, playerIds: nu
   return { cells, loading, error }
 }
 
+interface TrendRow { userId: number; week: number; hands: number; correct: number }
+interface TrendUser { id: number; username: string; name: string }
+
+function useTrend(filters: Filters, token: string | null) {
+  const [rows, setRows] = useState<TrendRow[]>([])
+  const [users, setUsers] = useState<TrendUser[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const idsKey = filters.playerIds.join(',')
+
+  useEffect(() => {
+    if (!token) return
+    let cancelled = false
+    setLoading(true)
+    setError('')
+    const qs = new URLSearchParams({ view: 'trend' })
+    if (idsKey) qs.set('playerIds', idsKey)
+    if (filters.rangeId !== null) qs.set('rangeId', String(filters.rangeId))
+    if (filters.days !== null) qs.set('days', String(filters.days))
+    fetch(`/api/admin/analytics?${qs.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
+      .then(d => {
+        if (cancelled) return
+        setRows(d.rows ?? [])
+        setUsers(d.users ?? [])
+        setLoading(false)
+      })
+      .catch(() => { if (!cancelled) { setError('Erro ao carregar'); setLoading(false) } })
+    return () => { cancelled = true }
+  }, [token, idsKey, filters.rangeId, filters.days])
+
+  return { rows, users, loading, error }
+}
+
+const TREND_META: Record<TrendDir, { label: string; arrow: string; cls: string }> = {
+  improving: { label: 'melhorando', arrow: '▲', cls: 'text-emerald-400' },
+  regressing: { label: 'regredindo', arrow: '▼', cls: 'text-red-400' },
+  stable: { label: 'estável', arrow: '▬', cls: 'text-warm-400' },
+  insufficient: { label: 'sem base', arrow: '–', cls: 'text-warm-600' },
+}
+
+function TrendBadge({ t }: { t: PlayerTrend }) {
+  const m = TREND_META[t.classification]
+  const sign = t.slope > 0 ? '+' : ''
+  return (
+    <span className={`inline-flex items-center gap-1 text-xs font-semibold ${m.cls}`}>
+      <span>{m.arrow}</span>
+      <span>{m.label}</span>
+      {t.classification !== 'insufficient' && (
+        <span className="text-warm-500 font-normal">{sign}{t.slope}pp/sem</span>
+      )}
+    </span>
+  )
+}
+
+function Sparkline({ weeks, width = 120, height = 30 }: { weeks: { week: number; accuracy: number }[]; width?: number; height?: number }) {
+  if (weeks.length === 0) return <span className="text-warm-600 text-xs">—</span>
+  const xs = weeks.map(w => w.week)
+  const minX = Math.min(...xs), maxX = Math.max(...xs)
+  const spanX = maxX - minX || 1
+  const pad = 3
+  const px = (week: number) => pad + ((week - minX) / spanX) * (width - 2 * pad)
+  const py = (acc: number) => pad + (1 - acc / 100) * (height - 2 * pad)
+  const y80 = py(80)
+  if (weeks.length === 1) {
+    return (
+      <svg width={width} height={height} className="overflow-visible">
+        <line x1={0} x2={width} y1={y80} y2={y80} stroke="rgba(255,255,255,0.12)" strokeDasharray="2 2" />
+        <circle cx={px(weeks[0].week)} cy={py(weeks[0].accuracy)} r={2.5} fill="#60a5fa" />
+      </svg>
+    )
+  }
+  const d = weeks.map((w, i) => `${i === 0 ? 'M' : 'L'}${px(w.week).toFixed(1)},${py(w.accuracy).toFixed(1)}`).join(' ')
+  const last = weeks[weeks.length - 1]
+  return (
+    <svg width={width} height={height} className="overflow-visible">
+      <line x1={0} x2={width} y1={y80} y2={y80} stroke="rgba(255,255,255,0.12)" strokeDasharray="2 2" />
+      <path d={d} fill="none" stroke="#60a5fa" strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx={px(last.week)} cy={py(last.accuracy)} r={2.3} fill="#60a5fa" />
+    </svg>
+  )
+}
+
 function Section({ title, loading, error, empty, children, defaultOpen = true }: {
   title: string
   loading: boolean
@@ -265,7 +349,29 @@ function TeamView({ token }: { token: string | null }) {
   const leaks = useAnalytics<LeakRow>('leaks', filters, token)
   const hotspots = useAnalytics<HotspotRow>('consult-hotspots', filters, token)
   const byRange = useAnalytics<ByRangeRow>('by-range', filters, token)
+  const trend = useTrend(filters, token)
   const grid = useRangeGrid(filters.rangeId, filters.days, filters.playerIds, stackIdx, token)
+
+  const playerTrends = useMemo(() => {
+    const byUser = new Map<number, WeekBucket[]>()
+    for (const r of trend.rows) {
+      if (!byUser.has(r.userId)) byUser.set(r.userId, [])
+      byUser.get(r.userId)!.push({ week: r.week, hands: r.hands, correct: r.correct })
+    }
+    const nameOf = (id: number) => { const u = trend.users.find(x => x.id === id); return u ? (u.name || u.username) : `#${id}` }
+    const order: Record<TrendDir, number> = { regressing: 0, stable: 1, improving: 2, insufficient: 3 }
+    return [...byUser.entries()]
+      .map(([userId, buckets]) => ({ userId, name: nameOf(userId), trend: buildTrend(buckets) }))
+      .sort((a, b) =>
+        order[a.trend.classification] - order[b.trend.classification] ||
+        a.trend.slope - b.trend.slope ||
+        a.name.localeCompare(b.name))
+  }, [trend.rows, trend.users])
+
+  const teamTrend = useMemo(
+    () => buildTrend(aggregateTeamBuckets(trend.rows.map(r => ({ week: r.week, hands: r.hands, correct: r.correct })))),
+    [trend.rows],
+  )
 
   const rankedLeaks = useMemo(() => rankLeaks(leaks.rows), [leaks.rows])
 
@@ -352,6 +458,45 @@ function TeamView({ token }: { token: string | null }) {
             )}
           </tbody>
         </table>
+      </Section>
+
+      <Section title="Evolução (tendência semanal)" defaultOpen={false} loading={trend.loading} error={trend.error} empty={playerTrends.length === 0}>
+        <div className="p-3 flex flex-col gap-3">
+          <div className="flex items-center gap-4 rounded-lg bg-warm-800/40 border border-warm-700/60 px-3 py-2">
+            <span className="text-xs font-semibold text-warm-300 uppercase w-20">Time</span>
+            <Sparkline weeks={teamTrend.weeks} width={160} height={34} />
+            <div className="flex flex-col">
+              <TrendBadge t={teamTrend} />
+              {teamTrend.firstAccuracy !== null && (
+                <span className="text-[11px] text-warm-500">
+                  {teamTrend.weeks.length} sem · {teamTrend.firstAccuracy}% → {teamTrend.lastAccuracy}%
+                </span>
+              )}
+            </div>
+          </div>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-warm-800 text-warm-400 text-xs uppercase">
+                <th className={TH}>Jogador</th>
+                <th className={TH}>Evolução</th>
+                <th className={THR}>Início → Fim</th>
+                <th className={TH}>Tendência</th>
+              </tr>
+            </thead>
+            <tbody>
+              {playerTrends.map(p => (
+                <tr key={p.userId} className={`border-t border-warm-700/60 ${p.trend.classification === 'regressing' ? 'bg-red-950/30' : ''}`}>
+                  <td className={`${TD} text-warm-100 font-semibold`}>{p.name}</td>
+                  <td className={TD}><Sparkline weeks={p.trend.weeks} /></td>
+                  <td className={`${TDR} text-warm-300`}>
+                    {p.trend.firstAccuracy !== null ? `${p.trend.firstAccuracy}% → ${p.trend.lastAccuracy}%` : '—'}
+                  </td>
+                  <td className={TD}><TrendBadge t={p.trend} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </Section>
 
       <Section title="Maiores leaks" defaultOpen={false} loading={leaks.loading} error={leaks.error} empty={rankedLeaks.length === 0}>

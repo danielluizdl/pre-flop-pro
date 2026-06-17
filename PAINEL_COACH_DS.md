@@ -28,7 +28,7 @@ de propósito** — fica a critério do Daniel.
 
 ## Ciclos
 
-### Ciclo 1 — Robustez estatística dos leaks (Wilson + Impacto) — EM ANDAMENTO
+### Ciclo 1 — Robustez estatística dos leaks (Wilson + Impacto) — FEITO (8ea389d)
 Problema: a view `leaks` ordenava por precisão bruta (ASC) com `HAVING total>=5`.
 Estatisticamente frágil: 1/5 (20%) aparecia acima de 40/200 (20%), mesmo com
 evidência muito mais fraca; sem noção de tamanho de amostra nem de gravidade.
@@ -50,14 +50,31 @@ Solução:
 - UI `CoachPanel` (tabela Leaks): coluna Impacto, precisão com piso de Wilson
   (mín X%) e marcador visual de baixa confiança (n pequeno).
 
+Commit: 8ea389d
+
+### Ciclo 2 — Tendência/evolução (regressão linear semanal) — FEITO
+Objetivo: dizer se cada jogador e o time estão MELHORANDO ou PIORANDO, e
+destacar regressões — sinal que nenhuma tabela de precisão absoluta mostra.
+
+Solução:
+- `src/utils/coachTrend.ts` (puro + testes): `linreg` (mínimos quadrados com
+  peso opcional), `classifyTrend` (improving/regressing/stable/insufficient,
+  zona morta 0.5pp/sem), `buildTrend` (série semanal ponderada por nº de mãos,
+  x respeita lacunas de semana), `aggregateTeamBuckets`.
+- Backend `analytics.js` view `trend`: precisão por jogador × semana (bucket
+  `created_at/604800`) + lista de jogadores. Inclinação calculada no front.
+- `CoachPanel`: Section "Evolução" com sparkline SVG do time + tabela por
+  jogador (sparkline, início→fim, badge de tendência), ordenada com regressões
+  no topo e linha vermelha para quem regrediu.
+Metodologia: regressão ponderada por volume (semanas com mais mãos pesam mais);
+trend só é classificado com ≥2 semanas e ≥20 mãos (senão "sem base").
+
 Commit: _(a preencher)_
 
 ---
 
 ## Backlog priorizado (próximos ciclos)
-1. **Tendência/evolução** — precisão por semana com inclinação (regressão linear
-   simples) por jogador e time; destacar quem regrediu. Util `weeklyTrend`/`linregSlope`.
-2. **Segmentação de mãos** — agregar por categoria (par/suited/offsuit/broadway/
+1. **Segmentação de mãos** — agregar por categoria (par/suited/offsuit/broadway/
    conector), por ação correta (erram mais em 3bet? call? fold?) e por posição.
 3. **Jogador vs time** — z-score/percentil por range e por mão (leaks relativos).
 4. **Hotspots de consulta × erro** — mãos muito consultadas E muito erradas =

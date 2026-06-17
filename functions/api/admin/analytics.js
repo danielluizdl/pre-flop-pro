@@ -170,6 +170,26 @@ export async function onRequest(context) {
     return json({ view, rows })
   }
 
+  if (view === 'trend') {
+    const hf = handFilters(filters)
+    // Bucket semanal absoluto (604800s = 7 dias). Precisao por jogador/semana;
+    // a inclinacao (regressao linear) e calculada no front via src/utils/coachTrend.ts.
+    const res = await env.DB.prepare(
+      `SELECT user_id AS userId, created_at / 604800 AS week,
+        COUNT(*) AS hands, CAST(SUM(is_correct) AS INTEGER) AS correct
+       FROM hand_events ${hf.clause}
+       GROUP BY user_id, week
+       ORDER BY userId, week`
+    ).bind(...hf.binds).all()
+
+    const uPc = filters.playerIds.length ? ` AND id IN (${filters.playerIds.map(() => '?').join(',')})` : ''
+    const usersRes = await env.DB.prepare(
+      `SELECT id, username, name FROM users WHERE role = 'player'${uPc} ORDER BY name COLLATE NOCASE, username COLLATE NOCASE`
+    ).bind(...filters.playerIds).all()
+
+    return json({ view, rows: res.results ?? [], users: usersRes.results ?? [] })
+  }
+
   if (view === 'consult-hotspots') {
     const conds = []
     const binds = []
