@@ -84,14 +84,27 @@ Solução:
   (GROUP BY correct_action). Categorização no front (SQLite não classifica mãos).
 - `CoachPanel`: Section "Segmentos" com duas tabelas — por categoria e por ação correta.
 
+Commit: 2f1cbea
+
+### Ciclo 4 — Lacunas de conhecimento (consulta × erro) — FEITO
+Objetivo: separar "consulta porque erra" de "consulta por hábito". Mãos muito
+consultadas E ainda muito erradas = lacuna real, alvo prioritário de estudo.
+
+Solução:
+- `src/utils/coachStats.ts`: `weightedErrorRate`, `knowledgeGapScore`
+  (consultas × taxa de erro ponderada por gravidade), `rankKnowledgeGaps`
+  (filtra consults>0, ordena por score; funções puras + testes).
+- Backend `analytics.js` view `knowledge-gaps`: junta consult_events (por
+  range_id,hand) com hand_events (total/correct/graves/imprecisos); merge no JS.
+- `CoachPanel`: Section "Lacunas de conhecimento" — Mão/Range/Consultas/
+  Precisão(mín Wilson)/Graves/Score, com ponto de confiança.
+
 Commit: _(a preencher)_
 
 ---
 
 ## Backlog priorizado (próximos ciclos)
-1. **Hotspots de consulta × erro** — mãos muito consultadas E muito erradas =
-   lacuna de conhecimento real (cruzar `consult_events` com `hand_events`).
-2. **Jogador vs time** — z-score/percentil por range e por mão (leaks relativos).
+1. **Jogador vs time** — z-score/percentil por range e por mão (leaks relativos).
 3. **Foco da semana** — recomendação automática: top N mãos/ranges por impacto
    por jogador e para o time.
 4. **Segmentação por posição** — agregar by-range por `range.positions[0]` (client).

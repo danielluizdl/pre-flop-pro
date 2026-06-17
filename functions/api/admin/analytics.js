@@ -170,6 +170,46 @@ export async function onRequest(context) {
     return json({ view, rows })
   }
 
+  if (view === 'knowledge-gaps') {
+    const hf = handFilters(filters)
+    const handAgg = await env.DB.prepare(
+      `SELECT range_id AS rangeId, MAX(range_name) AS rangeName, hand,
+        COUNT(*) AS total, CAST(SUM(is_correct) AS INTEGER) AS correct,
+        SUM(CASE WHEN severity = 'grave' THEN 1 ELSE 0 END) AS graves,
+        SUM(CASE WHEN severity = 'impreciso' THEN 1 ELSE 0 END) AS imprecisos
+       FROM hand_events ${hf.clause} GROUP BY range_id, hand`
+    ).bind(...hf.binds).all()
+
+    const cConds = ['hand IS NOT NULL']
+    const cBinds = []
+    const cPc = playerCond(filters.playerIds)
+    if (cPc.sql) { cConds.push(cPc.sql); cBinds.push(...cPc.binds) }
+    if (filters.rangeId !== null) { cConds.push('range_id = ?'); cBinds.push(filters.rangeId) }
+    if (filters.days !== null) { cConds.push('created_at >= unixepoch() - ?'); cBinds.push(filters.days * 86400) }
+    const consultAgg = await env.DB.prepare(
+      `SELECT range_id AS rangeId, MAX(range_name) AS rangeName, hand, COUNT(*) AS consults
+       FROM consult_events WHERE ${cConds.join(' AND ')}
+       GROUP BY range_id, hand ORDER BY consults DESC LIMIT 300`
+    ).bind(...cBinds).all()
+
+    const key = (rangeId, hand) => `${rangeId}|${hand}`
+    const hMap = new Map((handAgg.results ?? []).map(r => [key(r.rangeId, r.hand), r]))
+    const rows = (consultAgg.results ?? []).map(c => {
+      const h = hMap.get(key(c.rangeId, c.hand))
+      return {
+        rangeId: c.rangeId,
+        rangeName: h?.rangeName ?? c.rangeName,
+        hand: c.hand,
+        consults: c.consults,
+        total: h?.total ?? 0,
+        correct: h?.correct ?? 0,
+        graves: h?.graves ?? 0,
+        imprecisos: h?.imprecisos ?? 0,
+      }
+    })
+    return json({ view, rows })
+  }
+
   if (view === 'segments') {
     const hf = handFilters(filters)
     const byHand = await env.DB.prepare(

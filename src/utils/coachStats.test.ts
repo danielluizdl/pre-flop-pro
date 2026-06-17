@@ -6,6 +6,9 @@ import {
   weightedErrors,
   leakImpact,
   rankLeaks,
+  weightedErrorRate,
+  knowledgeGapScore,
+  rankKnowledgeGaps,
 } from './coachStats'
 
 describe('wilsonInterval', () => {
@@ -141,5 +144,44 @@ describe('rankLeaks', () => {
     expect(ranked[0].impact).toBe(ranked[1].impact)
     // menor accuracyLower (pior precisão confiável) vem primeiro
     expect(ranked[0].hand).toBe('A')
+  })
+})
+
+describe('weightedErrorRate', () => {
+  it('0 sem mãos', () => {
+    expect(weightedErrorRate({ total: 0, correct: 0, graves: 0, imprecisos: 0 })).toBe(0)
+  })
+  it('proporção ponderada por gravidade', () => {
+    // 100 mãos, 20 graves => 20*1/100 = 0.2
+    expect(weightedErrorRate({ total: 100, correct: 80, graves: 20, imprecisos: 0 })).toBeCloseTo(0.2, 10)
+  })
+})
+
+describe('knowledgeGapScore / rankKnowledgeGaps', () => {
+  it('zero quando não há consultas', () => {
+    expect(knowledgeGapScore({ consults: 0, total: 100, correct: 10, graves: 90, imprecisos: 0 })).toBe(0)
+  })
+
+  it('cresce com consultas E com taxa de erro', () => {
+    const low = knowledgeGapScore({ consults: 10, total: 100, correct: 90, graves: 10, imprecisos: 0 })
+    const highErr = knowledgeGapScore({ consults: 10, total: 100, correct: 50, graves: 50, imprecisos: 0 })
+    const highConsult = knowledgeGapScore({ consults: 40, total: 100, correct: 90, graves: 10, imprecisos: 0 })
+    expect(highErr).toBeGreaterThan(low)
+    expect(highConsult).toBeGreaterThan(low)
+  })
+
+  it('mão muito consultada mas sempre certa tem score baixo', () => {
+    expect(knowledgeGapScore({ consults: 100, total: 100, correct: 100, graves: 0, imprecisos: 0 })).toBe(0)
+  })
+
+  it('rankKnowledgeGaps ordena por score e filtra sem consulta', () => {
+    const rows = [
+      { hand: 'AA', consults: 0, total: 50, correct: 10, graves: 40, imprecisos: 0 },
+      { hand: 'KK', consults: 30, total: 100, correct: 50, graves: 50, imprecisos: 0 },
+      { hand: 'QQ', consults: 5, total: 100, correct: 50, graves: 50, imprecisos: 0 },
+    ]
+    const ranked = rankKnowledgeGaps(rows)
+    expect(ranked.map(r => r.hand)).toEqual(['KK', 'QQ'])
+    expect(ranked[0].accuracy).toBe(50)
   })
 })

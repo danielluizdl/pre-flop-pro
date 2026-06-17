@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { RangeHeatGrid, type GridCell } from './RangeHeatGrid'
-import { rankLeaks, type Confidence } from '../../utils/coachStats'
+import { rankLeaks, rankKnowledgeGaps, type Confidence } from '../../utils/coachStats'
 import { buildTrend, aggregateTeamBuckets, type PlayerTrend, type TrendDir, type WeekBucket } from '../../utils/coachTrend'
 import { aggregateSegments, type HandRow } from '../../utils/handCategories'
 
@@ -358,6 +358,7 @@ const CONF_DOT: Record<Confidence, { cls: string; title: string }> = {
   high: { cls: 'bg-emerald-400', title: 'Amostra robusta (≥50)' },
 }
 interface HotspotRow { rangeId: number; rangeName: string; hand: string | null; count: number }
+interface GapRow { rangeId: number; rangeName: string; hand: string; consults: number; total: number; correct: number; graves: number; imprecisos: number }
 interface ByRangeRow { rangeId: number; rangeName: string; hands: number; accuracy: number; graves: number; consults: number; players: number }
 
 function TeamView({ token }: { token: string | null }) {
@@ -385,9 +386,11 @@ function TeamView({ token }: { token: string | null }) {
   const byRange = useAnalytics<ByRangeRow>('by-range', filters, token)
   const trend = useTrend(filters, token)
   const segments = useSegments(filters, token)
+  const gaps = useAnalytics<GapRow>('knowledge-gaps', filters, token)
   const grid = useRangeGrid(filters.rangeId, filters.days, filters.playerIds, stackIdx, token)
 
   const categorySegs = useMemo(() => aggregateSegments(segments.byHand), [segments.byHand])
+  const rankedGaps = useMemo(() => rankKnowledgeGaps(gaps.rows).slice(0, 40), [gaps.rows])
 
   const playerTrends = useMemo(() => {
     const byUser = new Map<number, WeekBucket[]>()
@@ -646,6 +649,46 @@ function TeamView({ token }: { token: string | null }) {
                 <td className={`${TDR} text-warm-300`}>{r.count}</td>
               </tr>
             ))}
+          </tbody>
+        </table>
+      </Section>
+
+      <Section title="Lacunas de conhecimento (consulta × erro)" defaultOpen={false} loading={gaps.loading} error={gaps.error} empty={rankedGaps.length === 0}>
+        <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60">
+          Mãos que o time mais <span className="text-warm-300">consulta E ainda erra</span> — lacuna real de conhecimento. Score = consultas × taxa de erro ponderada.
+        </div>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-warm-800 text-warm-400 text-xs uppercase">
+              <th className={TH}>Mão</th>
+              <th className={TH}>Range</th>
+              <th className={THR}>Consultas</th>
+              <th className={THR}>Precisão (mín)</th>
+              <th className={THR}>Graves</th>
+              <th className={THR}>Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rankedGaps.map((r, i) => {
+              const dot = CONF_DOT[r.confidence]
+              return (
+                <tr key={i} className="border-t border-warm-700/60">
+                  <td className={`${TD} text-warm-100 font-bold`}>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className={`inline-block w-1.5 h-1.5 rounded-full ${dot.cls}`} title={dot.title} />
+                      {r.hand}
+                    </span>
+                  </td>
+                  <td className={`${TD} text-warm-300`}>{r.rangeName}</td>
+                  <td className={`${TDR} text-violet-300`}>{r.consults}</td>
+                  <td className={`${TDR} font-bold ${r.total > 0 ? accColor(r.accuracy) : 'text-warm-500'}`}>
+                    {r.total > 0 ? <>{r.accuracy}% <span className="text-warm-500 font-normal text-xs">({r.accuracyLower}%)</span></> : '—'}
+                  </td>
+                  <td className={`${TDR} text-red-400`}>{r.graves}</td>
+                  <td className={`${TDR} font-bold text-orange-300`}>{r.score}</td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </Section>

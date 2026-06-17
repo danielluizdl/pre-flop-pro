@@ -50,6 +50,42 @@ export function leakImpact(counts: LeakCounts): number {
   return weightedErrors(counts)
 }
 
+// Taxa de erro ponderada por gravidade (0..~1). 0 quando não há mãos treinadas.
+export function weightedErrorRate(counts: LeakCounts): number {
+  if (!(counts.total > 0)) return 0
+  return weightedErrors(counts) / counts.total
+}
+
+export interface GapCounts extends LeakCounts {
+  consults: number
+}
+
+// Lacuna de conhecimento = quanto a mão é consultada × quanto ainda erram (ponderado).
+// Alta = consultam muito E continuam errando — alvo prioritário de estudo.
+export function knowledgeGapScore(counts: GapCounts): number {
+  return counts.consults * weightedErrorRate(counts)
+}
+
+export interface RankedGap {
+  score: number
+  accuracy: number
+  accuracyLower: number
+  confidence: Confidence
+}
+
+export function rankKnowledgeGaps<T extends GapCounts>(rows: T[], z = 1.96): (T & RankedGap)[] {
+  return rows
+    .filter(r => r.consults > 0)
+    .map(r => ({
+      ...r,
+      score: Math.round(knowledgeGapScore(r) * 10) / 10,
+      accuracy: r.total > 0 ? Math.round((r.correct / r.total) * 1000) / 10 : 0,
+      accuracyLower: Math.round(wilsonLowerBound(r.correct, r.total, z) * 1000) / 10,
+      confidence: confidenceLevel(r.total),
+    }))
+    .sort((a, b) => b.score - a.score || b.consults - a.consults || a.accuracyLower - b.accuracyLower)
+}
+
 export interface RankedLeak {
   impact: number
   accuracyLower: number
