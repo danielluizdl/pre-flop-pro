@@ -157,7 +157,7 @@ function confChipBg(acc: number): string {
   return 'rgba(220,38,38,0.92)'
 }
 
-function TopHandsPanel({ cells }: { cells: GridCell[] }) {
+function TopHandsPanel({ cells, selected, onSelect }: { cells: GridCell[]; selected: string | null; onSelect: (hand: string) => void }) {
   const [tab, setTab] = useState<'errors' | 'consults'>('errors')
   const errors = [...cells].filter(c => c.total >= 3).sort((a, b) => a.accuracy - b.accuracy).slice(0, 20)
   const consults = [...cells].filter(c => c.consults > 0).sort((a, b) => b.consults - a.consults).slice(0, 20)
@@ -174,16 +174,74 @@ function TopHandsPanel({ cells }: { cells: GridCell[] }) {
         {list.length === 0 ? (
           <p className="text-xs text-warm-500 py-2">Sem dados.</p>
         ) : list.map((c, i) => (
-          <div key={c.hand} className="flex items-center gap-2 text-xs">
+          <button
+            key={c.hand}
+            onClick={() => onSelect(c.hand)}
+            className={`w-full flex items-center gap-2 text-xs rounded px-1 py-0.5 transition-colors ${selected === c.hand ? 'bg-warm-800' : 'hover:bg-warm-800/60'}`}
+          >
             <span className="text-warm-600 w-4 text-right tabular-nums">{i + 1}</span>
             <span className="px-1.5 py-0.5 rounded text-[0.7rem] font-bold text-white" style={{ background: confChipBg(c.accuracy), textShadow: '0 0 3px rgba(0,0,0,0.6)' }}>{c.hand}</span>
-            <span className="flex-1 truncate text-[0.7rem] text-warm-500">{c.correctAction ?? '—'}{c.topWrong ? ` → ${c.topWrong.action}` : ''}</span>
+            <span className="flex-1 truncate text-left text-[0.7rem] text-warm-500">{c.correctAction ?? '—'}{c.topWrong ? ` → ${c.topWrong.action}` : ''}</span>
             {tab === 'errors'
               ? <span className={`font-bold ${accColor(c.accuracy)}`}>{c.accuracy}%</span>
               : <span className="font-bold text-warm-200">{c.consults}x</span>}
-          </div>
+          </button>
         ))}
       </div>
+    </div>
+  )
+}
+
+function playedPct(p?: { fold: number; call: number; raise: number; allin: number; extra: number }) {
+  if (!p) return null
+  const tot = p.fold + p.call + p.raise + p.allin + p.extra
+  if (tot <= 0) return null
+  return { fold: (p.fold / tot) * 100, call: (p.call / tot) * 100, raise: (p.raise / tot) * 100, allin: (p.allin / tot) * 100, extra: (p.extra / tot) * 100 }
+}
+
+function HandDetailCard({ cell }: { cell: GridCell }) {
+  const pp = playedPct(cell.played)
+  const Stat = ({ label, v, cls }: { label: string; v: number; cls?: string }) => (
+    <div className="bg-warm-900/60 rounded-lg px-2.5 py-1.5">
+      <div className="text-[0.65rem] text-warm-500 uppercase">{label}</div>
+      <div className={`text-sm font-bold ${cls ?? 'text-warm-100'}`}>{v}</div>
+    </div>
+  )
+  const seg = (w: number, bg: string, label: string) => w > 0 ? <div style={{ width: `${w}%`, background: bg }} title={`${label} ${Math.round(w)}%`} /> : null
+  return (
+    <div className="w-[340px] ml-auto rounded-xl border border-warm-700 bg-warm-900/40 p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="px-2.5 py-1 rounded text-base font-bold text-white" style={{ background: confChipBg(cell.accuracy), textShadow: '0 0 3px rgba(0,0,0,0.6)' }}>{cell.hand}</span>
+        <span className={`text-lg font-bold ${accColor(cell.accuracy)}`}>{cell.accuracy}%</span>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <Stat label="Tentativas" v={cell.total} />
+        <Stat label="Acertos" v={cell.correct} cls="text-emerald-300" />
+        <Stat label="Graves" v={cell.graves} cls="text-red-400" />
+        <Stat label="Consultas" v={cell.consults} cls="text-purple-300" />
+      </div>
+      <div className="text-xs space-y-0.5">
+        <div className="text-emerald-300">✓ Correto: {cell.correctAction ?? '—'}</div>
+        <div className="text-red-300">✗ Erram mais: {cell.topWrong ? `${cell.topWrong.action} (${cell.topWrong.n}x)` : '—'}</div>
+      </div>
+      {pp && (
+        <div>
+          <p className="text-[0.7rem] text-warm-400 mb-1">Como o time jogou esta mão</p>
+          <div className="flex h-4 rounded overflow-hidden border border-warm-700">
+            {seg(pp.raise, '#ef4444', 'Raise')}
+            {seg(pp.call, '#22c55e', 'Call')}
+            {seg(pp.allin, '#6b2d0d', 'All-in')}
+            {seg(pp.extra, '#d97757', 'Extra')}
+            {seg(pp.fold, '#2a2620', 'Fold')}
+          </div>
+          <div className="text-[0.65rem] text-warm-500 mt-1 flex flex-wrap gap-x-2">
+            {pp.raise > 0 && <span>Raise {Math.round(pp.raise)}%</span>}
+            {pp.call > 0 && <span>Call {Math.round(pp.call)}%</span>}
+            {pp.allin > 0 && <span>All-in {Math.round(pp.allin)}%</span>}
+            {pp.fold > 0 && <span>Fold {Math.round(pp.fold)}%</span>}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -473,7 +531,9 @@ function TeamView({ token }: { token: string | null }) {
       .catch(() => {})
   }, [token])
 
-  useEffect(() => { setStackIdx(null) }, [filters.rangeId])
+  const [detailHand, setDetailHand] = useState<string | null>(null)
+  useEffect(() => { setStackIdx(null); setDetailHand(null) }, [filters.rangeId])
+  useEffect(() => { setDetailHand(null) }, [stackIdx])
 
   const sortedUsers = [...users].sort((a, b) => (a.name || a.username).localeCompare(b.name || b.username))
   const rangeGroups = groupRangesByPosition(ranges)
@@ -532,10 +592,6 @@ function TeamView({ token }: { token: string | null }) {
   const selectedRange = ranges.find(r => r.id === filters.rangeId)
   const selectedRangeName = selectedRange?.name ?? ''
   const selectedStackGrids = selectedRange?.stackGrids ?? []
-  const confusionRows = [...grid.cells]
-    .filter(c => c.total >= 3)
-    .sort((a, b) => a.accuracy - b.accuracy)
-    .slice(0, 15)
 
   const realGrid = useMemo<Record<string, ActionFreq>>(() => {
     if (!selectedRange) return {}
@@ -563,6 +619,7 @@ function TeamView({ token }: { token: string | null }) {
 
   const comboReal = useMemo(() => rangeComboStats(realGrid), [realGrid])
   const comboPlayed = useMemo(() => rangeComboStats(playedGrid), [playedGrid])
+  const detailCell = detailHand ? grid.cells.find(c => c.hand === detailHand) : undefined
 
   const selectCls = 'bg-warm-900 border border-warm-600 rounded-lg px-2.5 py-1.5 text-sm text-warm-100'
 
@@ -1021,29 +1078,14 @@ function TeamView({ token }: { token: string | null }) {
                 <h4 className="text-xs font-semibold text-warm-200 mb-2">Precisão / erros</h4>
                 <RangeHeatGrid cells={grid.cells} />
               </div>
-              <TopHandsPanel cells={grid.cells} />
+              <TopHandsPanel cells={grid.cells} selected={detailHand} onSelect={h => setDetailHand(h === detailHand ? null : h)} />
             </div>
-            <div className="min-w-0">
-              <p className="text-xs text-warm-400 mb-2">Mãos com pior precisão — correto vs. erro mais comum</p>
-              <div className="flex flex-wrap gap-2">
-                {confusionRows.map(c => (
-                  <div key={c.hand} className="w-[150px] rounded-lg border border-warm-700 bg-warm-900/40 p-2.5">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span
-                        className="px-2 py-0.5 rounded text-xs font-bold text-white"
-                        style={{ background: confChipBg(c.accuracy), textShadow: '0 0 3px rgba(0,0,0,0.6)' }}
-                      >
-                        {c.hand}
-                      </span>
-                      <span className={`text-sm font-bold ${accColor(c.accuracy)}`}>{c.accuracy}%</span>
-                    </div>
-                    <div className="text-[0.72rem] text-emerald-300 truncate">✓ {c.correctAction ?? '—'}</div>
-                    <div className="text-[0.72rem] text-red-300 truncate">✗ {c.topWrong ? `${c.topWrong.action} ${c.topWrong.n}x` : '—'}</div>
-                    <div className="text-[0.65rem] text-warm-500 mt-1">{c.total} mãos</div>
-                  </div>
-                ))}
+            {detailCell && (
+              <div>
+                <p className="text-xs text-warm-400 mb-2">Detalhe da mão selecionada</p>
+                <HandDetailCard cell={detailCell} />
               </div>
-            </div>
+            )}
           </div>
         )}
       </div>
