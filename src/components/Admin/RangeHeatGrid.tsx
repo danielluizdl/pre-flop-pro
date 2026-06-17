@@ -89,7 +89,7 @@ export function RangeHeatGrid({ cells }: { cells: GridCell[] }) {
 
       <div
         className="grid gap-0.5 select-none mx-auto"
-        style={{ gridTemplateColumns: 'repeat(13, 1fr)', maxWidth: 600 }}
+        style={{ gridTemplateColumns: 'repeat(13, 1fr)', maxWidth: 380 }}
         onMouseMove={e => setMouse({ x: e.clientX, y: e.clientY })}
         onMouseLeave={() => setHovered(null)}
       >

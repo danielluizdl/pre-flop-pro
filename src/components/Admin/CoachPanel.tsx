@@ -165,26 +165,28 @@ function TopHandsPanel({ cells, selected, onSelect }: { cells: GridCell[]; selec
   const tabCls = (on: boolean) => `flex-1 px-2 py-1 rounded-md text-[0.7rem] font-semibold border transition-colors ${on ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:text-warm-200'}`
 
   return (
-    <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-3 w-[320px]">
-      <div className="flex gap-1 mb-2">
+    <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-3 w-[260px] shrink-0">
+      <div className="flex gap-1 mb-1.5">
         <button onClick={() => setTab('errors')} className={tabCls(tab === 'errors')}>Top 20 erros</button>
         <button onClick={() => setTab('consults')} className={tabCls(tab === 'consults')}>Top 20 consultas</button>
       </div>
-      <div className="space-y-1 max-h-[470px] overflow-y-auto pr-1">
+      <p className="text-[0.62rem] text-warm-500 mb-1.5">Clique numa mão para ver o detalhe →</p>
+      <div className="space-y-0.5 max-h-[460px] overflow-y-auto pr-1">
         {list.length === 0 ? (
           <p className="text-xs text-warm-500 py-2">Sem dados.</p>
         ) : list.map((c, i) => (
           <button
             key={c.hand}
             onClick={() => onSelect(c.hand)}
-            className={`w-full flex items-center gap-2 text-xs rounded px-1 py-0.5 transition-colors ${selected === c.hand ? 'bg-warm-800' : 'hover:bg-warm-800/60'}`}
+            className={`group w-full flex items-center gap-1.5 text-xs rounded px-1 py-0.5 cursor-pointer transition-colors ${selected === c.hand ? 'bg-warm-800 ring-1 ring-brand-500/50' : 'hover:bg-warm-800/60'}`}
           >
-            <span className="text-warm-600 w-4 text-right tabular-nums">{i + 1}</span>
+            <span className="text-warm-600 w-3.5 text-right tabular-nums text-[0.65rem]">{i + 1}</span>
             <span className="px-1.5 py-0.5 rounded text-[0.7rem] font-bold text-white" style={{ background: confChipBg(c.accuracy), textShadow: '0 0 3px rgba(0,0,0,0.6)' }}>{c.hand}</span>
-            <span className="flex-1 truncate text-left text-[0.7rem] text-warm-500">{c.correctAction ?? '—'}{c.topWrong ? ` → ${c.topWrong.action}` : ''}</span>
+            <span className="flex-1 truncate text-left text-[0.66rem] text-warm-500">{c.correctAction ?? '—'}{c.topWrong ? ` → ${c.topWrong.action}` : ''}</span>
             {tab === 'errors'
               ? <span className={`font-bold ${accColor(c.accuracy)}`}>{c.accuracy}%</span>
               : <span className="font-bold text-warm-200">{c.consults}x</span>}
+            <span className={`text-xs ${selected === c.hand ? 'text-brand-400' : 'text-warm-600 group-hover:text-warm-300'}`}>›</span>
           </button>
         ))}
       </div>
@@ -209,7 +211,7 @@ function HandDetailCard({ cell }: { cell: GridCell }) {
   )
   const seg = (w: number, bg: string, label: string) => w > 0 ? <div style={{ width: `${w}%`, background: bg }} title={`${label} ${Math.round(w)}%`} /> : null
   return (
-    <div className="w-[340px] rounded-xl border border-warm-700 bg-warm-900/40 p-4 space-y-3">
+    <div className="w-[270px] shrink-0 rounded-xl border border-brand-500/40 bg-warm-900/40 p-4 space-y-3">
       <div className="flex items-center justify-between">
         <span className="px-2.5 py-1 rounded text-base font-bold text-white" style={{ background: confChipBg(cell.accuracy), textShadow: '0 0 3px rgba(0,0,0,0.6)' }}>{cell.hand}</span>
         <span className={`text-lg font-bold ${accColor(cell.accuracy)}`}>{cell.accuracy}%</span>
@@ -1078,8 +1080,10 @@ function TeamView({ token }: { token: string | null }) {
                 <h4 className="text-xs font-semibold text-warm-200 mb-2">Precisão / erros</h4>
                 <RangeHeatGrid cells={grid.cells} />
               </div>
-              <TopHandsPanel cells={grid.cells} selected={detailHand} onSelect={h => setDetailHand(h === detailHand ? null : h)} />
-              {detailCell && <HandDetailCard cell={detailCell} />}
+              <div className="flex items-start gap-4">
+                <TopHandsPanel cells={grid.cells} selected={detailHand} onSelect={h => setDetailHand(h === detailHand ? null : h)} />
+                {detailCell && <HandDetailCard cell={detailCell} />}
+              </div>
             </div>
           </div>
         )}
