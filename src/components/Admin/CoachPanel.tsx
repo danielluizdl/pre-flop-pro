@@ -209,7 +209,7 @@ function HandDetailCard({ cell }: { cell: GridCell }) {
   )
   const seg = (w: number, bg: string, label: string) => w > 0 ? <div style={{ width: `${w}%`, background: bg }} title={`${label} ${Math.round(w)}%`} /> : null
   return (
-    <div className="w-[340px] ml-auto rounded-xl border border-warm-700 bg-warm-900/40 p-4 space-y-3">
+    <div className="w-[340px] rounded-xl border border-warm-700 bg-warm-900/40 p-4 space-y-3">
       <div className="flex items-center justify-between">
         <span className="px-2.5 py-1 rounded text-base font-bold text-white" style={{ background: confChipBg(cell.accuracy), textShadow: '0 0 3px rgba(0,0,0,0.6)' }}>{cell.hand}</span>
         <span className={`text-lg font-bold ${accColor(cell.accuracy)}`}>{cell.accuracy}%</span>
@@ -1065,7 +1065,7 @@ function TeamView({ token }: { token: string | null }) {
               <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded" style={{ background: '#6b2d0d' }} />All-in</span>
               <span className="text-warm-600">·  fundo escuro = Fold</span>
             </div>
-            <div className="flex flex-wrap gap-6">
+            <div className="flex flex-wrap items-start gap-6">
               <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
                 <RangeActionGrid title="Range real (gabarito)" subtitle="o que o range manda jogar" grid={realGrid} />
                 <ComboSummary stats={comboReal} />
@@ -1079,13 +1079,8 @@ function TeamView({ token }: { token: string | null }) {
                 <RangeHeatGrid cells={grid.cells} />
               </div>
               <TopHandsPanel cells={grid.cells} selected={detailHand} onSelect={h => setDetailHand(h === detailHand ? null : h)} />
+              {detailCell && <HandDetailCard cell={detailCell} />}
             </div>
-            {detailCell && (
-              <div>
-                <p className="text-xs text-warm-400 mb-2">Detalhe da mão selecionada</p>
-                <HandDetailCard cell={detailCell} />
-              </div>
-            )}
           </div>
         )}
       </div>
