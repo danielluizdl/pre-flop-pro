@@ -113,16 +113,33 @@ Solução:
 - `CoachPanel`: cartão "Foco da semana" no topo (3 colunas), reflete os filtros
   atuais; reaproveita rankedLeaks/rankedGaps/playerTrends.
 
+Commit: c6d9e24
+
+### Ciclo 6 — Leaks relativos (jogador vs time / z-score) — FEITO
+Objetivo: leaks RELATIVOS, não absolutos. 70% num range onde o time faz 90% é
+mais grave que 70% onde o time faz 72%. Mostra onde cada jogador está abaixo
+dos colegas no mesmo range.
+
+Solução:
+- `src/utils/coachRelative.ts` (puro + testes): `mean`, `sampleStd` (n-1),
+  `zScore`, `buildRelativeLeaks` (por range: qualifica jogadores com ≥15 mãos,
+  exige ≥3 peers, retorna quem está abaixo da média com desvio em pp e z-score,
+  ordenado por z asc).
+- Backend `analytics.js` view `player-ranges`: precisão por jogador × range + users.
+- `CoachPanel`: Section "Leaks relativos" — Jogador/Range/Mãos/Precisão/Média
+  time/Δ/z, destaca z≤-2.
+Metodologia: z-score sobre as precisões dos jogadores qualificados no range
+(média e desvio amostral da mesma população).
+
 Commit: _(a preencher)_
 
 ---
 
 ## Backlog priorizado (próximos ciclos)
-1. **Jogador vs time** — z-score/percentil por range e por mão (leaks relativos).
-2. **Segmentação por posição** — agregar by-range por `range.positions[0]` (client).
-3. **Consistência** — variância da precisão entre sessões (estável vs oscilante).
-4. **Severidade por range** — razão grave/impreciso (conceitual vs estratégia mista).
-5. **Foco por jogador** — aplicar `buildWeeklyFocus` a um jogador específico.
+1. **Segmentação por posição** — agregar by-range por `range.positions[0]` (client).
+2. **Consistência** — variância da precisão entre sessões (estável vs oscilante).
+3. **Severidade por range** — razão grave/impreciso (conceitual vs estratégia mista).
+4. **Foco por jogador** — aplicar `buildWeeklyFocus` a um jogador específico.
 
 ## Passos manuais pendentes
 - Nenhuma migração de schema nova até agora (ciclo 1 só usa colunas existentes).

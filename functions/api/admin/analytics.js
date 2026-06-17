@@ -170,6 +170,22 @@ export async function onRequest(context) {
     return json({ view, rows })
   }
 
+  if (view === 'player-ranges') {
+    const hf = handFilters(filters)
+    const res = await env.DB.prepare(
+      `SELECT user_id AS userId, range_id AS rangeId, MAX(range_name) AS rangeName,
+        COUNT(*) AS total, CAST(SUM(is_correct) AS INTEGER) AS correct
+       FROM hand_events ${hf.clause} GROUP BY user_id, range_id`
+    ).bind(...hf.binds).all()
+
+    const uPc = filters.playerIds.length ? ` AND id IN (${filters.playerIds.map(() => '?').join(',')})` : ''
+    const usersRes = await env.DB.prepare(
+      `SELECT id, username, name FROM users WHERE role = 'player'${uPc} ORDER BY name COLLATE NOCASE, username COLLATE NOCASE`
+    ).bind(...filters.playerIds).all()
+
+    return json({ view, rows: res.results ?? [], users: usersRes.results ?? [] })
+  }
+
   if (view === 'knowledge-gaps') {
     const hf = handFilters(filters)
     const handAgg = await env.DB.prepare(

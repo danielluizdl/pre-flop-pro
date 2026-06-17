@@ -5,6 +5,7 @@ import { rankLeaks, rankKnowledgeGaps, type Confidence } from '../../utils/coach
 import { buildTrend, aggregateTeamBuckets, type PlayerTrend, type TrendDir, type WeekBucket } from '../../utils/coachTrend'
 import { aggregateSegments, type HandRow } from '../../utils/handCategories'
 import { buildWeeklyFocus } from '../../utils/coachFocus'
+import { buildRelativeLeaks, type PlayerRangeStat } from '../../utils/coachRelative'
 
 const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'EP', 'LJ', 'UTG']
 
@@ -259,6 +260,34 @@ function useSegments(filters: Filters, token: string | null) {
   return { byHand, byAction, loading, error }
 }
 
+interface PlayerRangeApiRow { userId: number; rangeId: number; rangeName: string; total: number; correct: number }
+
+function usePlayerRanges(filters: Filters, token: string | null) {
+  const [rows, setRows] = useState<PlayerRangeApiRow[]>([])
+  const [users, setUsers] = useState<TrendUser[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const idsKey = filters.playerIds.join(',')
+
+  useEffect(() => {
+    if (!token) return
+    let cancelled = false
+    setLoading(true)
+    setError('')
+    const qs = new URLSearchParams({ view: 'player-ranges' })
+    if (idsKey) qs.set('playerIds', idsKey)
+    if (filters.rangeId !== null) qs.set('rangeId', String(filters.rangeId))
+    if (filters.days !== null) qs.set('days', String(filters.days))
+    fetch(`/api/admin/analytics?${qs.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
+      .then(d => { if (!cancelled) { setRows(d.rows ?? []); setUsers(d.users ?? []); setLoading(false) } })
+      .catch(() => { if (!cancelled) { setError('Erro ao carregar'); setLoading(false) } })
+    return () => { cancelled = true }
+  }, [token, idsKey, filters.rangeId, filters.days])
+
+  return { rows, users, loading, error }
+}
+
 const TREND_META: Record<TrendDir, { label: string; arrow: string; cls: string }> = {
   improving: { label: 'melhorando', arrow: '▲', cls: 'text-emerald-400' },
   regressing: { label: 'regredindo', arrow: '▼', cls: 'text-red-400' },
@@ -388,7 +417,16 @@ function TeamView({ token }: { token: string | null }) {
   const trend = useTrend(filters, token)
   const segments = useSegments(filters, token)
   const gaps = useAnalytics<GapRow>('knowledge-gaps', filters, token)
+  const playerRanges = usePlayerRanges(filters, token)
   const grid = useRangeGrid(filters.rangeId, filters.days, filters.playerIds, stackIdx, token)
+
+  const relativeLeaks = useMemo(() => {
+    const nameOf = (id: number) => { const u = playerRanges.users.find(x => x.id === id); return u ? (u.name || u.username) : `#${id}` }
+    const stats: PlayerRangeStat[] = playerRanges.rows.map(r => ({
+      userId: r.userId, name: nameOf(r.userId), rangeId: r.rangeId, rangeName: r.rangeName, total: r.total, correct: r.correct,
+    }))
+    return buildRelativeLeaks(stats).slice(0, 40)
+  }, [playerRanges.rows, playerRanges.users])
 
   const categorySegs = useMemo(() => aggregateSegments(segments.byHand), [segments.byHand])
   const rankedGaps = useMemo(() => rankKnowledgeGaps(gaps.rows).slice(0, 40), [gaps.rows])
@@ -782,6 +820,38 @@ function TeamView({ token }: { token: string | null }) {
                 <td className={`${TDR} text-red-400`}>{r.graves}</td>
                 <td className={`${TDR} text-warm-400`}>{r.consults}</td>
                 <td className={`${TDR} text-warm-400`}>{r.players}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Section>
+
+      <Section title="Leaks relativos (jogador vs time)" defaultOpen={false} loading={playerRanges.loading} error={playerRanges.error} empty={relativeLeaks.length === 0}>
+        <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60">
+          Onde cada jogador está <span className="text-warm-300">abaixo dos colegas</span> no mesmo range (z-score). Considera jogadores com ≥15 mãos e ranges com ≥3 jogadores. Selecione vários jogadores para comparar.
+        </div>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-warm-800 text-warm-400 text-xs uppercase">
+              <th className={TH}>Jogador</th>
+              <th className={TH}>Range</th>
+              <th className={THR}>Mãos</th>
+              <th className={THR}>Precisão</th>
+              <th className={THR}>Média time</th>
+              <th className={THR}>Δ</th>
+              <th className={THR}>z</th>
+            </tr>
+          </thead>
+          <tbody>
+            {relativeLeaks.map((r, i) => (
+              <tr key={i} className={`border-t border-warm-700/60 ${r.z <= -2 ? 'bg-red-950/30' : ''}`}>
+                <td className={`${TD} text-warm-100 font-semibold`}>{r.name}</td>
+                <td className={`${TD} text-warm-300`}>{r.rangeName}</td>
+                <td className={`${TDR} text-warm-300`}>{r.total}</td>
+                <td className={`${TDR} font-bold ${accColor(r.playerAcc)}`}>{r.playerAcc}%</td>
+                <td className={`${TDR} text-warm-400`}>{r.teamMean}%</td>
+                <td className={`${TDR} font-semibold text-red-400`}>{r.deviation}</td>
+                <td className={`${TDR} font-bold ${r.z <= -2 ? 'text-red-400' : r.z <= -1 ? 'text-yellow-400' : 'text-warm-400'}`}>{r.z}</td>
               </tr>
             ))}
           </tbody>
