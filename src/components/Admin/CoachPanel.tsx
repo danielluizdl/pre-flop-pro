@@ -151,6 +151,12 @@ function accColor(acc: number): string {
   return acc >= 80 ? 'text-emerald-400' : acc >= 50 ? 'text-yellow-400' : 'text-red-400'
 }
 
+function confChipBg(acc: number): string {
+  if (acc >= 80) return 'rgba(34,197,94,0.9)'
+  if (acc >= 50) return 'rgba(202,138,4,0.9)'
+  return 'rgba(220,38,38,0.92)'
+}
+
 interface Filters {
   playerIds: number[]
   rangeId: number | null
@@ -987,29 +993,23 @@ function TeamView({ token }: { token: string | null }) {
             </div>
             <div className="min-w-0">
               <p className="text-xs text-warm-400 mb-2">Mãos com pior precisão — correto vs. erro mais comum</p>
-              <div className="overflow-x-auto rounded-xl border border-warm-700">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-warm-800 text-warm-400 text-xs uppercase">
-                      <th className={TH}>Mão</th>
-                      <th className={THR}>Tent.</th>
-                      <th className={THR}>Precisão</th>
-                      <th className={TH}>Correto</th>
-                      <th className={TH}>Erram mais</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {confusionRows.map(c => (
-                      <tr key={c.hand} className={`border-t border-warm-700/60 ${c.accuracy < 50 ? 'bg-red-950/30' : ''}`}>
-                        <td className={`${TD} text-warm-100 font-bold`}>{c.hand}</td>
-                        <td className={`${TDR} text-warm-300`}>{c.total}</td>
-                        <td className={`${TDR} font-bold ${accColor(c.accuracy)}`}>{c.accuracy}%</td>
-                        <td className={`${TD} text-emerald-300`}>{c.correctAction ?? '—'}</td>
-                        <td className={`${TD} text-red-300`}>{c.topWrong ? `${c.topWrong.action} (${c.topWrong.n}x)` : '—'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="flex flex-wrap gap-2">
+                {confusionRows.map(c => (
+                  <div key={c.hand} className="w-[150px] rounded-lg border border-warm-700 bg-warm-900/40 p-2.5">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span
+                        className="px-2 py-0.5 rounded text-xs font-bold text-white"
+                        style={{ background: confChipBg(c.accuracy), textShadow: '0 0 3px rgba(0,0,0,0.6)' }}
+                      >
+                        {c.hand}
+                      </span>
+                      <span className={`text-sm font-bold ${accColor(c.accuracy)}`}>{c.accuracy}%</span>
+                    </div>
+                    <div className="text-[0.72rem] text-emerald-300 truncate">✓ {c.correctAction ?? '—'}</div>
+                    <div className="text-[0.72rem] text-red-300 truncate">✗ {c.topWrong ? `${c.topWrong.action} ${c.topWrong.n}x` : '—'}</div>
+                    <div className="text-[0.65rem] text-warm-500 mt-1">{c.total} mãos</div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
