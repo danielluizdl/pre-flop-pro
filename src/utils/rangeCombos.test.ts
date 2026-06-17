@@ -46,4 +46,16 @@ describe('rangeComboStats', () => {
     expect(s.openCombos).toBe(0)
     expect(s.openPct).toBe(0)
   })
+  it('fold entra no byAction e total fecha por mao', () => {
+    const s = rangeComboStats({ AKs: { raise: 50, fold: 50 } })
+    expect(s.byAction.raise).toBe(2)
+    expect(s.byAction.fold).toBe(2)
+    expect(s.accountedCombos).toBe(4) // 4 combos da mao, 50/50
+  })
+  it('mao 100% fold conta tudo como fold', () => {
+    const s = rangeComboStats({ '72o': { fold: 100 } })
+    expect(s.byAction.fold).toBe(12)
+    expect(s.openCombos).toBe(0)
+    expect(s.accountedCombos).toBe(12)
+  })
 })

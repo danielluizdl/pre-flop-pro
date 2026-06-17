@@ -20,15 +20,17 @@ export interface ComboStats {
   openCombos: number
   openPct: number
   byClass: Record<HandClass, ClassStat>
-  byAction: { raise: number; call: number; allin: number; extra: number }
+  byAction: { raise: number; call: number; allin: number; extra: number; fold: number }
+  accountedCombos: number
 }
 
 const clampFreq = (v: number) => Math.max(0, Math.min(100, v))
 
 export function rangeComboStats(grid: Record<string, ComboActionFreq>): ComboStats {
   const byClassCombos: Record<HandClass, number> = { pair: 0, suited: 0, offsuit: 0 }
-  const byAction = { raise: 0, call: 0, allin: 0, extra: 0 }
+  const byAction = { raise: 0, call: 0, allin: 0, extra: 0, fold: 0 }
   let openCombos = 0
+  let accountedCombos = 0
 
   for (const hand of Object.keys(grid)) {
     const d = grid[hand] ?? {}
@@ -37,6 +39,7 @@ export function rangeComboStats(grid: Record<string, ComboActionFreq>): ComboSta
     const call = clampFreq(d.call ?? 0)
     const allin = clampFreq(d.allin ?? 0)
     const extra = clampFreq(d.extra ?? 0)
+    const fold = clampFreq(d.fold ?? 0)
     const nonFold = Math.min(100, raise + call + allin + extra) / 100
     const played = combos * nonFold
     openCombos += played
@@ -45,6 +48,8 @@ export function rangeComboStats(grid: Record<string, ComboActionFreq>): ComboSta
     byAction.call += combos * (call / 100)
     byAction.allin += combos * (allin / 100)
     byAction.extra += combos * (extra / 100)
+    byAction.fold += combos * (fold / 100)
+    accountedCombos += combos * ((raise + call + allin + extra + fold) / 100)
   }
 
   const byClass = (Object.keys(byClassCombos) as HandClass[]).reduce((acc, k) => {
@@ -57,5 +62,6 @@ export function rangeComboStats(grid: Record<string, ComboActionFreq>): ComboSta
     openPct: (openCombos / TOTAL_COMBOS) * 100,
     byClass,
     byAction,
+    accountedCombos,
   }
 }
