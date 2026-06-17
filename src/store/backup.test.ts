@@ -16,7 +16,7 @@ function sampleSession(id: number): TrainingSession {
   }
 }
 
-describe('backup export/import', () => {
+describe('backup export', () => {
   beforeEach(() => {
     localStorage.clear()
     useStore.setState({
@@ -27,35 +27,18 @@ describe('backup export/import', () => {
     })
   })
 
-  it('roundtrip export → import preserva ranges, histórico e performance', () => {
-    const json = useStore.getState().exportData()
-    useStore.setState({ ranges: [], trainingHistory: [], handPerformance: {} })
-
-    const result = useStore.getState().importData(json)
-    expect(result.ok).toBe(true)
-
-    const s = useStore.getState()
-    expect(s.ranges.map(r => r.id)).toEqual([1, 2])
-    expect(s.trainingHistory.map(h => h.id)).toEqual([100])
-    expect(s.handPerformance).toEqual({ 1: { AA: { c: 3, t: 4 } } })
-  })
-
-  it('importData rejeita JSON inválido', () => {
-    expect(useStore.getState().importData('{').ok).toBe(false)
-    expect(useStore.getState().importData('{}').ok).toBe(false)
-  })
-
-  it('importData rejeita ranges inválidos pelo validador', () => {
-    const bad = JSON.stringify({ version: 1, ranges: [{ id: 1 }] })
-    const result = useStore.getState().importData(bad)
-    expect(result.ok).toBe(false)
-    expect(result.error).toBeTruthy()
+  it('exportData inclui ranges, histórico e performance', () => {
+    const data = JSON.parse(useStore.getState().exportData())
+    expect((data.ranges as Range[]).map(r => r.id)).toEqual([1, 2])
+    expect((data.trainingHistory as TrainingSession[]).map(h => h.id)).toEqual([100])
+    expect(data.handPerformance).toEqual({ 1: { AA: { c: 3, t: 4 } } })
   })
 })
 
 describe('cota de localStorage estourada', () => {
   beforeEach(() => {
-    useStore.setState({ storageBlocked: false })
+    localStorage.clear()
+    useStore.setState({ ranges: [sampleRange(1), sampleRange(2)], storageBlocked: false })
   })
   afterEach(() => {
     vi.restoreAllMocks()
@@ -70,15 +53,13 @@ describe('cota de localStorage estourada', () => {
       if (key === 'fbr-ui-state') return real.call(this, key, value)
       throw new DOMException('quota', 'QuotaExceededError')
     })
-    const json = JSON.stringify({ version: 1, ranges: [sampleRange(1)], trainingHistory: [], handPerformance: {} })
-    useStore.getState().importData(json)
+    useStore.getState().deleteRange(2)
     expect(useStore.getState().storageBlocked).toBe(true)
   })
 
   it('save bem-sucedido limpa o aviso', () => {
     useStore.setState({ storageBlocked: true })
-    const json = JSON.stringify({ version: 1, ranges: [sampleRange(1)], trainingHistory: [], handPerformance: {} })
-    useStore.getState().importData(json)
+    useStore.getState().deleteRange(2)
     expect(useStore.getState().storageBlocked).toBe(false)
   })
 })

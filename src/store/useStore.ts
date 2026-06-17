@@ -141,7 +141,6 @@ interface AppState {
 
   // ── Backup ──────────────────────────────────────────────────────────────────
   exportData: () => string
-  importData: (json: string) => { ok: boolean; error?: string }
   resetLocalData: () => void
 
   // ── Table config (shared for editor + drill display) ────────────────────────
@@ -288,28 +287,6 @@ export const useStore = create<AppState>()(
       exportData: () => {
         const { ranges, trainingHistory, handPerformance } = get()
         return JSON.stringify({ version: 1, ranges, trainingHistory, handPerformance }, null, 2)
-      },
-
-      importData: (jsonStr) => {
-        let parsed: unknown
-        try { parsed = JSON.parse(jsonStr) }
-        catch { return { ok: false, error: 'JSON inválido.' } }
-        if (typeof parsed !== 'object' || parsed === null) return { ok: false, error: 'Formato inválido.' }
-        const data = parsed as { ranges?: unknown; trainingHistory?: unknown; handPerformance?: unknown }
-        if (!Array.isArray(data.ranges)) return { ok: false, error: 'Campo "ranges" ausente ou inválido.' }
-        let problems: string[]
-        try { problems = validateRanges(data.ranges as Range[]) }
-        catch { return { ok: false, error: 'Ranges com estrutura inválida.' } }
-        if (problems.length > 0) return { ok: false, error: `Ranges inválidos: ${problems[0]}` }
-        const ranges = decodeRanges(data.ranges as Range[])
-        const trainingHistory = Array.isArray(data.trainingHistory) ? data.trainingHistory as TrainingSession[] : []
-        const handPerformance = (data.handPerformance && typeof data.handPerformance === 'object')
-          ? data.handPerformance as HandPerfMap : {}
-        saveRanges(ranges)
-        saveHistory(trainingHistory)
-        saveHandPerf(handPerformance)
-        set({ ranges, trainingHistory, handPerformance })
-        return { ok: true }
       },
 
       resetLocalData: () => {
