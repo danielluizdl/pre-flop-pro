@@ -2,13 +2,26 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { RangeHeatGrid, type GridCell } from './RangeHeatGrid'
 import { RangeActionGrid, type ActionFreq } from './RangeActionGrid'
-import { rangeComboStats, type ComboStats } from '../../utils/rangeCombos'
+import { rangeComboStats, TOTAL_COMBOS, type ComboStats } from '../../utils/rangeCombos'
+
+const ACTION_COLOR: Record<string, string> = { Raise: 'text-red-400', Call: 'text-emerald-400', 'All-in': 'text-purple-300', Extra: 'text-brand-300' }
 
 function ComboSummary({ stats }: { stats: ComboStats }) {
+  const pct = (c: number) => (c / TOTAL_COMBOS) * 100
+  const items = [
+    { label: 'Raise', v: stats.byAction.raise },
+    { label: 'Call', v: stats.byAction.call },
+    { label: 'All-in', v: stats.byAction.allin },
+    { label: 'Extra', v: stats.byAction.extra },
+  ].filter(x => x.v > 0.05)
   return (
-    <div className="mt-3 pt-2 border-t border-warm-700/50 text-[0.7rem] text-warm-400 space-y-0.5">
+    <div className="mt-3 pt-2 border-t border-warm-700/50 text-[0.7rem] text-warm-400 space-y-1">
       <div>Abertura: <span className="text-brand-300 font-semibold">{stats.openPct.toFixed(1)}%</span> <span className="text-warm-500">({Math.round(stats.openCombos)} de 1326 combos)</span></div>
-      <div>Pares <span className="text-warm-200">{stats.byClass.pair.coveragePct.toFixed(0)}%</span> · Suited <span className="text-warm-200">{stats.byClass.suited.coveragePct.toFixed(0)}%</span> · Offsuit <span className="text-warm-200">{stats.byClass.offsuit.coveragePct.toFixed(0)}%</span></div>
+      <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+        {items.length === 0 ? <span className="text-warm-600">Sem ações</span> : items.map(x => (
+          <span key={x.label}><span className={`font-semibold ${ACTION_COLOR[x.label]}`}>{x.label}</span> {pct(x.v).toFixed(1)}%</span>
+        ))}
+      </div>
     </div>
   )
 }
