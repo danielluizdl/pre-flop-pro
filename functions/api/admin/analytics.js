@@ -344,9 +344,14 @@ export async function onRequest(context) {
        FROM hand_events ${clause} GROUP BY hand, correct_action`
     ).bind(...binds).all()
 
+    // consult_events NAO tem coluna stack_grid_idx: usa clausula propria (sem o filtro de stack).
+    const cConds = ['range_id = ?']
+    const cBinds = [filters.rangeId]
+    if (pc.sql) { cConds.push(pc.sql); cBinds.push(...pc.binds) }
+    if (filters.days !== null) { cConds.push('created_at >= unixepoch() - ?'); cBinds.push(filters.days * 86400) }
     const consultRes = await env.DB.prepare(
-      `SELECT hand, COUNT(*) AS n FROM consult_events ${clause} AND hand IS NOT NULL GROUP BY hand`
-    ).bind(...binds).all()
+      `SELECT hand, COUNT(*) AS n FROM consult_events WHERE ${cConds.join(' AND ')} AND hand IS NOT NULL GROUP BY hand`
+    ).bind(...cBinds).all()
 
     // Distribuicao das acoes REALMENTE jogadas por mao (reconstroi o "range jogado").
     // LOWER porque dados antigos/novos variam a capitalizacao de action_taken.
