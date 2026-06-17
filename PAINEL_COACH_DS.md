@@ -69,21 +69,34 @@ Solução:
 Metodologia: regressão ponderada por volume (semanas com mais mãos pesam mais);
 trend só é classificado com ≥2 semanas e ≥20 mãos (senão "sem base").
 
+Commit: 3d9bcb0
+
+### Ciclo 3 — Segmentação de mãos (categoria + ação correta) — FEITO
+Objetivo: revelar padrões que a matriz por range não mostra — o time erra mais
+em quê? (suited connectors? broadways offsuit?) e em qual decisão? (fold? 3bet?).
+
+Solução:
+- `src/utils/handCategories.ts` (puro + testes): `parseHand`, `rankIndex`,
+  `segmentsOf` (Pares/Broadways/Suited/Offsuit/Conectores/Ases suited — segmentos
+  podem se sobrepor, ex. AKs ∈ Suited+Broadways+Ases suited), `aggregateSegments`
+  (reaproveita leakImpact/Wilson/confidence de coachStats).
+- Backend `analytics.js` view `segments`: byHand (≤169 grupos) + byAction
+  (GROUP BY correct_action). Categorização no front (SQLite não classifica mãos).
+- `CoachPanel`: Section "Segmentos" com duas tabelas — por categoria e por ação correta.
+
 Commit: _(a preencher)_
 
 ---
 
 ## Backlog priorizado (próximos ciclos)
-1. **Segmentação de mãos** — agregar por categoria (par/suited/offsuit/broadway/
-   conector), por ação correta (erram mais em 3bet? call? fold?) e por posição.
-3. **Jogador vs time** — z-score/percentil por range e por mão (leaks relativos).
-4. **Hotspots de consulta × erro** — mãos muito consultadas E muito erradas =
+1. **Hotspots de consulta × erro** — mãos muito consultadas E muito erradas =
    lacuna de conhecimento real (cruzar `consult_events` com `hand_events`).
-5. **Consistência** — variância da precisão entre sessões (estável vs oscilante).
-6. **Foco da semana** — recomendação automática: top N mãos/ranges por impacto
+2. **Jogador vs time** — z-score/percentil por range e por mão (leaks relativos).
+3. **Foco da semana** — recomendação automática: top N mãos/ranges por impacto
    por jogador e para o time.
-7. **Severidade por range** — razão grave/impreciso (erro conceitual vs variância
-   de estratégia mista).
+4. **Segmentação por posição** — agregar by-range por `range.positions[0]` (client).
+5. **Consistência** — variância da precisão entre sessões (estável vs oscilante).
+6. **Severidade por range** — razão grave/impreciso (conceitual vs estratégia mista).
 
 ## Passos manuais pendentes
 - Nenhuma migração de schema nova até agora (ciclo 1 só usa colunas existentes).

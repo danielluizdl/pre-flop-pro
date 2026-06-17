@@ -170,6 +170,24 @@ export async function onRequest(context) {
     return json({ view, rows })
   }
 
+  if (view === 'segments') {
+    const hf = handFilters(filters)
+    const byHand = await env.DB.prepare(
+      `SELECT hand, COUNT(*) AS total, CAST(SUM(is_correct) AS INTEGER) AS correct,
+        SUM(CASE WHEN severity = 'grave' THEN 1 ELSE 0 END) AS graves,
+        SUM(CASE WHEN severity = 'impreciso' THEN 1 ELSE 0 END) AS imprecisos
+       FROM hand_events ${hf.clause} GROUP BY hand`
+    ).bind(...hf.binds).all()
+    const byAction = await env.DB.prepare(
+      `SELECT correct_action AS action, COUNT(*) AS total, CAST(SUM(is_correct) AS INTEGER) AS correct,
+        SUM(CASE WHEN severity = 'grave' THEN 1 ELSE 0 END) AS graves,
+        SUM(CASE WHEN severity = 'impreciso' THEN 1 ELSE 0 END) AS imprecisos
+       FROM hand_events ${hf.clause} GROUP BY correct_action ORDER BY total DESC`
+    ).bind(...hf.binds).all()
+    const actionRows = (byAction.results ?? []).map(r => ({ ...r, accuracy: ACC(r.correct, r.total) }))
+    return json({ view, byHand: byHand.results ?? [], byAction: actionRows })
+  }
+
   if (view === 'trend') {
     const hf = handFilters(filters)
     // Bucket semanal absoluto (604800s = 7 dias). Precisao por jogador/semana;

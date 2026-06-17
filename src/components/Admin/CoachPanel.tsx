@@ -3,6 +3,7 @@ import { useStore } from '../../store/useStore'
 import { RangeHeatGrid, type GridCell } from './RangeHeatGrid'
 import { rankLeaks, type Confidence } from '../../utils/coachStats'
 import { buildTrend, aggregateTeamBuckets, type PlayerTrend, type TrendDir, type WeekBucket } from '../../utils/coachTrend'
+import { aggregateSegments, type HandRow } from '../../utils/handCategories'
 
 const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'EP', 'LJ', 'UTG']
 
@@ -224,6 +225,39 @@ function useTrend(filters: Filters, token: string | null) {
   return { rows, users, loading, error }
 }
 
+interface ActionRow { action: string; total: number; correct: number; graves: number; imprecisos: number; accuracy: number }
+
+function useSegments(filters: Filters, token: string | null) {
+  const [byHand, setByHand] = useState<HandRow[]>([])
+  const [byAction, setByAction] = useState<ActionRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const idsKey = filters.playerIds.join(',')
+
+  useEffect(() => {
+    if (!token) return
+    let cancelled = false
+    setLoading(true)
+    setError('')
+    const qs = new URLSearchParams({ view: 'segments' })
+    if (idsKey) qs.set('playerIds', idsKey)
+    if (filters.rangeId !== null) qs.set('rangeId', String(filters.rangeId))
+    if (filters.days !== null) qs.set('days', String(filters.days))
+    fetch(`/api/admin/analytics?${qs.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
+      .then(d => {
+        if (cancelled) return
+        setByHand(d.byHand ?? [])
+        setByAction(d.byAction ?? [])
+        setLoading(false)
+      })
+      .catch(() => { if (!cancelled) { setError('Erro ao carregar'); setLoading(false) } })
+    return () => { cancelled = true }
+  }, [token, idsKey, filters.rangeId, filters.days])
+
+  return { byHand, byAction, loading, error }
+}
+
 const TREND_META: Record<TrendDir, { label: string; arrow: string; cls: string }> = {
   improving: { label: 'melhorando', arrow: '▲', cls: 'text-emerald-400' },
   regressing: { label: 'regredindo', arrow: '▼', cls: 'text-red-400' },
@@ -350,7 +384,10 @@ function TeamView({ token }: { token: string | null }) {
   const hotspots = useAnalytics<HotspotRow>('consult-hotspots', filters, token)
   const byRange = useAnalytics<ByRangeRow>('by-range', filters, token)
   const trend = useTrend(filters, token)
+  const segments = useSegments(filters, token)
   const grid = useRangeGrid(filters.rangeId, filters.days, filters.playerIds, stackIdx, token)
+
+  const categorySegs = useMemo(() => aggregateSegments(segments.byHand), [segments.byHand])
 
   const playerTrends = useMemo(() => {
     const byUser = new Map<number, WeekBucket[]>()
@@ -537,6 +574,59 @@ function TeamView({ token }: { token: string | null }) {
             })}
           </tbody>
         </table>
+      </Section>
+
+      <Section title="Segmentos (categoria e ação correta)" defaultOpen={false} loading={segments.loading} error={segments.error} empty={categorySegs.length === 0 && segments.byAction.length === 0}>
+        <div className="p-3 grid gap-5 md:grid-cols-2">
+          <div>
+            <p className="text-xs text-warm-400 mb-2 uppercase font-semibold">Por categoria de mão</p>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-warm-800 text-warm-400 text-[11px] uppercase">
+                  <th className={TH}>Categoria</th>
+                  <th className={THR}>Mãos</th>
+                  <th className={THR}>Precisão</th>
+                  <th className={THR}>Graves</th>
+                  <th className={THR}>Impacto</th>
+                </tr>
+              </thead>
+              <tbody>
+                {categorySegs.map(s => (
+                  <tr key={s.segment} className="border-t border-warm-700/60">
+                    <td className={`${TD} text-warm-100 font-semibold`}>{s.segment}</td>
+                    <td className={`${TDR} text-warm-300`}>{s.total}</td>
+                    <td className={`${TDR} font-bold ${accColor(s.accuracy)}`}>{s.accuracy}%</td>
+                    <td className={`${TDR} text-red-400`}>{s.graves}</td>
+                    <td className={`${TDR} font-bold text-orange-300`}>{Math.round(s.impact * 10) / 10}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <p className="text-xs text-warm-400 mb-2 uppercase font-semibold">Por ação correta</p>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-warm-800 text-warm-400 text-[11px] uppercase">
+                  <th className={TH}>Ação correta</th>
+                  <th className={THR}>Mãos</th>
+                  <th className={THR}>Precisão</th>
+                  <th className={THR}>Graves</th>
+                </tr>
+              </thead>
+              <tbody>
+                {segments.byAction.map(a => (
+                  <tr key={a.action} className="border-t border-warm-700/60">
+                    <td className={`${TD} text-warm-100 font-semibold`}>{a.action}</td>
+                    <td className={`${TDR} text-warm-300`}>{a.total}</td>
+                    <td className={`${TDR} font-bold ${accColor(a.accuracy)}`}>{a.accuracy}%</td>
+                    <td className={`${TDR} text-red-400`}>{a.graves}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </Section>
 
       <Section title="Hotspots de consulta" defaultOpen={false} loading={hotspots.loading} error={hotspots.error} empty={hotspots.rows.length === 0}>
