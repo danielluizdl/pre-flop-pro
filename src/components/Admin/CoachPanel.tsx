@@ -2,6 +2,16 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { RangeHeatGrid, type GridCell } from './RangeHeatGrid'
 import { RangeActionGrid, type ActionFreq } from './RangeActionGrid'
+import { rangeComboStats, type ComboStats } from '../../utils/rangeCombos'
+
+function ComboSummary({ stats }: { stats: ComboStats }) {
+  return (
+    <div className="mt-3 pt-2 border-t border-warm-700/50 text-[0.7rem] text-warm-400 space-y-0.5">
+      <div>Abertura: <span className="text-brand-300 font-semibold">{stats.openPct.toFixed(1)}%</span> <span className="text-warm-500">({Math.round(stats.openCombos)} de 1326 combos)</span></div>
+      <div>Pares <span className="text-warm-200">{stats.byClass.pair.coveragePct.toFixed(0)}%</span> · Suited <span className="text-warm-200">{stats.byClass.suited.coveragePct.toFixed(0)}%</span> · Offsuit <span className="text-warm-200">{stats.byClass.offsuit.coveragePct.toFixed(0)}%</span></div>
+    </div>
+  )
+}
 import { rankLeaks, rankKnowledgeGaps, severityProfile, type Confidence, type SeverityClass } from '../../utils/coachStats'
 import { buildTrend, aggregateTeamBuckets, type PlayerTrend, type TrendDir, type WeekBucket } from '../../utils/coachTrend'
 import { aggregateSegments, type HandRow } from '../../utils/handCategories'
@@ -501,6 +511,9 @@ function TeamView({ token }: { token: string | null }) {
     return out
   }, [grid.cells])
 
+  const comboReal = useMemo(() => rangeComboStats(realGrid), [realGrid])
+  const comboPlayed = useMemo(() => rangeComboStats(playedGrid), [playedGrid])
+
   const selectCls = 'bg-warm-900 border border-warm-600 rounded-lg px-2.5 py-1.5 text-sm text-warm-100'
 
   return (
@@ -948,9 +961,11 @@ function TeamView({ token }: { token: string | null }) {
             <div className="flex flex-wrap gap-6">
               <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
                 <RangeActionGrid title="Range real (gabarito)" subtitle="o que o range manda jogar" grid={realGrid} />
+                <ComboSummary stats={comboReal} />
               </div>
               <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
                 <RangeActionGrid title="Range jogado (time)" subtitle="frequências do que jogaram de fato" grid={playedGrid} />
+                <ComboSummary stats={comboPlayed} />
               </div>
               <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
                 <h4 className="text-xs font-semibold text-warm-200 mb-2">Precisão / erros</h4>
