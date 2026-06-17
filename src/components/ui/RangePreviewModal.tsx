@@ -1,5 +1,6 @@
 ﻿import { useState } from 'react'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
+import { ComboCounter } from './ComboCounter'
 import type { Range } from '../../types'
 
 interface Props {
@@ -55,8 +56,9 @@ export function RangePreviewModal({ range, onClose }: Props) {
         )}
 
         <div className="flex gap-6 flex-wrap">
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 space-y-3">
             <HandMatrix readOnly grid={displayGrid} customActionColor={range.customAction?.color} />
+            <ComboCounter grid={displayGrid} extraLabel={range.customAction?.label} extraColor={range.customAction?.color} />
           </div>
 
           <div className="flex-1 min-w-[200px]">

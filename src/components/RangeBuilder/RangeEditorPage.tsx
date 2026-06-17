@@ -3,6 +3,7 @@ import { useStore } from '../../store/useStore'
 import { HandMatrix } from './HandMatrix'
 import { BrushControls } from './BrushControls'
 import { HandQuickSelect } from '../ui/HandQuickSelect'
+import { ComboCounter } from '../ui/ComboCounter'
 import { countNonFoldHands, stackRangesOverlap } from '../../utils/hands'
 import { Link2, X } from 'lucide-react'
 import { PrereqRangePicker } from '../ui/PrereqRangePicker'
@@ -24,6 +25,7 @@ export function RangeEditorPage() {
   const pushGridToSession = useStore(s => s.pushGridToSession)
   const updateSessionGrid = useStore(s => s.updateSessionGrid)
   const removeSessionGrid = useStore(s => s.removeSessionGrid)
+  const brush             = useStore(s => s.brush)
 
   const [editingIdx, setEditingIdx]       = useState<number | null>(null)
   const [snapshot, setSnapshot]           = useState<SessionGrid | null>(null)
@@ -327,6 +329,10 @@ export function RangeEditorPage() {
             <div className="border-t border-warm-700/60" />
 
             <BrushControls />
+
+            <div className="border-t border-warm-700/60" />
+
+            <ComboCounter grid={rangeData.grid} extraLabel={brush.extraLabel} extraColor={brush.extraColor} />
           </div>
 
           <button
