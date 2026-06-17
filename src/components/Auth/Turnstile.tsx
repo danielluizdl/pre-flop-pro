@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 
-const SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined
+const SITE_KEY = (import.meta.env.VITE_TURNSTILE_KEY ?? import.meta.env.VITE_TURNSTILE_SITE_KEY) as string | undefined
 export const turnstileEnabled = !!SITE_KEY
 
 let scriptPromise: Promise<void> | null = null
