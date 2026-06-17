@@ -146,14 +146,24 @@ export async function onRequest(context) {
 
   if (view === 'leaks') {
     const hf = handFilters(filters)
+    // Impacto = erros ponderados por gravidade (espelha leakImpact em src/utils/coachStats.ts).
+    // errors = total-correct; graves*1.0 + imprecisos*0.4 + untagged*0.7. ORDER/LIMIT por impacto
+    // para não truncar leaks de alto custo (o JS re-ranqueia pelo mesmo critério via util).
     const res = await env.DB.prepare(
       `SELECT range_id AS rangeId, MAX(range_name) AS rangeName, hand,
         COUNT(*) AS total, CAST(SUM(is_correct) AS INTEGER) AS correct,
-        SUM(CASE WHEN severity = 'grave' THEN 1 ELSE 0 END) AS graves
+        SUM(CASE WHEN severity = 'grave' THEN 1 ELSE 0 END) AS graves,
+        SUM(CASE WHEN severity = 'impreciso' THEN 1 ELSE 0 END) AS imprecisos
        FROM hand_events ${hf.clause}
        GROUP BY range_id, hand
-       HAVING total >= 5
-       ORDER BY (CAST(SUM(is_correct) AS REAL) / COUNT(*)) ASC
+       HAVING total >= 3
+       ORDER BY (
+         SUM(CASE WHEN severity = 'grave' THEN 1 ELSE 0 END) * 1.0
+         + SUM(CASE WHEN severity = 'impreciso' THEN 1 ELSE 0 END) * 0.4
+         + (COUNT(*) - CAST(SUM(is_correct) AS INTEGER)
+            - SUM(CASE WHEN severity = 'grave' THEN 1 ELSE 0 END)
+            - SUM(CASE WHEN severity = 'impreciso' THEN 1 ELSE 0 END)) * 0.7
+       ) DESC
        LIMIT 100`
     ).bind(...hf.binds).all()
     const rows = (res.results ?? []).map(r => ({ ...r, accuracy: ACC(r.correct, r.total) }))

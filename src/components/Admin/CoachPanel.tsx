@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { RangeHeatGrid, type GridCell } from './RangeHeatGrid'
+import { rankLeaks, type Confidence } from '../../utils/coachStats'
 
 const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'EP', 'LJ', 'UTG']
 
@@ -231,7 +232,13 @@ interface OverviewRow {
   graves: number; imprecisos: number; consults: number; sessions: number
   durationSeconds: number; lastActivity: number
 }
-interface LeakRow { rangeId: number; rangeName: string; hand: string; total: number; correct: number; graves: number; accuracy: number }
+interface LeakRow { rangeId: number; rangeName: string; hand: string; total: number; correct: number; graves: number; imprecisos: number; accuracy: number }
+
+const CONF_DOT: Record<Confidence, { cls: string; title: string }> = {
+  low: { cls: 'bg-red-400', title: 'Amostra pequena (<15) — pouca confiança' },
+  medium: { cls: 'bg-yellow-400', title: 'Amostra média (15–49)' },
+  high: { cls: 'bg-emerald-400', title: 'Amostra robusta (≥50)' },
+}
 interface HotspotRow { rangeId: number; rangeName: string; hand: string | null; count: number }
 interface ByRangeRow { rangeId: number; rangeName: string; hands: number; accuracy: number; graves: number; consults: number; players: number }
 
@@ -259,6 +266,8 @@ function TeamView({ token }: { token: string | null }) {
   const hotspots = useAnalytics<HotspotRow>('consult-hotspots', filters, token)
   const byRange = useAnalytics<ByRangeRow>('by-range', filters, token)
   const grid = useRangeGrid(filters.rangeId, filters.days, filters.playerIds, stackIdx, token)
+
+  const rankedLeaks = useMemo(() => rankLeaks(leaks.rows), [leaks.rows])
 
   const selectedRange = ranges.find(r => r.id === filters.rangeId)
   const selectedRangeName = selectedRange?.name ?? ''
@@ -345,27 +354,42 @@ function TeamView({ token }: { token: string | null }) {
         </table>
       </Section>
 
-      <Section title="Maiores leaks" defaultOpen={false} loading={leaks.loading} error={leaks.error} empty={leaks.rows.length === 0}>
+      <Section title="Maiores leaks" defaultOpen={false} loading={leaks.loading} error={leaks.error} empty={rankedLeaks.length === 0}>
+        <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60">
+          Ordenado por <span className="text-warm-300">impacto</span> (erros ponderados por gravidade). Precisão mostra o piso de confiança (mín = limite inferior de Wilson 95%); o ponto indica o tamanho da amostra.
+        </div>
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-warm-800 text-warm-400 text-xs uppercase">
               <th className={TH}>Mão</th>
               <th className={TH}>Range</th>
-              <th className={THR}>Tentativas</th>
-              <th className={THR}>Precisão</th>
+              <th className={THR}>Tent.</th>
+              <th className={THR}>Precisão (mín)</th>
               <th className={THR}>Graves</th>
+              <th className={THR}>Impacto</th>
             </tr>
           </thead>
           <tbody>
-            {leaks.rows.map((r, i) => (
-              <tr key={i} className={`border-t border-warm-700/60 ${r.accuracy < 50 ? 'bg-red-950/30' : ''}`}>
-                <td className={`${TD} text-warm-100 font-bold`}>{r.hand}</td>
-                <td className={`${TD} text-warm-300`}>{r.rangeName}</td>
-                <td className={`${TDR} text-warm-300`}>{r.total}</td>
-                <td className={`${TDR} font-bold ${accColor(r.accuracy)}`}>{r.accuracy}%</td>
-                <td className={`${TDR} text-red-400`}>{r.graves}</td>
-              </tr>
-            ))}
+            {rankedLeaks.map((r, i) => {
+              const dot = CONF_DOT[r.confidence]
+              return (
+                <tr key={i} className={`border-t border-warm-700/60 ${r.confidence === 'low' ? 'opacity-60' : ''} ${r.accuracy < 50 && r.confidence !== 'low' ? 'bg-red-950/30' : ''}`}>
+                  <td className={`${TD} text-warm-100 font-bold`}>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className={`inline-block w-1.5 h-1.5 rounded-full ${dot.cls}`} title={dot.title} />
+                      {r.hand}
+                    </span>
+                  </td>
+                  <td className={`${TD} text-warm-300`}>{r.rangeName}</td>
+                  <td className={`${TDR} text-warm-300`}>{r.total}</td>
+                  <td className={`${TDR} font-bold ${accColor(r.accuracy)}`}>
+                    {r.accuracy}% <span className="text-warm-500 font-normal text-xs">({r.accuracyLower}%)</span>
+                  </td>
+                  <td className={`${TDR} text-red-400`}>{r.graves}</td>
+                  <td className={`${TDR} font-bold text-orange-300`}>{Math.round(r.impact * 10) / 10}</td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </Section>
