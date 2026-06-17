@@ -73,6 +73,26 @@ export interface RankedGap {
   confidence: Confidence
 }
 
+export type SeverityClass = 'conceitual' | 'misto' | 'estrategia-mista' | 'na'
+
+export interface SeverityProfile {
+  graves: number
+  imprecisos: number
+  graveShare: number
+  classification: SeverityClass
+}
+
+// Distingue erro conceitual (escolhe ação com 0% — grave) de variância de
+// estratégia mista (ação com freq>0 mas não a principal — impreciso). Guia a
+// intervenção: ensinar o conceito vs ajustar frequência.
+export function severityProfile(graves: number, imprecisos: number): SeverityProfile {
+  const total = graves + imprecisos
+  if (total <= 0) return { graves, imprecisos, graveShare: 0, classification: 'na' }
+  const graveShare = graves / total
+  const classification: SeverityClass = graveShare >= 0.66 ? 'conceitual' : graveShare <= 0.34 ? 'estrategia-mista' : 'misto'
+  return { graves, imprecisos, graveShare: Math.round(graveShare * 1000) / 10, classification }
+}
+
 export function rankKnowledgeGaps<T extends GapCounts>(rows: T[], z = 1.96): (T & RankedGap)[] {
   return rows
     .filter(r => r.consults > 0)

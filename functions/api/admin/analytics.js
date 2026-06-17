@@ -287,6 +287,7 @@ export async function onRequest(context) {
       `SELECT range_id AS rangeId, MAX(range_name) AS rangeName,
         COUNT(*) AS hands, CAST(SUM(is_correct) AS INTEGER) AS correct,
         SUM(CASE WHEN severity = 'grave' THEN 1 ELSE 0 END) AS graves,
+        SUM(CASE WHEN severity = 'impreciso' THEN 1 ELSE 0 END) AS imprecisos,
         COUNT(DISTINCT user_id) AS players
        FROM hand_events ${hf.clause}
        GROUP BY range_id

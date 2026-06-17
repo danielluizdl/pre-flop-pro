@@ -131,15 +131,29 @@ Solução:
 Metodologia: z-score sobre as precisões dos jogadores qualificados no range
 (média e desvio amostral da mesma população).
 
+Commit: 750b931
+
+### Ciclo 7 — Severidade por range (conceitual vs estratégia mista) — FEITO
+Objetivo: distinguir erro conceitual (escolhe ação com 0% — grave) de variância
+de estratégia mista (ação com freq>0 mas não a principal — impreciso). Guia a
+intervenção: ensinar o conceito vs ajustar frequência.
+
+Solução:
+- `src/utils/coachStats.ts`: `severityProfile(graves, imprecisos)` → graveShare
+  + classe (conceitual ≥66% graves / misto / estratégia-mista ≤34%); puro + testes.
+- Backend `analytics.js` view `by-range`: passa a retornar `imprecisos`.
+- `CoachPanel`: coluna "Tipo de erro" na tabela Por range (rótulo + Ng/Ni).
+
 Commit: _(a preencher)_
 
 ---
 
 ## Backlog priorizado (próximos ciclos)
 1. **Segmentação por posição** — agregar by-range por `range.positions[0]` (client).
-2. **Consistência** — variância da precisão entre sessões (estável vs oscilante).
-3. **Severidade por range** — razão grave/impreciso (conceitual vs estratégia mista).
-4. **Foco por jogador** — aplicar `buildWeeklyFocus` a um jogador específico.
+2. **Consistência** — variância da precisão entre sessões (estável vs oscilante,
+   usando training_sessions por jogador).
+3. **Foco por jogador** — aplicar `buildWeeklyFocus` a um jogador específico.
+4. **Curva de aprendizado** — precisão nas primeiras N tentativas de uma mão/range.
 
 ## Passos manuais pendentes
 - Nenhuma migração de schema nova até agora (ciclo 1 só usa colunas existentes).

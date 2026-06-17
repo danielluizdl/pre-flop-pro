@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { RangeHeatGrid, type GridCell } from './RangeHeatGrid'
-import { rankLeaks, rankKnowledgeGaps, type Confidence } from '../../utils/coachStats'
+import { rankLeaks, rankKnowledgeGaps, severityProfile, type Confidence, type SeverityClass } from '../../utils/coachStats'
 import { buildTrend, aggregateTeamBuckets, type PlayerTrend, type TrendDir, type WeekBucket } from '../../utils/coachTrend'
 import { aggregateSegments, type HandRow } from '../../utils/handCategories'
 import { buildWeeklyFocus } from '../../utils/coachFocus'
@@ -389,7 +389,14 @@ const CONF_DOT: Record<Confidence, { cls: string; title: string }> = {
 }
 interface HotspotRow { rangeId: number; rangeName: string; hand: string | null; count: number }
 interface GapRow { rangeId: number; rangeName: string; hand: string; consults: number; total: number; correct: number; graves: number; imprecisos: number }
-interface ByRangeRow { rangeId: number; rangeName: string; hands: number; accuracy: number; graves: number; consults: number; players: number }
+interface ByRangeRow { rangeId: number; rangeName: string; hands: number; accuracy: number; graves: number; imprecisos: number; consults: number; players: number }
+
+const SEVERITY_META: Record<SeverityClass, { label: string; cls: string }> = {
+  conceitual: { label: 'Conceitual', cls: 'text-red-300' },
+  misto: { label: 'Misto', cls: 'text-yellow-300' },
+  'estrategia-mista': { label: 'Estratégia mista', cls: 'text-sky-300' },
+  na: { label: '—', cls: 'text-warm-600' },
+}
 
 function TeamView({ token }: { token: string | null }) {
   const ranges = useStore(s => s.ranges)
@@ -803,12 +810,16 @@ function TeamView({ token }: { token: string | null }) {
               <th className={THR}>Mãos</th>
               <th className={THR}>Precisão</th>
               <th className={THR}>Graves</th>
+              <th className={TH}>Tipo de erro</th>
               <th className={THR}>Consultas</th>
               <th className={THR}>Jogadores</th>
             </tr>
           </thead>
           <tbody>
-            {byRange.rows.map((r, i) => (
+            {byRange.rows.map((r, i) => {
+              const sev = severityProfile(r.graves, r.imprecisos)
+              const sm = SEVERITY_META[sev.classification]
+              return (
               <tr
                 key={i}
                 onClick={() => setFilters(f => ({ ...f, rangeId: r.rangeId }))}
@@ -818,10 +829,14 @@ function TeamView({ token }: { token: string | null }) {
                 <td className={`${TDR} text-warm-300`}>{r.hands}</td>
                 <td className={`${TDR} font-bold ${accColor(r.accuracy)}`}>{r.accuracy}%</td>
                 <td className={`${TDR} text-red-400`}>{r.graves}</td>
+                <td className={`${TD} ${sm.cls}`}>
+                  {sm.label}
+                  {sev.classification !== 'na' && <span className="text-warm-600 text-xs ml-1">{r.graves}g/{r.imprecisos}i</span>}
+                </td>
                 <td className={`${TDR} text-warm-400`}>{r.consults}</td>
                 <td className={`${TDR} text-warm-400`}>{r.players}</td>
               </tr>
-            ))}
+            )})}
           </tbody>
         </table>
       </Section>

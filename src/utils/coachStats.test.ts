@@ -9,6 +9,7 @@ import {
   weightedErrorRate,
   knowledgeGapScore,
   rankKnowledgeGaps,
+  severityProfile,
 } from './coachStats'
 
 describe('wilsonInterval', () => {
@@ -183,5 +184,22 @@ describe('knowledgeGapScore / rankKnowledgeGaps', () => {
     const ranked = rankKnowledgeGaps(rows)
     expect(ranked.map(r => r.hand)).toEqual(['KK', 'QQ'])
     expect(ranked[0].accuracy).toBe(50)
+  })
+})
+
+describe('severityProfile', () => {
+  it('sem erros => na', () => {
+    expect(severityProfile(0, 0).classification).toBe('na')
+  })
+  it('predomínio de graves => conceitual', () => {
+    const p = severityProfile(80, 20)
+    expect(p.classification).toBe('conceitual')
+    expect(p.graveShare).toBe(80)
+  })
+  it('predomínio de imprecisos => estratégia mista', () => {
+    expect(severityProfile(10, 90).classification).toBe('estrategia-mista')
+  })
+  it('equilíbrio => misto', () => {
+    expect(severityProfile(50, 50).classification).toBe('misto')
   })
 })
