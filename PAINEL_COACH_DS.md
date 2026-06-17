@@ -99,17 +99,30 @@ Solução:
 - `CoachPanel`: Section "Lacunas de conhecimento" — Mão/Range/Consultas/
   Precisão(mín Wilson)/Graves/Score, com ponto de confiança.
 
+Commit: 46d7e3a
+
+### Ciclo 5 — Foco da semana (síntese acionável) — FEITO
+Objetivo: o headline executivo. Em vez de o coach varrer 6 tabelas, um cartão no
+topo diz o que fazer: treinar (maior impacto), estudar (consulta×erro) e
+acompanhar (quem regrediu). Compõe dados já carregados (sem novo backend).
+
+Solução:
+- `src/utils/coachFocus.ts` (puro + testes): `buildWeeklyFocus` — top N leaks por
+  impacto + top N lacunas por score (dedupe contra leaks já listados) + jogadores
+  em regressão (ordenados pela queda mais forte), com limiares mínimos.
+- `CoachPanel`: cartão "Foco da semana" no topo (3 colunas), reflete os filtros
+  atuais; reaproveita rankedLeaks/rankedGaps/playerTrends.
+
 Commit: _(a preencher)_
 
 ---
 
 ## Backlog priorizado (próximos ciclos)
 1. **Jogador vs time** — z-score/percentil por range e por mão (leaks relativos).
-3. **Foco da semana** — recomendação automática: top N mãos/ranges por impacto
-   por jogador e para o time.
-4. **Segmentação por posição** — agregar by-range por `range.positions[0]` (client).
-5. **Consistência** — variância da precisão entre sessões (estável vs oscilante).
-6. **Severidade por range** — razão grave/impreciso (conceitual vs estratégia mista).
+2. **Segmentação por posição** — agregar by-range por `range.positions[0]` (client).
+3. **Consistência** — variância da precisão entre sessões (estável vs oscilante).
+4. **Severidade por range** — razão grave/impreciso (conceitual vs estratégia mista).
+5. **Foco por jogador** — aplicar `buildWeeklyFocus` a um jogador específico.
 
 ## Passos manuais pendentes
 - Nenhuma migração de schema nova até agora (ciclo 1 só usa colunas existentes).

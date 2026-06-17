@@ -4,6 +4,7 @@ import { RangeHeatGrid, type GridCell } from './RangeHeatGrid'
 import { rankLeaks, rankKnowledgeGaps, type Confidence } from '../../utils/coachStats'
 import { buildTrend, aggregateTeamBuckets, type PlayerTrend, type TrendDir, type WeekBucket } from '../../utils/coachTrend'
 import { aggregateSegments, type HandRow } from '../../utils/handCategories'
+import { buildWeeklyFocus } from '../../utils/coachFocus'
 
 const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'EP', 'LJ', 'UTG']
 
@@ -415,6 +416,13 @@ function TeamView({ token }: { token: string | null }) {
 
   const rankedLeaks = useMemo(() => rankLeaks(leaks.rows), [leaks.rows])
 
+  const focus = useMemo(() => buildWeeklyFocus({
+    leaks: rankedLeaks.map(l => ({ hand: l.hand, rangeId: l.rangeId, rangeName: l.rangeName, impact: l.impact, accuracy: l.accuracy, total: l.total })),
+    gaps: rankedGaps.map(g => ({ hand: g.hand, rangeId: g.rangeId, rangeName: g.rangeName, score: g.score, consults: g.consults, accuracy: g.accuracy, total: g.total })),
+    trends: playerTrends.map(p => ({ userId: p.userId, name: p.name, classification: p.trend.classification, slope: p.trend.slope, firstAccuracy: p.trend.firstAccuracy, lastAccuracy: p.trend.lastAccuracy })),
+  }, { topLeaks: 5, topGaps: 4 }), [rankedLeaks, rankedGaps, playerTrends])
+  const focusLoading = leaks.loading || gaps.loading || trend.loading
+
   const selectedRange = ranges.find(r => r.id === filters.rangeId)
   const selectedRangeName = selectedRange?.name ?? ''
   const selectedStackGrids = selectedRange?.stackGrids ?? []
@@ -499,6 +507,62 @@ function TeamView({ token }: { token: string | null }) {
           </tbody>
         </table>
       </Section>
+
+      {!focusLoading && !focus.isEmpty && (
+        <div style={{ order: -2 }} className="rounded-xl border border-brand-700/50 bg-brand-950/20 p-4">
+          <h3 className="text-sm font-bold text-brand-200 mb-3 flex items-center gap-2">
+            <span>Foco da semana</span>
+            <span className="text-[11px] font-normal text-warm-500">síntese acionável dos filtros atuais</span>
+          </h3>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div>
+              <p className="text-[11px] uppercase font-semibold text-orange-300/80 mb-1.5">Treinar — maior impacto</p>
+              {focus.leaks.length === 0 ? (
+                <p className="text-xs text-warm-600">—</p>
+              ) : (
+                <ul className="flex flex-col gap-1">
+                  {focus.leaks.map((l, i) => (
+                    <li key={i} className="text-sm flex items-baseline justify-between gap-2">
+                      <span><span className="font-bold text-warm-100">{l.hand}</span> <span className="text-warm-500 text-xs">{l.rangeName}</span></span>
+                      <span className={`text-xs font-semibold ${accColor(l.accuracy)}`}>{l.accuracy}%</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div>
+              <p className="text-[11px] uppercase font-semibold text-violet-300/80 mb-1.5">Estudar — consulta × erro</p>
+              {focus.gaps.length === 0 ? (
+                <p className="text-xs text-warm-600">—</p>
+              ) : (
+                <ul className="flex flex-col gap-1">
+                  {focus.gaps.map((g, i) => (
+                    <li key={i} className="text-sm flex items-baseline justify-between gap-2">
+                      <span><span className="font-bold text-warm-100">{g.hand}</span> <span className="text-warm-500 text-xs">{g.rangeName}</span></span>
+                      <span className="text-xs text-violet-300">{g.consults} consultas</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div>
+              <p className="text-[11px] uppercase font-semibold text-red-300/80 mb-1.5">Acompanhar — regrediram</p>
+              {focus.regressions.length === 0 ? (
+                <p className="text-xs text-warm-600">Ninguém em regressão.</p>
+              ) : (
+                <ul className="flex flex-col gap-1">
+                  {focus.regressions.map((r, i) => (
+                    <li key={i} className="text-sm flex items-baseline justify-between gap-2">
+                      <span className="font-semibold text-warm-100">{r.name}</span>
+                      <span className="text-xs text-red-400">▼ {r.slope}pp/sem</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <Section title="Evolução (tendência semanal)" defaultOpen={false} loading={trend.loading} error={trend.error} empty={playerTrends.length === 0}>
         <div className="p-3 flex flex-col gap-3">
