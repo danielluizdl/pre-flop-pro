@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { RangeHeatGrid, type GridCell } from './RangeHeatGrid'
 import { RangeActionGrid, type ActionFreq } from './RangeActionGrid'
@@ -28,7 +28,6 @@ function ComboSummary({ stats }: { stats: ComboStats }) {
 import { rankLeaks, rankKnowledgeGaps, severityProfile, type Confidence, type SeverityClass } from '../../utils/coachStats'
 import { buildTrend, aggregateTeamBuckets, type PlayerTrend, type TrendDir, type WeekBucket } from '../../utils/coachTrend'
 import { aggregateSegments, type HandRow } from '../../utils/handCategories'
-import { buildWeeklyFocus } from '../../utils/coachFocus'
 import { buildRelativeLeaks, type PlayerRangeStat } from '../../utils/coachRelative'
 
 const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'EP', 'LJ', 'UTG']
@@ -519,9 +518,63 @@ const SEVERITY_META: Record<SeverityClass, { label: string; cls: string }> = {
   na: { label: '—', cls: 'text-warm-600' },
 }
 
+function PlayerQuickSummary({ userId, days, token }: { userId: number; days: number | null; token: string | null }) {
+  const [rows, setRows] = useState<ByRangeRow[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!token) return
+    let cancelled = false
+    setLoading(true)
+    const qs = new URLSearchParams({ view: 'by-range', playerIds: String(userId) })
+    if (days !== null) qs.set('days', String(days))
+    fetch(`/api/admin/analytics?${qs.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
+      .then(d => { if (!cancelled) { setRows(d.rows ?? []); setLoading(false) } })
+      .catch(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [userId, days, token])
+
+  if (loading) return <div className="px-4 py-3 text-xs text-warm-500">Carregando resumo…</div>
+  if (rows.length === 0) return <div className="px-4 py-3 text-xs text-warm-500">Sem dados de range para este jogador.</div>
+
+  const treinados = [...rows].sort((a, b) => b.hands - a.hands).slice(0, 5)
+  const piores = [...rows].filter(r => r.hands >= 5).sort((a, b) => a.accuracy - b.accuracy).slice(0, 5)
+  const consultados = [...rows].filter(r => r.consults > 0).sort((a, b) => b.consults - a.consults).slice(0, 5)
+
+  const Col = ({ title, items, render }: { title: string; items: ByRangeRow[]; render: (r: ByRangeRow) => React.ReactNode }) => (
+    <div>
+      <p className="text-[0.65rem] uppercase font-semibold text-warm-500 mb-1.5 tracking-wider">{title}</p>
+      {items.length === 0 ? <p className="text-xs text-warm-600">—</p> : (
+        <ul className="space-y-1">
+          {items.map(r => (
+            <li key={r.rangeId} className="flex items-center justify-between gap-2 text-xs">
+              <span className="text-warm-300 truncate">{r.rangeName}</span>
+              <span className="flex-shrink-0 font-semibold tabular-nums">{render(r)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+
+  return (
+    <div className="grid gap-5 md:grid-cols-3 px-4 py-3 bg-warm-900/50 border-t border-warm-700/60">
+      <Col title="Mais treinados" items={treinados} render={r => <span className="text-warm-200">{r.hands} mãos</span>} />
+      <Col title="Onde mais erra" items={piores} render={r => <span className={accColor(r.accuracy)}>{r.accuracy}%</span>} />
+      <Col title="Mais consultados" items={consultados} render={r => <span className="text-purple-300">{r.consults}x</span>} />
+    </div>
+  )
+}
+
+type SortKey = 'name' | 'hands' | 'accuracy' | 'graves' | 'consults' | 'durationSeconds' | 'lastActivity'
+
 function TeamView({ token }: { token: string | null }) {
   const ranges = useStore(s => s.ranges)
   const [users, setUsers] = useState<CoachUser[]>([])
+  const [sortKey, setSortKey] = useState<SortKey>('hands')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+  const [openPlayer, setOpenPlayer] = useState<number | null>(null)
   const [filters, setFilters] = useState<Filters>({ playerIds: [], rangeId: null, days: null })
   const [stackIdx, setStackIdx] = useState<number | null>(null)
 
@@ -584,13 +637,6 @@ function TeamView({ token }: { token: string | null }) {
 
   const rankedLeaks = useMemo(() => rankLeaks(leaks.rows), [leaks.rows])
 
-  const focus = useMemo(() => buildWeeklyFocus({
-    leaks: rankedLeaks.map(l => ({ hand: l.hand, rangeId: l.rangeId, rangeName: l.rangeName, impact: l.impact, accuracy: l.accuracy, total: l.total })),
-    gaps: rankedGaps.map(g => ({ hand: g.hand, rangeId: g.rangeId, rangeName: g.rangeName, score: g.score, consults: g.consults, accuracy: g.accuracy, total: g.total })),
-    trends: playerTrends.map(p => ({ userId: p.userId, name: p.name, classification: p.trend.classification, slope: p.trend.slope, firstAccuracy: p.trend.firstAccuracy, lastAccuracy: p.trend.lastAccuracy })),
-  }, { topLeaks: 5, topGaps: 4 }), [rankedLeaks, rankedGaps, playerTrends])
-  const focusLoading = leaks.loading || gaps.loading || trend.loading
-
   const selectedRange = ranges.find(r => r.id === filters.rangeId)
   const selectedRangeName = selectedRange?.name ?? ''
   const selectedStackGrids = selectedRange?.stackGrids ?? []
@@ -622,6 +668,24 @@ function TeamView({ token }: { token: string | null }) {
   const comboReal = useMemo(() => rangeComboStats(realGrid), [realGrid])
   const comboPlayed = useMemo(() => rangeComboStats(playedGrid), [playedGrid])
   const detailCell = detailHand ? grid.cells.find(c => c.hand === detailHand) : undefined
+
+  const sortedOverview = useMemo(() => {
+    const rows = [...overview.rows]
+    rows.sort((a, b) => {
+      if (sortKey === 'name') {
+        const an = (a.name || a.username).toLowerCase(), bn = (b.name || b.username).toLowerCase()
+        return sortDir === 'asc' ? an.localeCompare(bn) : bn.localeCompare(an)
+      }
+      const av = a[sortKey] as number, bv = b[sortKey] as number
+      return sortDir === 'asc' ? av - bv : bv - av
+    })
+    return rows
+  }, [overview.rows, sortKey, sortDir])
+
+  function handleSort(key: SortKey) {
+    if (key === sortKey) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))
+    else { setSortKey(key); setSortDir(key === 'name' ? 'asc' : 'desc') }
+  }
 
   const selectCls = 'bg-warm-900 border border-warm-600 rounded-lg px-2.5 py-1.5 text-sm text-warm-100'
 
@@ -661,33 +725,63 @@ function TeamView({ token }: { token: string | null }) {
       </div>
 
       <Section title="Resumo do time" defaultOpen={false} loading={overview.loading} error={overview.error} empty={overview.rows.length === 0}>
+        <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60">
+          Clique no cabeçalho para ordenar · clique num jogador para o resumo rápido.
+        </div>
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-warm-800 text-warm-400 text-xs uppercase">
-              <th className={TH}>Jogador</th>
-              <th className={THR}>Mãos</th>
-              <th className={THR}>Precisão</th>
-              <th className={THR}>Graves</th>
-              <th className={THR}>Consultas</th>
-              <th className={THR}>Tempo</th>
-              <th className={THR}>Última ativ.</th>
+            <tr className="bg-warm-800 text-warm-400 text-xs uppercase select-none">
+              {([
+                { k: 'name', label: 'Jogador', align: 'l' },
+                { k: 'hands', label: 'Mãos', align: 'r' },
+                { k: 'accuracy', label: 'Precisão', align: 'r' },
+                { k: 'graves', label: 'Graves', align: 'r' },
+                { k: 'consults', label: 'Consultas', align: 'r' },
+                { k: 'durationSeconds', label: 'Tempo', align: 'r' },
+                { k: 'lastActivity', label: 'Última ativ.', align: 'r' },
+              ] as { k: SortKey; label: string; align: 'l' | 'r' }[]).map(col => (
+                <th key={col.k} className={col.align === 'l' ? TH : THR}>
+                  <button
+                    onClick={() => handleSort(col.k)}
+                    className={`inline-flex items-center gap-1 hover:text-warm-100 transition-colors ${col.align === 'r' ? 'flex-row-reverse' : ''} ${sortKey === col.k ? 'text-brand-300' : ''}`}
+                  >
+                    {col.label}
+                    <span className="text-[0.6rem] w-2">{sortKey === col.k ? (sortDir === 'asc' ? '▲' : '▼') : ''}</span>
+                  </button>
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {overview.rows.map(r => (
-              <tr key={r.userId} className="border-t border-warm-700/60">
-                <td className={`${TD} text-warm-100 font-semibold`}>{r.name || r.username}</td>
-                <td className={`${TDR} text-warm-300`}>{r.hands}</td>
-                <td className={`${TDR} font-bold ${accColor(r.accuracy)}`}>{r.accuracy}%</td>
-                <td className={`${TDR} text-red-400`}>{r.graves}</td>
-                <td className={`${TDR} text-warm-400`}>{r.consults}</td>
-                <td className={`${TDR} text-warm-400`}>{formatHours(r.durationSeconds)}</td>
-                <td className={`${TDR} text-warm-500`}>{formatDateShort(r.lastActivity)}</td>
-              </tr>
+            {sortedOverview.map((r, i) => (
+              <Fragment key={r.userId}>
+                <tr
+                  onClick={() => setOpenPlayer(p => (p === r.userId ? null : r.userId))}
+                  className={`border-t border-warm-700/60 cursor-pointer transition-colors ${openPlayer === r.userId ? 'bg-warm-800/70' : i % 2 ? 'bg-warm-900/20 hover:bg-warm-800/50' : 'hover:bg-warm-800/50'}`}
+                >
+                  <td className={`${TD} text-warm-100 font-semibold`}>
+                    <span className={`inline-block w-3 text-warm-600 text-[0.6rem] ${openPlayer === r.userId ? 'text-brand-400' : ''}`}>{openPlayer === r.userId ? '▾' : '▸'}</span>
+                    {r.name || r.username}
+                  </td>
+                  <td className={`${TDR} text-warm-300`}>{r.hands}</td>
+                  <td className={`${TDR} font-bold ${accColor(r.accuracy)}`}>{r.accuracy}%</td>
+                  <td className={`${TDR} text-red-400`}>{r.graves}</td>
+                  <td className={`${TDR} text-warm-400`}>{r.consults}</td>
+                  <td className={`${TDR} text-warm-400`}>{formatHours(r.durationSeconds)}</td>
+                  <td className={`${TDR} text-warm-500`}>{formatDateShort(r.lastActivity)}</td>
+                </tr>
+                {openPlayer === r.userId && (
+                  <tr>
+                    <td colSpan={7} className="p-0">
+                      <PlayerQuickSummary userId={r.userId} days={filters.days} token={token} />
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
             ))}
             {overview.team && (
               <tr className="border-t-2 border-warm-600 bg-warm-800/40 font-bold">
-                <td className={`${TD} text-white`}>TIME</td>
+                <td className={`${TD} text-white`}><span className="inline-block w-3" />TIME</td>
                 <td className={`${TDR} text-warm-200`}>{overview.team.hands}</td>
                 <td className={`${TDR} ${accColor(overview.team.accuracy)}`}>{overview.team.accuracy}%</td>
                 <td className={`${TDR} text-red-400`}>{overview.team.graves}</td>
@@ -700,61 +794,6 @@ function TeamView({ token }: { token: string | null }) {
         </table>
       </Section>
 
-      {!focusLoading && !focus.isEmpty && (
-        <div style={{ order: -2 }} className="rounded-xl border border-brand-700/50 bg-brand-950/20 p-4">
-          <h3 className="text-sm font-bold text-brand-200 mb-3 flex items-center gap-2">
-            <span>Foco da semana</span>
-            <span className="text-[11px] font-normal text-warm-500">síntese acionável dos filtros atuais</span>
-          </h3>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div>
-              <p className="text-[11px] uppercase font-semibold text-orange-300/80 mb-1.5">Treinar — maior impacto</p>
-              {focus.leaks.length === 0 ? (
-                <p className="text-xs text-warm-600">—</p>
-              ) : (
-                <ul className="flex flex-col gap-1">
-                  {focus.leaks.map((l, i) => (
-                    <li key={i} className="text-sm flex items-baseline justify-between gap-2">
-                      <span><span className="font-bold text-warm-100">{l.hand}</span> <span className="text-warm-500 text-xs">{l.rangeName}</span></span>
-                      <span className={`text-xs font-semibold ${accColor(l.accuracy)}`}>{l.accuracy}%</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <div>
-              <p className="text-[11px] uppercase font-semibold text-violet-300/80 mb-1.5">Estudar — consulta × erro</p>
-              {focus.gaps.length === 0 ? (
-                <p className="text-xs text-warm-600">—</p>
-              ) : (
-                <ul className="flex flex-col gap-1">
-                  {focus.gaps.map((g, i) => (
-                    <li key={i} className="text-sm flex items-baseline justify-between gap-2">
-                      <span><span className="font-bold text-warm-100">{g.hand}</span> <span className="text-warm-500 text-xs">{g.rangeName}</span></span>
-                      <span className="text-xs text-violet-300">{g.consults} consultas</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <div>
-              <p className="text-[11px] uppercase font-semibold text-red-300/80 mb-1.5">Acompanhar — regrediram</p>
-              {focus.regressions.length === 0 ? (
-                <p className="text-xs text-warm-600">Ninguém em regressão.</p>
-              ) : (
-                <ul className="flex flex-col gap-1">
-                  {focus.regressions.map((r, i) => (
-                    <li key={i} className="text-sm flex items-baseline justify-between gap-2">
-                      <span className="font-semibold text-warm-100">{r.name}</span>
-                      <span className="text-xs text-red-400">▼ {r.slope}pp/sem</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       <Section title="Evolução (tendência semanal)" defaultOpen={false} loading={trend.loading} error={trend.error} empty={playerTrends.length === 0}>
         <div className="p-3 flex flex-col gap-3">
