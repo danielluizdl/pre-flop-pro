@@ -26,13 +26,29 @@ function playerCond(playerIds) {
   return { sql: `user_id IN (${playerIds.map(() => '?').join(',')})`, binds: [...playerIds] }
 }
 
-function handFilters({ playerIds, rangeId, days }) {
+function dateCond(field, { days, from, to }) {
   const conds = []
   const binds = []
-  const pc = playerCond(playerIds)
+  if (from !== null && to !== null) {
+    conds.push(`${field} >= ?`, `${field} <= ?`); binds.push(from, to)
+  } else if (from !== null) {
+    conds.push(`${field} >= ?`); binds.push(from)
+  } else if (to !== null) {
+    conds.push(`${field} <= ?`); binds.push(to)
+  } else if (days !== null) {
+    conds.push(`${field} >= unixepoch() - ?`); binds.push(days * 86400)
+  }
+  return { conds, binds }
+}
+
+function handFilters(filters) {
+  const conds = []
+  const binds = []
+  const pc = playerCond(filters.playerIds)
   if (pc.sql) { conds.push(pc.sql); binds.push(...pc.binds) }
-  if (rangeId !== null) { conds.push('range_id = ?'); binds.push(rangeId) }
-  if (days !== null) { conds.push('created_at >= unixepoch() - ?'); binds.push(days * 86400) }
+  if (filters.rangeId !== null) { conds.push('range_id = ?'); binds.push(filters.rangeId) }
+  const dc = dateCond('created_at', filters)
+  conds.push(...dc.conds); binds.push(...dc.binds)
   return { clause: conds.length ? 'WHERE ' + conds.join(' AND ') : '', binds }
 }
 
@@ -53,8 +69,10 @@ export async function onRequest(context) {
   const playerIds = parsePlayerIds(url.searchParams.get('playerIds') ?? url.searchParams.get('playerId'))
   const pRange = parseIntParam(url.searchParams.get('rangeId'), { min: 0 })
   const pDays = parseIntParam(url.searchParams.get('days'), { min: 1, max: 365 })
-  if (playerIds === null || !pRange.ok || !pDays.ok) return json({ error: 'Parâmetro inválido' }, 400)
-  const filters = { playerIds, rangeId: pRange.value, days: pDays.value }
+  const pFrom = parseIntParam(url.searchParams.get('from'), { min: 0, max: 4102444800 })
+  const pTo = parseIntParam(url.searchParams.get('to'), { min: 0, max: 4102444800 })
+  if (playerIds === null || !pRange.ok || !pDays.ok || !pFrom.ok || !pTo.ok) return json({ error: 'Parâmetro inválido' }, 400)
+  const filters = { playerIds, rangeId: pRange.value, days: pDays.value, from: pFrom.value, to: pTo.value }
 
   if (view === 'team-overview') {
     const hf = handFilters(filters)
@@ -72,7 +90,7 @@ export async function onRequest(context) {
     const cPc = playerCond(filters.playerIds)
     if (cPc.sql) { cConds.push(cPc.sql); cBinds.push(...cPc.binds) }
     if (filters.rangeId !== null) { cConds.push('range_id = ?'); cBinds.push(filters.rangeId) }
-    if (filters.days !== null) { cConds.push('created_at >= unixepoch() - ?'); cBinds.push(filters.days * 86400) }
+    { const dc = dateCond('created_at', filters); cConds.push(...dc.conds); cBinds.push(...dc.binds) }
     const consultAgg = await env.DB.prepare(
       `SELECT user_id AS userId, COUNT(*) AS consults FROM consult_events ${cConds.length ? 'WHERE ' + cConds.join(' AND ') : ''} GROUP BY user_id`
     ).bind(...cBinds).all()
@@ -85,13 +103,13 @@ export async function onRequest(context) {
       const subConds = ['range_id = ?', 'session_uuid IS NOT NULL']
       const subBinds = [filters.rangeId]
       if (sPc.sql) { subConds.push(sPc.sql); subBinds.push(...sPc.binds) }
-      if (filters.days !== null) { subConds.push('created_at >= unixepoch() - ?'); subBinds.push(filters.days * 86400) }
+      { const dc = dateCond('created_at', filters); subConds.push(...dc.conds); subBinds.push(...dc.binds) }
       sConds.push(`session_uuid IN (SELECT DISTINCT session_uuid FROM hand_events WHERE ${subConds.join(' AND ')})`)
       sBinds.push(...subBinds)
       if (sPc.sql) { sConds.push(sPc.sql); sBinds.push(...sPc.binds) }
     } else {
       if (sPc.sql) { sConds.push(sPc.sql); sBinds.push(...sPc.binds) }
-      if (filters.days !== null) { sConds.push('ended_at >= unixepoch() - ?'); sBinds.push(filters.days * 86400) }
+      { const dc = dateCond('ended_at', filters); sConds.push(...dc.conds); sBinds.push(...dc.binds) }
     }
     const sessionAgg = await env.DB.prepare(
       `SELECT user_id AS userId, COUNT(*) AS sessions, CAST(COALESCE(SUM(duration_seconds), 0) AS INTEGER) AS duration
@@ -201,7 +219,7 @@ export async function onRequest(context) {
     const cPc = playerCond(filters.playerIds)
     if (cPc.sql) { cConds.push(cPc.sql); cBinds.push(...cPc.binds) }
     if (filters.rangeId !== null) { cConds.push('range_id = ?'); cBinds.push(filters.rangeId) }
-    if (filters.days !== null) { cConds.push('created_at >= unixepoch() - ?'); cBinds.push(filters.days * 86400) }
+    { const dc = dateCond('created_at', filters); cConds.push(...dc.conds); cBinds.push(...dc.binds) }
     const consultAgg = await env.DB.prepare(
       `SELECT range_id AS rangeId, MAX(range_name) AS rangeName, hand, COUNT(*) AS consults
        FROM consult_events WHERE ${cConds.join(' AND ')}
@@ -270,7 +288,7 @@ export async function onRequest(context) {
     const pc = playerCond(filters.playerIds)
     if (pc.sql) { conds.push(pc.sql); binds.push(...pc.binds) }
     if (filters.rangeId !== null) { conds.push('range_id = ?'); binds.push(filters.rangeId) }
-    if (filters.days !== null) { conds.push('created_at >= unixepoch() - ?'); binds.push(filters.days * 86400) }
+    { const dc = dateCond('created_at', filters); conds.push(...dc.conds); binds.push(...dc.binds) }
     const res = await env.DB.prepare(
       `SELECT range_id AS rangeId, MAX(range_name) AS rangeName, hand, COUNT(*) AS count
        FROM consult_events ${conds.length ? 'WHERE ' + conds.join(' AND ') : ''}
@@ -299,7 +317,7 @@ export async function onRequest(context) {
     const cPc = playerCond(filters.playerIds)
     if (cPc.sql) { cConds.push(cPc.sql); cBinds.push(...cPc.binds) }
     if (filters.rangeId !== null) { cConds.push('range_id = ?'); cBinds.push(filters.rangeId) }
-    if (filters.days !== null) { cConds.push('created_at >= unixepoch() - ?'); cBinds.push(filters.days * 86400) }
+    { const dc = dateCond('created_at', filters); cConds.push(...dc.conds); cBinds.push(...dc.binds) }
     const consultRes = await env.DB.prepare(
       `SELECT range_id AS rangeId, COUNT(*) AS consults FROM consult_events ${cConds.length ? 'WHERE ' + cConds.join(' AND ') : ''} GROUP BY range_id`
     ).bind(...cBinds).all()
@@ -324,7 +342,7 @@ export async function onRequest(context) {
     const pc = playerCond(filters.playerIds)
     if (pc.sql) { conds.push(pc.sql); binds.push(...pc.binds) }
     if (pStack.value !== null) { conds.push('stack_grid_idx = ?'); binds.push(pStack.value) }
-    if (filters.days !== null) { conds.push('created_at >= unixepoch() - ?'); binds.push(filters.days * 86400) }
+    { const dc = dateCond('created_at', filters); conds.push(...dc.conds); binds.push(...dc.binds) }
     const clause = 'WHERE ' + conds.join(' AND ')
 
     const gridRes = await env.DB.prepare(
@@ -348,7 +366,7 @@ export async function onRequest(context) {
     const cConds = ['range_id = ?']
     const cBinds = [filters.rangeId]
     if (pc.sql) { cConds.push(pc.sql); cBinds.push(...pc.binds) }
-    if (filters.days !== null) { cConds.push('created_at >= unixepoch() - ?'); cBinds.push(filters.days * 86400) }
+    { const dc = dateCond('created_at', filters); cConds.push(...dc.conds); cBinds.push(...dc.binds) }
     const consultRes = await env.DB.prepare(
       `SELECT hand, COUNT(*) AS n FROM consult_events WHERE ${cConds.join(' AND ')} AND hand IS NOT NULL GROUP BY hand`
     ).bind(...cBinds).all()
