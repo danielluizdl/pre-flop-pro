@@ -305,7 +305,7 @@ function HandDetailCard({ cell }: { cell: GridCell }) {
       <div className="grid grid-cols-2 gap-2">
         <Stat label="Tentativas" v={cell.total} />
         <Stat label="Acertos" v={cell.correct} cls="text-emerald-300" />
-        <Stat label="Graves" v={cell.graves} cls="text-red-400" />
+        <Stat label="Blunder" v={cell.graves} cls="text-red-400" />
         <Stat label="Consultas" v={cell.consults} cls="text-purple-300" />
       </div>
       <div className="text-xs space-y-0.5">
@@ -641,10 +641,10 @@ function Section({ title, loading, error, empty, children, defaultOpen = true }:
   )
 }
 
-const TH = 'text-left font-semibold px-3 py-2'
-const THR = 'text-right font-semibold px-3 py-2'
-const TD = 'px-3 py-2'
-const TDR = 'px-3 py-2 text-right tabular-nums'
+const TH = 'text-left font-semibold px-2.5 py-1.5'
+const THR = 'text-right font-semibold px-2.5 py-1.5'
+const TD = 'px-2.5 py-1.5'
+const TDR = 'px-2.5 py-1.5 text-right tabular-nums'
 
 interface OverviewRow {
   userId: number; username: string; name: string; hands: number; accuracy: number
@@ -658,7 +658,6 @@ const CONF_DOT: Record<Confidence, { cls: string; title: string }> = {
   medium: { cls: 'bg-yellow-400', title: 'Amostra média (15–49)' },
   high: { cls: 'bg-emerald-400', title: 'Amostra robusta (≥50)' },
 }
-interface HotspotRow { rangeId: number; rangeName: string; hand: string | null; count: number }
 interface GapRow { rangeId: number; rangeName: string; hand: string; consults: number; total: number; correct: number; graves: number; imprecisos: number }
 interface ByRangeRow { rangeId: number; rangeName: string; hands: number; accuracy: number; graves: number; imprecisos: number; consults: number; players: number }
 
@@ -667,6 +666,13 @@ const SEVERITY_META: Record<SeverityClass, { label: string; cls: string }> = {
   misto: { label: 'Misto', cls: 'text-yellow-300' },
   'estrategia-mista': { label: 'Estratégia mista', cls: 'text-sky-300' },
   na: { label: '—', cls: 'text-warm-600' },
+}
+
+const SEVERITY_HELP: Record<SeverityClass, string> = {
+  conceitual: 'Conceitual: erra a ação certa (escolhe jogada com 0% de freq) — não sabe o range.',
+  'estrategia-mista': 'Estratégia mista: escolhe ação válida, mas não a principal — só erra a frequência.',
+  misto: 'Misto: mistura de erros conceituais e de estratégia mista.',
+  na: '',
 }
 
 function PlayerQuickSummary({ userId, days, from, to, token }: { userId: number; days: number | null; from: number | null; to: number | null; token: string | null }) {
@@ -719,12 +725,15 @@ function PlayerQuickSummary({ userId, days, from, to, token }: { userId: number;
 }
 
 type SortKey = 'name' | 'hands' | 'accuracy' | 'graves' | 'consults' | 'durationSeconds' | 'lastActivity'
+type ByRangeSortKey = 'hands' | 'accuracy' | 'graves' | 'consults' | 'players'
 
 function TeamView({ token }: { token: string | null }) {
   const ranges = useStore(s => s.ranges)
   const [users, setUsers] = useState<CoachUser[]>([])
   const [sortKey, setSortKey] = useState<SortKey>('hands')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+  const [brSortKey, setBrSortKey] = useState<ByRangeSortKey>('hands')
+  const [brSortDir, setBrSortDir] = useState<'asc' | 'desc'>('desc')
   const [openPlayer, setOpenPlayer] = useState<number | null>(null)
   const [filters, setFilters] = useState<Filters>({ playerIds: [], rangeId: null, days: null, from: null, to: null })
   const [stackIdx, setStackIdx] = useState<number | null>(null)
@@ -746,7 +755,6 @@ function TeamView({ token }: { token: string | null }) {
 
   const overview = useAnalytics<OverviewRow>('team-overview', filters, token)
   const leaks = useAnalytics<LeakRow>('leaks', filters, token)
-  const hotspots = useAnalytics<HotspotRow>('consult-hotspots', filters, token)
   const byRange = useAnalytics<ByRangeRow>('by-range', filters, token)
   const trend = useTrend(filters, token)
   const segments = useSegments(filters, token)
@@ -838,6 +846,20 @@ function TeamView({ token }: { token: string | null }) {
     else { setSortKey(key); setSortDir(key === 'name' ? 'asc' : 'desc') }
   }
 
+  const sortedByRange = useMemo(() => {
+    const rows = [...byRange.rows]
+    rows.sort((a, b) => {
+      const av = a[brSortKey] as number, bv = b[brSortKey] as number
+      return brSortDir === 'asc' ? av - bv : bv - av
+    })
+    return rows
+  }, [byRange.rows, brSortKey, brSortDir])
+
+  function handleBrSort(key: ByRangeSortKey) {
+    if (key === brSortKey) setBrSortDir(d => (d === 'asc' ? 'desc' : 'asc'))
+    else { setBrSortKey(key); setBrSortDir('desc') }
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap gap-3" style={{ order: -2 }}>
@@ -859,6 +881,78 @@ function TeamView({ token }: { token: string | null }) {
         />
       </div>
 
+      <Section title="Por range" defaultOpen={false} loading={byRange.loading} error={byRange.error} empty={byRange.rows.length === 0}>
+        <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60 leading-relaxed">
+          Clique no cabeçalho para ordenar · clique numa linha para ver a matriz do range. Tipo de erro:{' '}
+          <span className="text-red-300 font-semibold">Conceitual</span> = erra a ação certa (joga 0% de freq), não sabe o range ·{' '}
+          <span className="text-sky-300 font-semibold">Estratégia mista</span> = ação válida, mas não a principal, só erra a frequência ·{' '}
+          <span className="text-yellow-300 font-semibold">Misto</span> = mistura dos dois.
+        </div>
+        <table className="text-sm">
+          <thead>
+            <tr className="bg-warm-800 text-warm-400 text-xs uppercase select-none">
+              <th className={TH}>Range</th>
+              {([
+                { k: 'hands', label: 'Mãos' },
+                { k: 'accuracy', label: 'Precisão' },
+                { k: 'graves', label: 'Blunder' },
+              ] as { k: ByRangeSortKey; label: string }[]).map(col => (
+                <th key={col.k} className={THR}>
+                  <button
+                    onClick={() => handleBrSort(col.k)}
+                    className={`inline-flex flex-row-reverse items-center gap-1 cursor-pointer hover:text-warm-100 transition-colors ${brSortKey === col.k ? 'text-brand-300' : ''}`}
+                  >
+                    {col.label}
+                    <span className="text-[0.6rem] w-2">{brSortKey === col.k ? (brSortDir === 'asc' ? '▲' : '▼') : ''}</span>
+                  </button>
+                </th>
+              ))}
+              <th className={TH}>Tipo de erro</th>
+              {([
+                { k: 'consults', label: 'Consultas' },
+                { k: 'players', label: 'Jogadores' },
+              ] as { k: ByRangeSortKey; label: string }[]).map(col => (
+                <th key={col.k} className={THR}>
+                  <button
+                    onClick={() => handleBrSort(col.k)}
+                    className={`inline-flex flex-row-reverse items-center gap-1 cursor-pointer hover:text-warm-100 transition-colors ${brSortKey === col.k ? 'text-brand-300' : ''}`}
+                  >
+                    {col.label}
+                    <span className="text-[0.6rem] w-2">{brSortKey === col.k ? (brSortDir === 'asc' ? '▲' : '▼') : ''}</span>
+                  </button>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sortedByRange.map((r, i) => {
+              const sev = severityProfile(r.graves, r.imprecisos)
+              const sm = SEVERITY_META[sev.classification]
+              return (
+                <tr
+                  key={i}
+                  onClick={() => setFilters(f => ({ ...f, rangeId: r.rangeId }))}
+                  className={`border-t border-warm-700/60 cursor-pointer hover:bg-warm-800/50 ${filters.rangeId === r.rangeId ? 'bg-warm-800/70' : ''}`}
+                >
+                  <td className={`${TD} text-warm-100 font-semibold whitespace-nowrap`}>{r.rangeName}</td>
+                  <td className={`${TDR} text-warm-300`}>{r.hands}</td>
+                  <td className={`${TDR} font-bold ${accColor(r.accuracy)}`}>{r.accuracy}%</td>
+                  <td className={`${TDR} text-red-400`}>{r.graves}</td>
+                  <td className={`${TD} whitespace-nowrap`} title={SEVERITY_HELP[sev.classification] || undefined}>
+                    <span className={`font-semibold ${sm.cls}`}>{sm.label}</span>
+                    {sev.classification !== 'na' && (
+                      <span className="block text-[0.65rem] text-warm-500">{r.graves} blunders · {r.imprecisos} imprecisos</span>
+                    )}
+                  </td>
+                  <td className={`${TDR} text-warm-400`}>{r.consults}</td>
+                  <td className={`${TDR} text-warm-400`}>{r.players}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </Section>
+
       <Section title="Resumo do time" defaultOpen={false} loading={overview.loading} error={overview.error} empty={overview.rows.length === 0}>
         <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60">
           Clique no cabeçalho para ordenar · clique num jogador para o resumo rápido.
@@ -870,7 +964,7 @@ function TeamView({ token }: { token: string | null }) {
                 { k: 'name', label: 'Jogador', align: 'l' },
                 { k: 'hands', label: 'Mãos', align: 'r' },
                 { k: 'accuracy', label: 'Precisão', align: 'r' },
-                { k: 'graves', label: 'Graves', align: 'r' },
+                { k: 'graves', label: 'Blunder', align: 'r' },
                 { k: 'consults', label: 'Consultas', align: 'r' },
                 { k: 'durationSeconds', label: 'Tempo', align: 'r' },
                 { k: 'lastActivity', label: 'Última ativ.', align: 'r' },
@@ -980,7 +1074,7 @@ function TeamView({ token }: { token: string | null }) {
               <th className={TH}>Range</th>
               <th className={THR}>Tent.</th>
               <th className={THR}>Precisão (mín)</th>
-              <th className={THR}>Graves</th>
+              <th className={THR}>Blunder</th>
               <th className={THR}>Impacto</th>
             </tr>
           </thead>
@@ -1019,7 +1113,7 @@ function TeamView({ token }: { token: string | null }) {
                   <th className={TH}>Categoria</th>
                   <th className={THR}>Mãos</th>
                   <th className={THR}>Precisão</th>
-                  <th className={THR}>Graves</th>
+                  <th className={THR}>Blunder</th>
                   <th className={THR}>Impacto</th>
                 </tr>
               </thead>
@@ -1044,7 +1138,7 @@ function TeamView({ token }: { token: string | null }) {
                   <th className={TH}>Ação correta</th>
                   <th className={THR}>Mãos</th>
                   <th className={THR}>Precisão</th>
-                  <th className={THR}>Graves</th>
+                  <th className={THR}>Blunder</th>
                 </tr>
               </thead>
               <tbody>
@@ -1062,27 +1156,6 @@ function TeamView({ token }: { token: string | null }) {
         </div>
       </Section>
 
-      <Section title="Hotspots de consulta" defaultOpen={false} loading={hotspots.loading} error={hotspots.error} empty={hotspots.rows.length === 0}>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-warm-800 text-warm-400 text-xs uppercase">
-              <th className={TH}>Range</th>
-              <th className={TH}>Mão</th>
-              <th className={THR}>Vezes</th>
-            </tr>
-          </thead>
-          <tbody>
-            {hotspots.rows.map((r, i) => (
-              <tr key={i} className="border-t border-warm-700/60">
-                <td className={`${TD} text-warm-300`}>{r.rangeName}</td>
-                <td className={`${TD} text-warm-100`}>{r.hand ?? '—'}</td>
-                <td className={`${TDR} text-warm-300`}>{r.count}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Section>
-
       <Section title="Lacunas de conhecimento (consulta × erro)" defaultOpen={false} loading={gaps.loading} error={gaps.error} empty={rankedGaps.length === 0}>
         <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60">
           Mãos que o time mais <span className="text-warm-300">consulta E ainda erra</span> — lacuna real de conhecimento. Score = consultas × taxa de erro ponderada.
@@ -1094,7 +1167,7 @@ function TeamView({ token }: { token: string | null }) {
               <th className={TH}>Range</th>
               <th className={THR}>Consultas</th>
               <th className={THR}>Precisão (mín)</th>
-              <th className={THR}>Graves</th>
+              <th className={THR}>Blunder</th>
               <th className={THR}>Score</th>
             </tr>
           </thead>
@@ -1123,44 +1196,6 @@ function TeamView({ token }: { token: string | null }) {
         </table>
       </Section>
 
-      <Section title="Por range" defaultOpen={false} loading={byRange.loading} error={byRange.error} empty={byRange.rows.length === 0}>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-warm-800 text-warm-400 text-xs uppercase">
-              <th className={TH}>Range</th>
-              <th className={THR}>Mãos</th>
-              <th className={THR}>Precisão</th>
-              <th className={THR}>Graves</th>
-              <th className={TH}>Tipo de erro</th>
-              <th className={THR}>Consultas</th>
-              <th className={THR}>Jogadores</th>
-            </tr>
-          </thead>
-          <tbody>
-            {byRange.rows.map((r, i) => {
-              const sev = severityProfile(r.graves, r.imprecisos)
-              const sm = SEVERITY_META[sev.classification]
-              return (
-              <tr
-                key={i}
-                onClick={() => setFilters(f => ({ ...f, rangeId: r.rangeId }))}
-                className={`border-t border-warm-700/60 cursor-pointer hover:bg-warm-800/50 ${filters.rangeId === r.rangeId ? 'bg-warm-800/70' : ''}`}
-              >
-                <td className={`${TD} text-warm-100 font-semibold`}>{r.rangeName}</td>
-                <td className={`${TDR} text-warm-300`}>{r.hands}</td>
-                <td className={`${TDR} font-bold ${accColor(r.accuracy)}`}>{r.accuracy}%</td>
-                <td className={`${TDR} text-red-400`}>{r.graves}</td>
-                <td className={`${TD} ${sm.cls}`}>
-                  {sm.label}
-                  {sev.classification !== 'na' && <span className="text-warm-600 text-xs ml-1">{r.graves}g/{r.imprecisos}i</span>}
-                </td>
-                <td className={`${TDR} text-warm-400`}>{r.consults}</td>
-                <td className={`${TDR} text-warm-400`}>{r.players}</td>
-              </tr>
-            )})}
-          </tbody>
-        </table>
-      </Section>
 
       <Section title="Leaks relativos (jogador vs time)" defaultOpen={false} loading={playerRanges.loading} error={playerRanges.error} empty={relativeLeaks.length === 0}>
         <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60">
