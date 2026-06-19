@@ -52,6 +52,7 @@ function MultiPlayerSelect({ users, selected, onChange }: {
   onChange: (ids: number[]) => void
 }) {
   const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -64,6 +65,8 @@ function MultiPlayerSelect({ users, selected, onChange }: {
   const nameOf = (id: number) => { const u = users.find(x => x.id === id); return u ? (u.name || u.username) : '' }
   const label = selected.length === 0 ? 'Todos os jogadores' : selected.length === 1 ? nameOf(selected[0]) : `${selected.length} jogadores`
   const toggle = (id: number) => onChange(selected.includes(id) ? selected.filter(x => x !== id) : [...selected, id])
+  const q = query.trim().toLowerCase()
+  const shownUsers = q ? users.filter(u => (u.name || '').toLowerCase().includes(q) || u.username.toLowerCase().includes(q)) : users
 
   return (
     <div className="relative" ref={ref}>
@@ -76,6 +79,14 @@ function MultiPlayerSelect({ users, selected, onChange }: {
       </button>
       {open && (
         <div className="absolute z-30 mt-1 w-64 max-h-72 overflow-y-auto bg-warm-900 border border-warm-600 rounded-lg shadow-xl p-1">
+          <input
+            type="text"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Buscar jogador…"
+            className="w-full bg-warm-950 border border-warm-700 rounded px-2 py-1.5 text-sm text-warm-100 placeholder-warm-500 mb-1"
+            autoFocus
+          />
           <button
             onClick={() => onChange([])}
             className={`w-full text-left px-2 py-1.5 rounded text-sm ${selected.length === 0 ? 'text-brand-300 font-semibold' : 'text-warm-300 hover:bg-warm-800'}`}
@@ -83,7 +94,8 @@ function MultiPlayerSelect({ users, selected, onChange }: {
             Todos os jogadores
           </button>
           <div className="h-px bg-warm-700 my-1" />
-          {users.map(u => (
+          {shownUsers.length === 0 && <p className="px-2 py-1.5 text-xs text-warm-500">Nenhum jogador.</p>}
+          {shownUsers.map(u => (
             <label key={u.id} className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-warm-200 hover:bg-warm-800 cursor-pointer">
               <input type="checkbox" checked={selected.includes(u.id)} onChange={() => toggle(u.id)} className="accent-brand-500" />
               <span className="truncate">{u.name || u.username}</span>
@@ -251,6 +263,70 @@ interface Filters {
   playerIds: number[]
   rangeId: number | null
   days: number | null
+  from: number | null
+  to: number | null
+}
+
+function setDateParams(qs: URLSearchParams, f: { days: number | null; from?: number | null; to?: number | null }) {
+  if (f.from != null && f.to != null) { qs.set('from', String(f.from)); qs.set('to', String(f.to)) }
+  else if (f.days !== null) qs.set('days', String(f.days))
+}
+
+function toDateInput(unix: number): string {
+  const d = new Date(unix * 1000)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+function PeriodFilter({ days, from, to, onChange }: {
+  days: number | null
+  from: number | null
+  to: number | null
+  onChange: (v: { days: number | null; from: number | null; to: number | null }) => void
+}) {
+  const isCustom = from != null && to != null
+  const [custom, setCustom] = useState(isCustom)
+  const [start, setStart] = useState(isCustom ? toDateInput(from!) : '')
+  const [end, setEnd] = useState(isCustom ? toDateInput(to!) : '')
+  const selectCls = 'bg-warm-900 border border-warm-600 rounded-lg px-2.5 py-1.5 text-sm text-warm-100'
+  const dateCls = 'bg-warm-900 border border-warm-600 rounded-lg px-2 py-1.5 text-sm text-warm-100 [color-scheme:dark]'
+
+  const apply = (s: string, e: string) => {
+    if (!s || !e) return
+    const f = Math.floor(new Date(`${s}T00:00:00`).getTime() / 1000)
+    const t = Math.floor(new Date(`${e}T23:59:59`).getTime() / 1000)
+    if (Number.isNaN(f) || Number.isNaN(t) || f > t) return
+    onChange({ days: null, from: f, to: t })
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <select
+        className={selectCls}
+        value={custom ? 'custom' : (days ?? '')}
+        onChange={e => {
+          const v = e.target.value
+          if (v === 'custom') { setCustom(true); apply(start, end) }
+          else { setCustom(false); onChange({ days: v ? Number(v) : null, from: null, to: null }) }
+        }}
+      >
+        <option value="">Tudo</option>
+        <option value="7">7 dias</option>
+        <option value="30">30 dias</option>
+        <option value="90">90 dias</option>
+        <option value="custom">Custom</option>
+      </select>
+      {custom && (
+        <div className="flex items-center gap-1.5">
+          <input type="date" value={start} max={end || undefined}
+            onChange={e => { setStart(e.target.value); apply(e.target.value, end) }} className={dateCls} />
+          <span className="text-warm-500 text-xs">→</span>
+          <input type="date" value={end} min={start || undefined}
+            onChange={e => { setEnd(e.target.value); apply(start, e.target.value) }} className={dateCls} />
+        </div>
+      )}
+    </div>
+  )
 }
 
 function useAnalytics<T>(view: string, filters: Filters, token: string | null) {
@@ -268,7 +344,7 @@ function useAnalytics<T>(view: string, filters: Filters, token: string | null) {
     const qs = new URLSearchParams({ view })
     if (idsKey) qs.set('playerIds', idsKey)
     if (filters.rangeId !== null) qs.set('rangeId', String(filters.rangeId))
-    if (filters.days !== null) qs.set('days', String(filters.days))
+    setDateParams(qs, filters)
     fetch(`/api/admin/analytics?${qs.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
       .then(d => {
@@ -283,12 +359,12 @@ function useAnalytics<T>(view: string, filters: Filters, token: string | null) {
         setLoading(false)
       })
     return () => { cancelled = true }
-  }, [view, token, idsKey, filters.rangeId, filters.days])
+  }, [view, token, idsKey, filters.rangeId, filters.days, filters.from, filters.to])
 
   return { rows, team, loading, error }
 }
 
-function useRangeGrid(rangeId: number | null, days: number | null, playerIds: number[], stackIdx: number | null, token: string | null) {
+function useRangeGrid(rangeId: number | null, days: number | null, from: number | null, to: number | null, playerIds: number[], stackIdx: number | null, token: string | null) {
   const [cells, setCells] = useState<GridCell[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -302,13 +378,13 @@ function useRangeGrid(rangeId: number | null, days: number | null, playerIds: nu
     const qs = new URLSearchParams({ view: 'range-grid', rangeId: String(rangeId) })
     if (idsKey) qs.set('playerIds', idsKey)
     if (stackIdx !== null) qs.set('stackGridIdx', String(stackIdx))
-    if (days !== null) qs.set('days', String(days))
+    setDateParams(qs, { days, from, to })
     fetch(`/api/admin/analytics?${qs.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
       .then(d => { if (!cancelled) { setCells(d.cells ?? []); setLoading(false) } })
       .catch(() => { if (!cancelled) { setError('Erro ao carregar'); setLoading(false) } })
     return () => { cancelled = true }
-  }, [token, rangeId, days, idsKey, stackIdx])
+  }, [token, rangeId, days, from, to, idsKey, stackIdx])
 
   return { cells, loading, error }
 }
@@ -331,7 +407,7 @@ function useTrend(filters: Filters, token: string | null) {
     const qs = new URLSearchParams({ view: 'trend' })
     if (idsKey) qs.set('playerIds', idsKey)
     if (filters.rangeId !== null) qs.set('rangeId', String(filters.rangeId))
-    if (filters.days !== null) qs.set('days', String(filters.days))
+    setDateParams(qs, filters)
     fetch(`/api/admin/analytics?${qs.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
       .then(d => {
@@ -342,7 +418,7 @@ function useTrend(filters: Filters, token: string | null) {
       })
       .catch(() => { if (!cancelled) { setError('Erro ao carregar'); setLoading(false) } })
     return () => { cancelled = true }
-  }, [token, idsKey, filters.rangeId, filters.days])
+  }, [token, idsKey, filters.rangeId, filters.days, filters.from, filters.to])
 
   return { rows, users, loading, error }
 }
@@ -364,7 +440,7 @@ function useSegments(filters: Filters, token: string | null) {
     const qs = new URLSearchParams({ view: 'segments' })
     if (idsKey) qs.set('playerIds', idsKey)
     if (filters.rangeId !== null) qs.set('rangeId', String(filters.rangeId))
-    if (filters.days !== null) qs.set('days', String(filters.days))
+    setDateParams(qs, filters)
     fetch(`/api/admin/analytics?${qs.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
       .then(d => {
@@ -375,7 +451,7 @@ function useSegments(filters: Filters, token: string | null) {
       })
       .catch(() => { if (!cancelled) { setError('Erro ao carregar'); setLoading(false) } })
     return () => { cancelled = true }
-  }, [token, idsKey, filters.rangeId, filters.days])
+  }, [token, idsKey, filters.rangeId, filters.days, filters.from, filters.to])
 
   return { byHand, byAction, loading, error }
 }
@@ -397,13 +473,13 @@ function usePlayerRanges(filters: Filters, token: string | null) {
     const qs = new URLSearchParams({ view: 'player-ranges' })
     if (idsKey) qs.set('playerIds', idsKey)
     if (filters.rangeId !== null) qs.set('rangeId', String(filters.rangeId))
-    if (filters.days !== null) qs.set('days', String(filters.days))
+    setDateParams(qs, filters)
     fetch(`/api/admin/analytics?${qs.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
       .then(d => { if (!cancelled) { setRows(d.rows ?? []); setUsers(d.users ?? []); setLoading(false) } })
       .catch(() => { if (!cancelled) { setError('Erro ao carregar'); setLoading(false) } })
     return () => { cancelled = true }
-  }, [token, idsKey, filters.rangeId, filters.days])
+  }, [token, idsKey, filters.rangeId, filters.days, filters.from, filters.to])
 
   return { rows, users, loading, error }
 }
@@ -518,7 +594,7 @@ const SEVERITY_META: Record<SeverityClass, { label: string; cls: string }> = {
   na: { label: '—', cls: 'text-warm-600' },
 }
 
-function PlayerQuickSummary({ userId, days, token }: { userId: number; days: number | null; token: string | null }) {
+function PlayerQuickSummary({ userId, days, from, to, token }: { userId: number; days: number | null; from: number | null; to: number | null; token: string | null }) {
   const [rows, setRows] = useState<ByRangeRow[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -527,13 +603,13 @@ function PlayerQuickSummary({ userId, days, token }: { userId: number; days: num
     let cancelled = false
     setLoading(true)
     const qs = new URLSearchParams({ view: 'by-range', playerIds: String(userId) })
-    if (days !== null) qs.set('days', String(days))
+    setDateParams(qs, { days, from, to })
     fetch(`/api/admin/analytics?${qs.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
       .then(d => { if (!cancelled) { setRows(d.rows ?? []); setLoading(false) } })
       .catch(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [userId, days, token])
+  }, [userId, days, from, to, token])
 
   if (loading) return <div className="px-4 py-3 text-xs text-warm-500">Carregando resumo…</div>
   if (rows.length === 0) return <div className="px-4 py-3 text-xs text-warm-500">Sem dados de range para este jogador.</div>
@@ -575,7 +651,7 @@ function TeamView({ token }: { token: string | null }) {
   const [sortKey, setSortKey] = useState<SortKey>('hands')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [openPlayer, setOpenPlayer] = useState<number | null>(null)
-  const [filters, setFilters] = useState<Filters>({ playerIds: [], rangeId: null, days: null })
+  const [filters, setFilters] = useState<Filters>({ playerIds: [], rangeId: null, days: null, from: null, to: null })
   const [stackIdx, setStackIdx] = useState<number | null>(null)
 
   useEffect(() => {
@@ -590,8 +666,16 @@ function TeamView({ token }: { token: string | null }) {
   useEffect(() => { setStackIdx(null); setDetailHand(null) }, [filters.rangeId])
   useEffect(() => { setDetailHand(null) }, [stackIdx])
 
+  const [rangeQuery, setRangeQuery] = useState('')
   const sortedUsers = [...users].sort((a, b) => (a.name || a.username).localeCompare(b.name || b.username))
-  const rangeGroups = groupRangesByPosition(ranges)
+  const rangeGroups = useMemo(() => groupRangesByPosition(ranges), [ranges])
+  const filteredRangeGroups = useMemo(() => {
+    const q = rangeQuery.trim().toLowerCase()
+    if (!q) return rangeGroups
+    return rangeGroups
+      .map(g => ({ pos: g.pos, items: g.items.filter(r => r.name.toLowerCase().includes(q)) }))
+      .filter(g => g.items.length > 0)
+  }, [rangeGroups, rangeQuery])
 
   const overview = useAnalytics<OverviewRow>('team-overview', filters, token)
   const leaks = useAnalytics<LeakRow>('leaks', filters, token)
@@ -601,7 +685,7 @@ function TeamView({ token }: { token: string | null }) {
   const segments = useSegments(filters, token)
   const gaps = useAnalytics<GapRow>('knowledge-gaps', filters, token)
   const playerRanges = usePlayerRanges(filters, token)
-  const grid = useRangeGrid(filters.rangeId, filters.days, filters.playerIds, stackIdx, token)
+  const grid = useRangeGrid(filters.rangeId, filters.days, filters.from, filters.to, filters.playerIds, stackIdx, token)
 
   const relativeLeaks = useMemo(() => {
     const nameOf = (id: number) => { const u = playerRanges.users.find(x => x.id === id); return u ? (u.name || u.username) : `#${id}` }
@@ -697,31 +781,36 @@ function TeamView({ token }: { token: string | null }) {
           selected={filters.playerIds}
           onChange={ids => setFilters(f => ({ ...f, playerIds: ids }))}
         />
-        <select
-          className={selectCls}
-          value={filters.rangeId ?? ''}
-          onChange={e => setFilters(f => ({ ...f, rangeId: e.target.value !== '' ? Number(e.target.value) : null }))}
-        >
-          <option value="">Todos os ranges</option>
-          {rangeGroups.map(g => (
-            <optgroup key={g.pos} label={g.pos}>
-              {g.items.map(r => {
-                const n = r.stackGrids?.length ?? 0
-                return <option key={r.id} value={r.id}>{r.name}{n > 1 ? ` · ${n} stacks` : ''}</option>
-              })}
-            </optgroup>
-          ))}
-        </select>
-        <select
-          className={selectCls}
-          value={filters.days ?? ''}
-          onChange={e => setFilters(f => ({ ...f, days: e.target.value ? Number(e.target.value) : null }))}
-        >
-          <option value="">Tudo</option>
-          <option value="7">7 dias</option>
-          <option value="30">30 dias</option>
-          <option value="90">90 dias</option>
-        </select>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={rangeQuery}
+            onChange={e => setRangeQuery(e.target.value)}
+            placeholder="Buscar range…"
+            className="bg-warm-900 border border-warm-600 rounded-lg px-2.5 py-1.5 text-sm text-warm-100 placeholder-warm-500 w-32"
+          />
+          <select
+            className={selectCls}
+            value={filters.rangeId ?? ''}
+            onChange={e => setFilters(f => ({ ...f, rangeId: e.target.value !== '' ? Number(e.target.value) : null }))}
+          >
+            <option value="">Todos os ranges</option>
+            {filteredRangeGroups.map(g => (
+              <optgroup key={g.pos} label={g.pos}>
+                {g.items.map(r => {
+                  const n = r.stackGrids?.length ?? 0
+                  return <option key={r.id} value={r.id}>{r.name}{n > 1 ? ` · ${n} stacks` : ''}</option>
+                })}
+              </optgroup>
+            ))}
+          </select>
+        </div>
+        <PeriodFilter
+          days={filters.days}
+          from={filters.from}
+          to={filters.to}
+          onChange={d => setFilters(f => ({ ...f, ...d }))}
+        />
       </div>
 
       <Section title="Resumo do time" defaultOpen={false} loading={overview.loading} error={overview.error} empty={overview.rows.length === 0}>
@@ -773,7 +862,7 @@ function TeamView({ token }: { token: string | null }) {
                 {openPlayer === r.userId && (
                   <tr>
                     <td colSpan={7} className="p-0">
-                      <PlayerQuickSummary userId={r.userId} days={filters.days} token={token} />
+                      <PlayerQuickSummary userId={r.userId} days={filters.days} from={filters.from} to={filters.to} token={token} />
                     </td>
                   </tr>
                 )}
@@ -1106,23 +1195,21 @@ function TeamView({ token }: { token: string | null }) {
               <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded" style={{ background: '#6b2d0d' }} />All-in</span>
               <span className="text-warm-600">·  fundo escuro = Fold</span>
             </div>
-            <div className="flex items-start gap-6">
-              <div className="flex flex-wrap items-start gap-6 flex-1 min-w-0">
-                <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
-                  <RangeActionGrid title="Range real (gabarito)" subtitle="o que o range manda jogar" grid={realGrid} />
-                  <ComboSummary stats={comboReal} />
-                </div>
-                <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
-                  <RangeActionGrid title="Range jogado (time)" subtitle="frequências do que jogaram de fato" grid={playedGrid} />
-                  <ComboSummary stats={comboPlayed} />
-                </div>
-                <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
-                  <h4 className="text-xs font-semibold text-warm-200 mb-2">Precisão / erros</h4>
-                  <RangeHeatGrid cells={grid.cells} />
-                </div>
+            <div className="flex flex-wrap items-start gap-6">
+              <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
+                <RangeActionGrid title="Range real (gabarito)" subtitle="o que o range manda jogar" grid={realGrid} />
+                <ComboSummary stats={comboReal} />
               </div>
-              <div className="flex items-start gap-4 shrink-0">
-                <TopHandsPanel cells={grid.cells} selected={detailHand} onSelect={h => setDetailHand(h === detailHand ? null : h)} />
+              <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
+                <RangeActionGrid title="Range jogado (time)" subtitle="frequências do que jogaram de fato" grid={playedGrid} />
+                <ComboSummary stats={comboPlayed} />
+              </div>
+              <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
+                <h4 className="text-xs font-semibold text-warm-200 mb-2">Precisão / erros</h4>
+                <RangeHeatGrid cells={grid.cells} />
+              </div>
+              <TopHandsPanel cells={grid.cells} selected={detailHand} onSelect={h => setDetailHand(h === detailHand ? null : h)} />
+              <div className="w-[270px] shrink-0">
                 {detailCell && <HandDetailCard cell={detailCell} />}
               </div>
             </div>
