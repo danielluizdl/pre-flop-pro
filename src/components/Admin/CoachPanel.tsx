@@ -107,6 +107,81 @@ function MultiPlayerSelect({ users, selected, onChange }: {
   )
 }
 
+function RangeSelect({ groups, value, onChange }: {
+  groups: { pos: string; items: RangeOpt[] }[]
+  value: number | null
+  onChange: (id: number | null) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDoc = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [open])
+
+  const selected = groups.flatMap(g => g.items).find(r => r.id === value)
+  const label = selected ? selected.name : 'Todos os ranges'
+
+  const q = query.trim().toLowerCase()
+  const filtered = q
+    ? groups.map(g => ({ pos: g.pos, items: g.items.filter(r => r.name.toLowerCase().includes(q)) })).filter(g => g.items.length > 0)
+    : groups
+
+  const pick = (id: number | null) => { onChange(id); setOpen(false); setQuery('') }
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="bg-warm-900 border border-warm-600 rounded-lg px-2.5 py-1.5 text-sm text-warm-100 flex items-center gap-2 min-w-[200px] justify-between"
+      >
+        <span className="truncate">{label}</span>
+        <span className="text-warm-400 text-xs select-none">▾</span>
+      </button>
+      {open && (
+        <div className="absolute z-30 mt-1 w-72 max-h-80 overflow-y-auto bg-warm-900 border border-warm-600 rounded-lg shadow-xl p-1">
+          <input
+            type="text"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Buscar range…"
+            className="w-full bg-warm-950 border border-warm-700 rounded px-2 py-1.5 text-sm text-warm-100 placeholder-warm-500 mb-1"
+            autoFocus
+          />
+          <button
+            onClick={() => pick(null)}
+            className={`w-full text-left px-2 py-1.5 rounded text-sm ${value === null ? 'text-brand-300 font-semibold' : 'text-warm-300 hover:bg-warm-800'}`}
+          >
+            Todos os ranges
+          </button>
+          {filtered.length === 0 && <p className="px-2 py-1.5 text-xs text-warm-500">Nenhum range.</p>}
+          {filtered.map(g => (
+            <div key={g.pos}>
+              <p className="px-2 pt-1.5 pb-0.5 text-[0.65rem] uppercase font-semibold text-warm-500 tracking-wider">{g.pos}</p>
+              {g.items.map(r => {
+                const n = r.stackGrids?.length ?? 0
+                return (
+                  <button
+                    key={r.id}
+                    onClick={() => pick(r.id)}
+                    className={`w-full text-left px-2 py-1.5 rounded text-sm truncate ${value === r.id ? 'bg-warm-800 text-brand-300 font-semibold' : 'text-warm-200 hover:bg-warm-800'}`}
+                  >
+                    {r.name}{n > 1 ? <span className="text-warm-500"> · {n} stacks</span> : null}
+                  </button>
+                )
+              })}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 interface CoachUser {
   id: number
   username: string
@@ -666,16 +741,8 @@ function TeamView({ token }: { token: string | null }) {
   useEffect(() => { setStackIdx(null); setDetailHand(null) }, [filters.rangeId])
   useEffect(() => { setDetailHand(null) }, [stackIdx])
 
-  const [rangeQuery, setRangeQuery] = useState('')
   const sortedUsers = [...users].sort((a, b) => (a.name || a.username).localeCompare(b.name || b.username))
   const rangeGroups = useMemo(() => groupRangesByPosition(ranges), [ranges])
-  const filteredRangeGroups = useMemo(() => {
-    const q = rangeQuery.trim().toLowerCase()
-    if (!q) return rangeGroups
-    return rangeGroups
-      .map(g => ({ pos: g.pos, items: g.items.filter(r => r.name.toLowerCase().includes(q)) }))
-      .filter(g => g.items.length > 0)
-  }, [rangeGroups, rangeQuery])
 
   const overview = useAnalytics<OverviewRow>('team-overview', filters, token)
   const leaks = useAnalytics<LeakRow>('leaks', filters, token)
@@ -771,8 +838,6 @@ function TeamView({ token }: { token: string | null }) {
     else { setSortKey(key); setSortDir(key === 'name' ? 'asc' : 'desc') }
   }
 
-  const selectCls = 'bg-warm-900 border border-warm-600 rounded-lg px-2.5 py-1.5 text-sm text-warm-100'
-
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap gap-3" style={{ order: -2 }}>
@@ -781,30 +846,11 @@ function TeamView({ token }: { token: string | null }) {
           selected={filters.playerIds}
           onChange={ids => setFilters(f => ({ ...f, playerIds: ids }))}
         />
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            value={rangeQuery}
-            onChange={e => setRangeQuery(e.target.value)}
-            placeholder="Buscar range…"
-            className="bg-warm-900 border border-warm-600 rounded-lg px-2.5 py-1.5 text-sm text-warm-100 placeholder-warm-500 w-32"
-          />
-          <select
-            className={selectCls}
-            value={filters.rangeId ?? ''}
-            onChange={e => setFilters(f => ({ ...f, rangeId: e.target.value !== '' ? Number(e.target.value) : null }))}
-          >
-            <option value="">Todos os ranges</option>
-            {filteredRangeGroups.map(g => (
-              <optgroup key={g.pos} label={g.pos}>
-                {g.items.map(r => {
-                  const n = r.stackGrids?.length ?? 0
-                  return <option key={r.id} value={r.id}>{r.name}{n > 1 ? ` · ${n} stacks` : ''}</option>
-                })}
-              </optgroup>
-            ))}
-          </select>
-        </div>
+        <RangeSelect
+          groups={rangeGroups}
+          value={filters.rangeId}
+          onChange={id => setFilters(f => ({ ...f, rangeId: id }))}
+        />
         <PeriodFilter
           days={filters.days}
           from={filters.from}
