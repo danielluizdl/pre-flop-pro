@@ -103,7 +103,7 @@ describe('severidade do erro (D2)', () => {
     const r = useStore.getState().checkDrillAnswer('Call')
     expect(r.correct).toBe(false)
     expect(r.severity).toBe('grave')
-    expect(r.message).toContain('Erro grave')
+    expect(r.message).toContain('Blunder')
     expect(r.message).toContain('0%')
   })
 

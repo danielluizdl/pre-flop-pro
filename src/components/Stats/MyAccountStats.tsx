@@ -89,7 +89,7 @@ export function MyAccountStats() {
   const cards = [
     { label: 'Mãos', value: overview.hands.toLocaleString(), color: 'text-warm-100' },
     { label: 'Precisão', value: `${overview.accuracy}%`, color: accColor(overview.accuracy) },
-    { label: 'Erros graves', value: String(overview.graves), color: 'text-red-400' },
+    { label: 'Blunders', value: String(overview.graves), color: 'text-red-400' },
     { label: 'Imprecisos', value: String(overview.imprecisos), color: 'text-yellow-400' },
     { label: 'Consultas', value: String(overview.consults), color: 'text-warm-300' },
     { label: 'Sessões', value: String(overview.sessions), color: 'text-brand-400' },
@@ -119,7 +119,7 @@ export function MyAccountStats() {
                   <th className="text-left font-semibold px-3 py-2">Range</th>
                   <th className="text-right font-semibold px-3 py-2">Mãos</th>
                   <th className="text-right font-semibold px-3 py-2">Precisão</th>
-                  <th className="text-right font-semibold px-3 py-2">Graves</th>
+                  <th className="text-right font-semibold px-3 py-2">Blunder</th>
                   <th className="text-right font-semibold px-3 py-2">Consultas</th>
                   <th className="text-right font-semibold px-3 py-2">Último</th>
                 </tr>

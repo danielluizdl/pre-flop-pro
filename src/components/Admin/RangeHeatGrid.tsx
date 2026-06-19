@@ -17,7 +17,7 @@ type Metric = 'accuracy' | 'graves' | 'consults' | 'volume'
 
 const METRICS: { key: Metric; label: string }[] = [
   { key: 'accuracy', label: 'Precisão' },
-  { key: 'graves', label: 'Erros graves' },
+  { key: 'graves', label: 'Blunders' },
   { key: 'consults', label: 'Consultas' },
   { key: 'volume', label: 'Volume' },
 ]

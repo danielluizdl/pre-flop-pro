@@ -805,7 +805,7 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
         </div>
         {sessionStats.errors > 0 && (
           <div className="mt-3 pt-3 border-t border-warm-700 flex justify-center gap-6 text-xs">
-            <span className="text-warm-400">Erros graves: <span className="text-red-400 font-bold">{sessionSeverity.grave}</span></span>
+            <span className="text-warm-400">Blunders: <span className="text-red-400 font-bold">{sessionSeverity.grave}</span></span>
             <span className="text-warm-400">Imprecisos: <span className="text-yellow-400 font-bold">{sessionSeverity.impreciso}</span></span>
           </div>
         )}

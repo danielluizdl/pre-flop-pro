@@ -1115,7 +1115,7 @@ export const useStore = create<AppState>()(
         } else if (correct) {
           message = `✓ ${action}!${rngTag}`
         } else if (severity === 'grave') {
-          message = `✗ Erro grave — ${action} tinha 0%. Correto: ${correctAction}${rngTag}`
+          message = `✗ Blunder — ${action} tinha 0%. Correto: ${correctAction}${rngTag}`
         } else {
           const principalLabel = correctActions.map(a => `${a} ${freqOf(a)}%`).join(' ou ')
           message = `✗ Impreciso — ${action} tinha ${freqOf(action)}%. Principal: ${principalLabel}${rngTag}`
