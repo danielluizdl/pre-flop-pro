@@ -1195,22 +1195,26 @@ function TeamView({ token }: { token: string | null }) {
               <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded" style={{ background: '#6b2d0d' }} />All-in</span>
               <span className="text-warm-600">·  fundo escuro = Fold</span>
             </div>
-            <div className="flex flex-wrap items-start gap-6">
-              <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
-                <RangeActionGrid title="Range real (gabarito)" subtitle="o que o range manda jogar" grid={realGrid} />
-                <ComboSummary stats={comboReal} />
+            <div className="flex items-start gap-6">
+              <div className="flex flex-wrap items-start gap-6 flex-1 min-w-0">
+                <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
+                  <RangeActionGrid title="Range real (gabarito)" subtitle="o que o range manda jogar" grid={realGrid} />
+                  <ComboSummary stats={comboReal} />
+                </div>
+                <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
+                  <RangeActionGrid title="Range jogado (time)" subtitle="frequências do que jogaram de fato" grid={playedGrid} />
+                  <ComboSummary stats={comboPlayed} />
+                </div>
               </div>
-              <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
-                <RangeActionGrid title="Range jogado (time)" subtitle="frequências do que jogaram de fato" grid={playedGrid} />
-                <ComboSummary stats={comboPlayed} />
-              </div>
-              <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
-                <h4 className="text-xs font-semibold text-warm-200 mb-2">Precisão / erros</h4>
-                <RangeHeatGrid cells={grid.cells} />
-              </div>
-              <TopHandsPanel cells={grid.cells} selected={detailHand} onSelect={h => setDetailHand(h === detailHand ? null : h)} />
-              <div className="w-[270px] shrink-0">
-                {detailCell && <HandDetailCard cell={detailCell} />}
+              <div className="flex items-start gap-4 shrink-0">
+                <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
+                  <h4 className="text-xs font-semibold text-warm-200 mb-2">Precisão / erros</h4>
+                  <RangeHeatGrid cells={grid.cells} />
+                </div>
+                <TopHandsPanel cells={grid.cells} selected={detailHand} onSelect={h => setDetailHand(h === detailHand ? null : h)} />
+                <div className="w-[270px] shrink-0">
+                  {detailCell && <HandDetailCard cell={detailCell} />}
+                </div>
               </div>
             </div>
           </div>
