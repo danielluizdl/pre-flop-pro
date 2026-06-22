@@ -125,8 +125,10 @@ export async function verifyTurnstile(env, token, ip) {
     const data = await res.json()
     return !!data.success
   } catch {
-    console.warn('Turnstile siteverify falhou — fail-open')
-    return true
+    // Secret configurado mas o siteverify falhou: fail-CLOSED (não deixa
+    // passar sem verificar). O fail-open só vale quando não há secret.
+    console.warn('Turnstile siteverify falhou — fail-closed (secret presente)')
+    return false
   }
 }
 
