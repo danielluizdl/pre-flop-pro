@@ -132,8 +132,20 @@ export async function verifyTurnstile(env, token, ip) {
   }
 }
 
+const ALLOWED_ORIGIN_EXACT = new Set([
+  'https://pre-flop-pro.pages.dev',
+  'https://danielluizdl.github.io',
+  'http://localhost:5173',
+  'http://localhost:4173',
+])
+
+export function isAllowedOrigin(origin) {
+  if (typeof origin !== 'string' || !origin) return false
+  if (ALLOWED_ORIGIN_EXACT.has(origin)) return true
+  return /^https:\/\/[a-z0-9-]+\.pre-flop-pro\.pages\.dev$/i.test(origin)
+}
+
 export const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 }

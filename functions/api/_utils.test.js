@@ -7,6 +7,7 @@ import {
   equalizeTiming,
   sha256Hex,
   checkRateLimit,
+  isAllowedOrigin,
 } from './_utils.js'
 
 describe('hashPassword', () => {
@@ -70,6 +71,26 @@ describe('equalizeTiming', () => {
   it('não lança para password string ou não-string', async () => {
     await expect(equalizeTiming('qualquer')).resolves.toBeUndefined()
     await expect(equalizeTiming(undefined)).resolves.toBeUndefined()
+  })
+})
+
+describe('isAllowedOrigin', () => {
+  it('aceita produção, github pages e localhost', () => {
+    expect(isAllowedOrigin('https://pre-flop-pro.pages.dev')).toBe(true)
+    expect(isAllowedOrigin('https://danielluizdl.github.io')).toBe(true)
+    expect(isAllowedOrigin('http://localhost:5173')).toBe(true)
+  })
+
+  it('aceita previews *.pre-flop-pro.pages.dev', () => {
+    expect(isAllowedOrigin('https://feature-auth-telemetry.pre-flop-pro.pages.dev')).toBe(true)
+  })
+
+  it('rejeita origens desconhecidas e valores inválidos', () => {
+    expect(isAllowedOrigin('https://evil.com')).toBe(false)
+    expect(isAllowedOrigin('https://pre-flop-pro.pages.dev.evil.com')).toBe(false)
+    expect(isAllowedOrigin('http://pre-flop-pro.pages.dev')).toBe(false)
+    expect(isAllowedOrigin(null)).toBe(false)
+    expect(isAllowedOrigin('')).toBe(false)
   })
 })
 
