@@ -3,8 +3,50 @@ export async function sha256Hex(str) {
   return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
+const PBKDF2_ITERATIONS = 100000
+
+async function pbkdf2Hex(password, salt, iterations) {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits'])
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt: new TextEncoder().encode(salt), iterations, hash: 'SHA-256' },
+    key, 256,
+  )
+  return [...new Uint8Array(bits)].map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
 export async function hashPassword(password, salt) {
-  return sha256Hex(salt + ':' + password)
+  const hex = await pbkdf2Hex(password, salt, PBKDF2_ITERATIONS)
+  return `pbkdf2$${PBKDF2_ITERATIONS}$${hex}`
+}
+
+export function constantTimeEqual(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string' || a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return diff === 0
+}
+
+export function isLegacyHash(storedHash) {
+  return typeof storedHash === 'string' && !storedHash.startsWith('pbkdf2$')
+}
+
+export async function verifyPassword(password, salt, storedHash) {
+  if (typeof storedHash !== 'string' || typeof salt !== 'string') return false
+  if (storedHash.startsWith('pbkdf2$')) {
+    const [, itersStr, expected] = storedHash.split('$')
+    const iterations = Number(itersStr)
+    if (!Number.isInteger(iterations) || iterations <= 0) return false
+    const hex = await pbkdf2Hex(password, salt, iterations)
+    return constantTimeEqual(hex, expected)
+  }
+  const legacy = await sha256Hex(salt + ':' + password)
+  return constantTimeEqual(legacy, storedHash)
+}
+
+// Equaliza o custo de CPU quando o usuário não existe, para não vazar
+// quem está cadastrado via timing da resposta de login.
+export async function equalizeTiming(password) {
+  await pbkdf2Hex(typeof password === 'string' ? password : '', 'equalize-timing-salt', PBKDF2_ITERATIONS)
 }
 
 export function randomHex(bytes = 32) {
