@@ -47,12 +47,43 @@ describe('sentry', () => {
       expect(warn).toHaveBeenCalledOnce()
     })
 
-    it('inicializa o Sentry com o DSN e sem tracing quando há DSN', async () => {
+    it('inicializa o Sentry com o DSN, sem tracing e sem PII por padrão', async () => {
       const dsn = 'https://exemplo@sentry.io/1'
       const { initSentry } = await loadWithDsn(dsn)
       initSentry()
       expect(init).toHaveBeenCalledOnce()
-      expect(init.mock.calls[0][0]).toMatchObject({ dsn, tracesSampleRate: 0 })
+      expect(init.mock.calls[0][0]).toMatchObject({ dsn, tracesSampleRate: 0, sendDefaultPii: false })
+      expect(typeof init.mock.calls[0][0].beforeSend).toBe('function')
+    })
+  })
+
+  describe('scrubEvent / redactString', () => {
+    it('redige e-mails e tokens longos em strings', async () => {
+      const { redactString } = await loadWithDsn('https://exemplo@sentry.io/1')
+      expect(redactString('login de joao@teste.com falhou')).toContain('[email]')
+      expect(redactString('Authorization: Bearer abc.def-123')).toContain('[redacted]')
+      expect(redactString('token ' + 'a'.repeat(40))).toContain('[redacted]')
+    })
+
+    it('remove headers Authorization/Cookie e redige valores aninhados', async () => {
+      const { scrubEvent } = await loadWithDsn('https://exemplo@sentry.io/1')
+      const event = {
+        message: 'erro de user@dominio.com',
+        request: { headers: { Authorization: 'Bearer segredo', 'Content-Type': 'application/json' } },
+        extra: { nested: { cookie: 'x' } },
+      }
+      const out = scrubEvent(event) as typeof event & { extra: { nested: Record<string, unknown> } }
+      expect(out.message).toBe('erro de [email]')
+      expect(out.request.headers).not.toHaveProperty('Authorization')
+      expect(out.request.headers['Content-Type']).toBe('application/json')
+      expect(out.extra.nested).not.toHaveProperty('cookie')
+    })
+
+    it('não entra em loop com referências circulares', async () => {
+      const { scrubEvent } = await loadWithDsn('https://exemplo@sentry.io/1')
+      const a: Record<string, unknown> = { name: 'x' }
+      a.self = a
+      expect(() => scrubEvent(a)).not.toThrow()
     })
   })
 
