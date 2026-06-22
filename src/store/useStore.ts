@@ -6,7 +6,7 @@ import {
 } from '../utils/hands'
 import type {
   BrushState, HandData, HandHistoryEntry, PokerPosition, PositionConfig,
-  Range, Scenario, SessionGrid, SessionStats, Slot, StackGrid, TableSize, TrainingSession, Page, CurrentUser,
+  Range, Scenario, SessionGrid, SessionStats, Slot, StackGrid, TableSize, TrainingSession, Page, CurrentUser, DeviceSession,
 } from '../types'
 import {
   POS_6MAX, POS_8MAX, SLOTS_6MAX, SLOTS_8MAX,
@@ -251,6 +251,9 @@ interface AppState {
   authSignup: (username: string, password: string, teamCode: string, name: string, email: string, turnstileToken?: string | null) => Promise<{ ok: boolean; error?: string }>
   authLogout: () => Promise<void>
   changePassword: (newPassword: string) => Promise<{ ok: boolean; error?: string }>
+  listDevices: () => Promise<{ ok: boolean; devices?: DeviceSession[]; error?: string }>
+  revokeDevice: (id: number) => Promise<{ ok: boolean; error?: string }>
+  revokeOtherDevices: () => Promise<{ ok: boolean; error?: string }>
   restoreSession: () => Promise<void>
   syncTeamRanges: () => Promise<void>
   publishTeamRanges: () => Promise<{ ok: boolean; error?: string; version?: number; count?: number }>
@@ -1249,6 +1252,44 @@ export const useStore = create<AppState>()(
           const data = await res.json().catch(() => null)
           if (!res.ok) return { ok: false, error: data?.error ?? `Erro do servidor (${res.status})` }
           if (currentUser) set({ currentUser: { ...currentUser, firstLogin: false } })
+          return { ok: true }
+        } catch { return { ok: false, error: 'Erro de conexão' } }
+      },
+      listDevices: async () => {
+        const { authToken } = get()
+        if (!authToken) return { ok: false, error: 'Não autenticado' }
+        try {
+          const res = await fetch('/api/me/devices', { headers: { Authorization: `Bearer ${authToken}` } })
+          const data = await res.json().catch(() => null)
+          if (!res.ok) return { ok: false, error: data?.error ?? `Erro do servidor (${res.status})` }
+          return { ok: true, devices: data?.devices ?? [] }
+        } catch { return { ok: false, error: 'Erro de conexão' } }
+      },
+      revokeDevice: async (id) => {
+        const { authToken } = get()
+        if (!authToken) return { ok: false, error: 'Não autenticado' }
+        try {
+          const res = await fetch('/api/me/devices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+            body: JSON.stringify({ action: 'revoke', id }),
+          })
+          const data = await res.json().catch(() => null)
+          if (!res.ok) return { ok: false, error: data?.error ?? `Erro do servidor (${res.status})` }
+          return { ok: true }
+        } catch { return { ok: false, error: 'Erro de conexão' } }
+      },
+      revokeOtherDevices: async () => {
+        const { authToken } = get()
+        if (!authToken) return { ok: false, error: 'Não autenticado' }
+        try {
+          const res = await fetch('/api/me/devices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+            body: JSON.stringify({ action: 'revoke-others' }),
+          })
+          const data = await res.json().catch(() => null)
+          if (!res.ok) return { ok: false, error: data?.error ?? `Erro do servidor (${res.status})` }
           return { ok: true }
         } catch { return { ok: false, error: 'Erro de conexão' } }
       },

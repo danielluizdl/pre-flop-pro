@@ -18,6 +18,13 @@ export interface CurrentUser {
   firstLogin: boolean
 }
 
+export interface DeviceSession {
+  id: number
+  createdAt: number
+  expiresAt: number
+  current: boolean
+}
+
 export const SEAT_ROLE_LABELS: Record<RoleType, string> = {
   fold:        'Fold',
   post:        'Blind/Post',
