@@ -3,6 +3,21 @@
 const PRESETS = [0, 25, 50, 75, 100]
 const CUSTOM_COLORS = ['#a855f7', '#f97316', '#06b6d4', '#eab308', '#ec4899', '#84cc16']
 
+function PresetButton({ p, active, onClick }: { p: number; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex-1 h-6 rounded-full border bg-warm-800 font-display text-[13px] tracking-[0.06em] cursor-pointer transition-colors ${
+        active
+          ? 'border-brand-600 bg-brand-600/15 text-warm-100'
+          : 'border-warm-600 text-warm-500 hover:border-brand-600 hover:text-warm-100'
+      }`}
+    >
+      {p}%
+    </button>
+  )
+}
+
 interface ActionRowProps {
   label: string
   color: string
@@ -40,16 +55,7 @@ function ActionRow({ label, color, field, value, onChange, extra }: ActionRowPro
       />
       <div className="flex gap-1 justify-between">
         {PRESETS.map(p => (
-          <button
-            key={p}
-            onClick={() => onChange(field, p)}
-            className="flex-1 border transition-colors cursor-pointer"
-            style={{ height:24, borderRadius:999, fontFamily:"'Bebas Neue',sans-serif", fontSize:13, letterSpacing:'0.06em', background:'#1f1d1a', borderColor:'#4a463e', color:'#6a655b' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor='#c95f3a'; (e.currentTarget as HTMLElement).style.color='#ede8de' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor='#4a463e'; (e.currentTarget as HTMLElement).style.color='#6a655b' }}
-          >
-            {p}%
-          </button>
+          <PresetButton key={p} p={p} active={value === p} onClick={() => onChange(field, p)} />
         ))}
       </div>
     </div>
@@ -161,16 +167,7 @@ export function BrushControls() {
           />
           <div className="flex gap-1 justify-between">
             {PRESETS.map(p => (
-              <button
-                key={p}
-                onClick={() => setBrush('extra', p)}
-                className="flex-1 border transition-colors cursor-pointer"
-            style={{ height:24, borderRadius:999, fontFamily:"'Bebas Neue',sans-serif", fontSize:13, letterSpacing:'0.06em', background:'#1f1d1a', borderColor:'#4a463e', color:'#6a655b' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor='#c95f3a'; (e.currentTarget as HTMLElement).style.color='#ede8de' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor='#4a463e'; (e.currentTarget as HTMLElement).style.color='#6a655b' }}
-              >
-                {p}%
-              </button>
+              <PresetButton key={p} p={p} active={brush.extra === p} onClick={() => setBrush('extra', p)} />
             ))}
           </div>
         </div>
