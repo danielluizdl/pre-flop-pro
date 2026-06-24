@@ -5,3 +5,7 @@ pages_build_output_dir = "dist"
 binding = "DB"
 database_name = "preflop-db"
 database_id = "4da5ef76-674a-48de-9b46-06789bb76513"
+
+[[kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "7c75ee2e185e4b278086fc17068d818f"

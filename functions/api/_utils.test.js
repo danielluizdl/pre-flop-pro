@@ -7,6 +7,7 @@ import {
   equalizeTiming,
   sha256Hex,
   checkRateLimit,
+  checkRateLimitKV,
   isAllowedOrigin,
 } from './_utils.js'
 
@@ -106,5 +107,37 @@ describe('checkRateLimit', () => {
     const store = new Map()
     expect(checkRateLimit('ip2', 0, store)).toBe(true)
     expect(checkRateLimit('ip2', 61_000, store)).toBe(true)
+  })
+})
+
+describe('checkRateLimitKV', () => {
+  const makeKV = () => {
+    const m = new Map()
+    return { get: async k => (m.has(k) ? m.get(k) : null), put: async (k, v) => { m.set(k, v) } }
+  }
+
+  it('libera até o limite e bloqueia o excedente na mesma janela', async () => {
+    const env = { RATE_LIMIT: makeKV() }
+    const now = 1_000_000
+    for (let i = 0; i < 8; i++) expect(await checkRateLimitKV(env, 'ipK', now)).toBe(true)
+    expect(await checkRateLimitKV(env, 'ipK', now)).toBe(false)
+  })
+
+  it('reseta após a janela de 1 minuto', async () => {
+    const env = { RATE_LIMIT: makeKV() }
+    for (let i = 0; i < 8; i++) await checkRateLimitKV(env, 'ipK2', 1_000_000)
+    expect(await checkRateLimitKV(env, 'ipK2', 1_000_000)).toBe(false)
+    expect(await checkRateLimitKV(env, 'ipK2', 1_061_000)).toBe(true)
+  })
+
+  it('fail-open quando o KV lança erro', async () => {
+    const env = { RATE_LIMIT: { get: async () => { throw new Error('kv down') }, put: async () => {} } }
+    expect(await checkRateLimitKV(env, 'ipK3')).toBe(true)
+  })
+
+  it('sem binding KV cai no rate limit em memória', async () => {
+    const now = 2_000_000
+    for (let i = 0; i < 8; i++) expect(await checkRateLimitKV({}, 'ipMem', now)).toBe(true)
+    expect(await checkRateLimitKV({}, 'ipMem', now)).toBe(false)
   })
 })

@@ -1,4 +1,4 @@
-import { sha256Hex, hashPassword, verifyPassword, isLegacyHash, equalizeTiming, randomHex, json, handleOptions, checkRateLimit, verifyTurnstile } from '../_utils.js'
+import { sha256Hex, hashPassword, verifyPassword, isLegacyHash, equalizeTiming, randomHex, json, handleOptions, checkRateLimitKV, verifyTurnstile } from '../_utils.js'
 
 export async function onRequest(context) {
   const { request, env } = context
@@ -6,7 +6,7 @@ export async function onRequest(context) {
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
   const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown'
-  if (!checkRateLimit(ip)) return json({ error: 'Muitas tentativas. Aguarde um minuto.' }, 429)
+  if (!(await checkRateLimitKV(env, ip))) return json({ error: 'Muitas tentativas. Aguarde um minuto.' }, 429)
 
   let body
   try {

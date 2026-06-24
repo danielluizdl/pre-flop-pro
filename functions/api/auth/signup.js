@@ -1,4 +1,4 @@
-import { sha256Hex, hashPassword, randomHex, json, handleOptions, emailDomainExists, checkRateLimit, verifyTurnstile } from '../_utils.js'
+import { sha256Hex, hashPassword, randomHex, json, handleOptions, emailDomainExists, checkRateLimitKV, verifyTurnstile } from '../_utils.js'
 import { sendEmail } from '../_email.js'
 
 export async function onRequest(context) {
@@ -7,7 +7,7 @@ export async function onRequest(context) {
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
   const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown'
-  if (!checkRateLimit(ip)) return json({ error: 'Muitas tentativas. Aguarde um minuto.' }, 429)
+  if (!(await checkRateLimitKV(env, ip))) return json({ error: 'Muitas tentativas. Aguarde um minuto.' }, 429)
 
   let body
   try {

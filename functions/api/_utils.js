@@ -110,6 +110,34 @@ export function checkRateLimit(ip, now = Date.now(), store = authAttempts) {
   return true
 }
 
+// Rate limit persistente via KV (janela fixa por IP). Sobrevive a troca de
+// isolate, ao contrário do Map em memória. Fail-open: sem binding KV cai no
+// in-memory; se o KV falhar, libera (nunca trava login legítimo por infra).
+export async function checkRateLimitKV(env, ip, now = Date.now()) {
+  if (!env || !env.RATE_LIMIT) return checkRateLimit(ip, now)
+  const key = `rl:auth:${ip}`
+  const windowSec = RATE_LIMIT_WINDOW_MS / 1000
+  const nowSec = Math.floor(now / 1000)
+  try {
+    const raw = await env.RATE_LIMIT.get(key)
+    let count = 0
+    let reset = nowSec + windowSec
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (parsed && typeof parsed.e === 'number' && nowSec < parsed.e) {
+        count = typeof parsed.c === 'number' ? parsed.c : 0
+        reset = parsed.e
+      }
+    }
+    if (count >= RATE_LIMIT_MAX) return false
+    await env.RATE_LIMIT.put(key, JSON.stringify({ c: count + 1, e: reset }), { expirationTtl: windowSec })
+    return true
+  } catch {
+    console.warn('KV rate limit falhou — fail-open')
+    return true
+  }
+}
+
 export async function verifyTurnstile(env, token, ip) {
   if (!env.TURNSTILE_SECRET_KEY) {
     console.warn('TURNSTILE_SECRET_KEY ausente — validação Turnstile ignorada (fail-open)')
