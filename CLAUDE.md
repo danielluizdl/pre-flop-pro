@@ -339,33 +339,25 @@ Container: `w-full h-[calc(100vh-90px)] overflow-auto`
 - Não precisa confirmar cada passo antes de executar
 - Prefere commits separados por feature
 
-## Próximos passos do Agente Diário — gate humano (Daniel)
-Consolidado das 3 rotinas do agente (21–23/06/2026) na branch `auto/daily-improvements` (PR #5 → `feature/auth-telemetry`, NÃO mergeada de propósito). Memória completa em `.agent/handoff.md`.
+## Histórico do Agente Diário + pendências (Daniel)
+Consolidado das 3 rotinas do agente (21–23/06/2026). **PR #5 MERGEADO em 24/06** em `feature/auth-telemetry` (commit de merge `c727e15`). Memória em `.agent/handoff.md`.
 
 ### O que cada rotina entregou
 - **21/06 (grooming/docs):** estabeleceu `.agent/handoff.md`; teste de `download.ts`.
 - **22/06 (segunda — testes/qualidade):** teste de `sentry.ts`; auditoria de segurança; `npm audit fix` (2 CVEs high → 0) + `.github/dependabot.yml`; **hardening N1–N4** (Daniel autorizou quebrar o gate de auth nesta sessão): N1 PBKDF2+constant-time+re-hash legado no login; N2 Turnstile fail-closed; N3 `public/_headers` (HSTS/CSP/etc.) + CORS por allowlist (`functions/_middleware.js`); N4 scrub de PII no Sentry + gestão de sessões ativas (`functions/api/me/devices.js` + UI em `MyAccountStats`).
 - **23/06 (terça — UI):** indicador de preset ativo no `BrushControls` (puramente visual).
 
-### Puxar para o VS Code
-```
-git fetch origin
-git checkout auto/daily-improvements    # ou: git switch auto/daily-improvements
-```
+### Validações feitas (24/06 — Daniel validou; review de segurança confirmou)
+- [x] **PR #5 mergeado** em `feature/auth-telemetry`.
+- [x] **CSP / PBKDF2 / login legado (re-hash) / sessões ativas** — validados no preview.
+- [x] **GitHub:** Secret Scanning + Push Protection + Dependabot alerts/security-updates **habilitados** (via API).
 
-### Validar no preview ANTES de mergear o PR #5 (bloqueia o merge)
-- [ ] **CSP (N3):** abrir o preview `feature-auth-telemetry.pre-flop-pro.pages.dev`, fazer login com Turnstile, disparar um erro pro Sentry e testar o **publish do coach** (worker admin é domínio externo — pode precisar entrar no `connect-src` do CSP em `public/_headers`). Olhar o console por violações de CSP.
-- [ ] **PBKDF2 (N1):** confirmar que 100k iters cabe no limite de CPU do plano Cloudflare Pages (medir no preview).
-- [ ] **Login de conta legada:** logar com conta criada antes do hardening e confirmar o re-hash progressivo (SHA-256 → PBKDF2).
-- [ ] **Sessões ativas (N4):** testar listar / revogar / revogar-outras em `MyAccountStats`.
+### Pendências de segurança — só o Daniel (infra/conta, fora do escopo do agente)
+- [ ] **Rate limit real (N2, issue #6):** WAF Rate Limiting Rules em `/api/auth/*` ou KV/Durable Object — exige painel Cloudflare. Único item de código de segurança restante, bloqueado por infra. (O rate limit em memória de `_utils.js` é best-effort, reseta por isolate.)
+- [ ] **MFA** em GitHub e Cloudflare (segurança de conta, manual).
 
-### Operacional — só o Daniel (fora do escopo do agente)
-- [ ] **Rate limit real (N2, issue #6):** WAF Rate Limiting Rules em `/api/auth/*` ou KV/Durable Object — exige `wrangler.toml`/painel Cloudflare. Único item de código de segurança restante, bloqueado por infra.
-- [ ] **GitHub:** ativar Secret Scanning + Push Protection no repo.
-- [ ] **MFA** em GitHub e Cloudflare.
-
-### Depois das validações
-- [ ] Mergear PR #5 (`auto/daily-improvements` → `feature/auth-telemetry`).
+### Achado em aberto (decisão) — AdminPanel legado vs CSP
+- [ ] O **CSP** (`public/_headers`, `connect-src`) libera só `self`+Sentry+Turnstile. O **coach publish vai pro D1 (mesma origem) → OK**, mas o **AdminPanel legado** (`adminSaveRanges` em `useStore.ts`, ainda montado em Sidebar/TopNav) publica no worker externo `preflop-admin.loureirodlg.workers.dev`, que o CSP **bloqueia** no app Cloudflare. Decidir: (a) adicionar a origem do worker ao `connect-src`, ou (b) tratar o AdminPanel/worker como deprecado no app Cloudflare (coach já usa D1). Obs: produção GitHub Pages não tem `_headers`, então lá o worker publish segue funcionando.
 
 ### Issues abertas (não bloqueiam; temas de outros dias do agente)
 - [ ] **#4** — code-split do chunk principal (~553KB > 500KB) — performance.
