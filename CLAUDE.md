@@ -4,6 +4,7 @@
 - **Vite + React + TypeScript + Tailwind CSS + Zustand**
 - Sem backend. Dados persistidos via `localStorage` manualmente (exceto `darkMode` que usa `zustand/persist`).
 - Deploy: GitHub Pages via GitHub Actions ao fazer push para `main` (`https://github.com/danielluizdl/pre-flop-pro`)
+- **POLÍTICA DE PRODUÇÃO (CONGELADA):** o link em uso pelos jogadores é **`https://danielluizdl.github.io/pre-flop-pro/`** (GitHub Pages, deploy do `main`). Ele deve ficar **INTACTO** até o site novo estar completo. Portanto: **NÃO mergear nada no `main`** e **NÃO mexer no que afeta o GitHub Pages** até liberação explícita do Daniel. Todo o desenvolvimento do "site completo" acontece na branch dedicada **`feature/auth-telemetry`** (e branches derivadas, ex.: `auto/daily-improvements` do agente), validadas no preview do Cloudflare Pages. Obs.: `public/_headers` (CSP/headers) só vale no Cloudflare Pages — o GitHub Pages o ignora, então mexer nele nunca afeta o link de produção.
 - Testes: **Vitest** (`npm test` → `vitest run`), ambiente jsdom. Specs em `src/**/*.test.ts` e `worker/**/*.test.js` (ver `vitest.config.ts`).
 - Bundle: `adminRanges.json` (1.4MB) é separado em chunk próprio via `manualChunks` (`vite.config.ts`). Chunk principal ~480KB.
 
@@ -356,8 +357,8 @@ Consolidado das 3 rotinas do agente (21–23/06/2026). **PR #5 MERGEADO em 24/06
 - [ ] **Rate limit real (N2, issue #6):** WAF Rate Limiting Rules em `/api/auth/*` ou KV/Durable Object — exige painel Cloudflare. Único item de código de segurança restante, bloqueado por infra. (O rate limit em memória de `_utils.js` é best-effort, reseta por isolate.)
 - [ ] **MFA** em GitHub e Cloudflare (segurança de conta, manual).
 
-### Achado em aberto (decisão) — AdminPanel legado vs CSP
-- [ ] O **CSP** (`public/_headers`, `connect-src`) libera só `self`+Sentry+Turnstile. O **coach publish vai pro D1 (mesma origem) → OK**, mas o **AdminPanel legado** (`adminSaveRanges` em `useStore.ts`, ainda montado em Sidebar/TopNav) publica no worker externo `preflop-admin.loureirodlg.workers.dev`, que o CSP **bloqueia** no app Cloudflare. Decidir: (a) adicionar a origem do worker ao `connect-src`, ou (b) tratar o AdminPanel/worker como deprecado no app Cloudflare (coach já usa D1). Obs: produção GitHub Pages não tem `_headers`, então lá o worker publish segue funcionando.
+### AdminPanel legado vs CSP — RESOLVIDO (opção A, 24/06)
+- [x] O **CSP** (`public/_headers`, `connect-src`) agora inclui `https://preflop-admin.loureirodlg.workers.dev`, então o **AdminPanel legado** (`adminSaveRanges` em `useStore.ts`, montado em Sidebar/TopNav) volta a publicar no worker mesmo dentro do app Cloudflare. O **coach publish (D1)** já funcionava (mesma origem). Nenhum efeito no GitHub Pages (ignora `_headers`).
 
 ### Issues abertas (não bloqueiam; temas de outros dias do agente)
 - [ ] **#4** — code-split do chunk principal (~553KB > 500KB) — performance.
