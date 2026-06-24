@@ -1,4 +1,4 @@
-import { sha256Hex, hashPassword, randomHex, json, handleOptions, checkRateLimit, verifyTurnstile } from '../_utils.js'
+import { sha256Hex, hashPassword, verifyPassword, isLegacyHash, equalizeTiming, randomHex, json, handleOptions, checkRateLimit, verifyTurnstile } from '../_utils.js'
 
 export async function onRequest(context) {
   const { request, env } = context
@@ -21,10 +21,21 @@ export async function onRequest(context) {
   const user = await env.DB.prepare(
     'SELECT id, username, name, email, password_hash, salt, role, first_login FROM users WHERE username = ? COLLATE NOCASE'
   ).bind(username).first()
-  if (!user) return json({ error: 'Credenciais inválidas' }, 401)
+  if (!user) {
+    await equalizeTiming(password)
+    return json({ error: 'Credenciais inválidas' }, 401)
+  }
 
-  const hash = await hashPassword(password, user.salt)
-  if (hash !== user.password_hash) return json({ error: 'Credenciais inválidas' }, 401)
+  if (!(await verifyPassword(password, user.salt, user.password_hash))) {
+    return json({ error: 'Credenciais inválidas' }, 401)
+  }
+
+  if (isLegacyHash(user.password_hash)) {
+    const newSalt = randomHex(16)
+    const newHash = await hashPassword(password, newSalt)
+    await env.DB.prepare('UPDATE users SET password_hash = ?, salt = ? WHERE id = ?')
+      .bind(newHash, newSalt, user.id).run()
+  }
 
   const token = randomHex(32)
   const tokenHash = await sha256Hex(token)

@@ -3,8 +3,50 @@ export async function sha256Hex(str) {
   return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
+const PBKDF2_ITERATIONS = 100000
+
+async function pbkdf2Hex(password, salt, iterations) {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits'])
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt: new TextEncoder().encode(salt), iterations, hash: 'SHA-256' },
+    key, 256,
+  )
+  return [...new Uint8Array(bits)].map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
 export async function hashPassword(password, salt) {
-  return sha256Hex(salt + ':' + password)
+  const hex = await pbkdf2Hex(password, salt, PBKDF2_ITERATIONS)
+  return `pbkdf2$${PBKDF2_ITERATIONS}$${hex}`
+}
+
+export function constantTimeEqual(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string' || a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return diff === 0
+}
+
+export function isLegacyHash(storedHash) {
+  return typeof storedHash === 'string' && !storedHash.startsWith('pbkdf2$')
+}
+
+export async function verifyPassword(password, salt, storedHash) {
+  if (typeof storedHash !== 'string' || typeof salt !== 'string') return false
+  if (storedHash.startsWith('pbkdf2$')) {
+    const [, itersStr, expected] = storedHash.split('$')
+    const iterations = Number(itersStr)
+    if (!Number.isInteger(iterations) || iterations <= 0) return false
+    const hex = await pbkdf2Hex(password, salt, iterations)
+    return constantTimeEqual(hex, expected)
+  }
+  const legacy = await sha256Hex(salt + ':' + password)
+  return constantTimeEqual(legacy, storedHash)
+}
+
+// Equaliza o custo de CPU quando o usuário não existe, para não vazar
+// quem está cadastrado via timing da resposta de login.
+export async function equalizeTiming(password) {
+  await pbkdf2Hex(typeof password === 'string' ? password : '', 'equalize-timing-salt', PBKDF2_ITERATIONS)
 }
 
 export function randomHex(bytes = 32) {
@@ -83,13 +125,27 @@ export async function verifyTurnstile(env, token, ip) {
     const data = await res.json()
     return !!data.success
   } catch {
-    console.warn('Turnstile siteverify falhou — fail-open')
-    return true
+    // Secret configurado mas o siteverify falhou: fail-CLOSED (não deixa
+    // passar sem verificar). O fail-open só vale quando não há secret.
+    console.warn('Turnstile siteverify falhou — fail-closed (secret presente)')
+    return false
   }
 }
 
+const ALLOWED_ORIGIN_EXACT = new Set([
+  'https://pre-flop-pro.pages.dev',
+  'https://danielluizdl.github.io',
+  'http://localhost:5173',
+  'http://localhost:4173',
+])
+
+export function isAllowedOrigin(origin) {
+  if (typeof origin !== 'string' || !origin) return false
+  if (ALLOWED_ORIGIN_EXACT.has(origin)) return true
+  return /^https:\/\/[a-z0-9-]+\.pre-flop-pro\.pages\.dev$/i.test(origin)
+}
+
 export const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 }

@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useStore } from '../../store/useStore'
+import type { DeviceSession } from '../../types'
 
 interface Overview {
   hands: number
@@ -42,6 +43,89 @@ function formatDuration(seconds: number): string {
 function formatDate(ts: number): string {
   if (!ts) return '—'
   return new Date(ts * 1000).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+function formatDateTime(ts: number): string {
+  if (!ts) return '—'
+  return new Date(ts * 1000).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
+
+function DevicesSection() {
+  const listDevices = useStore(s => s.listDevices)
+  const revokeDevice = useStore(s => s.revokeDevice)
+  const revokeOtherDevices = useStore(s => s.revokeOtherDevices)
+  const [devices, setDevices] = useState<DeviceSession[]>([])
+  const [loading, setLoading] = useState(true)
+  const [busy, setBusy] = useState(false)
+
+  const reload = useCallback(async () => {
+    const res = await listDevices()
+    if (res.ok) setDevices(res.devices ?? [])
+    setLoading(false)
+  }, [listDevices])
+
+  useEffect(() => { void reload() }, [reload])
+
+  const handleRevoke = async (id: number) => {
+    setBusy(true)
+    await revokeDevice(id)
+    await reload()
+    setBusy(false)
+  }
+
+  const handleRevokeOthers = async () => {
+    setBusy(true)
+    await revokeOtherDevices()
+    await reload()
+    setBusy(false)
+  }
+
+  const others = devices.filter(d => !d.current).length
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <div className="eyebrow">Sessões ativas</div>
+        {others > 0 && (
+          <button
+            onClick={handleRevokeOthers}
+            disabled={busy}
+            className="text-xs font-semibold text-red-400 hover:text-red-300 disabled:opacity-50"
+          >
+            Encerrar as outras ({others})
+          </button>
+        )}
+      </div>
+      {loading ? (
+        <p className="text-warm-500 text-sm">Carregando sessões…</p>
+      ) : devices.length === 0 ? (
+        <p className="text-warm-500 text-sm">Nenhuma sessão ativa.</p>
+      ) : (
+        <ul className="rounded-xl border border-warm-700 divide-y divide-warm-700/60">
+          {devices.map(d => (
+            <li key={d.id} className="flex items-center justify-between gap-3 px-3 py-2.5">
+              <div className="min-w-0">
+                <div className="text-sm text-warm-100 font-semibold flex items-center gap-2">
+                  Sessão #{d.id}
+                  {d.current && <span className="text-[10px] uppercase font-bold text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded">Esta sessão</span>}
+                </div>
+                <div className="text-xs text-warm-500">Iniciada em {formatDateTime(d.createdAt)} · expira em {formatDate(d.expiresAt)}</div>
+              </div>
+              {!d.current && (
+                <button
+                  onClick={() => handleRevoke(d.id)}
+                  disabled={busy}
+                  className="shrink-0 text-xs font-semibold text-red-400 hover:text-red-300 disabled:opacity-50"
+                >
+                  Encerrar
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
 }
 
 function accColor(acc: number): string {
@@ -170,6 +254,8 @@ export function MyAccountStats() {
           </div>
         )}
       </div>
+
+      <DevicesSection />
     </div>
   )
 }
