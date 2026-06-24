@@ -41,10 +41,10 @@ Marque [x] no commit conforme avança. Cada fase = vários PRs/dias.
 - [ ] Confirmar cobertura dos utils de data science (coachStats/coachTrend/handCategories/coachRelative/rangeCombos) e completar buracos
 
 ### FASE 2 — componentes de apresentação (puros, props → render)
-- [ ] `ui/ComboCounter` (FEITO, exemplo)
-- [ ] `Stats/AccuracySparkline`, `Admin/RangeActionGrid`, `Admin/RangeHeatGrid`
-- [ ] `Admin/TopHandsPanel`, `Admin/HandDetailCard`, `Admin/PlayerQuickSummary`
-- [ ] `ui/PokerTableEditor` (render do layout de assentos/cartas)
+- [x] `ui/ComboCounter` (FEITO, exemplo)
+- [x] `Stats/AccuracySparkline`, `Admin/RangeActionGrid`, `Admin/RangeHeatGrid`
+- [~] `Admin/TopHandsPanel`, `Admin/HandDetailCard`, `Admin/PlayerQuickSummary` (NÃO são arquivos próprios — estão inline no `CoachPanel.tsx`; serão cobertos junto do CoachPanel na FASE 4)
+- [x] `ui/PokerTableEditor` (render do layout de assentos/cartas)
 
 ### FASE 3 — componentes com store
 - [ ] `RangeBuilder/BrushControls` (presets, clamp ≤100%, indicador de preset ativo)

@@ -1,24 +1,32 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
-## 2026-06-23 (terça — UI/design)
+## 2026-06-24 (quarta — testes/qualidade · EPIC FASE 2)
 
 ### Feito hoje
-- **UI: indicador de preset ativo no `BrushControls`** (`src/components/RangeBuilder/BrushControls.tsx`). Os botões 0/25/50/75/100% agora destacam qual valor está aplicado (borda + fundo brand). Extraído `PresetButton` para deduplicar as duas cópias (Call/Raise/All-In e condição custom) e trocados os handlers de hover inline (`style` mutado em mouseEnter/mouseLeave) por classes Tailwind. Puramente visual, sem mudança de comportamento.
+- **FASE 2 do epic concluída — testes RTL + axe dos componentes de apresentação** (+17 testes, 4 arquivos novos):
+  - `src/components/Stats/AccuracySparkline.test.tsx` — guarda <2 sessões, ignora sessões sem mãos, desenha pontos/linha/ref 80%, axe.
+  - `src/components/Admin/RangeActionGrid.test.tsx` — título/subtítulo, 169 células, tooltip de frequências (com fold residual em range misto), axe.
+  - `src/components/Admin/RangeHeatGrid.test.tsx` — botões de métrica, 169 células, tooltip (precisão + graves/consultas), troca de métrica ativa, axe.
+  - `src/components/ui/PokerTableEditor.test.tsx` — render via `useStore.setState` (pote, assentos, dealer, cartas do herói, ante chip stack), axe.
+- **Achado:** `TopHandsPanel`/`HandDetailCard`/`PlayerQuickSummary`/`MultiPlayerSelect`/`RangeSelect`/`PeriodFilter` NÃO são arquivos próprios — estão **inline no `CoachPanel.tsx`**. Marcados `[~]` no epic; serão cobertos junto do CoachPanel na FASE 4. FASE 1 (utils) já estava 100% coberta na chegada.
+- **Detalhe técnico:** o caso `axe` das matrizes 13×13 estoura o timeout default de 5s (volume de 169 células, não é violação) — passei timeout 20000 nesses casos. Ambiguidade de texto "BB" (label de posição + unidade de stack) resolvida com `getAllByText`/asserts mais específicas. Nenhuma violação real de a11y encontrada; sem mudança de comportamento nos componentes.
 
 ### Estado
-- Testes: 214 passam (21 arquivos). Build: verde.
-- Warning conhecido: chunk principal ~553KB > 500KB (issue #4). `CoachPanel` já é lazy.
-- Branch de trabalho: `auto/daily-improvements` (a partir de `feature/auth-telemetry`); pushada.
-- PR: #5 ABERTA (auto/daily-improvements → feature/auth-telemetry), corpo atualizado com o incremento de hoje. NÃO mergeada (gate humano — validações de hardening pendentes no preview).
-- **Riscos:** nenhum novo hoje (mudança só visual). Riscos do hardening N1–N4 seguem pendentes de validação no preview (CSP, PBKDF2 100k CPU, login legado re-hash, sessões ativas).
+- Testes: **239 passam (26 arquivos)**. Build: **verde** (warning conhecido: chunk principal ~553KB > 500KB, issue #4).
+- Branch de trabalho: `auto/daily-improvements` recriada a partir de `feature/auth-telemetry` (a anterior foi deletada no merge da #5); pushada.
+- **PR #5 foi MERGEADA em 24/06** (hardening N1–N4) e a branch antiga deletada — por isso recriei.
+- PR de hoje: **#10 ABERTA** (auto/daily-improvements → feature/auth-telemetry). Corpo PT-BR com resumo/testes/build.
+- **Riscos:** nenhum (só arquivos de teste novos + 2 marcações no epic). Não toquei código de produção.
 
-### Próximas tarefas (priorizadas)
-1. **#4 — code-split do chunk principal** (performance, tema quarta). Revisar `manualChunks` em `vite.config.ts` (separar vendor react/zustand) OU lazy-load de página pesada ainda não lazy. Pronto: warning some/reduz, antes/depois em KB no PR.
-2. **#2 — atualizar CLAUDE.md** (doc interna, tema domingo). Documentar `Auth/`, `CoachPanel`/`RangeHeatGrid`/`RangeActionGrid`, `TopNav`/`RouterSync`, `MyAccountStats`, `CategoryDetailPage`, utils novos (coach*, handCategories, rangeCombos, eventQueue, sentry) e a seção de segurança (PBKDF2, _headers/CSP, scrub Sentry, sessões ativas).
-3. **UI/acessibilidade (próxima terça/sexta):** padronizar estados de foco dos `<input>`/`<select>` que não usam a classe `.input` (muitos usam só `border border-warm-600` sem `:focus`). Candidatos: inputs numéricos em `BrushControls`, `TableEditorPage`, filtros do drill. Pronto: foco visível consistente (borda brand + glow) sem mudança de layout.
+### Próxima fatia priorizada — EPIC FASE 3 (componentes com store)
+1. **`RangeBuilder/BrushControls`** — presets 0/25/50/75/100%, clamp total ≤100%, indicador de preset ativo. Store via `useStore.setState({ brush })`; checar `setBrush`.
+2. **`RangeBuilder/HandMatrix`** — pintar/limpar célula (applyBrush/clearHand), toggle Ações/Erro-Acerto quando `heatmap` é passado, `showWarning` com brush >100%.
+3. **Filtros do CoachPanel** — `MultiPlayerSelect`/`RangeSelect`/`PeriodFilter` estão **inline em CoachPanel.tsx**; avaliar extrair ou testar via render do CoachPanel (fetch mockado com `vi.spyOn(global,'fetch')`). Custom date no PeriodFilter.
+4. **`Stats/MyAccountStats`** — cards + DevicesSection com fetch mockado.
 
-### Propostas (gate humano) — restante de segurança ainda NÃO feito
-- **N2 rate limit real:** WAF Rate Limiting Rules em `/api/auth/*` ou KV/Durable Object (exige wrangler.toml/painel — fora do agente). Issue #6.
-- **Operacional (só Daniel):** GitHub Secret Scanning + Push Protection; MFA em GitHub/Cloudflare.
-- **Validar no preview** (antes de mergear #5): CSP, login de conta legada (re-hash), CPU do PBKDF2, sessões ativas (listar/revogar/revogar-outras).
+### Pendências/propostas (gate humano — NÃO implementáveis pelo agente)
+- **#6 / N2** rate limit real (já feito via KV em 24/06 conforme CLAUDE.md; confirmar se a issue pode fechar).
+- **MFA** em GitHub/Cloudflare (só Daniel).
+- **#4** code-split do chunk principal (~553KB) — performance, tema de outro dia.
+- **#2** atualizar Estrutura de Pastas do CLAUDE.md (Auth/, CoachPanel, RouterSync, MyAccountStats, utils novos) — docs.
 - Lembrete: auth/, worker/, functions/api, schema*.sql/D1 NÃO são implementáveis pelo agente sem autorização explícita do Daniel.
