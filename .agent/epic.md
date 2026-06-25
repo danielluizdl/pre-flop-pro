@@ -30,6 +30,10 @@ componentes), não uma tarefa mínima. Sempre `npm test` + `npm run build` verde
   com mock; nunca bata em rede real. Telemetria (`fireEvent`) é no-op sem `authToken`.
 - Determinismo: nada de timers reais longos; use `vi.useFakeTimers()` quando houver
   auto-advance/debounce.
+- Performance/flakiness: `testTimeout` global = 15000ms (axe em grids grandes — ex.: HandMatrix
+  169 células — é lento sob carga paralela). Em asserts async, ancore num texto confiável
+  (ex.: `await screen.findByText('<valor certo>')`) antes de `getByText`, em vez de dar
+  `findByText` direto no texto que você está validando.
 
 ## Backlog do epic (pegue a próxima fatia não-feita do topo)
 Marque [x] no commit conforme avança. Cada fase = vários PRs/dias.
@@ -48,15 +52,15 @@ Marque [x] no commit conforme avança. Cada fase = vários PRs/dias.
 
 ### FASE 3 — componentes com store
 - [x] `RangeBuilder/BrushControls` (presets, clamp ≤100%, indicador de preset ativo) — 25/06; + `RangeBuilder/RangeSetupPage`, `ui/RangeMark`, `ui/PrereqRangePicker` na mesma fatia
-- [ ] `RangeBuilder/HandMatrix` (pintar/limpar, toggle Ações/Erro-Acerto)
-- [ ] `Admin/MultiPlayerSelect`, `Admin/RangeSelect`, `PeriodFilter` (busca, custom date)
-- [ ] `Stats/MyAccountStats` (cards, DevicesSection — com fetch mockado)
+- [x] `RangeBuilder/HandMatrix` (render 13x13, toggle heatmap, applyBrush no clique, axe) — 25/06
+- [~] `Admin/MultiPlayerSelect`, `Admin/RangeSelect`, `PeriodFilter` (inline no CoachPanel.tsx — cobrir junto do CoachPanel na FASE 4)
+- [x] `Stats/MyAccountStats` (cards, estados vazios, DevicesSection, axe — fetch/store mockados) — 25/06
 
 ### FASE 4 — páginas e fluxos (integração)
 - [ ] `Trainer/TrainerPage`: DrillActive (responder F/C/R/A, atalhos, próxima/anterior), DrillSummary, severidade
 - [ ] `Admin/CoachPanel`: filtros (range/jogador/período), seção "Por range" ordenável, matriz
 - [ ] `Auth/LoginPage` (login/signup/forgot, validações), WelcomeModal, ChangePasswordModal
-- [ ] `Layout/ErrorBoundary` (fallback de erro), `Situations/SituationsPage`, `Stats/StatsPage`
+- [x] `Layout/ErrorBoundary` (renderiza filhos / fallback ao lançar erro / axe) — 25/06; restam `Situations/SituationsPage`, `Stats/StatsPage`
 
 ### FASE 5 — varredura de acessibilidade dedicada
 - [ ] Passar axe em todas as telas-chave e corrigir violações remanescentes (foco visível,
