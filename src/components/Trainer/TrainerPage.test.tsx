@@ -73,6 +73,21 @@ describe('TrainerPage', () => {
     expect(screen.getByText(/Raise!/)).toBeInTheDocument()
   })
 
+  it('atalho de teclado F responde Fold (Blunder)', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
+      useRngForFrequency: false, acceptAnyFreq: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
+    })
+    render(<TrainerPage />)
+    fireEvent.keyDown(window, { key: 'f' })
+    expect(screen.getByText(/Blunder/)).toBeInTheDocument()
+  })
+
   it('não tem violações de acessibilidade na seleção de ranges (axe)', async () => {
     useStore.setState({ ranges: [RANGE], activeDrillRange: null })
     const { container } = render(<TrainerPage />)
