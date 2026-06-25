@@ -57,15 +57,20 @@ Marque [x] no commit conforme avança. Cada fase = vários PRs/dias.
 - [x] `Stats/MyAccountStats` (cards, estados vazios, DevicesSection, axe — fetch/store mockados) — 25/06
 
 ### FASE 4 — páginas e fluxos (integração)
-- [x] `Trainer/TrainerPage`: DrillRangeSelect (render/vazio/grupo de posição), DrillActive renderiza com botão FOLD (estado mínimo via setState), axe na seleção — 25/06. FALTA o fluxo profundo: responder F/C/R/A + `checkDrillAnswer` + DrillSummary + severidade → deixar pra FASE 5/futuro (precisa montar o grid com ações e simular respostas).
+- [x] `Trainer/TrainerPage`: DrillRangeSelect (render/vazio/grupo de posição), DrillActive renderiza com botão FOLD (estado mínimo via setState), axe na seleção — 25/06. **Fluxo profundo COBERTO** (25/06): com grid de ações montado via setState, clicar FOLD numa mão raise-100 → feedback "Blunder"; clicar RAISE → acerto. (DrillSummary/atalhos de teclado ainda dá pra aprofundar.)
 - [x] `Admin/CoachPanel`: render (fetch mockado), abas, filtros, período Custom (2 datas), "Por range" 1ª seção, Hotspots removido, axe — 25/06 (a11y: `aria-label` no select e nos `input[type=date]` do PeriodFilter). Cobre de tabela os inline `MultiPlayerSelect`/`RangeSelect`/`PeriodFilter`.
 - [x] `Auth/LoginPage` (login/signup/forgot, validações) + `WelcomeModal` + `ChangePasswordModal` — 25/06 (a11y: associei labels↔inputs via htmlFor/id no LoginPage e ChangePasswordModal)
 - [x] `Layout/ErrorBoundary` (filhos / fallback / axe), `Situations/SituationsPage` (header / vazio / expande grupo / axe; a11y: `title` no botão apagar + card `h3`→`h2` por heading-order), `Stats/StatsPage` (header / vazio / totais / troca de aba / axe) — 25/06
 
 ### FASE 5 — varredura de acessibilidade dedicada
-- [ ] Passar axe em todas as telas-chave e corrigir violações remanescentes (foco visível,
-      labels em inputs/botões-ícone, roles de listas/tabelas, `aria-*` de modais/dropdowns,
-      navegação por teclado). Registrar cada correção.
+- [~] axe embutido em CADA teste de componente (não há suíte de a11y separada) já cobriu e CORRIGIU:
+      labels↔inputs (LoginPage, ChangePasswordModal, RangeSetupPage), `aria-label` em selects/datas
+      (PeriodFilter) e botões-ícone (PrereqRangePicker, SituationsPage apagar), `heading-order`
+      (SituationsPage card h3→h2). `Layout/Dashboard` coberto + axe (25/06).
+- [ ] Faltam telas/fluxos com axe: `TableEditor/TableEditorPage`, `RangeBuilder/RangeEditorPage`,
+      `Situations/CategoryDetailPage`, modais `ui/RangePreviewModal`/`HistoryModal`, e a varredura de
+      foco visível / navegação por teclado no `DrillActive`.
+- [ ] Componentes de Layout sem teste próprio: `Layout/Sidebar`, `Layout/TopNav`, `ui/HandQuickSelect`.
 
 ## Definição de pronto por fatia
 - Testes novos passam; `npm test` (todos) e `npm run build` verdes.

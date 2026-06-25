@@ -11,7 +11,7 @@
 - **Fix de fonte (CSP):** `public/_headers` `connect`/`style`/`font-src` agora liberam `fonts.googleapis.com` + `fonts.gstatic.com` — o CSP do N3 estava bloqueando o `@import` do Google Fonts em `src/index.css` e derrubando a Bebas Neue pro fallback. Fonte original restaurada nos previews.
 
 ### Estado
-- Testes: **302 passam (40 arquivos)**. Build: **verde** (warning conhecido: chunk principal >500KB, issue #4).
+- Testes: **306 passam (41 arquivos)**. Build: **verde** (warning conhecido: chunk principal >500KB, issue #4).
 - Branch: `auto/daily-improvements` (← `feature/auth-telemetry`, já com o fix da fonte mergeado). PR **#10** aberta, NÃO mergeada (gate humano). Produção/`main` intactos.
 - **Riscos:** nenhum de comportamento — testes novos + `testTimeout` + 1 linha de CSP (libera Google Fonts).
 - Nota: FASE 1 (utils) já tinha cobertura (`eventQueue.test.ts`, `hands.test.ts` existem) — não duplicar.
@@ -31,10 +31,15 @@
 - **A11y corrigida:** `SituationsPage` — `title="Apagar range"` no botão de lixeira (violação `button-name`) e card `h3`→`h2` (violação `heading-order`, a página tem `h1`).
 - Estado: **302 testes (40 arquivos)**, build verde.
 
-### Próxima fatia priorizada — EPIC FASE 5 (+ resíduo da FASE 4)
-1. **Fluxo profundo do drill** (`Trainer/TrainerPage`/DrillActive) — montar um range com ações reais no grid, simular responder F/C/R/A, conferir `checkDrillAnswer` (acerto/blunder/impreciso), DrillSummary e os contadores de severidade. É o único pedaço de comportamento ainda sem teste.
-2. **FASE 5 — varredura de a11y** nas telas que faltam: `TableEditor/TableEditorPage`, `RangeBuilder/RangeEditorPage`, `ui/PokerTableEditor` no contexto de drill, modais (RangePreviewModal, HistoryModal). Rodar axe e corrigir violações remanescentes.
-3. **Cobertura restante de componentes** sem teste próprio (ex.: `Layout/Sidebar`, `Layout/TopNav`, `Layout/Dashboard`, `ui/RangePreviewModal`, `ui/HandQuickSelect`).
+### Feito também (continuação 25/06 — FASE 5 iniciada)
+- **+4 testes**: `Trainer/TrainerPage` **fluxo profundo do drill** (clicar FOLD numa mão raise-100 → "Blunder"; clicar RAISE → acerto — monta o grid de ações via setState, mesmo padrão do `drillFeatures.test.ts`); `Layout/Dashboard` (hero, stats, categorias, axe).
+- Estado: **306 testes (41 arquivos)**, build verde.
+
+### Próxima fatia priorizada — EPIC FASE 5 (continuação)
+1. **`RangeBuilder/RangeEditorPage`** e **`TableEditor/TableEditorPage`** — render + axe (precisam de `currentScenario`/`activePositions`/`tempScenarios` via setState; usar `initTableConfig`/`setupNewRange` se ajudar). Corrigir violações.
+2. **Modais**: `ui/RangePreviewModal` (recebe `range` + `onClose`), `Trainer` HistoryModal — render + axe.
+3. **Layout**: `Layout/Sidebar`, `Layout/TopNav` (nav + botões-ícone — prováveis correções de `aria-label`), `ui/HandQuickSelect`.
+4. **Aprofundar DrillActive**: DrillSummary (abrir via `onShowSummary`), atalhos de teclado (F/C/R/A/Espaço), navegação anterior/próxima.
 
 ### Pendências/propostas (gate humano — NÃO implementáveis pelo agente)
 - **#6 / N2** rate limit real — feito via KV (24/06). Pode fechar a issue.
