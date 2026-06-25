@@ -67,10 +67,11 @@ Marque [x] no commit conforme avança. Cada fase = vários PRs/dias.
       labels↔inputs (LoginPage, ChangePasswordModal, RangeSetupPage), `aria-label` em selects/datas
       (PeriodFilter) e botões-ícone (PrereqRangePicker, SituationsPage apagar), `heading-order`
       (SituationsPage card h3→h2). `Layout/Dashboard` coberto + axe (25/06).
-- [ ] Faltam telas/fluxos com axe: `TableEditor/TableEditorPage`, `RangeBuilder/RangeEditorPage`,
-      `Situations/CategoryDetailPage`, modais `ui/RangePreviewModal`/`HistoryModal`, e a varredura de
-      foco visível / navegação por teclado no `DrillActive`.
-- [ ] Componentes de Layout sem teste próprio: `Layout/Sidebar`, `Layout/TopNav`, `ui/HandQuickSelect`.
+- [x] `RangeBuilder/RangeEditorPage` (h3→h2), `TableEditor/TableEditorPage` (aria-label em 6 controles +
+      h3→h2/h4→h3), `ui/RangePreviewModal` — render + axe — 25/06.
+- [x] `Layout/Sidebar`, `Layout/TopNav`, `ui/HandQuickSelect`, `Layout/Dashboard` — render + axe (limpos) — 25/06.
+- [ ] Faltam: `Situations/CategoryDetailPage`, `Trainer` HistoryModal/DrillSummary, e varredura de foco
+      visível / navegação por teclado (atalhos F/C/R/A/Espaço/V) no `DrillActive`.
 
 ## Definição de pronto por fatia
 - Testes novos passam; `npm test` (todos) e `npm run build` verdes.
