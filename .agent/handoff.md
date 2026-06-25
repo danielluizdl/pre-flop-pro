@@ -11,7 +11,7 @@
 - **Fix de fonte (CSP):** `public/_headers` `connect`/`style`/`font-src` agora liberam `fonts.googleapis.com` + `fonts.gstatic.com` — o CSP do N3 estava bloqueando o `@import` do Google Fonts em `src/index.css` e derrubando a Bebas Neue pro fallback. Fonte original restaurada nos previews.
 
 ### Estado
-- Testes: **285 passam (36 arquivos)**. Build: **verde** (warning conhecido: chunk principal >500KB, issue #4).
+- Testes: **290 passam (37 arquivos)**. Build: **verde** (warning conhecido: chunk principal >500KB, issue #4).
 - Branch: `auto/daily-improvements` (← `feature/auth-telemetry`, já com o fix da fonte mergeado). PR **#10** aberta, NÃO mergeada (gate humano). Produção/`main` intactos.
 - **Riscos:** nenhum de comportamento — testes novos + `testTimeout` + 1 linha de CSP (libera Google Fonts).
 - Nota: FASE 1 (utils) já tinha cobertura (`eventQueue.test.ts`, `hands.test.ts` existem) — não duplicar.
@@ -21,11 +21,15 @@
 - **A11y corrigida:** `LoginPage` e `ChangePasswordModal` tinham `<label>` sem associação → associei via `htmlFor`/`id` (5 + 2 inputs). axe verde.
 - Estado atualizado: **285 testes (36 arquivos)**, build verde.
 
+### Feito também (continuação 25/06 — CoachPanel)
+- **+5 testes** (`Admin/CoachPanel.test.tsx`): render com `fetch` mockado, abas Visão do time / Por jogador, botão de publicar, filtros, **período Custom revela 2 `input[type=date]`**, "Por range" como 1ª seção, Hotspots ausente, axe.
+- **A11y corrigida:** `PeriodFilter` — `aria-label` no `<select>` (violação `select-name`) e nos dois `input[type=date]`.
+- Estado: **290 testes (37 arquivos)**, build verde.
+
 ### Próxima fatia priorizada — EPIC FASE 4 (continuação)
-1. **`Admin/CoachPanel`** — render com `vi.spyOn(global,'fetch')` mockando `/api/admin/analytics` e `/api/admin/users`; cobre filtros (incl. `MultiPlayerSelect`/`RangeSelect`/`PeriodFilter` inline e o período Custom from/to) e a tabela "Por range" ordenável. É o maior — fatiar se preciso.
-2. **`Trainer/TrainerPage`** — DrillActive (responder F/C/R/A, atalhos de teclado, próxima/anterior), DrillSummary, contadores de severidade. Usar `useStore.setState` para montar uma sessão de drill ativa.
-3. **`Situations/SituationsPage`** e **`Stats/StatsPage`** — acordeão por posição, RangeCards, SessionCards/heatmap.
-4. FASE 5: varredura de a11y nas telas que faltam.
+1. **`Trainer/TrainerPage`** — DrillActive (responder F/C/R/A, atalhos de teclado, próxima/anterior), DrillSummary, contadores de severidade. Montar sessão de drill via `useStore.setState` (activeDrillRange, activeHand, correctActionForCurrentHand, currentHandSuits, sessionStats). Render order: showHistory→showSummary→activeDrillRange→DrillRangeSelect.
+2. **`Situations/SituationsPage`** e **`Stats/StatsPage`** — acordeão por posição, RangeCards, SessionCards/heatmap (store: ranges, trainingHistory, handPerformance).
+3. FASE 5: varredura de a11y nas telas que faltam (DrillActive, páginas de range/table editor).
 
 ### Pendências/propostas (gate humano — NÃO implementáveis pelo agente)
 - **#6 / N2** rate limit real — feito via KV (24/06). Pode fechar a issue.

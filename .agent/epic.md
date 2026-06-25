@@ -58,7 +58,7 @@ Marque [x] no commit conforme avança. Cada fase = vários PRs/dias.
 
 ### FASE 4 — páginas e fluxos (integração)
 - [ ] `Trainer/TrainerPage`: DrillActive (responder F/C/R/A, atalhos, próxima/anterior), DrillSummary, severidade
-- [ ] `Admin/CoachPanel`: filtros (range/jogador/período), seção "Por range" ordenável, matriz
+- [x] `Admin/CoachPanel`: render (fetch mockado), abas, filtros, período Custom (2 datas), "Por range" 1ª seção, Hotspots removido, axe — 25/06 (a11y: `aria-label` no select e nos `input[type=date]` do PeriodFilter). Cobre de tabela os inline `MultiPlayerSelect`/`RangeSelect`/`PeriodFilter`.
 - [x] `Auth/LoginPage` (login/signup/forgot, validações) + `WelcomeModal` + `ChangePasswordModal` — 25/06 (a11y: associei labels↔inputs via htmlFor/id no LoginPage e ChangePasswordModal)
 - [x] `Layout/ErrorBoundary` (renderiza filhos / fallback ao lançar erro / axe) — 25/06; restam `Situations/SituationsPage`, `Stats/StatsPage`
 
