@@ -377,6 +377,7 @@ function PeriodFilter({ days, from, to, onChange }: {
   return (
     <div className="flex items-center gap-2">
       <select
+        aria-label="Período"
         className={selectCls}
         value={custom ? 'custom' : (days ?? '')}
         onChange={e => {
@@ -393,10 +394,10 @@ function PeriodFilter({ days, from, to, onChange }: {
       </select>
       {custom && (
         <div className="flex items-center gap-1.5">
-          <input type="date" value={start} max={end || undefined}
+          <input type="date" aria-label="Data inicial" value={start} max={end || undefined}
             onChange={e => { setStart(e.target.value); apply(e.target.value, end) }} className={dateCls} />
           <span className="text-warm-500 text-xs">→</span>
-          <input type="date" value={end} min={start || undefined}
+          <input type="date" aria-label="Data final" value={end} min={start || undefined}
             onChange={e => { setEnd(e.target.value); apply(start, e.target.value) }} className={dateCls} />
         </div>
       )}
