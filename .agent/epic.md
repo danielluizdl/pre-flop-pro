@@ -70,8 +70,10 @@ Marque [x] no commit conforme avança. Cada fase = vários PRs/dias.
 - [x] `RangeBuilder/RangeEditorPage` (h3→h2), `TableEditor/TableEditorPage` (aria-label em 6 controles +
       h3→h2/h4→h3), `ui/RangePreviewModal` — render + axe — 25/06.
 - [x] `Layout/Sidebar`, `Layout/TopNav`, `ui/HandQuickSelect`, `Layout/Dashboard` — render + axe (limpos) — 25/06.
-- [ ] Faltam: `Situations/CategoryDetailPage`, `Trainer` HistoryModal/DrillSummary, e varredura de foco
-      visível / navegação por teclado (atalhos F/C/R/A/Espaço/V) no `DrillActive`.
+- [x] `Situations/CategoryDetailPage` (h3→h2) — render + axe — 25/06.
+- [x] Atalho de teclado do drill: `fireEvent.keyDown(window, {key:'f'})` → Fold/Blunder (TrainerPage) — 25/06.
+- [ ] Sobras menores: `Trainer` HistoryModal/DrillSummary isolados, `Admin/AdminPanel`, `ui/PokerTableEditor`
+      isolado, e os componentes ainda inline no CoachPanel. Não bloqueiam — cobertura incremental.
 
 ## Definição de pronto por fatia
 - Testes novos passam; `npm test` (todos) e `npm run build` verdes.

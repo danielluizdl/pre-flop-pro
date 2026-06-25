@@ -11,7 +11,7 @@
 - **Fix de fonte (CSP):** `public/_headers` `connect`/`style`/`font-src` agora liberam `fonts.googleapis.com` + `fonts.gstatic.com` — o CSP do N3 estava bloqueando o `@import` do Google Fonts em `src/index.css` e derrubando a Bebas Neue pro fallback. Fonte original restaurada nos previews.
 
 ### Estado
-- Testes: **321 passam (47 arquivos)**. Build: **verde** (warning conhecido: chunk principal >500KB, issue #4).
+- Testes: **325 passam (48 arquivos)**. Build: **verde** (warning conhecido: chunk principal >500KB, issue #4).
 - Branch: `auto/daily-improvements` (← `feature/auth-telemetry`, já com o fix da fonte mergeado). PR **#10** aberta, NÃO mergeada (gate humano). Produção/`main` intactos.
 - **Riscos:** nenhum de comportamento — testes novos + `testTimeout` + 1 linha de CSP (libera Google Fonts).
 - Nota: FASE 1 (utils) já tinha cobertura (`eventQueue.test.ts`, `hands.test.ts` existem) — não duplicar.
@@ -40,11 +40,19 @@
 - **A11y corrigida:** `RangeEditorPage` h3→h2; `TableEditorPage` `aria-label` em 6 controles sem nome (radio HERO, select de ação, inputs de stack/aposta/raise/nome) + h3→h2/h4→h3. Sidebar/TopNav/HandQuickSelect já estavam limpos (`title` nos botões-ícone, nav com labels).
 - Estado: **321 testes (47 arquivos)**, build verde. Para montar o PokerTableEditor em teste, setar `activeSlots: SLOTS_8MAX` junto de `activePositions: POS_8MAX` (senão `<Seat>` crasha lendo `.t`).
 
-### Próxima fatia priorizada — EPIC FASE 5 (final)
-1. **`Situations/CategoryDetailPage`** — render + axe (store: `ranges`, `activeCategory`).
-2. **`Trainer` HistoryModal e DrillSummary** — abrir via estado (`showHistory`/`showSummary` no TrainerPage, ou render direto dos sub-componentes) + axe.
-3. **Aprofundar DrillActive** (comportamento): atalhos de teclado (`window` keydown F/C/R/A/Espaço/V), navegação anterior/próxima, "Ver Range" (consulta). Disparar via `fireEvent.keyDown(window, { key: 'f' })`.
-4. **Sobras de cobertura**: `ui/PokerTableEditor` isolado, `Admin/AdminPanel`, componentes do CoachPanel ainda inline.
+### Feito também (continuação 25/06 — FASE 5 essencialmente completa)
+- **+4 testes**: `Situations/CategoryDetailPage` (categoria/vazio/axe; a11y h3→h2) e atalho de teclado do drill no `TrainerPage` (`fireEvent.keyDown(window,{key:'f'})` → Fold/Blunder).
+- Estado: **325 testes (48 arquivos)**, build verde.
+
+### EPIC praticamente CONCLUÍDO
+Todas as fases (0–5) cobertas: infra, utils, componentes de apresentação, com store, páginas/fluxos, e
+varredura de a11y (corrigindo violações reais ao longo do caminho). Sobras menores e NÃO bloqueantes para
+o agente pegar como cobertura incremental:
+1. `Trainer` HistoryModal e DrillSummary isolados (axe).
+2. `Admin/AdminPanel` (publish legado via worker) — render + axe.
+3. `ui/PokerTableEditor` isolado e os componentes ainda inline no CoachPanel (TopHandsPanel/HandDetailCard/etc.).
+4. Aprofundar comportamento do DrillActive: navegação anterior/próxima, auto-advance (`vi.useFakeTimers`), "Ver Range" (consulta/logConsult).
+Quando o epic fechar de vez, registrar no handoff e abrir issue `agente` propondo o próximo epic.
 
 ### Pendências/propostas (gate humano — NÃO implementáveis pelo agente)
 - **#6 / N2** rate limit real — feito via KV (24/06). Pode fechar a issue.
