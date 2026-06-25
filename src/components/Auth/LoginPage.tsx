@@ -81,8 +81,9 @@ export function LoginPage() {
               {view === 'signup' && (
                 <>
                   <div className="space-y-2">
-                    <label className="text-xs text-warm-400 block">Nome Completo:</label>
+                    <label htmlFor="lp-name" className="text-xs text-warm-400 block">Nome Completo:</label>
                     <input
+                      id="lp-name"
                       type="text"
                       value={name}
                       onChange={e => { setName(e.target.value); setError('') }}
@@ -91,8 +92,9 @@ export function LoginPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs text-warm-400 block">E-mail:</label>
+                    <label htmlFor="lp-email" className="text-xs text-warm-400 block">E-mail:</label>
                     <input
+                      id="lp-email"
                       type="email"
                       value={email}
                       onChange={e => { setEmail(e.target.value); setError('') }}
@@ -104,8 +106,9 @@ export function LoginPage() {
               )}
 
               <div className="space-y-2">
-                <label className="text-xs text-warm-400 block">Usuário:</label>
+                <label htmlFor="lp-username" className="text-xs text-warm-400 block">Usuário:</label>
                 <input
+                  id="lp-username"
                   type="text"
                   value={username}
                   onChange={e => { setUsername(e.target.value); setError('') }}
@@ -115,8 +118,9 @@ export function LoginPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs text-warm-400 block">Senha:</label>
+                <label htmlFor="lp-password" className="text-xs text-warm-400 block">Senha:</label>
                 <input
+                  id="lp-password"
                   type="password"
                   value={password}
                   onChange={e => { setPassword(e.target.value); setError('') }}
@@ -128,8 +132,9 @@ export function LoginPage() {
 
               {view === 'signup' && (
                 <div className="space-y-2">
-                  <label className="text-xs text-warm-400 block">Código do time:</label>
+                  <label htmlFor="lp-teamcode" className="text-xs text-warm-400 block">Código do time:</label>
                   <input
+                    id="lp-teamcode"
                     type="text"
                     value={teamCode}
                     onChange={e => { setTeamCode(e.target.value); setError('') }}

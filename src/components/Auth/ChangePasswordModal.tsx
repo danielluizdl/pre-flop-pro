@@ -32,8 +32,9 @@ export function ChangePasswordModal() {
         <p className="text-xs text-warm-400">Este é seu primeiro acesso. Escolha uma nova senha para continuar.</p>
 
         <div className="space-y-2">
-          <label className="text-xs text-warm-400 block">Nova senha:</label>
+          <label htmlFor="cpm-new" className="text-xs text-warm-400 block">Nova senha:</label>
           <input
+            id="cpm-new"
             type="password"
             value={newPassword}
             onChange={e => { setNewPassword(e.target.value); setError('') }}
@@ -42,8 +43,9 @@ export function ChangePasswordModal() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-xs text-warm-400 block">Confirmar senha:</label>
+          <label htmlFor="cpm-confirm" className="text-xs text-warm-400 block">Confirmar senha:</label>
           <input
+            id="cpm-confirm"
             type="password"
             value={confirm}
             onChange={e => { setConfirm(e.target.value); setError('') }}
