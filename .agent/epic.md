@@ -47,7 +47,7 @@ Marque [x] no commit conforme avança. Cada fase = vários PRs/dias.
 - [x] `ui/PokerTableEditor` (render do layout de assentos/cartas)
 
 ### FASE 3 — componentes com store
-- [ ] `RangeBuilder/BrushControls` (presets, clamp ≤100%, indicador de preset ativo)
+- [x] `RangeBuilder/BrushControls` (presets, clamp ≤100%, indicador de preset ativo) — 25/06; + `RangeBuilder/RangeSetupPage`, `ui/RangeMark`, `ui/PrereqRangePicker` na mesma fatia
 - [ ] `RangeBuilder/HandMatrix` (pintar/limpar, toggle Ações/Erro-Acerto)
 - [ ] `Admin/MultiPlayerSelect`, `Admin/RangeSelect`, `PeriodFilter` (busca, custom date)
 - [ ] `Stats/MyAccountStats` (cards, DevicesSection — com fetch mockado)
