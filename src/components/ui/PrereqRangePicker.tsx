@@ -59,7 +59,7 @@ export function PrereqRangePicker({ ranges, excludeId, filterPositions, currentP
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-warm-700 flex-shrink-0">
           <h2 className="text-sm font-bold text-white">Selecionar Range Pré-requisito</h2>
-          <button onClick={onClose} className="text-warm-400 hover:text-white transition-colors">
+          <button onClick={onClose} aria-label="Fechar" className="text-warm-400 hover:text-white transition-colors">
             <X size={16} />
           </button>
         </div>
