@@ -11,7 +11,7 @@
 - **Fix de fonte (CSP):** `public/_headers` `connect`/`style`/`font-src` agora liberam `fonts.googleapis.com` + `fonts.gstatic.com` — o CSP do N3 estava bloqueando o `@import` do Google Fonts em `src/index.css` e derrubando a Bebas Neue pro fallback. Fonte original restaurada nos previews.
 
 ### Estado
-- Testes: **290 passam (37 arquivos)**. Build: **verde** (warning conhecido: chunk principal >500KB, issue #4).
+- Testes: **302 passam (40 arquivos)**. Build: **verde** (warning conhecido: chunk principal >500KB, issue #4).
 - Branch: `auto/daily-improvements` (← `feature/auth-telemetry`, já com o fix da fonte mergeado). PR **#10** aberta, NÃO mergeada (gate humano). Produção/`main` intactos.
 - **Riscos:** nenhum de comportamento — testes novos + `testTimeout` + 1 linha de CSP (libera Google Fonts).
 - Nota: FASE 1 (utils) já tinha cobertura (`eventQueue.test.ts`, `hands.test.ts` existem) — não duplicar.
@@ -26,10 +26,15 @@
 - **A11y corrigida:** `PeriodFilter` — `aria-label` no `<select>` (violação `select-name`) e nos dois `input[type=date]`.
 - Estado: **290 testes (37 arquivos)**, build verde.
 
-### Próxima fatia priorizada — EPIC FASE 4 (continuação)
-1. **`Trainer/TrainerPage`** — DrillActive (responder F/C/R/A, atalhos de teclado, próxima/anterior), DrillSummary, contadores de severidade. Montar sessão de drill via `useStore.setState` (activeDrillRange, activeHand, correctActionForCurrentHand, currentHandSuits, sessionStats). Render order: showHistory→showSummary→activeDrillRange→DrillRangeSelect.
-2. **`Situations/SituationsPage`** e **`Stats/StatsPage`** — acordeão por posição, RangeCards, SessionCards/heatmap (store: ranges, trainingHistory, handPerformance).
-3. FASE 5: varredura de a11y nas telas que faltam (DrillActive, páginas de range/table editor).
+### Feito também (continuação 25/06 — fecha o grosso da FASE 4)
+- **+12 testes** (3 arquivos): `Situations/SituationsPage` (header/vazio/expande/axe), `Stats/StatsPage` (header/vazio/totais/troca de aba/axe), `Trainer/TrainerPage` (DrillRangeSelect render/vazio/grupo, DrillActive renderiza com FOLD via setState, axe na seleção).
+- **A11y corrigida:** `SituationsPage` — `title="Apagar range"` no botão de lixeira (violação `button-name`) e card `h3`→`h2` (violação `heading-order`, a página tem `h1`).
+- Estado: **302 testes (40 arquivos)**, build verde.
+
+### Próxima fatia priorizada — EPIC FASE 5 (+ resíduo da FASE 4)
+1. **Fluxo profundo do drill** (`Trainer/TrainerPage`/DrillActive) — montar um range com ações reais no grid, simular responder F/C/R/A, conferir `checkDrillAnswer` (acerto/blunder/impreciso), DrillSummary e os contadores de severidade. É o único pedaço de comportamento ainda sem teste.
+2. **FASE 5 — varredura de a11y** nas telas que faltam: `TableEditor/TableEditorPage`, `RangeBuilder/RangeEditorPage`, `ui/PokerTableEditor` no contexto de drill, modais (RangePreviewModal, HistoryModal). Rodar axe e corrigir violações remanescentes.
+3. **Cobertura restante de componentes** sem teste próprio (ex.: `Layout/Sidebar`, `Layout/TopNav`, `Layout/Dashboard`, `ui/RangePreviewModal`, `ui/HandQuickSelect`).
 
 ### Pendências/propostas (gate humano — NÃO implementáveis pelo agente)
 - **#6 / N2** rate limit real — feito via KV (24/06). Pode fechar a issue.

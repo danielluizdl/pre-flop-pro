@@ -57,10 +57,10 @@ Marque [x] no commit conforme avança. Cada fase = vários PRs/dias.
 - [x] `Stats/MyAccountStats` (cards, estados vazios, DevicesSection, axe — fetch/store mockados) — 25/06
 
 ### FASE 4 — páginas e fluxos (integração)
-- [ ] `Trainer/TrainerPage`: DrillActive (responder F/C/R/A, atalhos, próxima/anterior), DrillSummary, severidade
+- [x] `Trainer/TrainerPage`: DrillRangeSelect (render/vazio/grupo de posição), DrillActive renderiza com botão FOLD (estado mínimo via setState), axe na seleção — 25/06. FALTA o fluxo profundo: responder F/C/R/A + `checkDrillAnswer` + DrillSummary + severidade → deixar pra FASE 5/futuro (precisa montar o grid com ações e simular respostas).
 - [x] `Admin/CoachPanel`: render (fetch mockado), abas, filtros, período Custom (2 datas), "Por range" 1ª seção, Hotspots removido, axe — 25/06 (a11y: `aria-label` no select e nos `input[type=date]` do PeriodFilter). Cobre de tabela os inline `MultiPlayerSelect`/`RangeSelect`/`PeriodFilter`.
 - [x] `Auth/LoginPage` (login/signup/forgot, validações) + `WelcomeModal` + `ChangePasswordModal` — 25/06 (a11y: associei labels↔inputs via htmlFor/id no LoginPage e ChangePasswordModal)
-- [x] `Layout/ErrorBoundary` (renderiza filhos / fallback ao lançar erro / axe) — 25/06; restam `Situations/SituationsPage`, `Stats/StatsPage`
+- [x] `Layout/ErrorBoundary` (filhos / fallback / axe), `Situations/SituationsPage` (header / vazio / expande grupo / axe; a11y: `title` no botão apagar + card `h3`→`h2` por heading-order), `Stats/StatsPage` (header / vazio / totais / troca de aba / axe) — 25/06
 
 ### FASE 5 — varredura de acessibilidade dedicada
 - [ ] Passar axe em todas as telas-chave e corrigir violações remanescentes (foco visível,
