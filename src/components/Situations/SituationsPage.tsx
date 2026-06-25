@@ -44,7 +44,7 @@ function RangeCard({ r, allRanges, onViewHeatmap, onPreview }: CardProps) {
     <div className="card-surface rounded-lg p-3 hover:border-warm-500 transition-all flex flex-col gap-2">
       <div>
         <div className="flex items-start gap-1.5 flex-wrap">
-          <h3 className="font-bold text-white text-sm leading-tight">{r.name}</h3>
+          <h2 className="font-bold text-white text-sm leading-tight">{r.name}</h2>
           {r.stackGrids && r.stackGrids.length > 0 ? (
             r.stackGrids.map((sg, i) => sg.stackRange && (
               <span key={i} className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-500/10 border border-brand-500/40 text-brand-400 flex-shrink-0 leading-tight">
@@ -107,6 +107,7 @@ function RangeCard({ r, allRanges, onViewHeatmap, onPreview }: CardProps) {
         <button
           onClick={() => { if (confirm('Apagar este range?')) deleteRange(r.id) }}
           className="flex items-center justify-center py-1.5 px-2 rounded-md bg-warm-700 hover:bg-red-900/30 text-xs text-warm-400 hover:text-red-400 transition-colors"
+          title="Apagar range"
         >
           <Trash2 size={11} />
         </button>
