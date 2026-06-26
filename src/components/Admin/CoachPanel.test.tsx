@@ -3,6 +3,8 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { axe } from 'jest-axe'
 import CoachPanel from './CoachPanel'
 import { useStore } from '../../store/useStore'
+import { makeEmptyGrid } from '../../utils/hands'
+import type { Range } from '../../types'
 
 function mockApi() {
   vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
@@ -62,6 +64,31 @@ describe('CoachPanel', () => {
     fireEvent.click(btn)
     expect(btn).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByLabelText('Buscar range')).toBeInTheDocument()
+  })
+
+  it('o filtro de range expõe listbox e seleciona via teclado (setas + Enter)', async () => {
+    mockApi()
+    const range: Range = { id: 1, name: 'BTN RFI', positions: ['BTN'], grid: makeEmptyGrid(), scenarios: [], tableSize: 8 }
+    useStore.setState({ authToken: 'tok', ranges: [range] })
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Filtrar por range' }))
+    expect(screen.getByRole('listbox', { name: 'Ranges' })).toBeInTheDocument()
+    const search = screen.getByRole('combobox', { name: 'Buscar range' })
+    fireEvent.keyDown(search, { key: 'ArrowDown' })
+    fireEvent.keyDown(search, { key: 'Enter' })
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+    expect(screen.getByText('BTN RFI')).toBeInTheDocument()
+  })
+
+  it('Esc no campo de busca fecha o filtro de range', async () => {
+    mockApi()
+    const range: Range = { id: 1, name: 'BTN RFI', positions: ['BTN'], grid: makeEmptyGrid(), scenarios: [], tableSize: 8 }
+    useStore.setState({ authToken: 'tok', ranges: [range] })
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Filtrar por range' }))
+    const search = screen.getByRole('combobox', { name: 'Buscar range' })
+    fireEvent.keyDown(search, { key: 'Escape' })
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
   })
 
   it('não tem violações de acessibilidade (axe)', async () => {
