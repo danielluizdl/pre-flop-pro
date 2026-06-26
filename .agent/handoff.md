@@ -21,13 +21,18 @@ Epic **#11 (performance de render) essencialmente concluído** (FASE 1–5; PR #
 - **ErrorBoundary por área (FASE 5)**: `variant="section"` (fallback compacto) + `resetKey`; AppLayout envolve
   a área de página com `resetKey={page}` → crash de página não derruba a navegação; navegar recupera. Testes.
 
+### Feito também (#13 FASE 3 parcial)
+- DrillRangeSelect: alerts de validação ("Selecione pelo menos um range", "Nenhuma mão selecionada")
+  viram aviso inline `role="alert"`. Resta só o `alert('Sem mais mãos!')` do DrillActive (~1080, no loop
+  com `stopDrill` — edge raro; trocar exige rotear pro resumo, fazer com cuidado).
+
 ### Estado (#13)
-- **379 testes verdes**. FASE 1 (auditoria), FASE 2 (erros de rede c/ retry) e FASE 5 (isolamento) FEITAS.
+- **380 testes verdes**. FASE 1 (auditoria), FASE 2 (retry em todas as superfícies), FASE 5 (área
+  ErrorBoundary) FEITAS; FASE 3 quase toda (1 alert de edge no drill restante).
 
 ### Próximas fatias (#13 — menor prioridade)
-1. **FASE 3**: trocar os `alert()` do `TrainerPage` (~518/671/1080) por mensagens inline — toca o fluxo do
-   drill, fazer com cuidado + teste. Empty states já existem na maioria.
-2. **FASE 4 (opcional)**: skeletons sem layout shift nas seções pesadas (hoje texto "Carregando…").
+1. **FASE 3 (resto)**: `alert('Sem mais mãos!')` do DrillActive → rotear pro DrillSummary em vez de alert+stop.
+2. **FASE 4 (opcional, baixo valor)**: skeletons sem layout shift (hoje texto "Carregando…").
 
 ---
 
