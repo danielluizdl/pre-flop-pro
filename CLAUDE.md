@@ -20,8 +20,8 @@ src/
     Stats/        StatsPage.tsx, MyAccountStats.tsx, AccuracySparkline.tsx
     Auth/         LoginPage.tsx, WelcomeModal.tsx, ChangePasswordModal.tsx, Turnstile.tsx
     Admin/        AdminPanel.tsx (worker legado), CoachPanel.tsx, RangeHeatGrid.tsx,
-                  RangeActionGrid.tsx, TopHandsPanel.tsx, HandDetailCard.tsx,
-                  PlayerQuickSummary.tsx, MultiPlayerSelect.tsx (e RangeSelect/PeriodFilter inline no CoachPanel)
+                  RangeActionGrid.tsx (TopHandsPanel, HandDetailCard, PlayerQuickSummary,
+                  MultiPlayerSelect, RangeSelect e PeriodFilter são inline no CoachPanel.tsx)
     ui/           PokerTableEditor.tsx, HandQuickSelect.tsx, RangePreviewModal.tsx,
                   ComboCounter.tsx, PrereqRangePicker.tsx, RangeMark.tsx, tableGeometry.ts, PokerTable.module.css
   store/          useStore.ts  (toda a lógica de estado)
