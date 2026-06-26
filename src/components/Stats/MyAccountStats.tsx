@@ -56,11 +56,13 @@ function DevicesSection() {
   const revokeOtherDevices = useStore(s => s.revokeOtherDevices)
   const [devices, setDevices] = useState<DeviceSession[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
   const [busy, setBusy] = useState(false)
 
   const reload = useCallback(async () => {
     const res = await listDevices()
-    if (res.ok) setDevices(res.devices ?? [])
+    if (res.ok) { setDevices(res.devices ?? []); setError(false) }
+    else setError(true)
     setLoading(false)
   }, [listDevices])
 
@@ -98,6 +100,11 @@ function DevicesSection() {
       </div>
       {loading ? (
         <p className="text-warm-500 text-sm">Carregando sessões…</p>
+      ) : error ? (
+        <p className="text-red-400 text-sm">
+          Não foi possível carregar as sessões.{' '}
+          <button onClick={() => { setLoading(true); void reload() }} className="underline font-semibold hover:text-red-300">Tentar novamente</button>
+        </p>
       ) : devices.length === 0 ? (
         <p className="text-warm-500 text-sm">Nenhuma sessão ativa.</p>
       ) : (
@@ -139,6 +146,7 @@ export function MyAccountStats() {
   const [handRows, setHandRows] = useState<HandRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [retry, setRetry] = useState(0)
 
   useEffect(() => {
     if (!authToken) return
@@ -164,10 +172,20 @@ export function MyAccountStats() {
         setLoading(false)
       })
     return () => { cancelled = true }
-  }, [authToken])
+  }, [authToken, retry])
 
   if (loading) return <p className="text-warm-500 text-sm py-8 text-center">Carregando dados da nuvem…</p>
-  if (error) return <p className="text-red-400 text-sm py-8 text-center">{error}</p>
+  if (error) return (
+    <div className="py-8 text-center space-y-3">
+      <p className="text-red-400 text-sm">{error}</p>
+      <button
+        onClick={() => setRetry(n => n + 1)}
+        className="text-sm font-semibold px-4 py-2 rounded-lg border border-warm-600 bg-warm-800 text-warm-200 hover:bg-warm-700 transition-colors"
+      >
+        Tentar novamente
+      </button>
+    </div>
+  )
   if (!overview) return null
 
   const cards = [
