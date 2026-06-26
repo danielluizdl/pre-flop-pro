@@ -11,21 +11,29 @@
 6. **a11y: role="dialog" + aria-modal + aria-labelledby** nos **8 modais** do app (AdminPanel, RangePreviewModal, PrereqRangePicker, WelcomeModal, ChangePasswordModal, heatmap de SituationsPage, nome do range no TableEditor, Ver Range do drill), cada um rotulado pelo próprio título.
 7. **test: trava semântica de diálogo** em RangePreviewModal e AdminPanel (`getByRole('dialog', { name })`).
 
+### Continuação (mesma sexta — FASE 5 a11y aprofundada, +6 fatias)
+8. **a11y: focus-trap + Esc + foco inicial — hook `src/utils/useModalA11y.ts`** `(open, onClose?)`: foca dentro do diálogo ao abrir, prende Tab/Shift+Tab, fecha no Esc (se `onClose`), restaura o foco ao fechar. `onClose` ausente = modal obrigatório (trap sem Esc, usado no ChangePasswordModal). Aplicado aos **8 modais**. Hook com teste próprio (`useModalA11y.test.tsx`: foco inicial, Esc, trap nas 2 direções, modal obrigatório). **Detalhe importante:** o hook depende de `open` e usa `onCloseRef` (effect só roda em mount/abertura, sem thrash de foco). Para modais inline (renderizados condicionalmente dentro de um pai que fica montado) passar o booleano de aberto; para modais que montam/desmontam inteiros, passar `true`.
+9. **test: aprofunda DrillActive** — "Ver Range" abre diálogo + incrementa `sessionStats.consults` (logConsult); Esc fecha o "Ver Range"; auto-advance ("2s") chama `nextDrillHand` 2s após a resposta (fake timers + stub, e não antes).
+10. **test: DrillSummary + HistoryModal** — "Encerrar e ver resumo" abre o resumo (precisão 80% + Blunders/Imprecisos da severidade); clicar HISTÓRICO abre o histórico de treino.
+11. **a11y(css): `prefers-reduced-motion`** — reset que reduz animações/transições a ~0ms (não toca lógica; auto-advance e fade do WelcomeModal são JS).
+12. **a11y: ARIA nos comboboxes do CoachPanel** — `MultiPlayerSelect`/`RangeSelect` ganham `aria-haspopup="listbox"` + `aria-expanded` (reflete aberto) + `aria-label`; inputs de busca com `aria-label`. Teste cobre o toggle de `aria-expanded`.
+13. **a11y: `aria-expanded` nos acordeões** — `Section` do CoachPanel + grupos por posição do SituationsPage e do DrillRangeSelect.
+
 ### Estado
-- Testes: **343 passam (52 arquivos)**. Build: verde.
-- Warning de build: SÓ o chunk de dados `admin-ranges` (1.4MB). Código do app em 303KB. Não é regressão.
-- Branch: `auto/daily-improvements`; pushada. PR **#10** aberta, corpo atualizado com a run de hoje. NÃO mergeada (gate humano). `main`/produção intactos.
-- **Riscos:** nenhum de comportamento — chunking, testes, foco visível CSS e atributos de a11y.
+- Testes: **356 passam (53 arquivos)**. Build: verde.
+- Warning de build: SÓ o chunk de dados `admin-ranges` (1.4MB). Código do app em ~305KB. Não é regressão.
+- Branch: `auto/daily-improvements`; pushada. PR **#10** aberta. NÃO mergeada (gate humano). `main`/produção intactos.
+- **Riscos:** nenhum de comportamento — chunking, testes, CSS de a11y (foco/reduced-motion) e atributos ARIA. O focus-trap muda o comportamento de teclado dos modais (intencional, coberto por teste); validar no preview se desejar.
 
 ### Próximas fatias (priorizadas)
-1. **Focus-trap + Esc nos modais (FASE 5 cont.):** hoje os 8 modais têm role/aria mas não prendem o Tab nem fecham no Esc. Fatia: handler manual ou hook leve; começar pelos de maior tráfego (LoginPage não é modal, mas ChangePasswordModal, Ver Range do drill e RangePreviewModal sim).
-2. **Teste de unidade do store:** `useStore.ts` só é exercido via componentes. Fatia: `nextDrillHand`/`checkDrillAnswer`/`startDrillSession` com ranges sintéticos (severidade grave/impreciso, prereq, multi-stack).
-3. **Aprofundar DrillActive:** navegação anterior/próxima, auto-advance (`vi.useFakeTimers`), "Ver Range" (consulta/logConsult) — sobra antiga ainda válida.
-4. **#4 (cont., precisa de aval):** o warning remanescente é só o JSON `admin-ranges` (seed estático, deliberado). Dynamic import do seed mudaria o boot → fora do escopo do agente sem aval do Daniel. NÃO subir `chunkSizeWarningLimit` acima de 1.4MB (esconderia regressão real do app). Provável ação: documentar como esperado e fechar #4.
+1. **Focus-trap nos modais que ainda não usam o hook (se surgirem):** LoginPage não é modal mas tem foco inicial natural; revisar se há novos modais. O padrão é `useModalA11y`.
+2. **ARIA de `role="listbox"`/`role="option"` nos comboboxes do CoachPanel:** hoje têm `aria-haspopup`/`aria-expanded`; faltam os papéis de lista/opção e navegação por setas (ArrowUp/Down + Enter). Fatia maior — opcional.
+3. **Componentes inline do CoachPanel (TopHandsPanel/HandDetailCard/PlayerQuickSummary):** não são exportados; para testar isolado precisaria exportá-los ou cobrir via CoachPanel com dados mockados mais ricos no `fetch`.
+4. **#4 (cont., precisa de aval):** o warning remanescente é só o JSON `admin-ranges` (seed estático, deliberado). Dynamic import do seed mudaria o boot → fora do escopo do agente sem aval do Daniel. NÃO subir `chunkSizeWarningLimit` acima de 1.4MB. Provável ação: documentar como esperado e fechar #4.
 
 ### Issues
-- **#4** — bem encaminhada (chunk do app caiu para 303KB); resta decisão sobre o warning do chunk de dados (ver acima).
-- **#2** — Estrutura de Pastas atualizada; pode fechar (ou aprofundar componentes inline do CoachPanel como opcional).
+- **#4** — chunk do app caiu para ~305KB; resta só decisão sobre o warning do chunk de dados (ver acima).
+- **#2** — Estrutura de Pastas atualizada; pode fechar.
 
 ---
 
