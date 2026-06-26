@@ -18,18 +18,20 @@
 11. **a11y(css): `prefers-reduced-motion`** — reset que reduz animações/transições a ~0ms (não toca lógica; auto-advance e fade do WelcomeModal são JS).
 12. **a11y: ARIA nos comboboxes do CoachPanel** — `MultiPlayerSelect`/`RangeSelect` ganham `aria-haspopup="listbox"` + `aria-expanded` (reflete aberto) + `aria-label`; inputs de busca com `aria-label`. Teste cobre o toggle de `aria-expanded`.
 13. **a11y: `aria-expanded` nos acordeões** — `Section` do CoachPanel + grupos por posição do SituationsPage e do DrillRangeSelect.
+14. **a11y: teclado nos comboboxes do CoachPanel.** `RangeSelect` virou combobox/listbox real (input `role="combobox"` + `aria-activedescendant`, opções `role="option"` `aria-selected` em `role="group"` por posição; setas movem a opção ativa, Enter seleciona, Esc fecha). `MultiPlayerSelect` (checkboxes nativos, já operáveis por teclado) ganhou Esc-fecha + `role="group"`. Testes cobrem seleção por teclado e Esc.
+15. **test: componentes inline do CoachPanel.** Exportados `TopHandsPanel`/`HandDetailCard`/`PlayerQuickSummary` (antes locais) + testes isolados (abas/ordenção/onSelect/vazio/axe; barra "como o time jogou"; 3 colunas com fetch mockado).
 
 ### Estado
-- Testes: **356 passam (53 arquivos)**. Build: verde.
+- Testes: **368 passam (54 arquivos)**. Build: verde.
 - Warning de build: SÓ o chunk de dados `admin-ranges` (1.4MB). Código do app em ~305KB. Não é regressão.
 - Branch: `auto/daily-improvements`; pushada. PR **#10** aberta. NÃO mergeada (gate humano). `main`/produção intactos.
 - **Riscos:** nenhum de comportamento — chunking, testes, CSS de a11y (foco/reduced-motion) e atributos ARIA. O focus-trap muda o comportamento de teclado dos modais (intencional, coberto por teste); validar no preview se desejar.
 
 ### Próximas fatias (priorizadas)
-1. **Focus-trap nos modais que ainda não usam o hook (se surgirem):** LoginPage não é modal mas tem foco inicial natural; revisar se há novos modais. O padrão é `useModalA11y`.
-2. **ARIA de `role="listbox"`/`role="option"` nos comboboxes do CoachPanel:** hoje têm `aria-haspopup`/`aria-expanded`; faltam os papéis de lista/opção e navegação por setas (ArrowUp/Down + Enter). Fatia maior — opcional.
-3. **Componentes inline do CoachPanel (TopHandsPanel/HandDetailCard/PlayerQuickSummary):** não são exportados; para testar isolado precisaria exportá-los ou cobrir via CoachPanel com dados mockados mais ricos no `fetch`.
-4. **#4 (cont., precisa de aval):** o warning remanescente é só o JSON `admin-ranges` (seed estático, deliberado). Dynamic import do seed mudaria o boot → fora do escopo do agente sem aval do Daniel. NÃO subir `chunkSizeWarningLimit` acima de 1.4MB. Provável ação: documentar como esperado e fechar #4.
+Backlog de alto valor e baixo risco essencialmente esgotado. O que sobra precisa de decisão sua ou é gate humano:
+1. **#4 (precisa de aval):** o warning remanescente é só o JSON `admin-ranges` (seed estático, deliberado). Dynamic import do seed mudaria o boot → fora do escopo do agente sem aval do Daniel. NÃO subir `chunkSizeWarningLimit` acima de 1.4MB. Provável ação: documentar como esperado e fechar #4.
+2. **Polimentos opcionais menores:** `scrollIntoView` da opção ativa no `RangeSelect` ao navegar por setas (cosmético); `PeriodFilter` poderia expor mês/atalhos. Baixo valor.
+3. **Gate humano (inalterado):** auth/`functions/api`/worker/D1, MFA. Issue #6 segue aberta.
 
 ### Issues
 - **#4** — chunk do app caiu para ~305KB; resta só decisão sobre o warning do chunk de dados (ver acima).
