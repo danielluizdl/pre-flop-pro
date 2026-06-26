@@ -109,9 +109,12 @@ export function AdminPanel({ open: externalOpen, onClose: externalClose }: Props
           <div
             className="bg-warm-900 border border-warm-700 rounded-2xl p-6 w-full max-w-sm space-y-4"
             onClick={e => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-publish-title"
           >
             <div className="flex justify-between items-center">
-              <h3 className="font-bold text-white">Publicar Ranges</h3>
+              <h3 id="admin-publish-title" className="font-bold text-white">Publicar Ranges</h3>
               <button onClick={handleClose} className="text-warm-400 hover:text-white text-xl">✕</button>
             </div>
 

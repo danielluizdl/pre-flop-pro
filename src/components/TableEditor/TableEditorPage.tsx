@@ -362,8 +362,11 @@ export function TableEditorPage() {
           <div
             className="bg-warm-900 border border-warm-700 rounded-2xl p-6 max-w-md w-full"
             onClick={e => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="range-name-modal-title"
           >
-            <h3 className="font-bold text-white text-lg mb-1">Nome do Range</h3>
+            <h3 id="range-name-modal-title" className="font-bold text-white text-lg mb-1">Nome do Range</h3>
             <p className="text-xs text-warm-400 mb-4">
               {modalEntries.length} variações de stack serão salvas em um único range. Escolha o nome principal.
             </p>

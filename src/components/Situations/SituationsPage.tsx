@@ -231,10 +231,13 @@ export function SituationsPage() {
           <div
             className="bg-warm-900 border border-warm-700 rounded-2xl p-6 max-w-3xl w-full"
             onClick={e => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="situations-heatmap-title"
           >
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h3 className="font-bold text-white text-lg">{heatmapRange.name}</h3>
+                <h3 id="situations-heatmap-title" className="font-bold text-white text-lg">{heatmapRange.name}</h3>
                 <p className="text-xs text-warm-400 mt-0.5">Heatmap de erros por combo</p>
               </div>
               <button onClick={() => setHeatmapId(null)} className="text-warm-400 hover:text-white text-xl ml-4">✕</button>

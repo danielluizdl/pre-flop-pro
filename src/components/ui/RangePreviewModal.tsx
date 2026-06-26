@@ -23,10 +23,13 @@ export function RangePreviewModal({ range, onClose }: Props) {
       <div
         className="bg-warm-900 border border-warm-700 rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="range-preview-title"
       >
         <div className="flex justify-between items-start mb-5">
           <div>
-            <h3 className="font-bold text-white text-lg">{range.name}</h3>
+            <h3 id="range-preview-title" className="font-bold text-white text-lg">{range.name}</h3>
             <p className="text-xs text-warm-400 mt-0.5">
               {range.tableSize}-max · {range.positions.join(', ')} · {range.scenarios.length} cenário{range.scenarios.length !== 1 ? 's' : ''}
               {!!displayStackRange && <span className="ml-1 text-brand-400">· {displayStackRange}</span>}

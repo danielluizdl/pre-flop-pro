@@ -55,10 +55,13 @@ export function PrereqRangePicker({ ranges, excludeId, filterPositions, currentP
       <div
         className="bg-warm-900 border border-warm-700 rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col"
         onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="prereq-picker-title"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-warm-700 flex-shrink-0">
-          <h2 className="text-sm font-bold text-white">Selecionar Range Pré-requisito</h2>
+          <h2 id="prereq-picker-title" className="text-sm font-bold text-white">Selecionar Range Pré-requisito</h2>
           <button onClick={onClose} aria-label="Fechar" className="text-warm-400 hover:text-white transition-colors">
             <X size={16} />
           </button>
