@@ -14,21 +14,24 @@ de produção. Issue do epic: **#13** (label `agente`). UMA FATIA SUBSTANCIAL po
 
 ## Backlog (pegue a próxima fatia do topo)
 ### FASE 1 — Auditoria
-- [ ] Mapear superfícies com `fetch`/async e listas que podem vir vazias; anotar o que já tem
-      loading/empty/error e o que falta. Registrar no handoff.
+- [x] Superfícies async mapeadas (handoff): store (ações `{ok}`), eventQueue (retry próprio),
+      CoachPanel (loading/empty/error por seção), MyAccountStats (tinha gaps → corrigidos). (26/06)
 
 ### FASE 2 — Erros de rede sem tela quebrada
-- [ ] Cada `fetch` que pode falhar mostra mensagem amigável (+ retry quando fizer sentido) em vez de
-      sumir/branco. Padronizar tratamento.
-
-### FASE 3 — Estados vazios consistentes
-- [ ] Empty states com texto claro e CTA onde fizer sentido.
-
-### FASE 4 — Loading consistente
-- [ ] Skeleton/placeholder discreto sem layout shift nas seções pesadas (coach, stats).
+- [x] MyAccountStats: erro → mensagem + "Tentar novamente"; DevicesSection distingue falha de vazio. (26/06)
+- [x] CoachPanel: hooks expõem `reload()`; `Section` mostra "Tentar novamente" no erro (7 seções). (26/06)
 
 ### FASE 5 — Isolamento de falhas
-- [ ] ErrorBoundary por área (se medível) p/ não derrubar a página inteira.
+- [x] `ErrorBoundary` ganhou `variant="section"` + `resetKey`; AppLayout isola a área de página
+      (`resetKey={page}`) — crash de página não derruba a navegação. (26/06)
+
+### FASE 3 — Estados vazios consistentes (próxima — menor prioridade)
+- [ ] Empty states já existem na maioria; revisar CTAs. Trocar os `alert()` do drill/seleção
+      (`TrainerPage` linhas ~518/671/1080: "Nenhuma mão selecionada", "Selecione pelo menos um range",
+      "Sem mais mãos") por mensagens inline — toca o fluxo do drill, fazer com cuidado/teste.
+
+### FASE 4 — Loading consistente (opcional, baixo valor)
+- [ ] Skeleton/placeholder sem layout shift nas seções pesadas (hoje é texto "Carregando…").
 
 ## Definição de pronto por fatia
 - Estado novo coberto por teste + axe; caminho feliz intacto; `npm test`/`npm run build` verdes;

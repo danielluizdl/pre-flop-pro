@@ -15,11 +15,19 @@ Epic **#11 (performance de render) essencialmente concluído** (FASE 1–5; PR #
 ### Feito (FASE 2 do #13)
 - **MyAccountStats robusto**: (1) erro de rede nas stats → mensagem + **"Tentar novamente"** (recarrega via `retry` em dep do effect); (2) `DevicesSection` distingue **falha** de **vazio** (antes mostrava "Nenhuma sessão ativa" mesmo em erro). Testes: erro→retry→dados; falha de sessões mostra erro. 376 testes verdes.
 
-### Próximas fatias (#13)
-1. **Retry nos erros de seção do CoachPanel** (hoje mostra erro sem ação) — FASE 2.
-2. **Estados vazios/erro do drill e StatsPage** revisados — FASE 3.
-3. **Skeletons sem layout shift** nas seções pesadas do coach/stats — FASE 4.
-4. **ErrorBoundary por área** se medível — FASE 5.
+### Feito também (mesma sessão — #13 FASE 2 e 5)
+- **CoachPanel retry**: `useAnalytics`/`useTrend`/`useSegments`/`usePlayerRanges` expõem `reload()` (tick em dep);
+  `Section` mostra "Tentar novamente" no erro; as 7 seções do TeamView passam `onRetry`. Teste: erro→retry→dados.
+- **ErrorBoundary por área (FASE 5)**: `variant="section"` (fallback compacto) + `resetKey`; AppLayout envolve
+  a área de página com `resetKey={page}` → crash de página não derruba a navegação; navegar recupera. Testes.
+
+### Estado (#13)
+- **379 testes verdes**. FASE 1 (auditoria), FASE 2 (erros de rede c/ retry) e FASE 5 (isolamento) FEITAS.
+
+### Próximas fatias (#13 — menor prioridade)
+1. **FASE 3**: trocar os `alert()` do `TrainerPage` (~518/671/1080) por mensagens inline — toca o fluxo do
+   drill, fazer com cuidado + teste. Empty states já existem na maioria.
+2. **FASE 4 (opcional)**: skeletons sem layout shift nas seções pesadas (hoje texto "Carregando…").
 
 ---
 
