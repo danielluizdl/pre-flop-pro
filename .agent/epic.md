@@ -36,10 +36,11 @@ células continuamente, inclusive ao editar (o tooltip só existe no modo heatma
 - [x] `DrillActive`: `HandHistorySidebar` em `React.memo` (props estáveis: `handleReplayEntry` via
       `useCallback`); estados internos do drill não a re-renderizam. Prova por contagem. (26/06)
 
-### FASE 3 — CoachPanel (PRÓXIMA — coach-only, menor tráfego)
-- [ ] `useMemo` nas agregações por range/jogador; linhas de tabela (`Resumo do time`, `Por range`,
-      Top 20) memoizadas; handlers estáveis. Evitar recriar `Col`/render props a cada render.
-      Componente grande — fatiar com cuidado.
+### FASE 3 — CoachPanel
+- [x] Agregações já eram `useMemo`. Linhas de **Resumo do time** (`OverviewTableRow`) e **Por range**
+      (`ByRangeTableRow`) extraídas em `React.memo` com handlers estáveis (`togglePlayer`/`selectRange`).
+      Prova: abrir resumo de jogador re-renderiza só 1 linha. (26/06)
+      (Opcional/baixo valor: linhas do Top 20 do `TopHandsPanel` — só re-renderiza em troca de aba/seleção.)
 
 ### FASE 5 — runtime/bundle em caminhos quentes
 - [ ] Revisar imports pesados em caminhos quentes; lazy onde fizer sentido (sem tocar o seed).
