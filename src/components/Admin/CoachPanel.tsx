@@ -1,4 +1,5 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState, useCallback, memo } from 'react'
+import { countRender } from '../../test/renderCount'
 import { useStore } from '../../store/useStore'
 import { RangeHeatGrid, type GridCell } from './RangeHeatGrid'
 import { RangeActionGrid, type ActionFreq } from './RangeActionGrid'
@@ -772,6 +773,76 @@ export function PlayerQuickSummary({ userId, days, from, to, token }: { userId: 
 type SortKey = 'name' | 'hands' | 'accuracy' | 'graves' | 'consults' | 'durationSeconds' | 'lastActivity'
 type ByRangeSortKey = 'hands' | 'accuracy' | 'graves' | 'consults' | 'players'
 
+// Linhas memoizadas: abrir o resumo de um jogador / reordenar não re-renderiza
+// todas as linhas, só as afetadas (props estáveis + handlers via useCallback).
+const OverviewTableRow = memo(function OverviewTableRow({ row: r, isOpen, zebra, onToggle, days, from, to, token }: {
+  row: OverviewRow
+  isOpen: boolean
+  zebra: boolean
+  onToggle: (userId: number) => void
+  days: number | null
+  from: number | null
+  to: number | null
+  token: string | null
+}) {
+  countRender('overviewRow')
+  return (
+    <Fragment>
+      <tr
+        onClick={() => onToggle(r.userId)}
+        className={`border-t border-warm-700/60 cursor-pointer transition-colors ${isOpen ? 'bg-warm-800/70' : zebra ? 'bg-warm-900/20 hover:bg-warm-800/50' : 'hover:bg-warm-800/50'}`}
+      >
+        <td className={`${TD} text-warm-100 font-semibold`}>
+          <span className={`inline-block w-3 text-warm-600 text-[0.6rem] ${isOpen ? 'text-brand-400' : ''}`}>{isOpen ? '▾' : '▸'}</span>
+          {r.name || r.username}
+        </td>
+        <td className={`${TDR} text-warm-300`}>{r.hands}</td>
+        <td className={`${TDR} font-bold ${accColor(r.accuracy)}`}>{r.accuracy}%</td>
+        <td className={`${TDR} text-red-400`}>{r.graves}</td>
+        <td className={`${TDR} text-warm-400`}>{r.consults}</td>
+        <td className={`${TDR} text-warm-400`}>{formatHours(r.durationSeconds)}</td>
+        <td className={`${TDR} text-warm-500`}>{formatDateShort(r.lastActivity)}</td>
+      </tr>
+      {isOpen && (
+        <tr>
+          <td colSpan={7} className="p-0">
+            <PlayerQuickSummary userId={r.userId} days={days} from={from} to={to} token={token} />
+          </td>
+        </tr>
+      )}
+    </Fragment>
+  )
+})
+
+const ByRangeTableRow = memo(function ByRangeTableRow({ row: r, selected, onSelect }: {
+  row: ByRangeRow
+  selected: boolean
+  onSelect: (rangeId: number) => void
+}) {
+  countRender('byRangeRow')
+  const sev = severityProfile(r.graves, r.imprecisos)
+  const sm = SEVERITY_META[sev.classification]
+  return (
+    <tr
+      onClick={() => onSelect(r.rangeId)}
+      className={`border-t border-warm-700/60 cursor-pointer hover:bg-warm-800/50 ${selected ? 'bg-warm-800/70' : ''}`}
+    >
+      <td className={`${TD} text-warm-100 font-semibold whitespace-nowrap`}>{r.rangeName}</td>
+      <td className={`${TDR} text-warm-300`}>{r.hands}</td>
+      <td className={`${TDR} font-bold ${accColor(r.accuracy)}`}>{r.accuracy}%</td>
+      <td className={`${TDR} text-red-400`}>{r.graves}</td>
+      <td className={`${TD} whitespace-nowrap`} title={SEVERITY_HELP[sev.classification] || undefined}>
+        <span className={`font-semibold ${sm.cls}`}>{sm.label}</span>
+        {sev.classification !== 'na' && (
+          <span className="block text-[0.65rem] text-warm-500">{r.graves} blunders · {r.imprecisos} imprecisos</span>
+        )}
+      </td>
+      <td className={`${TDR} text-warm-400`}>{r.consults}</td>
+      <td className={`${TDR} text-warm-400`}>{r.players}</td>
+    </tr>
+  )
+})
+
 function TeamView({ token }: { token: string | null }) {
   const ranges = useStore(s => s.ranges)
   const [users, setUsers] = useState<CoachUser[]>([])
@@ -891,6 +962,13 @@ function TeamView({ token }: { token: string | null }) {
     else { setSortKey(key); setSortDir(key === 'name' ? 'asc' : 'desc') }
   }
 
+  const togglePlayer = useCallback((userId: number) => {
+    setOpenPlayer(p => (p === userId ? null : userId))
+  }, [])
+  const selectRange = useCallback((rangeId: number) => {
+    setFilters(f => ({ ...f, rangeId }))
+  }, [])
+
   const sortedByRange = useMemo(() => {
     const rows = [...byRange.rows]
     rows.sort((a, b) => {
@@ -970,30 +1048,9 @@ function TeamView({ token }: { token: string | null }) {
             </tr>
           </thead>
           <tbody>
-            {sortedByRange.map((r, i) => {
-              const sev = severityProfile(r.graves, r.imprecisos)
-              const sm = SEVERITY_META[sev.classification]
-              return (
-                <tr
-                  key={i}
-                  onClick={() => setFilters(f => ({ ...f, rangeId: r.rangeId }))}
-                  className={`border-t border-warm-700/60 cursor-pointer hover:bg-warm-800/50 ${filters.rangeId === r.rangeId ? 'bg-warm-800/70' : ''}`}
-                >
-                  <td className={`${TD} text-warm-100 font-semibold whitespace-nowrap`}>{r.rangeName}</td>
-                  <td className={`${TDR} text-warm-300`}>{r.hands}</td>
-                  <td className={`${TDR} font-bold ${accColor(r.accuracy)}`}>{r.accuracy}%</td>
-                  <td className={`${TDR} text-red-400`}>{r.graves}</td>
-                  <td className={`${TD} whitespace-nowrap`} title={SEVERITY_HELP[sev.classification] || undefined}>
-                    <span className={`font-semibold ${sm.cls}`}>{sm.label}</span>
-                    {sev.classification !== 'na' && (
-                      <span className="block text-[0.65rem] text-warm-500">{r.graves} blunders · {r.imprecisos} imprecisos</span>
-                    )}
-                  </td>
-                  <td className={`${TDR} text-warm-400`}>{r.consults}</td>
-                  <td className={`${TDR} text-warm-400`}>{r.players}</td>
-                </tr>
-              )
-            })}
+            {sortedByRange.map((r, i) => (
+              <ByRangeTableRow key={i} row={r} selected={filters.rangeId === r.rangeId} onSelect={selectRange} />
+            ))}
           </tbody>
         </table>
       </Section>
@@ -1028,30 +1085,17 @@ function TeamView({ token }: { token: string | null }) {
           </thead>
           <tbody>
             {sortedOverview.map((r, i) => (
-              <Fragment key={r.userId}>
-                <tr
-                  onClick={() => setOpenPlayer(p => (p === r.userId ? null : r.userId))}
-                  className={`border-t border-warm-700/60 cursor-pointer transition-colors ${openPlayer === r.userId ? 'bg-warm-800/70' : i % 2 ? 'bg-warm-900/20 hover:bg-warm-800/50' : 'hover:bg-warm-800/50'}`}
-                >
-                  <td className={`${TD} text-warm-100 font-semibold`}>
-                    <span className={`inline-block w-3 text-warm-600 text-[0.6rem] ${openPlayer === r.userId ? 'text-brand-400' : ''}`}>{openPlayer === r.userId ? '▾' : '▸'}</span>
-                    {r.name || r.username}
-                  </td>
-                  <td className={`${TDR} text-warm-300`}>{r.hands}</td>
-                  <td className={`${TDR} font-bold ${accColor(r.accuracy)}`}>{r.accuracy}%</td>
-                  <td className={`${TDR} text-red-400`}>{r.graves}</td>
-                  <td className={`${TDR} text-warm-400`}>{r.consults}</td>
-                  <td className={`${TDR} text-warm-400`}>{formatHours(r.durationSeconds)}</td>
-                  <td className={`${TDR} text-warm-500`}>{formatDateShort(r.lastActivity)}</td>
-                </tr>
-                {openPlayer === r.userId && (
-                  <tr>
-                    <td colSpan={7} className="p-0">
-                      <PlayerQuickSummary userId={r.userId} days={filters.days} from={filters.from} to={filters.to} token={token} />
-                    </td>
-                  </tr>
-                )}
-              </Fragment>
+              <OverviewTableRow
+                key={r.userId}
+                row={r}
+                isOpen={openPlayer === r.userId}
+                zebra={!!(i % 2)}
+                onToggle={togglePlayer}
+                days={filters.days}
+                from={filters.from}
+                to={filters.to}
+                token={token}
+              />
             ))}
             {overview.team && (
               <tr className="border-t-2 border-warm-600 bg-warm-800/40 font-bold">

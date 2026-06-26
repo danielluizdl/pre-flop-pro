@@ -4,6 +4,7 @@ import { axe } from 'jest-axe'
 import CoachPanel from './CoachPanel'
 import { useStore } from '../../store/useStore'
 import { makeEmptyGrid } from '../../utils/hands'
+import { getRenderCount, resetRenderCount } from '../../test/renderCount'
 import type { Range } from '../../types'
 
 function mockApi() {
@@ -89,6 +90,29 @@ describe('CoachPanel', () => {
     const search = screen.getByRole('combobox', { name: 'Buscar range' })
     fireEvent.keyDown(search, { key: 'Escape' })
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+  })
+
+  it('abrir o resumo de um jogador re-renderiza só a linha afetada (memo)', async () => {
+    const orow = (userId: number, name: string) => ({
+      userId, username: name.toLowerCase(), name, hands: 100, accuracy: 70,
+      graves: 5, imprecisos: 2, consults: 3, sessions: 4, durationSeconds: 3600, lastActivity: 0,
+    })
+    vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      let data: unknown = { rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }
+      if (url.includes('/admin/users')) data = { users: [] }
+      else if (url.includes('view=team-overview')) data = { rows: [orow(1, 'Alice'), orow(2, 'Bob')], team: null }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(data) } as unknown as Response)
+    })
+    useStore.setState({ authToken: 'tok' })
+
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Resumo do time/ }))
+    const alice = await screen.findByText('Alice')
+    resetRenderCount('overviewRow')
+    fireEvent.click(alice)
+    // Só a linha da Alice muda (isOpen) — a do Bob é memoizada e não re-renderiza.
+    expect(getRenderCount('overviewRow')).toBe(1)
   })
 
   it('não tem violações de acessibilidade (axe)', async () => {
