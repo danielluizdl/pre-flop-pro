@@ -503,6 +503,7 @@ function DrillRangeSelect() {
   const [step, setStep]             = useState<'select' | 'filter'>('select')
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
   const [previewId, setPreviewId]   = useState<number | null>(null)
+  const [notice, setNotice]         = useState('')
 
   function toggleGroup(pos: string) {
     setOpenGroups(prev => {
@@ -515,7 +516,7 @@ function DrillRangeSelect() {
   function handleStartDrill() {
     startDrillSession()
     const ok = nextDrillHand()
-    if (!ok) alert('Nenhuma mão selecionada!')
+    if (!ok) setNotice('Nenhuma mão selecionada para treinar. Volte e inclua ao menos uma mão.')
   }
 
   if (step === 'select') {
@@ -662,13 +663,15 @@ function DrillRangeSelect() {
               })}
             </div>
 
+            {notice && <p role="alert" className="text-sm text-red-400 pt-2 text-right">{notice}</p>}
             <div className="flex items-center justify-between pt-2">
               <span className="text-sm text-warm-400">
                 {selectedIds.length > 0 ? `${selectedIds.length} range${selectedIds.length !== 1 ? 's' : ''} selecionado${selectedIds.length !== 1 ? 's' : ''}` : 'Nenhum selecionado'}
               </span>
               <button
                 onClick={() => {
-                  if (selectedIds.length === 0) { alert('Selecione pelo menos um range.'); return }
+                  if (selectedIds.length === 0) { setNotice('Selecione pelo menos um range.'); return }
+                  setNotice('')
                   setStep('filter')
                 }}
                 className="btn-commit"
@@ -694,6 +697,7 @@ function DrillRangeSelect() {
         <p className="text-warm-400 text-sm">Arraste para selecionar/remover várias mãos.</p>
       </div>
       <HandFilterGrid />
+      {notice && <p role="alert" className="text-sm text-red-400 text-center">{notice}</p>}
       <div className="flex gap-3 justify-center">
         <button
           onClick={handleStartDrill}

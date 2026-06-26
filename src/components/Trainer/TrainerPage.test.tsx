@@ -27,6 +27,13 @@ describe('TrainerPage', () => {
     expect(screen.getByText('Nenhum range criado.')).toBeInTheDocument()
   })
 
+  it('CONTINUAR sem range selecionado mostra aviso inline (não alert)', () => {
+    useStore.setState({ ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [] })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
+    expect(screen.getByRole('alert')).toHaveTextContent('Selecione pelo menos um range.')
+  })
+
   it('renderiza o drill ativo com o botão FOLD', () => {
     useStore.setState({
       ranges: [RANGE],
