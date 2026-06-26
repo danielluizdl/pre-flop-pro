@@ -1,5 +1,5 @@
-import { describe, it, expect, afterEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect, afterEach, vi } from 'vitest'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { axe } from 'jest-axe'
 import { TrainerPage } from './TrainerPage'
 import { useStore } from '../../store/useStore'
@@ -86,6 +86,65 @@ describe('TrainerPage', () => {
     render(<TrainerPage />)
     fireEvent.keyDown(window, { key: 'f' })
     expect(screen.getByText(/Blunder/)).toBeInTheDocument()
+  })
+
+  it('"Ver Range" abre o diálogo e registra a consulta', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
+      handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
+    })
+    render(<TrainerPage />)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Ver Range' }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(useStore.getState().sessionStats.consults).toBe(1)
+  })
+
+  it('Esc fecha o diálogo "Ver Range"', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
+      handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
+    })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Ver Range' }))
+    const dialog = screen.getByRole('dialog')
+    fireEvent.keyDown(dialog, { key: 'Escape' })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('auto-advance ("2s") chama nextDrillHand após 2s da resposta', () => {
+    vi.useFakeTimers()
+    const nextDrillHand = vi.fn(() => true)
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
+      handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
+      nextDrillHand,
+    })
+    try {
+      render(<TrainerPage />)
+      fireEvent.click(screen.getByRole('button', { name: '2s' }))
+      fireEvent.click(screen.getByRole('button', { name: /FOLD/ }))
+      expect(nextDrillHand).not.toHaveBeenCalled()
+      act(() => { vi.advanceTimersByTime(2000) })
+      expect(nextDrillHand).toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('não tem violações de acessibilidade na seleção de ranges (axe)', async () => {
