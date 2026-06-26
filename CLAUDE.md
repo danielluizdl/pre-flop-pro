@@ -6,19 +6,24 @@
 - Deploy: GitHub Pages via GitHub Actions ao fazer push para `main` (`https://github.com/danielluizdl/pre-flop-pro`)
 - **POLÍTICA DE PRODUÇÃO (CONGELADA):** o link em uso pelos jogadores é **`https://danielluizdl.github.io/pre-flop-pro/`** (GitHub Pages, deploy do `main`). Ele deve ficar **INTACTO** até o site novo estar completo. Portanto: **NÃO mergear nada no `main`** e **NÃO mexer no que afeta o GitHub Pages** até liberação explícita do Daniel. Todo o desenvolvimento do "site completo" acontece na branch dedicada **`feature/auth-telemetry`** (e branches derivadas, ex.: `auto/daily-improvements` do agente), validadas no preview do Cloudflare Pages. Obs.: `public/_headers` (CSP/headers) só vale no Cloudflare Pages — o GitHub Pages o ignora, então mexer nele nunca afeta o link de produção.
 - Testes: **Vitest** (`npm test` → `vitest run`), ambiente jsdom. Specs em `src/**/*.test.ts`, **`src/**/*.test.tsx`** (componentes), `worker/**/*.test.js`, `functions/**/*.test.js` (ver `vitest.config.ts`). Testes de componente com **React Testing Library** + `@testing-library/jest-dom` + **`jest-axe`** (a11y); setup em `src/test/setup.ts`; exemplo-padrão `src/components/ui/ComboCounter.test.tsx`. **Epic ativo do agente diário: suíte de testes + acessibilidade — ver `.agent/epic.md`** (o agente avança uma fatia substancial por execução).
-- Bundle: `adminRanges.json` (1.4MB) é separado em chunk próprio via `manualChunks` (`vite.config.ts`). Chunk principal ~480KB.
+- Bundle: `adminRanges.json` (1.4MB) é separado em chunk próprio via `manualChunks` (`vite.config.ts`), que também separa vendors (`vendor-react` = react/react-dom/scheduler/react-router; `vendor-sentry`; `vendor` = restante). Chunk principal do app ~303KB (gzip ~47KB); o único chunk acima de 500KB é o JSON `admin-ranges` (dados, separado de propósito).
 
 ## Estrutura de Pastas
 ```
 src/
   components/
-    Layout/       AppLayout.tsx, Sidebar.tsx, Dashboard.tsx
+    Layout/       AppLayout.tsx, Sidebar.tsx, TopNav.tsx, Dashboard.tsx, RouterSync.tsx, ErrorBoundary.tsx
     RangeBuilder/ RangeEditorPage.tsx, RangeSetupPage.tsx, HandMatrix.tsx, BrushControls.tsx
     TableEditor/  TableEditorPage.tsx
     Trainer/      TrainerPage.tsx
-    Situations/   SituationsPage.tsx
-    Stats/        StatsPage.tsx
-    ui/           PokerTableEditor.tsx, HandQuickSelect.tsx, RangePreviewModal.tsx
+    Situations/   SituationsPage.tsx, CategoryDetailPage.tsx
+    Stats/        StatsPage.tsx, MyAccountStats.tsx, AccuracySparkline.tsx
+    Auth/         LoginPage.tsx, WelcomeModal.tsx, ChangePasswordModal.tsx, Turnstile.tsx
+    Admin/        AdminPanel.tsx (worker legado), CoachPanel.tsx, RangeHeatGrid.tsx,
+                  RangeActionGrid.tsx (TopHandsPanel, HandDetailCard, PlayerQuickSummary,
+                  MultiPlayerSelect, RangeSelect e PeriodFilter são inline no CoachPanel.tsx)
+    ui/           PokerTableEditor.tsx, HandQuickSelect.tsx, RangePreviewModal.tsx,
+                  ComboCounter.tsx, PrereqRangePicker.tsx, RangeMark.tsx, tableGeometry.ts, PokerTable.module.css
   store/          useStore.ts  (toda a lógica de estado)
   types/          index.ts     (tipos, constantes de posições/slots)
   utils/          hands.ts     (ALL_HANDS, makeEmptyGrid, getRngCorrectAction, getRngBands, formatRngBands, getTopFrequencyActions, stackMatchesRange, generateSuits, focusWeight, weightedPick)
@@ -26,10 +31,14 @@ src/
                   sparseGrid.ts (encodeSparse/decodeSparse + encodeRange/decodeRange/encodeRanges/decodeRanges)
                   hash.ts (djb2 → hash compacto base36)
                   download.ts (downloadText, backupFilename)
-  components/Layout/ ErrorBoundary.tsx (class component global)
-  components/Admin/  AdminPanel.tsx (publicação de ranges)
+                  eventQueue.ts (fila localStorage de telemetria, cap 500, retry/flush; fireEvent)
+                  sentry.ts (init condicional via VITE_SENTRY_DSN; scrub de PII no beforeSend)
+                  coachStats.ts / coachTrend.ts / coachRelative.ts / coachFocus.ts (data science do painel coach: Wilson, leakImpact, severityProfile, linreg, z-score)
+                  handCategories.ts (categoria da mão + ação correta)
+                  rangeCombos.ts (combosOf, rangeComboStats, TOTAL_COMBOS=1326)
   data/           defaultRanges.ts  (ranges nativos, seed no localStorage)
   worker/         index.js (Cloudflare Worker; deploy manual) + index.test.js
+  functions/api/  Cloudflare Pages Functions (auth/telemetria/coach — ver seção "Backend de Nuvem")
 ```
 
 ## Tipos Principais (`src/types/index.ts`)

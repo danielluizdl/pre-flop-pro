@@ -4,6 +4,7 @@ import { PokerTableEditor } from '../ui/PokerTableEditor'
 import { SEAT_ROLE_LABELS } from '../../types'
 import type { PositionConfig } from '../../types'
 import { countNonFoldHands } from '../../utils/hands'
+import { useModalA11y } from '../../utils/useModalA11y'
 import { X } from 'lucide-react'
 
 function getStackLabel(data: Record<string, PositionConfig>): string {
@@ -59,6 +60,7 @@ export function TableEditorPage() {
   const [editingIdx, setEditingIdx]       = useState<number | null>(null)
   const [nameModalOpen, setNameModalOpen] = useState(false)
   const [primaryName, setPrimaryName]     = useState('')
+  const nameDialogRef = useModalA11y<HTMLDivElement>(nameModalOpen, () => setNameModalOpen(false))
 
   useEffect(() => {
     if (Object.keys(currentScenario).length === 0) initTableConfig()
@@ -132,7 +134,7 @@ export function TableEditorPage() {
         {/* Left: config panel */}
         <div className="lg:w-80 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="font-bold text-sm text-warm-300">Ação na Mesa</h3>
+            <h2 className="font-bold text-sm text-warm-300">Ação na Mesa</h2>
             <button
               onClick={initTableConfig}
               className="text-xs px-2 py-1 border border-warm-600 bg-warm-800 rounded text-warm-400 hover:bg-warm-700"
@@ -156,6 +158,7 @@ export function TableEditorPage() {
             <div className="flex items-center gap-1 flex-1 min-w-0">
               <input
                 type="number" min={1}
+                aria-label="Stack para todos os jogadores"
                 className="flex-1 min-w-0 p-1 border border-warm-600 rounded text-xs bg-warm-900 text-warm-200 text-center"
                 placeholder="Preencher"
                 value={customStack || ''}
@@ -195,6 +198,7 @@ export function TableEditorPage() {
                 <div className="grid items-center gap-1" style={{ gridTemplateColumns: '20px 44px 1fr 56px 56px' }}>
                   <input
                     type="radio" name="hero-select"
+                    aria-label={`Definir ${pos.label} como HERO`}
                     className="w-4 h-4 cursor-pointer accent-amber-500"
                     onChange={() => updateHero(pos.id)}
                     checked={data.isHero}
@@ -207,6 +211,7 @@ export function TableEditorPage() {
                     {data.isHero && <div className="text-[8px] text-amber-500 font-bold">HERO</div>}
                   </div>
                   <select
+                    aria-label={`Ação de ${pos.label}`}
                     className="w-full p-1 rounded border border-warm-600 text-xs bg-warm-900 text-warm-200 cursor-pointer"
                     value={data.role}
                     onChange={e => updateRole(pos.id, e.target.value)}
@@ -217,6 +222,7 @@ export function TableEditorPage() {
                   </select>
                   <input
                     type="number"
+                    aria-label={`Stack de ${pos.label}`}
                     className="p-1 text-center border border-warm-600 rounded text-xs bg-warm-900 text-warm-200"
                     value={data.stack}
                     onChange={e => updateStack(pos.id, Number(e.target.value))}
@@ -224,6 +230,7 @@ export function TableEditorPage() {
                   />
                   <input
                     type="number" step={0.1}
+                    aria-label={`Aposta de ${pos.label}`}
                     className="p-1 text-center border border-warm-600 rounded text-xs bg-warm-900 text-warm-200"
                     value={data.bet}
                     onChange={e => updateBet(pos.id, parseFloat(e.target.value) || 0)}
@@ -237,6 +244,7 @@ export function TableEditorPage() {
                     <label className="text-xs text-amber-400 flex-shrink-0">Raise futuro:</label>
                     <input
                       type="number" min={0} step={0.5}
+                      aria-label="Tamanho do raise futuro"
                       className="w-20 p-1 border border-amber-600/50 rounded text-xs bg-warm-900 text-amber-200 text-center"
                       placeholder="bb"
                       value={currentHeroRaiseSize || ''}
@@ -297,9 +305,9 @@ export function TableEditorPage() {
           {/* Saved scenarios */}
           {tempScenarios.length > 0 && (
             <div className="space-y-1.5">
-              <h4 className="text-xs font-bold text-warm-400 uppercase tracking-wider">
+              <h3 className="text-xs font-bold text-warm-400 uppercase tracking-wider">
                 Cenários Salvos ({tempScenarios.length})
-              </h4>
+              </h3>
               {tempScenarios.map((scen, idx) => (
                 <div
                   key={scen.id}
@@ -354,10 +362,14 @@ export function TableEditorPage() {
           onClick={() => setNameModalOpen(false)}
         >
           <div
+            ref={nameDialogRef}
             className="bg-warm-900 border border-warm-700 rounded-2xl p-6 max-w-md w-full"
             onClick={e => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="range-name-modal-title"
           >
-            <h3 className="font-bold text-white text-lg mb-1">Nome do Range</h3>
+            <h3 id="range-name-modal-title" className="font-bold text-white text-lg mb-1">Nome do Range</h3>
             <p className="text-xs text-warm-400 mb-4">
               {modalEntries.length} variações de stack serão salvas em um único range. Escolha o nome principal.
             </p>
@@ -388,6 +400,7 @@ export function TableEditorPage() {
             <input
               type="text"
               autoFocus
+              aria-label="Nome do range"
               className="w-full px-3 py-2.5 border border-warm-600 rounded-lg text-sm bg-warm-800 text-white placeholder-warm-500 focus:border-brand-500 focus:outline-none mb-4"
               placeholder="Ex: Defesa BB vs UTG"
               value={primaryName}

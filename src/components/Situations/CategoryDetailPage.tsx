@@ -77,7 +77,7 @@ export function CategoryDetailPage() {
             return (
               <div key={r.id} className="card-surface rounded-lg p-3 hover:border-warm-500 transition-all flex flex-col gap-2">
                 <div>
-                  <h3 className="font-bold text-white text-sm leading-tight">{r.name}</h3>
+                  <h2 className="font-bold text-white text-sm leading-tight">{r.name}</h2>
                   <div className="flex items-center gap-3 mt-1">
                     <span className="text-xs text-warm-500">
                       {r.positions.join(', ')} · {countNonFoldHands(r.grid)} mãos · {r.scenarios.length} cenário{r.scenarios.length !== 1 ? 's' : ''}

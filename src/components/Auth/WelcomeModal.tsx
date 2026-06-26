@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../../store/useStore'
+import { useModalA11y } from '../../utils/useModalA11y'
 import { RangeMark } from '../ui/RangeMark'
 
 const DURATION = 6000
@@ -35,6 +36,7 @@ export function WelcomeModal() {
   }
 
   const firstName = currentUser?.name?.split(' ')[0] ?? currentUser?.username ?? ''
+  const dialogRef = useModalA11y<HTMLDivElement>(true, handleClose)
 
   return (
     <div
@@ -46,6 +48,10 @@ export function WelcomeModal() {
         className={`w-full max-w-md bg-warm-900 border border-warm-700/50 rounded-3xl p-8 text-center shadow-2xl transition-all duration-500 ${visible ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}
         style={{ transitionTimingFunction: 'cubic-bezier(0.34,1.56,0.64,1)' }}
         onClick={e => e.stopPropagation()}
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="welcome-modal-title"
       >
         <div className="flex justify-center mb-5">
           <div className="animate-bounce">
@@ -53,7 +59,7 @@ export function WelcomeModal() {
           </div>
         </div>
 
-        <h2 className="text-2xl font-bold text-white mb-1">
+        <h2 id="welcome-modal-title" className="text-2xl font-bold text-white mb-1">
           Bem-vindo(a), {firstName}!
         </h2>
         <p className="text-brand-400 text-sm font-semibold mb-5">

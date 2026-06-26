@@ -30,6 +30,10 @@ componentes), não uma tarefa mínima. Sempre `npm test` + `npm run build` verde
   com mock; nunca bata em rede real. Telemetria (`fireEvent`) é no-op sem `authToken`.
 - Determinismo: nada de timers reais longos; use `vi.useFakeTimers()` quando houver
   auto-advance/debounce.
+- Performance/flakiness: `testTimeout` global = 15000ms (axe em grids grandes — ex.: HandMatrix
+  169 células — é lento sob carga paralela). Em asserts async, ancore num texto confiável
+  (ex.: `await screen.findByText('<valor certo>')`) antes de `getByText`, em vez de dar
+  `findByText` direto no texto que você está validando.
 
 ## Backlog do epic (pegue a próxima fatia não-feita do topo)
 Marque [x] no commit conforme avança. Cada fase = vários PRs/dias.
@@ -41,27 +45,35 @@ Marque [x] no commit conforme avança. Cada fase = vários PRs/dias.
 - [ ] Confirmar cobertura dos utils de data science (coachStats/coachTrend/handCategories/coachRelative/rangeCombos) e completar buracos
 
 ### FASE 2 — componentes de apresentação (puros, props → render)
-- [ ] `ui/ComboCounter` (FEITO, exemplo)
-- [ ] `Stats/AccuracySparkline`, `Admin/RangeActionGrid`, `Admin/RangeHeatGrid`
-- [ ] `Admin/TopHandsPanel`, `Admin/HandDetailCard`, `Admin/PlayerQuickSummary`
-- [ ] `ui/PokerTableEditor` (render do layout de assentos/cartas)
+- [x] `ui/ComboCounter` (FEITO, exemplo)
+- [x] `Stats/AccuracySparkline`, `Admin/RangeActionGrid`, `Admin/RangeHeatGrid`
+- [~] `Admin/TopHandsPanel`, `Admin/HandDetailCard`, `Admin/PlayerQuickSummary` (NÃO são arquivos próprios — estão inline no `CoachPanel.tsx`; serão cobertos junto do CoachPanel na FASE 4)
+- [x] `ui/PokerTableEditor` (render do layout de assentos/cartas)
 
 ### FASE 3 — componentes com store
-- [ ] `RangeBuilder/BrushControls` (presets, clamp ≤100%, indicador de preset ativo)
-- [ ] `RangeBuilder/HandMatrix` (pintar/limpar, toggle Ações/Erro-Acerto)
-- [ ] `Admin/MultiPlayerSelect`, `Admin/RangeSelect`, `PeriodFilter` (busca, custom date)
-- [ ] `Stats/MyAccountStats` (cards, DevicesSection — com fetch mockado)
+- [x] `RangeBuilder/BrushControls` (presets, clamp ≤100%, indicador de preset ativo) — 25/06; + `RangeBuilder/RangeSetupPage`, `ui/RangeMark`, `ui/PrereqRangePicker` na mesma fatia
+- [x] `RangeBuilder/HandMatrix` (render 13x13, toggle heatmap, applyBrush no clique, axe) — 25/06
+- [~] `Admin/MultiPlayerSelect`, `Admin/RangeSelect`, `PeriodFilter` (inline no CoachPanel.tsx — cobrir junto do CoachPanel na FASE 4)
+- [x] `Stats/MyAccountStats` (cards, estados vazios, DevicesSection, axe — fetch/store mockados) — 25/06
 
 ### FASE 4 — páginas e fluxos (integração)
-- [ ] `Trainer/TrainerPage`: DrillActive (responder F/C/R/A, atalhos, próxima/anterior), DrillSummary, severidade
-- [ ] `Admin/CoachPanel`: filtros (range/jogador/período), seção "Por range" ordenável, matriz
-- [ ] `Auth/LoginPage` (login/signup/forgot, validações), WelcomeModal, ChangePasswordModal
-- [ ] `Layout/ErrorBoundary` (fallback de erro), `Situations/SituationsPage`, `Stats/StatsPage`
+- [x] `Trainer/TrainerPage`: DrillRangeSelect (render/vazio/grupo de posição), DrillActive renderiza com botão FOLD (estado mínimo via setState), axe na seleção — 25/06. **Fluxo profundo COBERTO** (25/06): com grid de ações montado via setState, clicar FOLD numa mão raise-100 → feedback "Blunder"; clicar RAISE → acerto. (DrillSummary/atalhos de teclado ainda dá pra aprofundar.)
+- [x] `Admin/CoachPanel`: render (fetch mockado), abas, filtros, período Custom (2 datas), "Por range" 1ª seção, Hotspots removido, axe — 25/06 (a11y: `aria-label` no select e nos `input[type=date]` do PeriodFilter). Cobre de tabela os inline `MultiPlayerSelect`/`RangeSelect`/`PeriodFilter`.
+- [x] `Auth/LoginPage` (login/signup/forgot, validações) + `WelcomeModal` + `ChangePasswordModal` — 25/06 (a11y: associei labels↔inputs via htmlFor/id no LoginPage e ChangePasswordModal)
+- [x] `Layout/ErrorBoundary` (filhos / fallback / axe), `Situations/SituationsPage` (header / vazio / expande grupo / axe; a11y: `title` no botão apagar + card `h3`→`h2` por heading-order), `Stats/StatsPage` (header / vazio / totais / troca de aba / axe) — 25/06
 
 ### FASE 5 — varredura de acessibilidade dedicada
-- [ ] Passar axe em todas as telas-chave e corrigir violações remanescentes (foco visível,
-      labels em inputs/botões-ícone, roles de listas/tabelas, `aria-*` de modais/dropdowns,
-      navegação por teclado). Registrar cada correção.
+- [~] axe embutido em CADA teste de componente (não há suíte de a11y separada) já cobriu e CORRIGIU:
+      labels↔inputs (LoginPage, ChangePasswordModal, RangeSetupPage), `aria-label` em selects/datas
+      (PeriodFilter) e botões-ícone (PrereqRangePicker, SituationsPage apagar), `heading-order`
+      (SituationsPage card h3→h2). `Layout/Dashboard` coberto + axe (25/06).
+- [x] `RangeBuilder/RangeEditorPage` (h3→h2), `TableEditor/TableEditorPage` (aria-label em 6 controles +
+      h3→h2/h4→h3), `ui/RangePreviewModal` — render + axe — 25/06.
+- [x] `Layout/Sidebar`, `Layout/TopNav`, `ui/HandQuickSelect`, `Layout/Dashboard` — render + axe (limpos) — 25/06.
+- [x] `Situations/CategoryDetailPage` (h3→h2) — render + axe — 25/06.
+- [x] Atalho de teclado do drill: `fireEvent.keyDown(window, {key:'f'})` → Fold/Blunder (TrainerPage) — 25/06.
+- [ ] Sobras menores: `Trainer` HistoryModal/DrillSummary isolados, `Admin/AdminPanel`, `ui/PokerTableEditor`
+      isolado, e os componentes ainda inline no CoachPanel. Não bloqueiam — cobertura incremental.
 
 ## Definição de pronto por fatia
 - Testes novos passam; `npm test` (todos) e `npm run build` verdes.

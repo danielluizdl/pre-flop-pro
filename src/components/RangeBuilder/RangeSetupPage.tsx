@@ -71,8 +71,9 @@ export function RangeSetupPage() {
         </div>
         {hasAnte && (
           <div className="flex items-center gap-3 pt-1 border-t border-warm-700">
-            <label className="text-xs text-warm-400">Quanto o ante?</label>
+            <label className="text-xs text-warm-400" htmlFor="ante-amount">Quanto o ante?</label>
             <input
+              id="ante-amount"
               type="number" step={0.1} min={0.1}
               value={anteAmount}
               onChange={e => setAnteAmount(parseFloat(e.target.value) || 0.5)}

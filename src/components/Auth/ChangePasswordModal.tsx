@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useStore } from '../../store/useStore'
+import { useModalA11y } from '../../utils/useModalA11y'
 
 export function ChangePasswordModal() {
   const changePassword = useStore(s => s.changePassword)
+  const dialogRef = useModalA11y<HTMLDivElement>(true)
 
   const [newPassword, setNewPassword] = useState('')
   const [confirm, setConfirm]         = useState('')
@@ -27,13 +29,14 @@ export function ChangePasswordModal() {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm bg-warm-900 border border-warm-700/50 rounded-2xl p-6 space-y-4">
-        <h2 className="text-lg font-semibold text-white">Defina sua senha</h2>
+      <div ref={dialogRef} className="w-full max-w-sm bg-warm-900 border border-warm-700/50 rounded-2xl p-6 space-y-4" role="dialog" aria-modal="true" aria-labelledby="change-password-title">
+        <h2 id="change-password-title" className="text-lg font-semibold text-white">Defina sua senha</h2>
         <p className="text-xs text-warm-400">Este é seu primeiro acesso. Escolha uma nova senha para continuar.</p>
 
         <div className="space-y-2">
-          <label className="text-xs text-warm-400 block">Nova senha:</label>
+          <label htmlFor="cpm-new" className="text-xs text-warm-400 block">Nova senha:</label>
           <input
+            id="cpm-new"
             type="password"
             value={newPassword}
             onChange={e => { setNewPassword(e.target.value); setError('') }}
@@ -42,8 +45,9 @@ export function ChangePasswordModal() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-xs text-warm-400 block">Confirmar senha:</label>
+          <label htmlFor="cpm-confirm" className="text-xs text-warm-400 block">Confirmar senha:</label>
           <input
+            id="cpm-confirm"
             type="password"
             value={confirm}
             onChange={e => { setConfirm(e.target.value); setError('') }}

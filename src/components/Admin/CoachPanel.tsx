@@ -72,18 +72,25 @@ function MultiPlayerSelect({ users, selected, onChange }: {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(o => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label="Filtrar jogadores"
         className="bg-warm-900 border border-warm-600 rounded-lg px-2.5 py-1.5 text-sm text-warm-100 flex items-center gap-2 min-w-[190px] justify-between"
       >
         <span className="truncate">{label}</span>
         <span className="text-warm-400 text-xs select-none">▾</span>
       </button>
       {open && (
-        <div className="absolute z-30 mt-1 w-64 max-h-72 overflow-y-auto bg-warm-900 border border-warm-600 rounded-lg shadow-xl p-1">
+        <div
+          className="absolute z-30 mt-1 w-64 max-h-72 overflow-y-auto bg-warm-900 border border-warm-600 rounded-lg shadow-xl p-1"
+          onKeyDown={e => { if (e.key === 'Escape') { e.preventDefault(); setOpen(false) } }}
+        >
           <input
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Buscar jogador…"
+            aria-label="Buscar jogador"
             className="w-full bg-warm-950 border border-warm-700 rounded px-2 py-1.5 text-sm text-warm-100 placeholder-warm-500 mb-1"
             autoFocus
           />
@@ -94,13 +101,15 @@ function MultiPlayerSelect({ users, selected, onChange }: {
             Todos os jogadores
           </button>
           <div className="h-px bg-warm-700 my-1" />
-          {shownUsers.length === 0 && <p className="px-2 py-1.5 text-xs text-warm-500">Nenhum jogador.</p>}
-          {shownUsers.map(u => (
-            <label key={u.id} className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-warm-200 hover:bg-warm-800 cursor-pointer">
-              <input type="checkbox" checked={selected.includes(u.id)} onChange={() => toggle(u.id)} className="accent-brand-500" />
-              <span className="truncate">{u.name || u.username}</span>
-            </label>
-          ))}
+          <div role="group" aria-label="Jogadores">
+            {shownUsers.length === 0 && <p className="px-2 py-1.5 text-xs text-warm-500">Nenhum jogador.</p>}
+            {shownUsers.map(u => (
+              <label key={u.id} className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-warm-200 hover:bg-warm-800 cursor-pointer">
+                <input type="checkbox" checked={selected.includes(u.id)} onChange={() => toggle(u.id)} className="accent-brand-500" />
+                <span className="truncate">{u.name || u.username}</span>
+              </label>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -114,6 +123,7 @@ function RangeSelect({ groups, value, onChange }: {
 }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
+  const [activeIndex, setActiveIndex] = useState(0)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -123,6 +133,8 @@ function RangeSelect({ groups, value, onChange }: {
     return () => document.removeEventListener('mousedown', onDoc)
   }, [open])
 
+  useEffect(() => { if (open) setActiveIndex(0) }, [open, query])
+
   const selected = groups.flatMap(g => g.items).find(r => r.id === value)
   const label = selected ? selected.name : 'Todos os ranges'
 
@@ -131,12 +143,26 @@ function RangeSelect({ groups, value, onChange }: {
     ? groups.map(g => ({ pos: g.pos, items: g.items.filter(r => r.name.toLowerCase().includes(q)) })).filter(g => g.items.length > 0)
     : groups
 
+  const flatIds: (number | null)[] = [null, ...filtered.flatMap(g => g.items.map(r => r.id))]
   const pick = (id: number | null) => { onChange(id); setOpen(false); setQuery('') }
+
+  function onInputKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIndex(i => Math.min(i + 1, flatIds.length - 1)) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIndex(i => Math.max(i - 1, 0)) }
+    else if (e.key === 'Enter') { e.preventDefault(); if (activeIndex < flatIds.length) pick(flatIds[activeIndex]) }
+    else if (e.key === 'Escape') { e.preventDefault(); setOpen(false); setQuery('') }
+  }
+
+  let idx = 0
+  const optId = (i: number) => `range-opt-${i}`
 
   return (
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(o => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label="Filtrar por range"
         className="bg-warm-900 border border-warm-600 rounded-lg px-2.5 py-1.5 text-sm text-warm-100 flex items-center gap-2 min-w-[200px] justify-between"
       >
         <span className="truncate">{label}</span>
@@ -148,34 +174,51 @@ function RangeSelect({ groups, value, onChange }: {
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
+            onKeyDown={onInputKeyDown}
             placeholder="Buscar range…"
+            aria-label="Buscar range"
+            role="combobox"
+            aria-expanded={open}
+            aria-controls="range-listbox"
+            aria-activedescendant={optId(activeIndex)}
             className="w-full bg-warm-950 border border-warm-700 rounded px-2 py-1.5 text-sm text-warm-100 placeholder-warm-500 mb-1"
             autoFocus
           />
-          <button
-            onClick={() => pick(null)}
-            className={`w-full text-left px-2 py-1.5 rounded text-sm ${value === null ? 'text-brand-300 font-semibold' : 'text-warm-300 hover:bg-warm-800'}`}
-          >
-            Todos os ranges
-          </button>
-          {filtered.length === 0 && <p className="px-2 py-1.5 text-xs text-warm-500">Nenhum range.</p>}
-          {filtered.map(g => (
-            <div key={g.pos}>
-              <p className="px-2 pt-1.5 pb-0.5 text-[0.65rem] uppercase font-semibold text-warm-500 tracking-wider">{g.pos}</p>
-              {g.items.map(r => {
-                const n = r.stackGrids?.length ?? 0
-                return (
-                  <button
-                    key={r.id}
-                    onClick={() => pick(r.id)}
-                    className={`w-full text-left px-2 py-1.5 rounded text-sm truncate ${value === r.id ? 'bg-warm-800 text-brand-300 font-semibold' : 'text-warm-200 hover:bg-warm-800'}`}
-                  >
-                    {r.name}{n > 1 ? <span className="text-warm-500"> · {n} stacks</span> : null}
-                  </button>
-                )
-              })}
-            </div>
-          ))}
+          <div id="range-listbox" role="listbox" aria-label="Ranges">
+            {(() => { const i = idx++; return (
+              <button
+                id={optId(i)}
+                role="option"
+                aria-selected={value === null}
+                onClick={() => pick(null)}
+                className={`w-full text-left px-2 py-1.5 rounded text-sm ${i === activeIndex ? 'ring-1 ring-brand-500 ' : ''}${value === null ? 'text-brand-300 font-semibold' : 'text-warm-300 hover:bg-warm-800'}`}
+              >
+                Todos os ranges
+              </button>
+            ) })()}
+            {flatIds.length === 1 && <p className="px-2 py-1.5 text-xs text-warm-500">Nenhum range.</p>}
+            {filtered.map(g => (
+              <div key={g.pos} role="group" aria-label={g.pos}>
+                <p aria-hidden="true" className="px-2 pt-1.5 pb-0.5 text-[0.65rem] uppercase font-semibold text-warm-500 tracking-wider">{g.pos}</p>
+                {g.items.map(r => {
+                  const n = r.stackGrids?.length ?? 0
+                  const i = idx++
+                  return (
+                    <button
+                      key={r.id}
+                      id={optId(i)}
+                      role="option"
+                      aria-selected={value === r.id}
+                      onClick={() => pick(r.id)}
+                      className={`w-full text-left px-2 py-1.5 rounded text-sm truncate ${i === activeIndex ? 'ring-1 ring-brand-500 ' : ''}${value === r.id ? 'bg-warm-800 text-brand-300 font-semibold' : 'text-warm-200 hover:bg-warm-800'}`}
+                    >
+                      {r.name}{n > 1 ? <span className="text-warm-500"> · {n} stacks</span> : null}
+                    </button>
+                  )
+                })}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -243,7 +286,7 @@ function confChipBg(acc: number): string {
   return 'rgba(220,38,38,0.92)'
 }
 
-function TopHandsPanel({ cells, selected, onSelect }: { cells: GridCell[]; selected: string | null; onSelect: (hand: string) => void }) {
+export function TopHandsPanel({ cells, selected, onSelect }: { cells: GridCell[]; selected: string | null; onSelect: (hand: string) => void }) {
   const [tab, setTab] = useState<'errors' | 'consults'>('errors')
   const errors = [...cells].filter(c => c.total >= 3).sort((a, b) => a.accuracy - b.accuracy).slice(0, 20)
   const consults = [...cells].filter(c => c.consults > 0).sort((a, b) => b.consults - a.consults).slice(0, 20)
@@ -287,7 +330,7 @@ function playedPct(p?: { fold: number; call: number; raise: number; allin: numbe
   return { fold: (p.fold / tot) * 100, call: (p.call / tot) * 100, raise: (p.raise / tot) * 100, allin: (p.allin / tot) * 100, extra: (p.extra / tot) * 100 }
 }
 
-function HandDetailCard({ cell }: { cell: GridCell }) {
+export function HandDetailCard({ cell }: { cell: GridCell }) {
   const pp = playedPct(cell.played)
   const Stat = ({ label, v, cls }: { label: string; v: number; cls?: string }) => (
     <div className="bg-warm-900/60 rounded-lg px-2.5 py-1.5">
@@ -377,6 +420,7 @@ function PeriodFilter({ days, from, to, onChange }: {
   return (
     <div className="flex items-center gap-2">
       <select
+        aria-label="Período"
         className={selectCls}
         value={custom ? 'custom' : (days ?? '')}
         onChange={e => {
@@ -393,10 +437,10 @@ function PeriodFilter({ days, from, to, onChange }: {
       </select>
       {custom && (
         <div className="flex items-center gap-1.5">
-          <input type="date" value={start} max={end || undefined}
+          <input type="date" aria-label="Data inicial" value={start} max={end || undefined}
             onChange={e => { setStart(e.target.value); apply(e.target.value, end) }} className={dateCls} />
           <span className="text-warm-500 text-xs">→</span>
-          <input type="date" value={end} min={start || undefined}
+          <input type="date" aria-label="Data final" value={end} min={start || undefined}
             onChange={e => { setEnd(e.target.value); apply(start, e.target.value) }} className={dateCls} />
         </div>
       )}
@@ -621,6 +665,7 @@ function Section({ title, loading, error, empty, children, defaultOpen = true }:
     <div className="rounded-xl border border-warm-700 overflow-hidden">
       <button
         onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
         className="w-full flex items-center justify-between px-3 py-2.5 bg-warm-800/40 hover:bg-warm-800 transition-colors"
       >
         <h3 className="text-sm font-semibold text-warm-200">{title}</h3>
@@ -675,7 +720,7 @@ const SEVERITY_HELP: Record<SeverityClass, string> = {
   na: '',
 }
 
-function PlayerQuickSummary({ userId, days, from, to, token }: { userId: number; days: number | null; from: number | null; to: number | null; token: string | null }) {
+export function PlayerQuickSummary({ userId, days, from, to, token }: { userId: number; days: number | null; from: number | null; to: number | null; token: string | null }) {
   const [rows, setRows] = useState<ByRangeRow[]>([])
   const [loading, setLoading] = useState(true)
 

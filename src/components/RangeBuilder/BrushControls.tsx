@@ -39,6 +39,7 @@ function ActionRow({ label, color, field, value, onChange, extra }: ActionRowPro
           {extra}
           <input
             type="number"
+            aria-label={`${label} porcentagem`}
             className="w-12 p-1 text-right font-bold border border-warm-600 rounded text-sm bg-warm-900 text-white"
             value={value}
             min={0} max={100}
@@ -49,6 +50,7 @@ function ActionRow({ label, color, field, value, onChange, extra }: ActionRowPro
       </div>
       <input
         type="range" min={0} max={100} value={value}
+        aria-label={`${label} porcentagem (controle deslizante)`}
         className="w-full cursor-pointer"
         style={{ accentColor: color }}
         onChange={e => onChange(field, Number(e.target.value))}
@@ -91,6 +93,7 @@ export function BrushControls() {
         <div className="flex items-center gap-1">
           <input
             type="text"
+            aria-label="Fold porcentagem (calculado)"
             className="w-12 p-1 text-right font-bold border border-warm-600 rounded text-sm bg-warm-900/50 text-warm-400"
             value={fold}
             disabled
@@ -106,6 +109,7 @@ export function BrushControls() {
         extra={
           <input
             type="text"
+            aria-label="Tamanho do raise em bb"
             className="w-14 p-1 border border-warm-600 rounded text-xs text-center bg-warm-900 text-white"
             placeholder="bb"
             value={brush.raiseSize}
@@ -123,6 +127,7 @@ export function BrushControls() {
               <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: brush.extraColor }} />
               <input
                 type="text"
+                aria-label="Nome da condição custom"
                 value={brush.extraLabel}
                 onChange={e => setBrush('extraLabel', e.target.value)}
                 className="flex-1 min-w-0 bg-transparent text-white font-semibold text-sm border-b border-warm-600 focus:border-brand-500 focus:outline-none"
@@ -131,6 +136,7 @@ export function BrushControls() {
             <div className="flex items-center gap-1">
               <input
                 type="number"
+                aria-label="Condição custom porcentagem"
                 className="w-12 p-1 text-right font-bold border border-warm-600 rounded text-sm bg-warm-900 text-white"
                 value={brush.extra}
                 min={0} max={100}
@@ -144,6 +150,7 @@ export function BrushControls() {
               <button
                 key={c}
                 onClick={() => setBrush('extraColor', c)}
+                aria-label={`Cor ${c}`}
                 className="w-5 h-5 rounded-full border-2 transition-all flex-shrink-0"
                 style={{
                   backgroundColor: c,
@@ -161,6 +168,7 @@ export function BrushControls() {
           </div>
           <input
             type="range" min={0} max={100} value={brush.extra}
+            aria-label="Condição custom porcentagem (controle deslizante)"
             className="w-full cursor-pointer"
             style={{ accentColor: brush.extraColor }}
             onChange={e => setBrush('extra', Number(e.target.value))}

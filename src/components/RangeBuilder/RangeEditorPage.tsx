@@ -320,9 +320,9 @@ export function RangeEditorPage() {
         <div className="xl:w-80 space-y-3 flex-shrink-0">
           <div className="bg-warm-800/60 rounded-xl p-4 border border-warm-700 space-y-3">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <h3 className="font-bold text-xs text-warm-400 uppercase tracking-wider whitespace-nowrap">
+              <h2 className="font-bold text-xs text-warm-400 uppercase tracking-wider whitespace-nowrap">
                 Ações &amp; Frequências
-              </h3>
+              </h2>
               <HandQuickSelect mode="brush" />
             </div>
 
