@@ -286,7 +286,7 @@ function confChipBg(acc: number): string {
   return 'rgba(220,38,38,0.92)'
 }
 
-function TopHandsPanel({ cells, selected, onSelect }: { cells: GridCell[]; selected: string | null; onSelect: (hand: string) => void }) {
+export function TopHandsPanel({ cells, selected, onSelect }: { cells: GridCell[]; selected: string | null; onSelect: (hand: string) => void }) {
   const [tab, setTab] = useState<'errors' | 'consults'>('errors')
   const errors = [...cells].filter(c => c.total >= 3).sort((a, b) => a.accuracy - b.accuracy).slice(0, 20)
   const consults = [...cells].filter(c => c.consults > 0).sort((a, b) => b.consults - a.consults).slice(0, 20)
@@ -330,7 +330,7 @@ function playedPct(p?: { fold: number; call: number; raise: number; allin: numbe
   return { fold: (p.fold / tot) * 100, call: (p.call / tot) * 100, raise: (p.raise / tot) * 100, allin: (p.allin / tot) * 100, extra: (p.extra / tot) * 100 }
 }
 
-function HandDetailCard({ cell }: { cell: GridCell }) {
+export function HandDetailCard({ cell }: { cell: GridCell }) {
   const pp = playedPct(cell.played)
   const Stat = ({ label, v, cls }: { label: string; v: number; cls?: string }) => (
     <div className="bg-warm-900/60 rounded-lg px-2.5 py-1.5">
@@ -720,7 +720,7 @@ const SEVERITY_HELP: Record<SeverityClass, string> = {
   na: '',
 }
 
-function PlayerQuickSummary({ userId, days, from, to, token }: { userId: number; days: number | null; from: number | null; to: number | null; token: string | null }) {
+export function PlayerQuickSummary({ userId, days, from, to, token }: { userId: number; days: number | null; from: number | null; to: number | null; token: string | null }) {
   const [rows, setRows] = useState<ByRangeRow[]>([])
   const [loading, setLoading] = useState(true)
 
