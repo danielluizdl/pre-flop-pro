@@ -7,6 +7,7 @@ import { LoginPage } from '../Auth/LoginPage'
 import { WelcomeModal } from '../Auth/WelcomeModal'
 import { ChangePasswordModal } from '../Auth/ChangePasswordModal'
 import { RouterSync } from './RouterSync'
+import { ErrorBoundary } from './ErrorBoundary'
 
 const TrainerPage = lazy(() => import('../Trainer/TrainerPage').then(m => ({ default: m.TrainerPage })))
 const StatsPage = lazy(() => import('../Stats/StatsPage').then(m => ({ default: m.StatsPage })))
@@ -55,9 +56,11 @@ export function AppLayout() {
           : currentUser?.firstLogin === true && <ChangePasswordModal />}
         <TopNav />
         <main className="w-full max-w-[1800px] mx-auto px-6 md:px-10 pt-8 pb-16">
-          <Suspense fallback={<p className="text-sm text-warm-500">Carregando…</p>}>
-            {renderPage()}
-          </Suspense>
+          <ErrorBoundary variant="section" resetKey={page}>
+            <Suspense fallback={<p className="text-sm text-warm-500">Carregando…</p>}>
+              {renderPage()}
+            </Suspense>
+          </ErrorBoundary>
         </main>
       </div>
     </div>

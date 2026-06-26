@@ -5,6 +5,12 @@ import { captureError } from '../../utils/sentry'
 
 interface Props {
   children: ReactNode
+  // 'page' = fallback de tela cheia (raiz do app). 'section' = fallback compacto
+  // que isola a queda de uma área sem derrubar a navegação ao redor.
+  variant?: 'page' | 'section'
+  // Quando muda (ex.: a rota), limpa o erro para tentar renderizar de novo —
+  // assim o usuário sai da área quebrada navegando, sem recarregar a página.
+  resetKey?: unknown
 }
 
 interface State {
@@ -23,6 +29,12 @@ export class ErrorBoundary extends Component<Props, State> {
     captureError(error, { componentStack: info.componentStack })
   }
 
+  componentDidUpdate(prevProps: Props) {
+    if (this.state.error && prevProps.resetKey !== this.props.resetKey) {
+      this.setState({ error: null })
+    }
+  }
+
   handleExportAndReset = () => {
     try {
       downloadText(backupFilename(), useStore.getState().exportData())
@@ -37,6 +49,22 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (!this.state.error) return this.props.children
+    if (this.props.variant === 'section') {
+      return (
+        <div className="bg-warm-900 border border-warm-700 rounded-2xl p-6 space-y-3 max-w-md">
+          <h2 className="text-base font-bold text-white">Esta seção falhou ao carregar</h2>
+          <p className="text-sm text-warm-400 break-words">
+            {this.state.error.message || 'Erro inesperado.'} Tente outra página ou recarregue.
+          </p>
+          <button
+            onClick={() => location.reload()}
+            className="py-2 px-4 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold transition-colors"
+          >
+            Recarregar
+          </button>
+        </div>
+      )
+    }
     return (
       <div className="min-h-screen bg-warm-950 text-warm-100 flex items-center justify-center p-4">
         <div className="w-full max-w-md bg-warm-900 border border-warm-700 rounded-2xl p-6 space-y-4">
