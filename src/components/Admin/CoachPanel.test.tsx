@@ -53,6 +53,17 @@ describe('CoachPanel', () => {
     expect(await screen.findByText('Nenhum jogador cadastrado ainda.')).toBeInTheDocument()
   })
 
+  it('o filtro de range expõe aria-expanded e alterna ao abrir', async () => {
+    mockApi()
+    render(<CoachPanel />)
+    const btn = await screen.findByRole('button', { name: 'Filtrar por range' })
+    expect(btn).toHaveAttribute('aria-haspopup', 'listbox')
+    expect(btn).toHaveAttribute('aria-expanded', 'false')
+    fireEvent.click(btn)
+    expect(btn).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByLabelText('Buscar range')).toBeInTheDocument()
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     mockApi()
     const { container } = render(<CoachPanel />)

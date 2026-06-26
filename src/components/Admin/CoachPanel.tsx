@@ -72,6 +72,9 @@ function MultiPlayerSelect({ users, selected, onChange }: {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(o => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label="Filtrar jogadores"
         className="bg-warm-900 border border-warm-600 rounded-lg px-2.5 py-1.5 text-sm text-warm-100 flex items-center gap-2 min-w-[190px] justify-between"
       >
         <span className="truncate">{label}</span>
@@ -84,6 +87,7 @@ function MultiPlayerSelect({ users, selected, onChange }: {
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Buscar jogador…"
+            aria-label="Buscar jogador"
             className="w-full bg-warm-950 border border-warm-700 rounded px-2 py-1.5 text-sm text-warm-100 placeholder-warm-500 mb-1"
             autoFocus
           />
@@ -137,6 +141,9 @@ function RangeSelect({ groups, value, onChange }: {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(o => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label="Filtrar por range"
         className="bg-warm-900 border border-warm-600 rounded-lg px-2.5 py-1.5 text-sm text-warm-100 flex items-center gap-2 min-w-[200px] justify-between"
       >
         <span className="truncate">{label}</span>
@@ -149,6 +156,7 @@ function RangeSelect({ groups, value, onChange }: {
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Buscar range…"
+            aria-label="Buscar range"
             className="w-full bg-warm-950 border border-warm-700 rounded px-2 py-1.5 text-sm text-warm-100 placeholder-warm-500 mb-1"
             autoFocus
           />
