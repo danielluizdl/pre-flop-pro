@@ -7,6 +7,7 @@ import { RangePreviewModal } from '../ui/RangePreviewModal'
 import { Eye } from 'lucide-react'
 import { RANKS, SUIT_ICONS } from '../../types'
 import { ALL_HANDS, getRngBands, formatRngBands } from '../../utils/hands'
+import { useModalA11y } from '../../utils/useModalA11y'
 import type { HandHistoryEntry, Range, TrainingSession } from '../../types'
 
 /* ── Label helpers (compartilhados entre mão atual e replay do histórico) ─── */
@@ -1012,6 +1013,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
   const [viewingPrev, setViewingPrev]   = useState(false)
   const [modalViewMode, setModalViewMode] = useState<'actions' | 'heatmap' | null>(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const viewRangeDialogRef = useModalA11y<HTMLDivElement>(modalViewMode !== null, () => setModalViewMode(null))
 
   const goNextRef = useRef<() => void>(() => {})
   const keyHandlerRef = useRef<(e: KeyboardEvent) => void>(() => {})
@@ -1306,7 +1308,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
         const modalStackIdx = viewingPrev ? prevSnapshot!.stackGridIdx : activeDrillStackGridIdx
         return (
           <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setModalViewMode(null)}>
-            <div className="bg-warm-900 border border-warm-700 rounded-2xl p-6 max-w-3xl w-full" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="drill-range-modal-title">
+            <div ref={viewRangeDialogRef} className="bg-warm-900 border border-warm-700 rounded-2xl p-6 max-w-3xl w-full" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="drill-range-modal-title">
               <div className="flex justify-between items-center mb-4">
                 <h3 id="drill-range-modal-title" className="font-bold text-white text-lg">{modalRange.name}</h3>
                 <button onClick={() => setModalViewMode(null)} className="text-warm-400 hover:text-white text-xl">✕</button>

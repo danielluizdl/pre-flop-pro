@@ -5,6 +5,7 @@ import { Edit3, Trash2, PlayCircle, BarChart2, Eye, Link2 } from 'lucide-react'
 
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import { RangePreviewModal } from '../ui/RangePreviewModal'
+import { useModalA11y } from '../../utils/useModalA11y'
 import type { Range } from '../../types'
 
 const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'UTG']
@@ -156,6 +157,7 @@ export function SituationsPage() {
 
   const heatmapRange    = heatmapId !== null ? ranges.find(r => r.id === heatmapId) : null
   const heatmapPerf     = heatmapId !== null ? handPerformance[heatmapId] : undefined
+  const heatmapDialogRef = useModalA11y<HTMLDivElement>(!!heatmapRange, () => setHeatmapId(null))
   const hasData         = !!heatmapPerf && Object.values(heatmapPerf).some(p => p.t > 0)
   const heatmapGrids    = heatmapRange?.stackGrids && heatmapRange.stackGrids.length > 0
     ? heatmapRange.stackGrids
@@ -229,6 +231,7 @@ export function SituationsPage() {
           onClick={() => setHeatmapId(null)}
         >
           <div
+            ref={heatmapDialogRef}
             className="bg-warm-900 border border-warm-700 rounded-2xl p-6 max-w-3xl w-full"
             onClick={e => e.stopPropagation()}
             role="dialog"

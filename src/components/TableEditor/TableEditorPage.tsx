@@ -4,6 +4,7 @@ import { PokerTableEditor } from '../ui/PokerTableEditor'
 import { SEAT_ROLE_LABELS } from '../../types'
 import type { PositionConfig } from '../../types'
 import { countNonFoldHands } from '../../utils/hands'
+import { useModalA11y } from '../../utils/useModalA11y'
 import { X } from 'lucide-react'
 
 function getStackLabel(data: Record<string, PositionConfig>): string {
@@ -59,6 +60,7 @@ export function TableEditorPage() {
   const [editingIdx, setEditingIdx]       = useState<number | null>(null)
   const [nameModalOpen, setNameModalOpen] = useState(false)
   const [primaryName, setPrimaryName]     = useState('')
+  const nameDialogRef = useModalA11y<HTMLDivElement>(nameModalOpen, () => setNameModalOpen(false))
 
   useEffect(() => {
     if (Object.keys(currentScenario).length === 0) initTableConfig()
@@ -360,6 +362,7 @@ export function TableEditorPage() {
           onClick={() => setNameModalOpen(false)}
         >
           <div
+            ref={nameDialogRef}
             className="bg-warm-900 border border-warm-700 rounded-2xl p-6 max-w-md w-full"
             onClick={e => e.stopPropagation()}
             role="dialog"

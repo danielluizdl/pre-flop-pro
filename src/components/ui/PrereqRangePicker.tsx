@@ -1,6 +1,7 @@
 ﻿import { useState } from 'react'
 import { X, Check } from 'lucide-react'
 import { countNonFoldHands } from '../../utils/hands'
+import { useModalA11y } from '../../utils/useModalA11y'
 import type { Range } from '../../types'
 
 const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'UTG']
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export function PrereqRangePicker({ ranges, excludeId, filterPositions, currentPrereqId, onSelect, onClose }: Props) {
+  const dialogRef = useModalA11y<HTMLDivElement>(true, onClose)
   const available = ranges.filter(r =>
     r.id !== excludeId &&
     (filterPositions.length === 0 || r.positions.some(p => filterPositions.includes(p)))
@@ -53,6 +55,7 @@ export function PrereqRangePicker({ ranges, excludeId, filterPositions, currentP
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
         className="bg-warm-900 border border-warm-700 rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col"
         onClick={e => e.stopPropagation()}
         role="dialog"

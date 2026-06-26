@@ -30,6 +30,13 @@ describe('RangePreviewModal', () => {
     expect(screen.getByRole('dialog', { name: 'BTN RFI' })).toBeInTheDocument()
   })
 
+  it('fecha ao pressionar Esc', () => {
+    const onClose = vi.fn()
+    render(<RangePreviewModal range={RANGE} onClose={onClose} />)
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+    expect(onClose).toHaveBeenCalled()
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     const { container } = render(<RangePreviewModal range={RANGE} onClose={() => {}} />)
     expect((await axe(container)).violations).toEqual([])

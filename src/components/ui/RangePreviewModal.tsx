@@ -1,6 +1,7 @@
 ﻿import { useState } from 'react'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import { ComboCounter } from './ComboCounter'
+import { useModalA11y } from '../../utils/useModalA11y'
 import type { Range } from '../../types'
 
 interface Props {
@@ -11,6 +12,7 @@ interface Props {
 export function RangePreviewModal({ range, onClose }: Props) {
   const hasStackGrids = !!(range.stackGrids && range.stackGrids.length > 0)
   const [selectedIdx, setSelectedIdx] = useState(0)
+  const dialogRef = useModalA11y<HTMLDivElement>(true, onClose)
 
   const displayGrid = hasStackGrids ? range.stackGrids![selectedIdx].grid : range.grid
   const displayStackRange = hasStackGrids ? range.stackGrids![selectedIdx].stackRange : range.stackRange
@@ -21,6 +23,7 @@ export function RangePreviewModal({ range, onClose }: Props) {
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
         className="bg-warm-900 border border-warm-700 rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
         role="dialog"
