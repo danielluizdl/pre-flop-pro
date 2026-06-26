@@ -39,21 +39,21 @@ componentes), não uma tarefa mínima. Sempre `npm test` + `npm run build` verde
 Marque [x] no commit conforme avança. Cada fase = vários PRs/dias.
 
 ### FASE 1 — utils ainda sem teste (vitórias rápidas, pure functions)
-- [ ] `src/utils/eventQueue.ts` (fila localStorage, cap 500, retry/flush)
-- [ ] `src/utils/hands.ts` — funções ainda não cobertas (focusWeight, weightedPick, generateSuits, stackMatchesRange)
-- [ ] `src/utils/validateRanges.ts`, `hash.ts` se houver lacunas
-- [ ] Confirmar cobertura dos utils de data science (coachStats/coachTrend/handCategories/coachRelative/rangeCombos) e completar buracos
+- [x] `src/utils/eventQueue.ts` (fila localStorage, cap 500, retry/flush) — `eventQueue.test.ts`
+- [x] `src/utils/hands.ts` (focusWeight, weightedPick, generateSuits, stackMatchesRange) — `hands.test.ts`
+- [x] `src/utils/validateRanges.ts`, `hash.ts` — `validateRanges.test.ts`, `hash.test.ts`
+- [x] Utils de data science (coachStats/coachTrend/handCategories/coachRelative/rangeCombos/coachFocus/sparseGrid/download/sentry) — todos com `.test.ts`
 
 ### FASE 2 — componentes de apresentação (puros, props → render)
 - [x] `ui/ComboCounter` (FEITO, exemplo)
 - [x] `Stats/AccuracySparkline`, `Admin/RangeActionGrid`, `Admin/RangeHeatGrid`
-- [~] `Admin/TopHandsPanel`, `Admin/HandDetailCard`, `Admin/PlayerQuickSummary` (NÃO são arquivos próprios — estão inline no `CoachPanel.tsx`; serão cobertos junto do CoachPanel na FASE 4)
+- [x] `Admin/TopHandsPanel`, `Admin/HandDetailCard`, `Admin/PlayerQuickSummary` (inline no `CoachPanel.tsx`; exportados e testados isolados em `CoachPanelParts.test.tsx` — 26/06)
 - [x] `ui/PokerTableEditor` (render do layout de assentos/cartas)
 
 ### FASE 3 — componentes com store
 - [x] `RangeBuilder/BrushControls` (presets, clamp ≤100%, indicador de preset ativo) — 25/06; + `RangeBuilder/RangeSetupPage`, `ui/RangeMark`, `ui/PrereqRangePicker` na mesma fatia
 - [x] `RangeBuilder/HandMatrix` (render 13x13, toggle heatmap, applyBrush no clique, axe) — 25/06
-- [~] `Admin/MultiPlayerSelect`, `Admin/RangeSelect`, `PeriodFilter` (inline no CoachPanel.tsx — cobrir junto do CoachPanel na FASE 4)
+- [x] `Admin/MultiPlayerSelect`, `Admin/RangeSelect`, `PeriodFilter` (inline no CoachPanel.tsx — cobertos via CoachPanel; RangeSelect/MultiPlayerSelect ganharam teclado/ARIA e testes de navegação — 26/06)
 - [x] `Stats/MyAccountStats` (cards, estados vazios, DevicesSection, axe — fetch/store mockados) — 25/06
 
 ### FASE 4 — páginas e fluxos (integração)
@@ -72,8 +72,17 @@ Marque [x] no commit conforme avança. Cada fase = vários PRs/dias.
 - [x] `Layout/Sidebar`, `Layout/TopNav`, `ui/HandQuickSelect`, `Layout/Dashboard` — render + axe (limpos) — 25/06.
 - [x] `Situations/CategoryDetailPage` (h3→h2) — render + axe — 25/06.
 - [x] Atalho de teclado do drill: `fireEvent.keyDown(window, {key:'f'})` → Fold/Blunder (TrainerPage) — 25/06.
-- [ ] Sobras menores: `Trainer` HistoryModal/DrillSummary isolados, `Admin/AdminPanel`, `ui/PokerTableEditor`
-      isolado, e os componentes ainda inline no CoachPanel. Não bloqueiam — cobertura incremental.
+- [x] Sobras: `Trainer` HistoryModal/DrillSummary, `Admin/AdminPanel`, `Layout/RouterSync`+`AppLayout`,
+      `Auth/Turnstile`, e os componentes inline do CoachPanel — todos cobertos (26/06).
+- [x] Modais com `role="dialog"`/`aria-modal`/`aria-labelledby` + focus-trap/Esc (hook `useModalA11y`);
+      comboboxes do coach com `role="combobox"/"listbox"/"option"` e navegação por teclado;
+      `aria-expanded` nos acordeões; foco visível padrão e `prefers-reduced-motion` no CSS (26/06).
+
+## EPIC CONCLUÍDO (26/06/2026)
+Todas as fases (0–5) entregues. **368 testes (54 arquivos)**, build verde. Todos os componentes do app
+têm teste; varredura de a11y feita (dialog/focus-trap, ARIA de comboboxes/acordeões, foco visível,
+reduced-motion). PRs #5 e #10 mergeados em `feature/auth-telemetry`; issues #2 e #4 fechadas.
+**Próximo epic proposto em issue `agente` — ver handoff.**
 
 ## Definição de pronto por fatia
 - Testes novos passam; `npm test` (todos) e `npm run build` verdes.
