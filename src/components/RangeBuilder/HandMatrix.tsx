@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, memo } from 'react'
 import type { CSSProperties } from 'react'
 import { RANKS } from '../../utils/hands'
 import { useStore } from '../../store/useStore'
+import { countRender } from '../../test/renderCount'
 import type { HandData } from '../../types'
 
 const C = { allin: '#6b2d0d', raise: '#ef4444', call: '#22c55e' }
@@ -52,10 +53,6 @@ function heatColor(perf: { c: number; t: number } | undefined): string | null {
 
 const EMPTY_CELL: HandData = { fold: 100, call: 0, raise: 0, allin: 0 }
 
-// Instrumento de teste: conta renders de célula para provar a memoização
-// (mover o mouse no heatmap não deve re-renderizar as 169 células).
-export const __cellRenderCount = { n: 0 }
-
 interface CellProps {
   hand: string
   data: HandData
@@ -71,7 +68,7 @@ interface CellProps {
 }
 
 const Cell = memo(function Cell({ hand, data, heatPerf, isHeatmapMode, showActions, showHeatmap, extraColor, readOnly, onDown, onEnter, onLeave }: CellProps) {
-  __cellRenderCount.n++
+  countRender('handCell')
   const isEmpty = data.fold >= 100
   const bg   = showActions ? cellBackground(data, extraColor) : 'transparent'
   const heat = showHeatmap ? heatColor(heatPerf) : null

@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { axe } from 'jest-axe'
-import { RangeActionGrid, __actionCellRenderCount, type ActionFreq } from './RangeActionGrid'
+import { RangeActionGrid, type ActionFreq } from './RangeActionGrid'
+import { getRenderCount, resetRenderCount } from '../../test/renderCount'
 
 describe('RangeActionGrid', () => {
   it('renderiza título, subtítulo e as 169 células', () => {
@@ -31,10 +32,10 @@ describe('RangeActionGrid', () => {
   it('mover o mouse não re-renderiza as 169 células (memoização)', () => {
     const { container } = render(<RangeActionGrid title="t" grid={{ AA: { raise: 100 } }} />)
     const gridEl = container.querySelector('.grid')!
-    __actionCellRenderCount.n = 0
+    resetRenderCount('actionCell')
     fireEvent.mouseMove(gridEl, { clientX: 10, clientY: 10 })
     fireEvent.mouseMove(gridEl, { clientX: 20, clientY: 20 })
-    expect(__actionCellRenderCount.n).toBe(0)
+    expect(getRenderCount('actionCell')).toBe(0)
   })
 
   it('não tem violações de acessibilidade (axe)', async () => {

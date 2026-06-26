@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { axe } from 'jest-axe'
-import { RangeHeatGrid, __heatCellRenderCount, type GridCell } from './RangeHeatGrid'
+import { RangeHeatGrid, type GridCell } from './RangeHeatGrid'
+import { getRenderCount, resetRenderCount } from '../../test/renderCount'
 
 function cell(over: Partial<GridCell> & { hand: string }): GridCell {
   return {
@@ -45,10 +46,10 @@ describe('RangeHeatGrid', () => {
   it('mover o mouse não re-renderiza as 169 células (memoização)', () => {
     const { container } = render(<RangeHeatGrid cells={[cell({ hand: 'AA' })]} />)
     const gridEl = container.querySelector('.grid')!
-    __heatCellRenderCount.n = 0
+    resetRenderCount('heatCell')
     fireEvent.mouseMove(gridEl, { clientX: 10, clientY: 10 })
     fireEvent.mouseMove(gridEl, { clientX: 20, clientY: 20 })
-    expect(__heatCellRenderCount.n).toBe(0)
+    expect(getRenderCount('heatCell')).toBe(0)
   })
 
   it('não tem violações de acessibilidade (axe)', async () => {

@@ -1,5 +1,6 @@
 ﻿import { useState, useRef, useEffect, useCallback, memo } from 'react'
 import { useStore } from '../../store/useStore'
+import { countRender } from '../../test/renderCount'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import { PokerTableEditor } from '../ui/PokerTableEditor'
 import { HandQuickSelect } from '../ui/HandQuickSelect'
@@ -79,12 +80,8 @@ function HandHistoryItem({ entry, onClick }: { entry: HandHistoryEntry; onClick?
 }
 
 /* ── Hand history sidebar ────────────────────────────────────────────────────── */
-// Instrumento de teste: conta renders da sidebar (prova da memoização — estados
-// internos do DrillActive, ex.: alternar auto-advance, não a re-renderizam).
-export const __sidebarRenderCount = { n: 0 }
-
 const HandHistorySidebar = memo(function HandHistorySidebar({ onOpenModal, onReplayEntry }: { onOpenModal: () => void; onReplayEntry?: (entry: HandHistoryEntry) => void }) {
-  __sidebarRenderCount.n++
+  countRender('historySidebar')
   const history = useStore(s => s.handHistory)
   const reversed = [...history].reverse()
   return (

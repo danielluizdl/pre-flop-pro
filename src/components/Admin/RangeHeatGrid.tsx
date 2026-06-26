@@ -1,5 +1,6 @@
 import { useMemo, useState, useCallback, memo } from 'react'
 import { RANKS } from '../../utils/hands'
+import { countRender } from '../../test/renderCount'
 
 export interface GridCell {
   hand: string
@@ -42,17 +43,13 @@ function cellColor(cell: GridCell | undefined, metric: Metric, max: number): str
   return scaleColor(cell.total, max, '148,163,184')
 }
 
-// Instrumento de teste: conta renders de célula (prova da memoização — mover o
-// mouse só reposiciona o tooltip, não re-renderiza as 169 células).
-export const __heatCellRenderCount = { n: 0 }
-
 const HeatCell = memo(function HeatCell({ hand, color, hasData, onEnter }: {
   hand: string
   color: string | null
   hasData: boolean
   onEnter: (hand: string) => void
 }) {
-  __heatCellRenderCount.n++
+  countRender('heatCell')
   return (
     <div
       onMouseEnter={() => onEnter(hand)}

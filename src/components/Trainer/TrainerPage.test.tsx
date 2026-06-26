@@ -1,9 +1,10 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import { axe } from 'jest-axe'
-import { TrainerPage, __sidebarRenderCount } from './TrainerPage'
+import { TrainerPage } from './TrainerPage'
 import { useStore } from '../../store/useStore'
 import { makeEmptyGrid } from '../../utils/hands'
+import { getRenderCount, resetRenderCount } from '../../test/renderCount'
 import type { Range } from '../../types'
 
 const RANGE: Range = { id: 1, name: 'BTN RFI', positions: ['BTN'], grid: makeEmptyGrid(), scenarios: [], tableSize: 8 }
@@ -193,10 +194,10 @@ describe('TrainerPage', () => {
       sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 },
     })
     render(<TrainerPage />)
-    __sidebarRenderCount.n = 0
+    resetRenderCount('historySidebar')
     fireEvent.click(screen.getByRole('button', { name: '2s' }))
     fireEvent.click(screen.getByRole('button', { name: '2s' }))
-    expect(__sidebarRenderCount.n).toBe(0)
+    expect(getRenderCount('historySidebar')).toBe(0)
   })
 
   it('não tem violações de acessibilidade na seleção de ranges (axe)', async () => {

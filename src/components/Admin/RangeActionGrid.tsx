@@ -1,5 +1,6 @@
 import { useMemo, useState, useCallback, memo } from 'react'
 import { RANKS } from '../../utils/hands'
+import { countRender } from '../../test/renderCount'
 
 export interface ActionFreq { call?: number; raise?: number; allin?: number; extra?: number; fold?: number }
 
@@ -31,17 +32,13 @@ function freqText(d: ActionFreq): string {
   return parts.join(' · ') || 'Fold'
 }
 
-// Instrumento de teste: conta renders de célula (prova da memoização — mover o
-// mouse só reposiciona o tooltip, não re-renderiza as 169 células).
-export const __actionCellRenderCount = { n: 0 }
-
 const ActionCell = memo(function ActionCell({ hand, bg, empty, onEnter }: {
   hand: string
   bg: string
   empty: boolean
   onEnter: (hand: string) => void
 }) {
-  __actionCellRenderCount.n++
+  countRender('actionCell')
   return (
     <div
       onMouseEnter={() => onEnter(hand)}
