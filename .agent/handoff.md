@@ -1,5 +1,34 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-06-26 (sexta — performance, a11y, cobertura final · ISSUES #4 e #2)
+
+### Feito hoje (8 fatias, cada uma commitada + pushada em auto/daily-improvements)
+1. **perf(#4): code-split de vendors** (`vite.config.ts`). `manualChunks` separa `vendor-react` (react/react-dom/scheduler/react-router), `vendor-sentry` e `vendor`. Chunk principal do app: ~554KB → **~303KB** (gzip 130KB→47KB). O único chunk >500KB agora é o JSON de dados `admin-ranges` (1.4MB, gzip 46KB), isolado de propósito — o warning do build é só ele.
+2. **docs(#2): CLAUDE.md** — "Estrutura de Pastas" atualizada (Auth/, Admin/coach, Layout/TopNav+RouterSync+ErrorBoundary, Stats/MyAccountStats+AccuracySparkline, Situations/CategoryDetailPage, ui/ e utils de data science + functions/api) + nota de bundle do #4. Correção: TopHandsPanel/HandDetailCard/PlayerQuickSummary/MultiPlayerSelect/RangeSelect/PeriodFilter são **inline** no `CoachPanel.tsx`.
+3. **a11y(css): foco visível padrão** (`src/index.css`) — `:focus-visible` (outline brand 2px) para inputs/selects/textarea nativos sem a classe `.input`. Não reflowa; não aparece em clique de mouse.
+4. **test: RouterSync + Turnstile** (sobra) — redirect de página transiente, rota desconhecida→dashboard, espelho store→URL; Turnstile desabilitado sem `VITE_TURNSTILE_KEY`. RouterSync racea quando store e URL discordam no mount → testar com eles em acordo (o app já seed a page pela URL antes do render).
+5. **test: AdminPanel + AppLayout** (sobra) — publish via `adminSaveRanges` stub, senha incorreta, botão desabilitado; login/nav/banner de storage. **Todos os componentes do app têm teste agora.** (gotcha tsc: `adminLastError` é `string|undefined`, não null.)
+6. **a11y: role="dialog" + aria-modal + aria-labelledby** nos **8 modais** do app (AdminPanel, RangePreviewModal, PrereqRangePicker, WelcomeModal, ChangePasswordModal, heatmap de SituationsPage, nome do range no TableEditor, Ver Range do drill), cada um rotulado pelo próprio título.
+7. **test: trava semântica de diálogo** em RangePreviewModal e AdminPanel (`getByRole('dialog', { name })`).
+
+### Estado
+- Testes: **343 passam (52 arquivos)**. Build: verde.
+- Warning de build: SÓ o chunk de dados `admin-ranges` (1.4MB). Código do app em 303KB. Não é regressão.
+- Branch: `auto/daily-improvements`; pushada. PR **#10** aberta, corpo atualizado com a run de hoje. NÃO mergeada (gate humano). `main`/produção intactos.
+- **Riscos:** nenhum de comportamento — chunking, testes, foco visível CSS e atributos de a11y.
+
+### Próximas fatias (priorizadas)
+1. **Focus-trap + Esc nos modais (FASE 5 cont.):** hoje os 8 modais têm role/aria mas não prendem o Tab nem fecham no Esc. Fatia: handler manual ou hook leve; começar pelos de maior tráfego (LoginPage não é modal, mas ChangePasswordModal, Ver Range do drill e RangePreviewModal sim).
+2. **Teste de unidade do store:** `useStore.ts` só é exercido via componentes. Fatia: `nextDrillHand`/`checkDrillAnswer`/`startDrillSession` com ranges sintéticos (severidade grave/impreciso, prereq, multi-stack).
+3. **Aprofundar DrillActive:** navegação anterior/próxima, auto-advance (`vi.useFakeTimers`), "Ver Range" (consulta/logConsult) — sobra antiga ainda válida.
+4. **#4 (cont., precisa de aval):** o warning remanescente é só o JSON `admin-ranges` (seed estático, deliberado). Dynamic import do seed mudaria o boot → fora do escopo do agente sem aval do Daniel. NÃO subir `chunkSizeWarningLimit` acima de 1.4MB (esconderia regressão real do app). Provável ação: documentar como esperado e fechar #4.
+
+### Issues
+- **#4** — bem encaminhada (chunk do app caiu para 303KB); resta decisão sobre o warning do chunk de dados (ver acima).
+- **#2** — Estrutura de Pastas atualizada; pode fechar (ou aprofundar componentes inline do CoachPanel como opcional).
+
+---
+
 ## 2026-06-25 (continuação — sessão interativa com Daniel · EPIC FASE 3→4)
 
 ### Feito hoje (além da fatia do agente das 5h)
