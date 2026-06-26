@@ -25,6 +25,11 @@ describe('RangePreviewModal', () => {
     expect(onClose).toHaveBeenCalled()
   })
 
+  it('expõe semântica de diálogo rotulado', () => {
+    render(<RangePreviewModal range={RANGE} onClose={() => {}} />)
+    expect(screen.getByRole('dialog', { name: 'BTN RFI' })).toBeInTheDocument()
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     const { container } = render(<RangePreviewModal range={RANGE} onClose={() => {}} />)
     expect((await axe(container)).violations).toEqual([])

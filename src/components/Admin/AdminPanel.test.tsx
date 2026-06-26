@@ -19,6 +19,7 @@ describe('AdminPanel', () => {
 
   it('modo controlado aberto exibe o modal com campo de senha', () => {
     render(<AdminPanel open onClose={() => {}} />)
+    expect(screen.getByRole('dialog', { name: 'Publicar Ranges' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Publicar Ranges' })).toBeInTheDocument()
     expect(screen.getByPlaceholderText('••••••••')).toBeInTheDocument()
   })
