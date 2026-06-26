@@ -1,5 +1,28 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-06-26 (continuação 3 — epic #11 FECHADO + início do epic #13 robustez de UX)
+
+Epic **#11 (performance de render) essencialmente concluído** (FASE 1–5; PR #12 atualizada). Aberto o
+**próximo epic #13 (robustez de estados de UX: loading/empty/error)** e já iniciado.
+
+### Auditoria (FASE 1 do #13) — superfícies com fetch/async no front
+- `src/store/useStore.ts` (auth/telemetria/devices/ranges): ações retornam `{ok}`; quem trata é a UI.
+- `src/utils/eventQueue.ts`: fila com retry/flush próprio — robusto, sem UI.
+- `src/components/Admin/CoachPanel.tsx`: hook `useAnalytics` já tem `loading`/`error`/`empty` por seção (via `Section`). OK. (Possível melhoria futura: retry nos erros de seção.)
+- `src/components/Stats/MyAccountStats.tsx`: **tinha 2 gaps — CORRIGIDOS nesta sessão** (ver abaixo).
+- `LoginPage`/`ChangePasswordModal`: mostram erro inline (OK).
+
+### Feito (FASE 2 do #13)
+- **MyAccountStats robusto**: (1) erro de rede nas stats → mensagem + **"Tentar novamente"** (recarrega via `retry` em dep do effect); (2) `DevicesSection` distingue **falha** de **vazio** (antes mostrava "Nenhuma sessão ativa" mesmo em erro). Testes: erro→retry→dados; falha de sessões mostra erro. 376 testes verdes.
+
+### Próximas fatias (#13)
+1. **Retry nos erros de seção do CoachPanel** (hoje mostra erro sem ação) — FASE 2.
+2. **Estados vazios/erro do drill e StatsPage** revisados — FASE 3.
+3. **Skeletons sem layout shift** nas seções pesadas do coach/stats — FASE 4.
+4. **ErrorBoundary por área** se medível — FASE 5.
+
+---
+
 ## 2026-06-26 (continuação — NOVO EPIC: performance de render · issue #11)
 
 Epic de testes/a11y CONCLUÍDO e PR #10 **MERGEADA** em `feature/auth-telemetry` (issues #2 e #4 fechadas).
