@@ -147,6 +147,41 @@ describe('TrainerPage', () => {
     }
   })
 
+  it('"Encerrar e ver resumo" abre o resumo com precisão e severidade', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
+      handHistory: [], sessionHandPerf: { 1: { KK: { c: 8, t: 10 } } }, handPerformance: {},
+      selectedDrillRangeIds: [1],
+      sessionStats: { hands: 10, correct: 8, errors: 2, consults: 1 },
+      sessionSeverity: { grave: 1, impreciso: 1 },
+    })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Encerrar e ver resumo' }))
+    expect(screen.getByText('Resumo do Treino')).toBeInTheDocument()
+    expect(screen.getByText('Blunders:')).toBeInTheDocument()
+    expect(screen.getByText('Imprecisos:')).toBeInTheDocument()
+    expect(screen.getByText('80%')).toBeInTheDocument()
+  })
+
+  it('clicar em HISTÓRICO abre o modal de histórico de treino', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
+      handHistory: [], sessionHandPerf: {}, handPerformance: {}, trainingHistory: [],
+      sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 },
+    })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /HISTÓRICO/ }))
+    expect(screen.getByText('Histórico de Treino')).toBeInTheDocument()
+  })
+
   it('não tem violações de acessibilidade na seleção de ranges (axe)', async () => {
     useStore.setState({ ranges: [RANGE], activeDrillRange: null })
     const { container } = render(<TrainerPage />)
