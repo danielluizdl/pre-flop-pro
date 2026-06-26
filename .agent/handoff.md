@@ -25,16 +25,28 @@ Aberto o próximo epic (**performance de render**, issue #11, label `agente`) e 
   recriados) ao componente memo. Provar com um `export const __xRenderCount = { n: 0 }` incrementado
   no render do memo + teste (`fireEvent.mouseMove`/interação → contagem esperada). Comportamento/visual idênticos.
 
-### Estado
-- Testes: **373 passam (54 arquivos)**. Build: verde (warning só do chunk de dados `admin-ranges`).
-- Branch: `auto/daily-improvements` (rebaseada no `feature/auth-telemetry` pós-merge do #10); pushada.
-- **PR nova a abrir** (auto/daily-improvements → feature/auth-telemetry) com as 3 fatias de perf.
+### Feito também (mesma sessão — fecha o epic #11)
+4. **LIMPEZA dos contadores:** `src/test/renderCount.ts` (`countRender`/`getRenderCount`/`resetRenderCount`);
+   `countRender(key)` com incremento guardado por `import.meta.env` (no-op em produção). Componentes não
+   exportam mais `__xRenderCount`. Testes de contagem usam `getRenderCount('handCell'|'heatCell'|'actionCell'|'historySidebar'|'overviewRow')`.
+5. **perf CoachPanel (FASE 3):** agregações já eram `useMemo`; extraí `OverviewTableRow` e `ByRangeTableRow`
+   em `React.memo` (handlers `togglePlayer`/`selectRange` via `useCallback`). Prova: abrir resumo de jogador
+   re-renderiza só 1 linha. (`TopHandsPanel` Top 20 fica como opcional de baixo valor.)
+6. **perf bundle (FASE 5):** lazy-load de RangeSetupPage/RangeEditorPage/TableEditorPage/CategoryDetailPage
+   (Suspense já existia no AppLayout). Chunk principal ~305KB → **~265KB** (gzip ~47→~38KB).
 
-### Próximas fatias (epic #11)
-1. **FASE 3 — CoachPanel:** `useMemo` em agregações por range/jogador; linhas de tabela (Resumo do time,
-   Por range, Top 20) memoizadas; handlers estáveis. Componente grande — fatiar com cuidado, coach-only.
-2. **FASE 5 — runtime/bundle:** revisar imports pesados em caminhos quentes; lazy onde fizer sentido
-   (NÃO tocar o boot/seed `adminRanges.json` — gate, ver #4).
+### Estado
+- Testes: **374 passam (54 arquivos)**. Build: verde (warning só do chunk de dados `admin-ranges`).
+- Branch: `auto/daily-improvements`; pushada. **PR #12 ABERTA** (auto/daily-improvements → feature/auth-telemetry) — atualizar com TODAS as fatias de perf. NÃO mergear (gate humano).
+- **EPIC #11 ESSENCIALMENTE CONCLUÍDO**: FASE 1–5 entregues; classe de re-render contínuo (onMouseMove das 3 matrizes) eliminada.
+
+### Próximo epic
+Proposto em issue `agente`: **robustez de estados (loading/empty/error)** OU **responsividade/mobile**.
+Recomendo robustez de estados (menor risco visual, valor pra produção). Ver issue criada.
+
+### Padrão do epic #11 (replicável em futuros)
+- Memoizar célula/linha pesada em `React.memo`; handlers estáveis via `useCallback` (ler valores voláteis
+  por **ref** quando preciso); passar **primitivos** ao memo. Provar com `countRender(key)` (src/test/renderCount.ts) + teste.
 
 ---
 

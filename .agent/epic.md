@@ -43,7 +43,15 @@ células continuamente, inclusive ao editar (o tooltip só existe no modo heatma
       (Opcional/baixo valor: linhas do Top 20 do `TopHandsPanel` — só re-renderiza em troca de aba/seleção.)
 
 ### FASE 5 — runtime/bundle em caminhos quentes
-- [ ] Revisar imports pesados em caminhos quentes; lazy onde fizer sentido (sem tocar o seed).
+- [x] Lazy-load do fluxo de criação/edição de range (RangeSetupPage/RangeEditorPage/TableEditorPage/
+      CategoryDetailPage) — fora da carga inicial. Chunk principal ~305KB → ~265KB (gzip ~47→~38KB). (26/06)
+- [x] Limpeza: contadores de render movidos para `src/test/renderCount.ts` (no-op em produção, sem
+      export de instrumento nos componentes). (26/06)
+
+## EPIC #11 ESSENCIALMENTE CONCLUÍDO (26/06/2026)
+FASE 1–5 entregues, todas provadas por contagem de render onde aplicável. 374 testes verdes.
+A classe de re-render contínuo (onMouseMove das 3 matrizes 13×13) eliminada; sidebar do drill e
+linhas do CoachPanel memoizadas; fluxo de edição lazy. **Próximo epic proposto em issue `agente`.**
 
 ## Definição de pronto por fatia
 - Comportamento/visual idênticos; testes atuais verdes + teste novo que prove o ganho.
