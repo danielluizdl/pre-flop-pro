@@ -1,5 +1,43 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-06-26 (continuação — NOVO EPIC: performance de render · issue #11)
+
+Epic de testes/a11y CONCLUÍDO e PR #10 **MERGEADA** em `feature/auth-telemetry` (issues #2 e #4 fechadas).
+Aberto o próximo epic (**performance de render**, issue #11, label `agente`) e já avançado:
+
+### Feito (3 fatias provadas por contagem de render)
+1. **perf HandMatrix (FASE 1):** o `onMouseMove` do grid atualizava `mousePos` a CADA movimento →
+   re-render das 169 células continuamente, inclusive ao editar (tooltip só existe no heatmap).
+   Agora: `onMouseMove` só ativo no heatmap; `Cell` em `React.memo` com handlers estáveis (`useCallback`
+   lendo grid/brush/readOnly/heatmap via **refs**, p/ não recriar callbacks e quebrar o memo).
+   Prova: mousemove → 0 re-renders de célula; troca de grid → exatamente 1. `export __cellRenderCount`.
+2. **perf RangeHeatGrid + RangeActionGrid (FASE 2):** mesmo padrão — `HeatCell`/`ActionCell` memoizadas,
+   `onEnter` estável; passei **primitivos já computados** (cor/bg/empty) p/ o memo segurar (evita
+   `{}`/identidade nova). mousemove → 0 re-renders. `__heatCellRenderCount`/`__actionCellRenderCount`.
+3. **perf DrillActive (FASE 4):** `HandHistorySidebar` (até 50 itens) em `React.memo` com props estáveis
+   (`handleReplayEntry` → `useCallback([ranges, activeDrillRange])`; `onShowHistory` já estável do pai).
+   Estados internos do drill (ex.: alternar "2s") não a re-renderizam — só o `handHistory` (sua própria
+   assinatura no store). Prova: toggle "2s" → 0 re-renders da sidebar. `__sidebarRenderCount`.
+
+### Padrão do epic (replicar)
+- Memoizar célula/linha pesada em `React.memo`; handlers estáveis via `useCallback` (ler valores
+  voláteis por **ref** quando preciso, p/ manter identidade); passar **primitivos** (não objetos
+  recriados) ao componente memo. Provar com um `export const __xRenderCount = { n: 0 }` incrementado
+  no render do memo + teste (`fireEvent.mouseMove`/interação → contagem esperada). Comportamento/visual idênticos.
+
+### Estado
+- Testes: **373 passam (54 arquivos)**. Build: verde (warning só do chunk de dados `admin-ranges`).
+- Branch: `auto/daily-improvements` (rebaseada no `feature/auth-telemetry` pós-merge do #10); pushada.
+- **PR nova a abrir** (auto/daily-improvements → feature/auth-telemetry) com as 3 fatias de perf.
+
+### Próximas fatias (epic #11)
+1. **FASE 3 — CoachPanel:** `useMemo` em agregações por range/jogador; linhas de tabela (Resumo do time,
+   Por range, Top 20) memoizadas; handlers estáveis. Componente grande — fatiar com cuidado, coach-only.
+2. **FASE 5 — runtime/bundle:** revisar imports pesados em caminhos quentes; lazy onde fizer sentido
+   (NÃO tocar o boot/seed `adminRanges.json` — gate, ver #4).
+
+---
+
 ## 2026-06-26 (sexta — performance, a11y, cobertura final · ISSUES #4 e #2)
 
 ### Feito hoje (8 fatias, cada uma commitada + pushada em auto/daily-improvements)

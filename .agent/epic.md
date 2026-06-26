@@ -24,22 +24,22 @@ células continuamente, inclusive ao editar (o tooltip só existe no modo heatma
 
 ## Backlog (pegue a próxima fatia do topo)
 ### FASE 1 — HandMatrix (achado-âncora)
-- [ ] (a) Só atualizar `mousePos`/`hoveredHand` no modo heatmap (guard no `onMouseMove`/`onMouseEnter`).
-      (b) Extrair `Cell` memoizada (`React.memo`) com handlers estáveis (`useCallback`), para que mover
-      o mouse no heatmap (tooltip) não re-renderize as 169 células. Prova: teste de contagem de render
-      + testes atuais (pintura/toggle/axe) verdes.
+- [x] (a) `onMouseMove`/`hoveredHand` só no modo heatmap. (b) `Cell` em `React.memo` com handlers
+      estáveis (`useCallback` lendo grid/brush/readOnly/heatmap via refs). Prova: mousemove → 0
+      re-renders de célula; troca de grid → exatamente 1. (26/06)
 
 ### FASE 2 — outras matrizes 169 células
-- [ ] `Admin/RangeHeatGrid` — célula memoizada; não recomputar estilos/legenda por render.
-- [ ] `Admin/RangeActionGrid` — idem.
-
-### FASE 3 — CoachPanel
-- [ ] `useMemo` nas agregações por range/jogador; linhas de tabela (`Resumo do time`, `Por range`,
-      Top 20) memoizadas; handlers estáveis. Evitar recriar `Col`/render props a cada render.
+- [x] `Admin/RangeHeatGrid` — `HeatCell` memoizada, `onEnter` estável; mousemove → 0 re-renders. (26/06)
+- [x] `Admin/RangeActionGrid` — `ActionCell` memoizada (primitivos bg/empty), `onEnter` estável. (26/06)
 
 ### FASE 4 — Drill
-- [ ] `DrillActive`: garantir que responder/digitar não re-renderiza `HandHistorySidebar` inteira;
-      memoizar a sidebar e os itens do histórico se medível.
+- [x] `DrillActive`: `HandHistorySidebar` em `React.memo` (props estáveis: `handleReplayEntry` via
+      `useCallback`); estados internos do drill não a re-renderizam. Prova por contagem. (26/06)
+
+### FASE 3 — CoachPanel (PRÓXIMA — coach-only, menor tráfego)
+- [ ] `useMemo` nas agregações por range/jogador; linhas de tabela (`Resumo do time`, `Por range`,
+      Top 20) memoizadas; handlers estáveis. Evitar recriar `Col`/render props a cada render.
+      Componente grande — fatiar com cuidado.
 
 ### FASE 5 — runtime/bundle em caminhos quentes
 - [ ] Revisar imports pesados em caminhos quentes; lazy onde fizer sentido (sem tocar o seed).
