@@ -115,6 +115,27 @@ describe('CoachPanel', () => {
     expect(getRenderCount('overviewRow')).toBe(1)
   })
 
+  it('erro de seção do coach mostra "Tentar novamente" e recarrega', async () => {
+    let byRangeCalls = 0
+    vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/admin/users')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ users: [] }) } as unknown as Response)
+      if (url.includes('view=by-range')) {
+        byRangeCalls++
+        if (byRangeCalls === 1) return Promise.resolve({ ok: false, json: () => Promise.resolve({}) } as unknown as Response)
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ rows: [{ rangeId: 1, rangeName: 'BTN RFI', hands: 50, accuracy: 70, graves: 3, imprecisos: 1, consults: 2, players: 1 }] }) } as unknown as Response)
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ rows: [], team: null, byHand: [], byAction: [], users: [] }) } as unknown as Response)
+    })
+    useStore.setState({ authToken: 'tok' })
+
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Por range/ }))
+    const retry = await screen.findByRole('button', { name: 'Tentar novamente' })
+    fireEvent.click(retry)
+    expect(await screen.findByText('BTN RFI')).toBeInTheDocument()
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     mockApi()
     const { container } = render(<CoachPanel />)

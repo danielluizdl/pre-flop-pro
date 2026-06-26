@@ -454,6 +454,7 @@ function useAnalytics<T>(view: string, filters: Filters, token: string | null) {
   const [team, setTeam] = useState<Record<string, number> | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [tick, setTick] = useState(0)
   const idsKey = filters.playerIds.join(',')
 
   useEffect(() => {
@@ -479,9 +480,9 @@ function useAnalytics<T>(view: string, filters: Filters, token: string | null) {
         setLoading(false)
       })
     return () => { cancelled = true }
-  }, [view, token, idsKey, filters.rangeId, filters.days, filters.from, filters.to])
+  }, [view, token, idsKey, filters.rangeId, filters.days, filters.from, filters.to, tick])
 
-  return { rows, team, loading, error }
+  return { rows, team, loading, error, reload: () => setTick(t => t + 1) }
 }
 
 function useRangeGrid(rangeId: number | null, days: number | null, from: number | null, to: number | null, playerIds: number[], stackIdx: number | null, token: string | null) {
@@ -517,6 +518,7 @@ function useTrend(filters: Filters, token: string | null) {
   const [users, setUsers] = useState<TrendUser[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [tick, setTick] = useState(0)
   const idsKey = filters.playerIds.join(',')
 
   useEffect(() => {
@@ -538,9 +540,9 @@ function useTrend(filters: Filters, token: string | null) {
       })
       .catch(() => { if (!cancelled) { setError('Erro ao carregar'); setLoading(false) } })
     return () => { cancelled = true }
-  }, [token, idsKey, filters.rangeId, filters.days, filters.from, filters.to])
+  }, [token, idsKey, filters.rangeId, filters.days, filters.from, filters.to, tick])
 
-  return { rows, users, loading, error }
+  return { rows, users, loading, error, reload: () => setTick(t => t + 1) }
 }
 
 interface ActionRow { action: string; total: number; correct: number; graves: number; imprecisos: number; accuracy: number }
@@ -550,6 +552,7 @@ function useSegments(filters: Filters, token: string | null) {
   const [byAction, setByAction] = useState<ActionRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [tick, setTick] = useState(0)
   const idsKey = filters.playerIds.join(',')
 
   useEffect(() => {
@@ -571,9 +574,9 @@ function useSegments(filters: Filters, token: string | null) {
       })
       .catch(() => { if (!cancelled) { setError('Erro ao carregar'); setLoading(false) } })
     return () => { cancelled = true }
-  }, [token, idsKey, filters.rangeId, filters.days, filters.from, filters.to])
+  }, [token, idsKey, filters.rangeId, filters.days, filters.from, filters.to, tick])
 
-  return { byHand, byAction, loading, error }
+  return { byHand, byAction, loading, error, reload: () => setTick(t => t + 1) }
 }
 
 interface PlayerRangeApiRow { userId: number; rangeId: number; rangeName: string; total: number; correct: number }
@@ -583,6 +586,7 @@ function usePlayerRanges(filters: Filters, token: string | null) {
   const [users, setUsers] = useState<TrendUser[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [tick, setTick] = useState(0)
   const idsKey = filters.playerIds.join(',')
 
   useEffect(() => {
@@ -599,9 +603,9 @@ function usePlayerRanges(filters: Filters, token: string | null) {
       .then(d => { if (!cancelled) { setRows(d.rows ?? []); setUsers(d.users ?? []); setLoading(false) } })
       .catch(() => { if (!cancelled) { setError('Erro ao carregar'); setLoading(false) } })
     return () => { cancelled = true }
-  }, [token, idsKey, filters.rangeId, filters.days, filters.from, filters.to])
+  }, [token, idsKey, filters.rangeId, filters.days, filters.from, filters.to, tick])
 
-  return { rows, users, loading, error }
+  return { rows, users, loading, error, reload: () => setTick(t => t + 1) }
 }
 
 const TREND_META: Record<TrendDir, { label: string; arrow: string; cls: string }> = {
@@ -653,13 +657,14 @@ function Sparkline({ weeks, width = 120, height = 30 }: { weeks: { week: number;
   )
 }
 
-function Section({ title, loading, error, empty, children, defaultOpen = true }: {
+function Section({ title, loading, error, empty, children, defaultOpen = true, onRetry }: {
   title: string
   loading: boolean
   error: string
   empty: boolean
   children: React.ReactNode
   defaultOpen?: boolean
+  onRetry?: () => void
 }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
@@ -676,7 +681,12 @@ function Section({ title, loading, error, empty, children, defaultOpen = true }:
         loading ? (
           <p className="text-sm text-warm-500 px-3 py-3">Carregando…</p>
         ) : error ? (
-          <p className="text-sm text-red-400 px-3 py-3">{error}</p>
+          <p className="text-sm text-red-400 px-3 py-3">
+            {error}
+            {onRetry && (
+              <button onClick={onRetry} className="ml-2 underline font-semibold hover:text-red-300">Tentar novamente</button>
+            )}
+          </p>
         ) : empty ? (
           <p className="text-sm text-warm-500 px-3 py-3">Sem dados.</p>
         ) : (
@@ -1004,7 +1014,7 @@ function TeamView({ token }: { token: string | null }) {
         />
       </div>
 
-      <Section title="Por range" defaultOpen={false} loading={byRange.loading} error={byRange.error} empty={byRange.rows.length === 0}>
+      <Section title="Por range" defaultOpen={false} loading={byRange.loading} error={byRange.error} empty={byRange.rows.length === 0} onRetry={byRange.reload}>
         <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60 leading-relaxed">
           Clique no cabeçalho para ordenar · clique numa linha para ver a matriz do range. Tipo de erro:{' '}
           <span className="text-red-300 font-semibold">Conceitual</span> = erra a ação certa (joga 0% de freq), não sabe o range ·{' '}
@@ -1055,7 +1065,7 @@ function TeamView({ token }: { token: string | null }) {
         </table>
       </Section>
 
-      <Section title="Resumo do time" defaultOpen={false} loading={overview.loading} error={overview.error} empty={overview.rows.length === 0}>
+      <Section title="Resumo do time" defaultOpen={false} loading={overview.loading} error={overview.error} empty={overview.rows.length === 0} onRetry={overview.reload}>
         <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60">
           Clique no cabeçalho para ordenar · clique num jogador para o resumo rápido.
         </div>
@@ -1113,7 +1123,7 @@ function TeamView({ token }: { token: string | null }) {
       </Section>
 
 
-      <Section title="Evolução (tendência semanal)" defaultOpen={false} loading={trend.loading} error={trend.error} empty={playerTrends.length === 0}>
+      <Section title="Evolução (tendência semanal)" defaultOpen={false} loading={trend.loading} error={trend.error} empty={playerTrends.length === 0} onRetry={trend.reload}>
         <div className="p-3 flex flex-col gap-3">
           <div className="flex items-center gap-4 rounded-lg bg-warm-800/40 border border-warm-700/60 px-3 py-2">
             <span className="text-xs font-semibold text-warm-300 uppercase w-20">Time</span>
@@ -1152,7 +1162,7 @@ function TeamView({ token }: { token: string | null }) {
         </div>
       </Section>
 
-      <Section title="Maiores leaks" defaultOpen={false} loading={leaks.loading} error={leaks.error} empty={rankedLeaks.length === 0}>
+      <Section title="Maiores leaks" defaultOpen={false} loading={leaks.loading} error={leaks.error} empty={rankedLeaks.length === 0} onRetry={leaks.reload}>
         <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60">
           Ordenado por <span className="text-warm-300">impacto</span> (erros ponderados por gravidade). Precisão mostra o piso de confiança (mín = limite inferior de Wilson 95%); o ponto indica o tamanho da amostra.
         </div>
@@ -1192,7 +1202,7 @@ function TeamView({ token }: { token: string | null }) {
         </table>
       </Section>
 
-      <Section title="Segmentos (categoria e ação correta)" defaultOpen={false} loading={segments.loading} error={segments.error} empty={categorySegs.length === 0 && segments.byAction.length === 0}>
+      <Section title="Segmentos (categoria e ação correta)" defaultOpen={false} loading={segments.loading} error={segments.error} empty={categorySegs.length === 0 && segments.byAction.length === 0} onRetry={segments.reload}>
         <div className="p-3 grid gap-5 md:grid-cols-2">
           <div>
             <p className="text-xs text-warm-400 mb-2 uppercase font-semibold">Por categoria de mão</p>
@@ -1245,7 +1255,7 @@ function TeamView({ token }: { token: string | null }) {
         </div>
       </Section>
 
-      <Section title="Lacunas de conhecimento (consulta × erro)" defaultOpen={false} loading={gaps.loading} error={gaps.error} empty={rankedGaps.length === 0}>
+      <Section title="Lacunas de conhecimento (consulta × erro)" defaultOpen={false} loading={gaps.loading} error={gaps.error} empty={rankedGaps.length === 0} onRetry={gaps.reload}>
         <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60">
           Mãos que o time mais <span className="text-warm-300">consulta E ainda erra</span> — lacuna real de conhecimento. Score = consultas × taxa de erro ponderada.
         </div>
@@ -1286,7 +1296,7 @@ function TeamView({ token }: { token: string | null }) {
       </Section>
 
 
-      <Section title="Leaks relativos (jogador vs time)" defaultOpen={false} loading={playerRanges.loading} error={playerRanges.error} empty={relativeLeaks.length === 0}>
+      <Section title="Leaks relativos (jogador vs time)" defaultOpen={false} loading={playerRanges.loading} error={playerRanges.error} empty={relativeLeaks.length === 0} onRetry={playerRanges.reload}>
         <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60">
           Onde cada jogador está <span className="text-warm-300">abaixo dos colegas</span> no mesmo range (z-score). Considera jogadores com ≥15 mãos e ranges com ≥3 jogadores. Selecione vários jogadores para comparar.
         </div>
