@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect } from 'react'
+﻿import { useState, useRef, useEffect, useCallback, memo } from 'react'
 import { useStore } from '../../store/useStore'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import { PokerTableEditor } from '../ui/PokerTableEditor'
@@ -79,7 +79,12 @@ function HandHistoryItem({ entry, onClick }: { entry: HandHistoryEntry; onClick?
 }
 
 /* ── Hand history sidebar ────────────────────────────────────────────────────── */
-function HandHistorySidebar({ onOpenModal, onReplayEntry }: { onOpenModal: () => void; onReplayEntry?: (entry: HandHistoryEntry) => void }) {
+// Instrumento de teste: conta renders da sidebar (prova da memoização — estados
+// internos do DrillActive, ex.: alternar auto-advance, não a re-renderizam).
+export const __sidebarRenderCount = { n: 0 }
+
+const HandHistorySidebar = memo(function HandHistorySidebar({ onOpenModal, onReplayEntry }: { onOpenModal: () => void; onReplayEntry?: (entry: HandHistoryEntry) => void }) {
+  __sidebarRenderCount.n++
   const history = useStore(s => s.handHistory)
   const reversed = [...history].reverse()
   return (
@@ -101,7 +106,7 @@ function HandHistorySidebar({ onOpenModal, onReplayEntry }: { onOpenModal: () =>
       </div>
     </div>
   )
-}
+})
 
 /* ── Session detail (used inside HistoryModal) ────────────────────────────── */
 function SessionDetail({ session, ranges }: {
@@ -1033,6 +1038,21 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
     return () => window.removeEventListener('keydown', h)
   }, [])
 
+  const handleReplayEntry = useCallback((entry: HandHistoryEntry) => {
+    const feedbackMsg = entry.correct ? `✓ ${entry.actionTaken}!` : `✗ Correto: ${entry.correctAction}`
+    // Resolve por id (fallback por nome para entradas antigas) e reusa o stackGridIdx gravado.
+    const entryRange = ranges.find(r => r.id === entry.rangeId) ?? ranges.find(r => r.name === entry.rangeName) ?? activeDrillRange!
+    const stackGridIdx = entry.stackGridIdx ?? -1
+    setPrevSnapshot({
+      hand: entry.hand, suits: entry.suits, rng: entry.rng,
+      feedback: feedbackMsg, feedbackOk: entry.correct,
+      freqLabel: freqLabelFor(entryRange, stackGridIdx, entry.hand),
+      bandLabel: bandLabelFor(entryRange, stackGridIdx, entry.hand),
+      range: entryRange, stackGridIdx,
+    })
+    setViewingPrev(true)
+  }, [ranges, activeDrillRange])
+
   if (!activeDrillRange || !activeHand) return null
 
   const displayHand    = viewingPrev ? prevSnapshot!.hand       : activeHand
@@ -1047,21 +1067,6 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
   const r1 = displayHand[0]
   const r2 = displayHand[1]
   const [s1, s2] = displaySuits
-
-  function handleReplayEntry(entry: HandHistoryEntry) {
-    const feedbackMsg = entry.correct ? `✓ ${entry.actionTaken}!` : `✗ Correto: ${entry.correctAction}`
-    // Resolve por id (fallback por nome para entradas antigas) e reusa o stackGridIdx gravado.
-    const entryRange = ranges.find(r => r.id === entry.rangeId) ?? ranges.find(r => r.name === entry.rangeName) ?? activeDrillRange!
-    const stackGridIdx = entry.stackGridIdx ?? -1
-    setPrevSnapshot({
-      hand: entry.hand, suits: entry.suits, rng: entry.rng,
-      feedback: feedbackMsg, feedbackOk: entry.correct,
-      freqLabel: freqLabelFor(entryRange, stackGridIdx, entry.hand),
-      bandLabel: bandLabelFor(entryRange, stackGridIdx, entry.hand),
-      range: entryRange, stackGridIdx,
-    })
-    setViewingPrev(true)
-  }
 
   function doGoNext() {
     if (viewingPrev) { setViewingPrev(false); return }
