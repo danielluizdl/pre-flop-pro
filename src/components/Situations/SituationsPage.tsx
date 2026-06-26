@@ -200,6 +200,7 @@ export function SituationsPage() {
               <div key={pos} className="border border-warm-700 rounded-xl overflow-hidden">
                 <button
                   onClick={() => toggleGroup(pos)}
+                  aria-expanded={isOpen}
                   className="w-full flex items-center justify-between px-4 py-3 bg-warm-800 hover:bg-warm-750 transition-colors"
                 >
                   <div className="flex items-center gap-3">

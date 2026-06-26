@@ -630,6 +630,7 @@ function Section({ title, loading, error, empty, children, defaultOpen = true }:
     <div className="rounded-xl border border-warm-700 overflow-hidden">
       <button
         onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
         className="w-full flex items-center justify-between px-3 py-2.5 bg-warm-800/40 hover:bg-warm-800 transition-colors"
       >
         <h3 className="text-sm font-semibold text-warm-200">{title}</h3>
