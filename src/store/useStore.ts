@@ -291,10 +291,12 @@ export const useStore = create<AppState>()(
       // ── Backup ──────────────────────────────────────────────────────────────
       exportData: () => {
         const { ranges, trainingHistory, handPerformance } = get()
+        addBreadcrumb('data', 'export', { ranges: ranges.length, sessions: trainingHistory.length })
         return JSON.stringify({ version: 1, ranges, trainingHistory, handPerformance }, null, 2)
       },
 
       resetLocalData: () => {
+        addBreadcrumb('data', 'reset local')
         Object.keys(localStorage)
           .filter(k => k.startsWith('fbr-') || k.startsWith('pfp-'))
           .forEach(k => localStorage.removeItem(k))
@@ -735,6 +737,7 @@ export const useStore = create<AppState>()(
         }
 
         saveRanges(newRanges)
+        addBreadcrumb('range', isEditing ? 'edit saved' : 'create saved', { total: newRanges.length })
         set({
           ranges: newRanges,
           rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: [], tableSize: currentTableSize, stackRange: '' },
@@ -792,6 +795,7 @@ export const useStore = create<AppState>()(
         saveRanges(newRanges)
         const adminIds = new Set(SEEDED_DEFAULTS.map(r => r.id))
         if (adminIds.has(id)) addDeletedAdminId(id)
+        addBreadcrumb('range', 'delete', { admin: adminIds.has(id) })
         set({ ranges: newRanges })
       },
       setRangePrereq: (rangeId, prereqId) => {

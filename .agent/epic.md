@@ -29,6 +29,8 @@ e scrub de PII no `beforeSend`. UMA FATIA SUBSTANCIAL por execução.
 
 ### FASE 3 — Breadcrumbs de ações-chave
 - [x] nav (`setPage`), drill start, login ok (role), logout, publish de team ranges. (27/06)
+- [x] ações de dados: `finalizeRange` (criar/editar), `deleteRange`, `exportData`, `resetLocalData`.
+      Teste novo `src/store/breadcrumbs.test.ts` (mocka `sentry`, cobre nav + as 4 novas). (27/06)
 
 ### FASE 4 — Sinais de estado degradado
 - [x] `captureMessage('warning')`: cota de localStorage (`storageBlocked`) e `validateRanges` no load. (27/06)
