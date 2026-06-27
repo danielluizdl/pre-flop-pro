@@ -1,5 +1,40 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-06-27 (run das 5h — EPIC #15 FECHADO; próximo epic à espera de decisão)
+
+### Estado atual (PONTO DE PARTIDA do próximo run)
+- **Epic #15 (observabilidade) COMPLETO** — todas as fases + continuações. **PR #16 ABERTA e atualizada**
+  (auto/daily-improvements → feature/auth-telemetry), NÃO mergeada (gate humano). **402 testes verdes (57 arquivos)**, build verde.
+- Comentei na issue **#15** marcando como completo (fechar quando a PR #16 for revisada).
+- **Próximo epic à espera da escolha do Daniel: issue #17** (3 opções: 1=responsividade/mobile [recomendado],
+  2=i18n, 3=qualidade de código). Enquanto não decide, o agente faz só cobertura incremental segura.
+- Branch `auto/daily-improvements` ✓ pushada; base `feature/auth-telemetry`; `main`/produção intactos.
+
+### Feito nesta run (6 fatias, cada uma commit+push+verde)
+1. **FASE 2 (resto):** `captureError(e,{area})` nos demais catches silenciosos do `useStore.ts`
+   (`authLogin`/`authSignup`/`changePassword`/`restoreSession`/`syncTeamRanges`/`listDevices`/`revokeDevice`/
+   `revokeOtherDevices`/`adminSaveRanges`) — sem mudar o retorno.
+2. **FASE 4 (extensão):** `eventQueue` reporta telemetria degradada UMA vez por sessão (flags dedup) —
+   fila cheia (cap 500) e falha de gravação por cota. Testes mockam `./sentry`.
+3. **FASE 3 (extensão):** breadcrumbs nas ações de dados (`finalizeRange`/`deleteRange`/`exportData`/
+   `resetLocalData`) + novo `src/store/breadcrumbs.test.ts` (mocka sentry).
+4. **FASE 2:** `ErrorBoundary.componentDidCatch` passa `variant` (page/section) no `captureError`; teste cobre.
+5. **FASE 2:** reset de senha do `CoachPanel` (coach) reporta `captureError(e,{area:'admin-reset-password'})`.
+6. **Cobertura:** `src/store/networkErrors.test.ts` — authLogin/changePassword/listDevices/publishTeamRanges
+   com fetch rejeitando → `{ok:false}` e `captureError` com a area certa.
+
+### Padrão útil (replicável)
+- Testar observabilidade: `vi.mock('../utils/sentry', () => ({ addBreadcrumb: vi.fn(), captureMessage: vi.fn(), captureError: vi.fn() }))`
+  e asserir as chamadas. Helpers são no-op sem DSN, então o mock é a forma de verificar o payload.
+- jsdom: para forçar erro de `localStorage.setItem`, use `vi.spyOn(Storage.prototype, 'setItem')` (atribuição direta não pega).
+
+### PRÓXIMA FATIA
+Aguardar decisão do Daniel na **issue #17**. Se ele escolher antes do run: começar a opção escolhida
+(responsividade = mudanças aditivas `sm:`/`md:` + teste de render por fatia; validar no preview Cloudflare).
+Sem decisão: cobertura incremental de testes/a11y sem abrir epic novo.
+
+---
+
 ## 2026-06-27 (epics #11 e #13 MERGEADOS; epic #15 observabilidade — núcleo feito)
 
 ### Estado atual (PONTO DE PARTIDA do próximo run)

@@ -43,7 +43,12 @@ e scrub de PII no `beforeSend`. UMA FATIA SUBSTANCIAL por execução.
 ### FASE 5 — Documentação
 - [x] Seção de observabilidade no CLAUDE.md (API, privacidade, o que é/não é capturado). (27/06)
 
-## EPIC #15 — núcleo CONCLUÍDO (27/06); resta só a continuação segura da FASE 2 (catches do store)
+## EPIC #15 — CONCLUÍDO (27/06, run das 5h)
+Todas as fases + continuações entregues: helpers (FASE 1), todos os catches silenciosos de rede do front
+capturam erro (FASE 2: store completo, ErrorBoundary com `variant`, reset de senha do coach), breadcrumbs
+de nav/drill/auth/publish + ações de dados (FASE 3), sinais de estado degradado em storage/validateRanges/
+eventQueue (FASE 4) e doc no CLAUDE.md (FASE 5). **402 testes verdes.** PR #16 atualizada.
+**Próximo epic à espera de decisão do Daniel: issue #17.**
 
 ## Definição de pronto por fatia
 - Helpers no-op sem DSN; sem PII nova; caminho feliz intacto; `npm test`/`npm run build` verdes;
