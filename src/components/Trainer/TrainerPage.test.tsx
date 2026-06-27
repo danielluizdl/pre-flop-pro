@@ -4,6 +4,7 @@ import { axe } from 'jest-axe'
 import { TrainerPage } from './TrainerPage'
 import { useStore } from '../../store/useStore'
 import { makeEmptyGrid } from '../../utils/hands'
+import { getRenderCount, resetRenderCount } from '../../test/renderCount'
 import type { Range } from '../../types'
 
 const RANGE: Range = { id: 1, name: 'BTN RFI', positions: ['BTN'], grid: makeEmptyGrid(), scenarios: [], tableSize: 8 }
@@ -24,6 +25,13 @@ describe('TrainerPage', () => {
     useStore.setState({ ranges: [], activeDrillRange: null })
     render(<TrainerPage />)
     expect(screen.getByText('Nenhum range criado.')).toBeInTheDocument()
+  })
+
+  it('CONTINUAR sem range selecionado mostra aviso inline (não alert)', () => {
+    useStore.setState({ ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [] })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
+    expect(screen.getByRole('alert')).toHaveTextContent('Selecione pelo menos um range.')
   })
 
   it('renderiza o drill ativo com o botão FOLD', () => {
@@ -147,6 +155,25 @@ describe('TrainerPage', () => {
     }
   })
 
+  it('ao acabar as mãos, "Próxima Mão" abre o resumo (sem alert)', () => {
+    const nextDrillHand = vi.fn(() => false)
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
+      handHistory: [], sessionHandPerf: {}, handPerformance: {}, selectedDrillRangeIds: [1],
+      sessionStats: { hands: 1, correct: 0, errors: 1, consults: 0 }, sessionSeverity: { grave: 1, impreciso: 0 },
+      nextDrillHand,
+    })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /FOLD/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Próxima Mão/ }))
+    expect(nextDrillHand).toHaveBeenCalled()
+    expect(screen.getByText('Resumo do Treino')).toBeInTheDocument()
+  })
+
   it('"Encerrar e ver resumo" abre o resumo com precisão e severidade', () => {
     const g = makeEmptyGrid()
     g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
@@ -180,6 +207,23 @@ describe('TrainerPage', () => {
     render(<TrainerPage />)
     fireEvent.click(screen.getByRole('button', { name: /HISTÓRICO/ }))
     expect(screen.getByText('Histórico de Treino')).toBeInTheDocument()
+  })
+
+  it('alternar auto-advance ("2s") não re-renderiza a sidebar de histórico (memo)', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
+      handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 },
+    })
+    render(<TrainerPage />)
+    resetRenderCount('historySidebar')
+    fireEvent.click(screen.getByRole('button', { name: '2s' }))
+    fireEvent.click(screen.getByRole('button', { name: '2s' }))
+    expect(getRenderCount('historySidebar')).toBe(0)
   })
 
   it('não tem violações de acessibilidade na seleção de ranges (axe)', async () => {

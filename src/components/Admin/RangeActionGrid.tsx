@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useCallback, memo } from 'react'
 import { RANKS } from '../../utils/hands'
+import { countRender } from '../../test/renderCount'
 
 export interface ActionFreq { call?: number; raise?: number; allin?: number; extra?: number; fold?: number }
 
@@ -31,10 +32,35 @@ function freqText(d: ActionFreq): string {
   return parts.join(' · ') || 'Fold'
 }
 
+const ActionCell = memo(function ActionCell({ hand, bg, empty, onEnter }: {
+  hand: string
+  bg: string
+  empty: boolean
+  onEnter: (hand: string) => void
+}) {
+  countRender('actionCell')
+  return (
+    <div
+      onMouseEnter={() => onEnter(hand)}
+      className="relative aspect-square rounded-[4px] border border-warm-700/50 flex items-center justify-center overflow-hidden"
+      style={{ background: empty ? '#1f1d1a' : '#16140f' }}
+    >
+      <div className="absolute inset-0 z-0" style={{ background: bg }} />
+      <span
+        className="relative z-10"
+        style={{ fontSize: 8, letterSpacing: '0.01em', fontVariantNumeric: 'tabular-nums', lineHeight: 1, color: empty ? '#6b7280' : 'rgba(255,255,255,0.92)', fontWeight: empty ? 500 : 700, textShadow: empty ? 'none' : '0 0 3px rgba(0,0,0,0.85)' }}
+      >
+        {hand}
+      </span>
+    </div>
+  )
+})
+
 export function RangeActionGrid({ title, grid, subtitle }: { title: string; grid: Record<string, ActionFreq>; subtitle?: string }) {
   const [hovered, setHovered] = useState<string | null>(null)
   const [mouse, setMouse] = useState({ x: 0, y: 0 })
   const byHand = useMemo(() => grid, [grid])
+  const onEnter = useCallback((hand: string) => setHovered(hand), [])
 
   return (
     <div className="relative">
@@ -64,22 +90,7 @@ export function RangeActionGrid({ title, grid, subtitle }: { title: string; grid
             const d = byHand[hand] ?? {}
             const nonFold = (d.call ?? 0) + (d.raise ?? 0) + (d.allin ?? 0) + (d.extra ?? 0)
             const empty = nonFold <= 0
-            return (
-              <div
-                key={hand}
-                onMouseEnter={() => setHovered(hand)}
-                className="relative aspect-square rounded-[4px] border border-warm-700/50 flex items-center justify-center overflow-hidden"
-                style={{ background: empty ? '#1f1d1a' : '#16140f' }}
-              >
-                <div className="absolute inset-0 z-0" style={{ background: cellBackground(d) }} />
-                <span
-                  className="relative z-10"
-                  style={{ fontSize: 8, letterSpacing: '0.01em', fontVariantNumeric: 'tabular-nums', lineHeight: 1, color: empty ? '#6b7280' : 'rgba(255,255,255,0.92)', fontWeight: empty ? 500 : 700, textShadow: empty ? 'none' : '0 0 3px rgba(0,0,0,0.85)' }}
-                >
-                  {hand}
-                </span>
-              </div>
-            )
+            return <ActionCell key={hand} hand={hand} bg={cellBackground(d)} empty={empty} onEnter={onEnter} />
           })
         )}
       </div>

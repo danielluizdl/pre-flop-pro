@@ -1,5 +1,6 @@
-﻿import { useState, useRef, useEffect } from 'react'
+﻿import { useState, useRef, useEffect, useCallback, memo } from 'react'
 import { useStore } from '../../store/useStore'
+import { countRender } from '../../test/renderCount'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import { PokerTableEditor } from '../ui/PokerTableEditor'
 import { HandQuickSelect } from '../ui/HandQuickSelect'
@@ -79,7 +80,8 @@ function HandHistoryItem({ entry, onClick }: { entry: HandHistoryEntry; onClick?
 }
 
 /* ── Hand history sidebar ────────────────────────────────────────────────────── */
-function HandHistorySidebar({ onOpenModal, onReplayEntry }: { onOpenModal: () => void; onReplayEntry?: (entry: HandHistoryEntry) => void }) {
+const HandHistorySidebar = memo(function HandHistorySidebar({ onOpenModal, onReplayEntry }: { onOpenModal: () => void; onReplayEntry?: (entry: HandHistoryEntry) => void }) {
+  countRender('historySidebar')
   const history = useStore(s => s.handHistory)
   const reversed = [...history].reverse()
   return (
@@ -101,7 +103,7 @@ function HandHistorySidebar({ onOpenModal, onReplayEntry }: { onOpenModal: () =>
       </div>
     </div>
   )
-}
+})
 
 /* ── Session detail (used inside HistoryModal) ────────────────────────────── */
 function SessionDetail({ session, ranges }: {
@@ -501,6 +503,7 @@ function DrillRangeSelect() {
   const [step, setStep]             = useState<'select' | 'filter'>('select')
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
   const [previewId, setPreviewId]   = useState<number | null>(null)
+  const [notice, setNotice]         = useState('')
 
   function toggleGroup(pos: string) {
     setOpenGroups(prev => {
@@ -513,7 +516,7 @@ function DrillRangeSelect() {
   function handleStartDrill() {
     startDrillSession()
     const ok = nextDrillHand()
-    if (!ok) alert('Nenhuma mão selecionada!')
+    if (!ok) setNotice('Nenhuma mão selecionada para treinar. Volte e inclua ao menos uma mão.')
   }
 
   if (step === 'select') {
@@ -660,13 +663,15 @@ function DrillRangeSelect() {
               })}
             </div>
 
+            {notice && <p role="alert" className="text-sm text-red-400 pt-2 text-right">{notice}</p>}
             <div className="flex items-center justify-between pt-2">
               <span className="text-sm text-warm-400">
                 {selectedIds.length > 0 ? `${selectedIds.length} range${selectedIds.length !== 1 ? 's' : ''} selecionado${selectedIds.length !== 1 ? 's' : ''}` : 'Nenhum selecionado'}
               </span>
               <button
                 onClick={() => {
-                  if (selectedIds.length === 0) { alert('Selecione pelo menos um range.'); return }
+                  if (selectedIds.length === 0) { setNotice('Selecione pelo menos um range.'); return }
+                  setNotice('')
                   setStep('filter')
                 }}
                 className="btn-commit"
@@ -692,6 +697,7 @@ function DrillRangeSelect() {
         <p className="text-warm-400 text-sm">Arraste para selecionar/remover várias mãos.</p>
       </div>
       <HandFilterGrid />
+      {notice && <p role="alert" className="text-sm text-red-400 text-center">{notice}</p>}
       <div className="flex gap-3 justify-center">
         <button
           onClick={handleStartDrill}
@@ -1033,6 +1039,21 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
     return () => window.removeEventListener('keydown', h)
   }, [])
 
+  const handleReplayEntry = useCallback((entry: HandHistoryEntry) => {
+    const feedbackMsg = entry.correct ? `✓ ${entry.actionTaken}!` : `✗ Correto: ${entry.correctAction}`
+    // Resolve por id (fallback por nome para entradas antigas) e reusa o stackGridIdx gravado.
+    const entryRange = ranges.find(r => r.id === entry.rangeId) ?? ranges.find(r => r.name === entry.rangeName) ?? activeDrillRange!
+    const stackGridIdx = entry.stackGridIdx ?? -1
+    setPrevSnapshot({
+      hand: entry.hand, suits: entry.suits, rng: entry.rng,
+      feedback: feedbackMsg, feedbackOk: entry.correct,
+      freqLabel: freqLabelFor(entryRange, stackGridIdx, entry.hand),
+      bandLabel: bandLabelFor(entryRange, stackGridIdx, entry.hand),
+      range: entryRange, stackGridIdx,
+    })
+    setViewingPrev(true)
+  }, [ranges, activeDrillRange])
+
   if (!activeDrillRange || !activeHand) return null
 
   const displayHand    = viewingPrev ? prevSnapshot!.hand       : activeHand
@@ -1048,21 +1069,6 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
   const r2 = displayHand[1]
   const [s1, s2] = displaySuits
 
-  function handleReplayEntry(entry: HandHistoryEntry) {
-    const feedbackMsg = entry.correct ? `✓ ${entry.actionTaken}!` : `✗ Correto: ${entry.correctAction}`
-    // Resolve por id (fallback por nome para entradas antigas) e reusa o stackGridIdx gravado.
-    const entryRange = ranges.find(r => r.id === entry.rangeId) ?? ranges.find(r => r.name === entry.rangeName) ?? activeDrillRange!
-    const stackGridIdx = entry.stackGridIdx ?? -1
-    setPrevSnapshot({
-      hand: entry.hand, suits: entry.suits, rng: entry.rng,
-      feedback: feedbackMsg, feedbackOk: entry.correct,
-      freqLabel: freqLabelFor(entryRange, stackGridIdx, entry.hand),
-      bandLabel: bandLabelFor(entryRange, stackGridIdx, entry.hand),
-      range: entryRange, stackGridIdx,
-    })
-    setViewingPrev(true)
-  }
-
   function doGoNext() {
     if (viewingPrev) { setViewingPrev(false); return }
     if (answered) {
@@ -1075,7 +1081,9 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
     setFreqLabel('')
     setBandLabel('')
     const ok = nextHand()
-    if (!ok) { alert('Sem mais mãos!'); stopDrill() }
+    // Sem mais mãos no filtro/range: mostra o resumo (em vez de um alert que
+    // jogava o jogador de volta pra seleção). "Encerrar"/"Voltar" ficam no resumo.
+    if (!ok) onShowSummary()
   }
   goNextRef.current = doGoNext
 

@@ -1,5 +1,92 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-06-26 (continuação 3 — epic #11 FECHADO + início do epic #13 robustez de UX)
+
+Epic **#11 (performance de render) essencialmente concluído** (FASE 1–5; PR #12 atualizada). Aberto o
+**próximo epic #13 (robustez de estados de UX: loading/empty/error)** e já iniciado.
+
+### Auditoria (FASE 1 do #13) — superfícies com fetch/async no front
+- `src/store/useStore.ts` (auth/telemetria/devices/ranges): ações retornam `{ok}`; quem trata é a UI.
+- `src/utils/eventQueue.ts`: fila com retry/flush próprio — robusto, sem UI.
+- `src/components/Admin/CoachPanel.tsx`: hook `useAnalytics` já tem `loading`/`error`/`empty` por seção (via `Section`). OK. (Possível melhoria futura: retry nos erros de seção.)
+- `src/components/Stats/MyAccountStats.tsx`: **tinha 2 gaps — CORRIGIDOS nesta sessão** (ver abaixo).
+- `LoginPage`/`ChangePasswordModal`: mostram erro inline (OK).
+
+### Feito (FASE 2 do #13)
+- **MyAccountStats robusto**: (1) erro de rede nas stats → mensagem + **"Tentar novamente"** (recarrega via `retry` em dep do effect); (2) `DevicesSection` distingue **falha** de **vazio** (antes mostrava "Nenhuma sessão ativa" mesmo em erro). Testes: erro→retry→dados; falha de sessões mostra erro. 376 testes verdes.
+
+### Feito também (mesma sessão — #13 FASE 2 e 5)
+- **CoachPanel retry**: `useAnalytics`/`useTrend`/`useSegments`/`usePlayerRanges` expõem `reload()` (tick em dep);
+  `Section` mostra "Tentar novamente" no erro; as 7 seções do TeamView passam `onRetry`. Teste: erro→retry→dados.
+- **ErrorBoundary por área (FASE 5)**: `variant="section"` (fallback compacto) + `resetKey`; AppLayout envolve
+  a área de página com `resetKey={page}` → crash de página não derruba a navegação; navegar recupera. Testes.
+
+### Feito também (#13 FASE 3 e 4 — EPIC #13 FECHADO)
+- **FASE 3**: todos os `alert()` removidos. Seleção/filtro do drill → inline `role="alert"`; esgotar as
+  mãos no drill → abre o `DrillSummary` (via `onShowSummary`) no lugar de alert+stop.
+- **FASE 4**: `src/components/ui/Skeleton.tsx` (pulse, respeita reduced-motion). MyAccountStats loading =
+  cards-skeleton espelhando o layout (sem salto); seções do CoachPanel = barras. `role="status"`+`aria-busy`.
+
+### Estado (#13)
+- **EPIC #13 CONCLUÍDO (FASE 1–5)**. **384 testes verdes (55 arquivos)**, build verde.
+- PR #12 cobre os dois epics (#11 perf + #13 robustez). NÃO mergeada (gate humano).
+
+### Próximo epic (a propor em issue `agente`)
+Sugestões: **responsividade/mobile** (drill e matrizes em telas pequenas — maior risco visual, validar no
+preview) · **i18n/strings centralizadas** · **observabilidade de erros no front** (sem tocar backend).
+
+---
+
+## 2026-06-26 (continuação — NOVO EPIC: performance de render · issue #11)
+
+Epic de testes/a11y CONCLUÍDO e PR #10 **MERGEADA** em `feature/auth-telemetry` (issues #2 e #4 fechadas).
+Aberto o próximo epic (**performance de render**, issue #11, label `agente`) e já avançado:
+
+### Feito (3 fatias provadas por contagem de render)
+1. **perf HandMatrix (FASE 1):** o `onMouseMove` do grid atualizava `mousePos` a CADA movimento →
+   re-render das 169 células continuamente, inclusive ao editar (tooltip só existe no heatmap).
+   Agora: `onMouseMove` só ativo no heatmap; `Cell` em `React.memo` com handlers estáveis (`useCallback`
+   lendo grid/brush/readOnly/heatmap via **refs**, p/ não recriar callbacks e quebrar o memo).
+   Prova: mousemove → 0 re-renders de célula; troca de grid → exatamente 1. `export __cellRenderCount`.
+2. **perf RangeHeatGrid + RangeActionGrid (FASE 2):** mesmo padrão — `HeatCell`/`ActionCell` memoizadas,
+   `onEnter` estável; passei **primitivos já computados** (cor/bg/empty) p/ o memo segurar (evita
+   `{}`/identidade nova). mousemove → 0 re-renders. `__heatCellRenderCount`/`__actionCellRenderCount`.
+3. **perf DrillActive (FASE 4):** `HandHistorySidebar` (até 50 itens) em `React.memo` com props estáveis
+   (`handleReplayEntry` → `useCallback([ranges, activeDrillRange])`; `onShowHistory` já estável do pai).
+   Estados internos do drill (ex.: alternar "2s") não a re-renderizam — só o `handHistory` (sua própria
+   assinatura no store). Prova: toggle "2s" → 0 re-renders da sidebar. `__sidebarRenderCount`.
+
+### Padrão do epic (replicar)
+- Memoizar célula/linha pesada em `React.memo`; handlers estáveis via `useCallback` (ler valores
+  voláteis por **ref** quando preciso, p/ manter identidade); passar **primitivos** (não objetos
+  recriados) ao componente memo. Provar com um `export const __xRenderCount = { n: 0 }` incrementado
+  no render do memo + teste (`fireEvent.mouseMove`/interação → contagem esperada). Comportamento/visual idênticos.
+
+### Feito também (mesma sessão — fecha o epic #11)
+4. **LIMPEZA dos contadores:** `src/test/renderCount.ts` (`countRender`/`getRenderCount`/`resetRenderCount`);
+   `countRender(key)` com incremento guardado por `import.meta.env` (no-op em produção). Componentes não
+   exportam mais `__xRenderCount`. Testes de contagem usam `getRenderCount('handCell'|'heatCell'|'actionCell'|'historySidebar'|'overviewRow')`.
+5. **perf CoachPanel (FASE 3):** agregações já eram `useMemo`; extraí `OverviewTableRow` e `ByRangeTableRow`
+   em `React.memo` (handlers `togglePlayer`/`selectRange` via `useCallback`). Prova: abrir resumo de jogador
+   re-renderiza só 1 linha. (`TopHandsPanel` Top 20 fica como opcional de baixo valor.)
+6. **perf bundle (FASE 5):** lazy-load de RangeSetupPage/RangeEditorPage/TableEditorPage/CategoryDetailPage
+   (Suspense já existia no AppLayout). Chunk principal ~305KB → **~265KB** (gzip ~47→~38KB).
+
+### Estado
+- Testes: **374 passam (54 arquivos)**. Build: verde (warning só do chunk de dados `admin-ranges`).
+- Branch: `auto/daily-improvements`; pushada. **PR #12 ABERTA** (auto/daily-improvements → feature/auth-telemetry) — atualizar com TODAS as fatias de perf. NÃO mergear (gate humano).
+- **EPIC #11 ESSENCIALMENTE CONCLUÍDO**: FASE 1–5 entregues; classe de re-render contínuo (onMouseMove das 3 matrizes) eliminada.
+
+### Próximo epic
+Proposto em issue `agente`: **robustez de estados (loading/empty/error)** OU **responsividade/mobile**.
+Recomendo robustez de estados (menor risco visual, valor pra produção). Ver issue criada.
+
+### Padrão do epic #11 (replicável em futuros)
+- Memoizar célula/linha pesada em `React.memo`; handlers estáveis via `useCallback` (ler valores voláteis
+  por **ref** quando preciso); passar **primitivos** ao memo. Provar com `countRender(key)` (src/test/renderCount.ts) + teste.
+
+---
+
 ## 2026-06-26 (sexta — performance, a11y, cobertura final · ISSUES #4 e #2)
 
 ### Feito hoje (8 fatias, cada uma commitada + pushada em auto/daily-improvements)

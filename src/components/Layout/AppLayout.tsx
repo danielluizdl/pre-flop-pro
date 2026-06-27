@@ -2,19 +2,22 @@
 import { useStore } from '../../store/useStore'
 import { TopNav } from './TopNav'
 import { Dashboard } from './Dashboard'
-import { RangeEditorPage } from '../RangeBuilder/RangeEditorPage'
-import { RangeSetupPage } from '../RangeBuilder/RangeSetupPage'
-import { TableEditorPage } from '../TableEditor/TableEditorPage'
 import { SituationsPage } from '../Situations/SituationsPage'
-import { CategoryDetailPage } from '../Situations/CategoryDetailPage'
 import { LoginPage } from '../Auth/LoginPage'
 import { WelcomeModal } from '../Auth/WelcomeModal'
 import { ChangePasswordModal } from '../Auth/ChangePasswordModal'
 import { RouterSync } from './RouterSync'
+import { ErrorBoundary } from './ErrorBoundary'
 
 const TrainerPage = lazy(() => import('../Trainer/TrainerPage').then(m => ({ default: m.TrainerPage })))
 const StatsPage = lazy(() => import('../Stats/StatsPage').then(m => ({ default: m.StatsPage })))
 const CoachPanel = lazy(() => import('../Admin/CoachPanel'))
+// Fluxo de criação/edição de range e detalhe de categoria não estão na carga
+// inicial (só via navegação) → lazy para enxugar o chunk principal.
+const RangeSetupPage = lazy(() => import('../RangeBuilder/RangeSetupPage').then(m => ({ default: m.RangeSetupPage })))
+const RangeEditorPage = lazy(() => import('../RangeBuilder/RangeEditorPage').then(m => ({ default: m.RangeEditorPage })))
+const TableEditorPage = lazy(() => import('../TableEditor/TableEditorPage').then(m => ({ default: m.TableEditorPage })))
+const CategoryDetailPage = lazy(() => import('../Situations/CategoryDetailPage').then(m => ({ default: m.CategoryDetailPage })))
 
 export function AppLayout() {
   const { page, darkMode, userMode } = useStore()
@@ -53,9 +56,11 @@ export function AppLayout() {
           : currentUser?.firstLogin === true && <ChangePasswordModal />}
         <TopNav />
         <main className="w-full max-w-[1800px] mx-auto px-6 md:px-10 pt-8 pb-16">
-          <Suspense fallback={<p className="text-sm text-warm-500">Carregando…</p>}>
-            {renderPage()}
-          </Suspense>
+          <ErrorBoundary variant="section" resetKey={page}>
+            <Suspense fallback={<p className="text-sm text-warm-500">Carregando…</p>}>
+              {renderPage()}
+            </Suspense>
+          </ErrorBoundary>
         </main>
       </div>
     </div>

@@ -22,6 +22,28 @@ describe('ErrorBoundary', () => {
     spy.mockRestore()
   })
 
+  it('variante "section" mostra fallback compacto, sem tela cheia', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    render(<ErrorBoundary variant="section"><Boom /></ErrorBoundary>)
+    expect(screen.getByText('Esta seção falhou ao carregar')).toBeInTheDocument()
+    expect(screen.queryByText('Algo deu errado')).not.toBeInTheDocument()
+    spy.mockRestore()
+  })
+
+  it('limpa o erro quando resetKey muda (navegação recupera a área)', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { rerender } = render(
+      <ErrorBoundary variant="section" resetKey="drill"><Boom /></ErrorBoundary>,
+    )
+    expect(screen.getByText('Esta seção falhou ao carregar')).toBeInTheDocument()
+    rerender(
+      <ErrorBoundary variant="section" resetKey="dashboard"><div>página nova ok</div></ErrorBoundary>,
+    )
+    expect(screen.getByText('página nova ok')).toBeInTheDocument()
+    expect(screen.queryByText('Esta seção falhou ao carregar')).not.toBeInTheDocument()
+    spy.mockRestore()
+  })
+
   it('não tem violações de acessibilidade no fallback (axe)', async () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { container } = render(<ErrorBoundary><Boom /></ErrorBoundary>)

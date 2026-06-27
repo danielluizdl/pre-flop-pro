@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useCallback, memo } from 'react'
 import { RANKS } from '../../utils/hands'
+import { countRender } from '../../test/renderCount'
 
 export interface GridCell {
   hand: string
@@ -42,6 +43,38 @@ function cellColor(cell: GridCell | undefined, metric: Metric, max: number): str
   return scaleColor(cell.total, max, '148,163,184')
 }
 
+const HeatCell = memo(function HeatCell({ hand, color, hasData, onEnter }: {
+  hand: string
+  color: string | null
+  hasData: boolean
+  onEnter: (hand: string) => void
+}) {
+  countRender('heatCell')
+  return (
+    <div
+      onMouseEnter={() => onEnter(hand)}
+      className="relative aspect-square rounded-[6px] border border-warm-700/50 flex items-center justify-center overflow-hidden"
+      style={{ background: hasData ? '#16140f' : '#1f1d1a' }}
+    >
+      {color && <div className="absolute inset-0 z-0" style={{ background: color }} />}
+      <span
+        className="relative z-10"
+        style={{
+          fontSize: 10.5,
+          letterSpacing: '0.02em',
+          fontVariantNumeric: 'tabular-nums',
+          lineHeight: 1,
+          color: hasData ? 'rgba(255,255,255,0.9)' : '#6b7280',
+          fontWeight: hasData ? 700 : 500,
+          textShadow: hasData ? '0 0 3px rgba(0,0,0,0.8)' : 'none',
+        }}
+      >
+        {hand}
+      </span>
+    </div>
+  )
+})
+
 export function RangeHeatGrid({ cells }: { cells: GridCell[] }) {
   const [metric, setMetric] = useState<Metric>('accuracy')
   const [hovered, setHovered] = useState<string | null>(null)
@@ -56,6 +89,7 @@ export function RangeHeatGrid({ cells }: { cells: GridCell[] }) {
   }, [cells, metric])
 
   const hCell = hovered ? byHand.get(hovered) : undefined
+  const onEnter = useCallback((hand: string) => setHovered(hand), [])
 
   return (
     <div className="relative">
@@ -99,30 +133,7 @@ export function RangeHeatGrid({ cells }: { cells: GridCell[] }) {
             const cell = byHand.get(hand)
             const color = cellColor(cell, metric, max)
             const hasData = !!cell && cell.total > 0
-            return (
-              <div
-                key={hand}
-                onMouseEnter={() => setHovered(hand)}
-                className="relative aspect-square rounded-[6px] border border-warm-700/50 flex items-center justify-center overflow-hidden"
-                style={{ background: hasData ? '#16140f' : '#1f1d1a' }}
-              >
-                {color && <div className="absolute inset-0 z-0" style={{ background: color }} />}
-                <span
-                  className="relative z-10"
-                  style={{
-                    fontSize: 10.5,
-                    letterSpacing: '0.02em',
-                    fontVariantNumeric: 'tabular-nums',
-                    lineHeight: 1,
-                    color: hasData ? 'rgba(255,255,255,0.9)' : '#6b7280',
-                    fontWeight: hasData ? 700 : 500,
-                    textShadow: hasData ? '0 0 3px rgba(0,0,0,0.8)' : 'none',
-                  }}
-                >
-                  {hand}
-                </span>
-              </div>
-            )
+            return <HeatCell key={hand} hand={hand} color={color} hasData={hasData} onEnter={onEnter} />
           })
         )}
       </div>
