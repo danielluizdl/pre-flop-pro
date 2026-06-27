@@ -1081,7 +1081,9 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
     setFreqLabel('')
     setBandLabel('')
     const ok = nextHand()
-    if (!ok) { alert('Sem mais mãos!'); stopDrill() }
+    // Sem mais mãos no filtro/range: mostra o resumo (em vez de um alert que
+    // jogava o jogador de volta pra seleção). "Encerrar"/"Voltar" ficam no resumo.
+    if (!ok) onShowSummary()
   }
   goNextRef.current = doGoNext
 

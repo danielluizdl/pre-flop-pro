@@ -155,6 +155,25 @@ describe('TrainerPage', () => {
     }
   })
 
+  it('ao acabar as mãos, "Próxima Mão" abre o resumo (sem alert)', () => {
+    const nextDrillHand = vi.fn(() => false)
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
+      handHistory: [], sessionHandPerf: {}, handPerformance: {}, selectedDrillRangeIds: [1],
+      sessionStats: { hands: 1, correct: 0, errors: 1, consults: 0 }, sessionSeverity: { grave: 1, impreciso: 0 },
+      nextDrillHand,
+    })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /FOLD/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Próxima Mão/ }))
+    expect(nextDrillHand).toHaveBeenCalled()
+    expect(screen.getByText('Resumo do Treino')).toBeInTheDocument()
+  })
+
   it('"Encerrar e ver resumo" abre o resumo com precisão e severidade', () => {
     const g = makeEmptyGrid()
     g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
