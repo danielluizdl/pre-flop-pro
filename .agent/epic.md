@@ -23,6 +23,7 @@ e scrub de PII no `beforeSend`. UMA FATIA SUBSTANCIAL por execução.
 ### FASE 2 — Capturar erros silenciosos de rede / render
 - [x] `ErrorBoundary`: `captureError` agora inclui `variant` (page/section) p/ distinguir crash de
       app inteiro vs área isolada. Testes mockam `sentry` e checam o `variant`. (27/06)
+- [x] `CoachPanel` reset de senha (coach): catch de rede ganha `captureError(e,{area:'admin-reset-password'})`. (27/06)
 - [x] `MyAccountStats` + hooks do CoachPanel (`useAnalytics`/`useRangeGrid`/`useTrend`/`useSegments`/
       `usePlayerRanges`) + `publishTeamRanges`: `captureError(e, { area, view })` no catch. (27/06)
 - [x] demais catches silenciosos do store: `authLogin`/`authSignup`/`changePassword`/`restoreSession`/

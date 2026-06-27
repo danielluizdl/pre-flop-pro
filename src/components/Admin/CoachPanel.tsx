@@ -1449,7 +1449,8 @@ function PlayersView({ token }: { token: string | null }) {
       const data = await res.json().catch(() => null)
       if (!res.ok || !data?.ok) { setResetError(data?.error ?? `Erro do servidor (${res.status})`); return }
       setResetResult({ userId, tempPassword: data.tempPassword })
-    } catch {
+    } catch (e) {
+      captureError(e, { area: 'admin-reset-password' })
       setResetError('Erro de conexão')
     } finally {
       setResetting(false)
