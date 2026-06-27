@@ -20,7 +20,9 @@ e scrub de PII no `beforeSend`. UMA FATIA SUBSTANCIAL por execução.
 - [x] `sentry.ts`: `addBreadcrumb` e `captureMessage` (no-op sem DSN, redação de PII); `captureError`
       passa a dar scrub no `extra`. Testes (no-op sem DSN, redação, níveis). (27/06)
 
-### FASE 2 — Capturar erros silenciosos de rede
+### FASE 2 — Capturar erros silenciosos de rede / render
+- [x] `ErrorBoundary`: `captureError` agora inclui `variant` (page/section) p/ distinguir crash de
+      app inteiro vs área isolada. Testes mockam `sentry` e checam o `variant`. (27/06)
 - [x] `MyAccountStats` + hooks do CoachPanel (`useAnalytics`/`useRangeGrid`/`useTrend`/`useSegments`/
       `usePlayerRanges`) + `publishTeamRanges`: `captureError(e, { area, view })` no catch. (27/06)
 - [x] demais catches silenciosos do store: `authLogin`/`authSignup`/`changePassword`/`restoreSession`/
