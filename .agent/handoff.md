@@ -1,5 +1,33 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-06-27 (epics #11 e #13 MERGEADOS; epic #15 observabilidade — núcleo feito)
+
+### Estado atual (PONTO DE PARTIDA do próximo run)
+- **PR #12 MERGEADA** em `feature/auth-telemetry` (merge `36f0b03`) entregando os epics **#11 (perf)** e
+  **#13 (robustez de UX)**. Issues #11 e #13 **fechadas**. #14 fechada (decisão: seguir observabilidade).
+- **Epic ATIVO: #15 — observabilidade de erros no front** (`.agent/epic.md`). **PR #16 ABERTA**
+  (auto/daily-improvements → feature/auth-telemetry), NÃO mergeada. **390 testes verdes (55 arquivos)**, build verde.
+- Branch de trabalho `auto/daily-improvements` rebaseada no `feature/auth-telemetry` pós-merge.
+
+### Feito hoje no #15 (FASE 1,2,3,4,5 — núcleo completo)
+- **FASE 1**: `sentry.ts` ganhou `addBreadcrumb`/`captureMessage` (no-op sem DSN, redação de PII);
+  `captureError` dá scrub no `extra`. Testes em `sentry.test.ts`.
+- **FASE 2**: `captureError(e,{area,view})` nos catches silenciosos de `MyAccountStats` e dos 5 hooks do
+  CoachPanel + `publishTeamRanges`.
+- **FASE 3**: breadcrumbs em nav/drill-start/login/logout/publish (no store).
+- **FASE 4**: `captureMessage('warning')` em `storageBlocked` e `validateRanges` no load.
+- **FASE 5**: seção de observabilidade no CLAUDE.md.
+
+### PRÓXIMA FATIA (continuar de onde parei — segura, no-DSN no-op, sem PII)
+**FASE 2 (resto):** adicionar `captureError(e,{area})` nos demais catches silenciosos do `src/store/useStore.ts`
+que hoje só fazem `catch { return {ok:false} }`: `authLogin`, `authSignup`, `changePassword`,
+`restoreSession`, `syncTeamRanges`, `listDevices`, `revokeDevice`, `revokeOtherDevices`, `adminSaveRanges`.
+Não mudar o retorno; `import { captureError }` já existe no store. Depois: atualizar PR #16 + handoff.
+Quando o #15 fechar de vez, propor próximo epic (responsividade #1 ou i18n #2 da issue #14 — ambos pedem
+decisão do Daniel; responsividade precisa de validação no preview).
+
+---
+
 ## 2026-06-26 (continuação 3 — epic #11 FECHADO + início do epic #13 robustez de UX)
 
 Epic **#11 (performance de render) essencialmente concluído** (FASE 1–5; PR #12 atualizada). Aberto o

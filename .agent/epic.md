@@ -17,22 +17,27 @@ e scrub de PII no `beforeSend`. UMA FATIA SUBSTANCIAL por execução.
 
 ## Backlog (pegue a próxima fatia do topo)
 ### FASE 1 — Helpers de observabilidade
-- [ ] `sentry.ts`: `addBreadcrumb(category, message, data?)` e `captureMessage(msg, level?)` (no-op sem DSN,
-      com redação de strings). Testes.
+- [x] `sentry.ts`: `addBreadcrumb` e `captureMessage` (no-op sem DSN, redação de PII); `captureError`
+      passa a dar scrub no `extra`. Testes (no-op sem DSN, redação, níveis). (27/06)
 
 ### FASE 2 — Capturar erros silenciosos de rede
-- [ ] `MyAccountStats` e hooks do CoachPanel (`useAnalytics`/`useTrend`/`useSegments`/`usePlayerRanges`):
-      nos `catch`, além de `setError`, `captureError(e, { area, view })`. Idem ações de rede do store.
+- [x] `MyAccountStats` + hooks do CoachPanel (`useAnalytics`/`useRangeGrid`/`useTrend`/`useSegments`/
+      `usePlayerRanges`) + `publishTeamRanges`: `captureError(e, { area, view })` no catch. (27/06)
+- [ ] **PRÓXIMA (continuação segura):** demais catches silenciosos do store que hoje só fazem
+      `catch { return {ok:false} }`: `authLogin`/`authSignup`/`changePassword`/`restoreSession`/
+      `syncTeamRanges`/`listDevices`/`revokeDevice`/`revokeOtherDevices`/`adminSaveRanges`. Adicionar
+      `captureError(e, { area })` sem mudar o retorno. (Sem PII; no-op sem DSN.)
 
 ### FASE 3 — Breadcrumbs de ações-chave
-- [ ] Migalhas: início de drill, publish de ranges, login/logout, troca de página.
+- [x] nav (`setPage`), drill start, login ok (role), logout, publish de team ranges. (27/06)
 
 ### FASE 4 — Sinais de estado degradado
-- [ ] `captureMessage` (warning): cota de localStorage (`storageBlocked`), `validateRanges` achando
-      problemas no load, telemetria falhando além do retry.
+- [x] `captureMessage('warning')`: cota de localStorage (`storageBlocked`) e `validateRanges` no load. (27/06)
 
 ### FASE 5 — Documentação
-- [ ] Seção no CLAUDE.md sobre o modelo de observabilidade (o que é/NÃO é capturado por privacidade).
+- [x] Seção de observabilidade no CLAUDE.md (API, privacidade, o que é/não é capturado). (27/06)
+
+## EPIC #15 — núcleo CONCLUÍDO (27/06); resta só a continuação segura da FASE 2 (catches do store)
 
 ## Definição de pronto por fatia
 - Helpers no-op sem DSN; sem PII nova; caminho feliz intacto; `npm test`/`npm run build` verdes;
