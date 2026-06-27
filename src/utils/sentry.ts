@@ -44,5 +44,25 @@ export function initSentry() {
 
 export function captureError(error: unknown, info?: Record<string, unknown>) {
   if (!sentryEnabled) return
-  Sentry.captureException(error, info ? { extra: info } : undefined)
+  Sentry.captureException(error, info ? { extra: scrubEvent({ ...info }) } : undefined)
+}
+
+type Level = 'fatal' | 'error' | 'warning' | 'info' | 'debug'
+
+// Mensagem avulsa (ex.: estado degradado). Redige PII da string.
+export function captureMessage(message: string, level: Level = 'info') {
+  if (!sentryEnabled) return
+  Sentry.captureMessage(redactString(message), level)
+}
+
+// Migalha de contexto (ação do usuário) p/ reconstruir o caminho até um erro.
+// Redige a mensagem e dá scrub nos dados; no-op sem DSN.
+export function addBreadcrumb(category: string, message: string, data?: Record<string, unknown>) {
+  if (!sentryEnabled) return
+  Sentry.addBreadcrumb({
+    category,
+    message: redactString(message),
+    level: 'info',
+    data: data ? scrubEvent({ ...data }) : undefined,
+  })
 }

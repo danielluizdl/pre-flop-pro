@@ -1,43 +1,39 @@
-# EPIC ATIVO — Robustez de estados de UX (loading / empty / error)
+# EPIC ATIVO — Observabilidade de erros no front (Sentry já plugado)
 
-> Epics anteriores CONCLUÍDOS: testes+a11y (PR #5, #10 mergeados; issues #2/#4 fechadas) e
-> **performance de render** (#11, PR #12 — FASE 1–5 entregues). Histórico no `.agent/handoff.md`.
+> Epics anteriores CONCLUÍDOS e mergeados em `feature/auth-telemetry`: testes+a11y (#5/#10),
+> performance de render (#11) e robustez de estados de UX (#13) — tudo na PR #12 (merge `36f0b03`).
+> Histórico no `.agent/handoff.md`. Issue do epic: **#15** (label `agente`).
 
-Objetivo: toda superfície assíncrona ou potencialmente vazia tem estados de **loading**,
-**vazio** e **erro** consistentes e claros — sem telas brancas/quebradas. Valor para o cutover
-de produção. Issue do epic: **#13** (label `agente`). UMA FATIA SUBSTANCIAL por execução.
+Objetivo: capturar os erros "silenciosos" do front (catches que só setam estado) e dar contexto
+(breadcrumbs), sem tocar backend. Sentry já tem init condicional (`VITE_SENTRY_DSN`), `captureError`
+e scrub de PII no `beforeSend`. UMA FATIA SUBSTANCIAL por execução.
 
-## Regras / padrões
-- Sem regressão visual no caminho feliz. Cada estado novo coberto por teste (RTL + `fetch` mockado) + axe.
-- `npm test` + `npm run build` verdes por fatia. NÃO tocar auth/functions/api/worker/D1/seed.
-- Mensagens em PT-BR, sem emojis. Erro de rede → mensagem amigável + ação (tentar de novo) quando fizer sentido.
+## Princípios (invioláveis)
+- `captureError`/`addBreadcrumb`/`captureMessage` são **no-op sem `VITE_SENTRY_DSN`** (caso dos testes).
+- Não spammar: capturar erro real (rede/lógica), NÃO validação esperada do usuário.
+- Sem PII nova: redigir strings (e-mail/token) e dropar Authorization/Cookie (helpers já existem).
+- Caminho feliz intacto. Cada fatia com teste dos helpers (no-op sem DSN, scrub) — sem rede.
+- NÃO tocar auth/`functions/api`/worker/D1/seed.
 
 ## Backlog (pegue a próxima fatia do topo)
-### FASE 1 — Auditoria
-- [x] Superfícies async mapeadas (handoff): store (ações `{ok}`), eventQueue (retry próprio),
-      CoachPanel (loading/empty/error por seção), MyAccountStats (tinha gaps → corrigidos). (26/06)
+### FASE 1 — Helpers de observabilidade
+- [ ] `sentry.ts`: `addBreadcrumb(category, message, data?)` e `captureMessage(msg, level?)` (no-op sem DSN,
+      com redação de strings). Testes.
 
-### FASE 2 — Erros de rede sem tela quebrada
-- [x] MyAccountStats: erro → mensagem + "Tentar novamente"; DevicesSection distingue falha de vazio. (26/06)
-- [x] CoachPanel: hooks expõem `reload()`; `Section` mostra "Tentar novamente" no erro (7 seções). (26/06)
+### FASE 2 — Capturar erros silenciosos de rede
+- [ ] `MyAccountStats` e hooks do CoachPanel (`useAnalytics`/`useTrend`/`useSegments`/`usePlayerRanges`):
+      nos `catch`, além de `setError`, `captureError(e, { area, view })`. Idem ações de rede do store.
 
-### FASE 5 — Isolamento de falhas
-- [x] `ErrorBoundary` ganhou `variant="section"` + `resetKey`; AppLayout isola a área de página
-      (`resetKey={page}`) — crash de página não derruba a navegação. (26/06)
+### FASE 3 — Breadcrumbs de ações-chave
+- [ ] Migalhas: início de drill, publish de ranges, login/logout, troca de página.
 
-### FASE 3 — Estados vazios consistentes
-- [x] Todos os `alert()` do drill viram mensagens amigáveis: seleção/filtro → inline `role="alert"`;
-      esgotar as mãos no drill → abre o DrillSummary (em vez de alert+stop). (26/06)
+### FASE 4 — Sinais de estado degradado
+- [ ] `captureMessage` (warning): cota de localStorage (`storageBlocked`), `validateRanges` achando
+      problemas no load, telemetria falhando além do retry.
 
-### FASE 4 — Loading consistente
-- [x] Componente `Skeleton` (pulse, respeita reduced-motion). MyAccountStats (cards-skeleton espelhando o
-      layout → sem salto) e seções do CoachPanel (barras). Containers `role="status"`+`aria-busy`. (26/06)
-
-## EPIC #13 CONCLUÍDO (26/06/2026)
-FASE 1–5 entregues: auditoria, erros de rede com retry (MyAccountStats + 7 seções do coach), avisos
-inline no lugar de alert(), skeletons sem layout shift, e ErrorBoundary por área (crash de página não
-derruba a navegação). 384 testes verdes. **Próximo epic a propor em issue `agente`.**
+### FASE 5 — Documentação
+- [ ] Seção no CLAUDE.md sobre o modelo de observabilidade (o que é/NÃO é capturado por privacidade).
 
 ## Definição de pronto por fatia
-- Estado novo coberto por teste + axe; caminho feliz intacto; `npm test`/`npm run build` verdes;
+- Helpers no-op sem DSN; sem PII nova; caminho feliz intacto; `npm test`/`npm run build` verdes;
   commit PT-BR por área; PR do dia + handoff atualizados.
