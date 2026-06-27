@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState, useCallback, memo } from 'react'
 import { countRender } from '../../test/renderCount'
+import { Skeleton } from '../ui/Skeleton'
 import { useStore } from '../../store/useStore'
 import { RangeHeatGrid, type GridCell } from './RangeHeatGrid'
 import { RangeActionGrid, type ActionFreq } from './RangeActionGrid'
@@ -679,7 +680,11 @@ function Section({ title, loading, error, empty, children, defaultOpen = true, o
       </button>
       {open && (
         loading ? (
-          <p className="text-sm text-warm-500 px-3 py-3">Carregando…</p>
+          <div className="px-3 py-3 space-y-2" role="status" aria-busy="true" aria-label="Carregando">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
         ) : error ? (
           <p className="text-sm text-red-400 px-3 py-3">
             {error}

@@ -21,6 +21,12 @@ function mockApi() {
 afterEach(() => vi.restoreAllMocks())
 
 describe('MyAccountStats', () => {
+  it('mostra skeleton (aria-busy) enquanto carrega', () => {
+    mockApi()
+    render(<MyAccountStats />)
+    expect(screen.getByLabelText('Carregando dados da nuvem')).toHaveAttribute('aria-busy', 'true')
+  })
+
   it('renderiza os cards com os dados da nuvem', async () => {
     mockApi()
     render(<MyAccountStats />)
