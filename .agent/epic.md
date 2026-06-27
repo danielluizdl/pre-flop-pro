@@ -23,10 +23,9 @@ e scrub de PII no `beforeSend`. UMA FATIA SUBSTANCIAL por execução.
 ### FASE 2 — Capturar erros silenciosos de rede
 - [x] `MyAccountStats` + hooks do CoachPanel (`useAnalytics`/`useRangeGrid`/`useTrend`/`useSegments`/
       `usePlayerRanges`) + `publishTeamRanges`: `captureError(e, { area, view })` no catch. (27/06)
-- [ ] **PRÓXIMA (continuação segura):** demais catches silenciosos do store que hoje só fazem
-      `catch { return {ok:false} }`: `authLogin`/`authSignup`/`changePassword`/`restoreSession`/
-      `syncTeamRanges`/`listDevices`/`revokeDevice`/`revokeOtherDevices`/`adminSaveRanges`. Adicionar
-      `captureError(e, { area })` sem mudar o retorno. (Sem PII; no-op sem DSN.)
+- [x] demais catches silenciosos do store: `authLogin`/`authSignup`/`changePassword`/`restoreSession`/
+      `syncTeamRanges`/`listDevices`/`revokeDevice`/`revokeOtherDevices`/`adminSaveRanges` ganham
+      `captureError(e, { area })` sem mudar o retorno. (Sem PII; no-op sem DSN.) (27/06)
 
 ### FASE 3 — Breadcrumbs de ações-chave
 - [x] nav (`setPage`), drill start, login ok (role), logout, publish de team ranges. (27/06)

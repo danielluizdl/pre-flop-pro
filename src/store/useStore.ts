@@ -1210,7 +1210,7 @@ export const useStore = create<AppState>()(
           void flush(data.token)
           void get().syncTeamRanges()
           return { ok: true }
-        } catch { return { ok: false, error: 'Erro de conexão' } }
+        } catch (e) { captureError(e, { area: 'auth-login' }); return { ok: false, error: 'Erro de conexão' } }
       },
       authSignup: async (username, password, teamCode, name, email, turnstileToken) => {
         try {
@@ -1229,7 +1229,7 @@ export const useStore = create<AppState>()(
             justSignedUp: true,
           })
           return { ok: true }
-        } catch { return { ok: false, error: 'Erro de conexão' } }
+        } catch (e) { captureError(e, { area: 'auth-signup' }); return { ok: false, error: 'Erro de conexão' } }
       },
       authLogout: async () => {
         const { authToken } = get()
@@ -1258,7 +1258,7 @@ export const useStore = create<AppState>()(
           if (!res.ok) return { ok: false, error: data?.error ?? `Erro do servidor (${res.status})` }
           if (currentUser) set({ currentUser: { ...currentUser, firstLogin: false } })
           return { ok: true }
-        } catch { return { ok: false, error: 'Erro de conexão' } }
+        } catch (e) { captureError(e, { area: 'change-password' }); return { ok: false, error: 'Erro de conexão' } }
       },
       listDevices: async () => {
         const { authToken } = get()
@@ -1268,7 +1268,7 @@ export const useStore = create<AppState>()(
           const data = await res.json().catch(() => null)
           if (!res.ok) return { ok: false, error: data?.error ?? `Erro do servidor (${res.status})` }
           return { ok: true, devices: data?.devices ?? [] }
-        } catch { return { ok: false, error: 'Erro de conexão' } }
+        } catch (e) { captureError(e, { area: 'list-devices' }); return { ok: false, error: 'Erro de conexão' } }
       },
       revokeDevice: async (id) => {
         const { authToken } = get()
@@ -1282,7 +1282,7 @@ export const useStore = create<AppState>()(
           const data = await res.json().catch(() => null)
           if (!res.ok) return { ok: false, error: data?.error ?? `Erro do servidor (${res.status})` }
           return { ok: true }
-        } catch { return { ok: false, error: 'Erro de conexão' } }
+        } catch (e) { captureError(e, { area: 'revoke-device' }); return { ok: false, error: 'Erro de conexão' } }
       },
       revokeOtherDevices: async () => {
         const { authToken } = get()
@@ -1296,7 +1296,7 @@ export const useStore = create<AppState>()(
           const data = await res.json().catch(() => null)
           if (!res.ok) return { ok: false, error: data?.error ?? `Erro do servidor (${res.status})` }
           return { ok: true }
-        } catch { return { ok: false, error: 'Erro de conexão' } }
+        } catch (e) { captureError(e, { area: 'revoke-other-devices' }); return { ok: false, error: 'Erro de conexão' } }
       },
       restoreSession: async () => {
         const token = sessionStorage.getItem('pfp-auth-token')
@@ -1318,7 +1318,7 @@ export const useStore = create<AppState>()(
           })
           void flush(token)
           void get().syncTeamRanges()
-        } catch { sessionStorage.removeItem('pfp-auth-token') }
+        } catch (e) { captureError(e, { area: 'restore-session' }); sessionStorage.removeItem('pfp-auth-token') }
       },
       syncTeamRanges: async () => {
         const { authToken } = get()
@@ -1337,7 +1337,7 @@ export const useStore = create<AppState>()(
           saveRanges(merged)
           localStorage.setItem(TEAM_VERSION_KEY, String(data.version))
           set({ ranges: merged })
-        } catch { /* fallback: segue com o seed local */ }
+        } catch (e) { captureError(e, { area: 'sync-team-ranges' }); /* fallback: segue com o seed local */ }
       },
       publishTeamRanges: async () => {
         const { authToken, ranges } = get()
@@ -1389,7 +1389,7 @@ export const useStore = create<AppState>()(
             if (data.code === 'missing_token') return 'missing_token'
           } catch { set({ adminLastError: `HTTP ${res.status}` }) }
           return 'error'
-        } catch (e) { set({ adminLastError: String(e) }); return 'error' }
+        } catch (e) { captureError(e, { area: 'admin-save-ranges' }); set({ adminLastError: String(e) }); return 'error' }
       },
     }),
     {
