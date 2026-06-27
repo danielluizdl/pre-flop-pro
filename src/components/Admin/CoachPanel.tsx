@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState, useCallback, memo } from 'react'
 import { countRender } from '../../test/renderCount'
 import { Skeleton } from '../ui/Skeleton'
+import { captureError } from '../../utils/sentry'
 import { useStore } from '../../store/useStore'
 import { RangeHeatGrid, type GridCell } from './RangeHeatGrid'
 import { RangeActionGrid, type ActionFreq } from './RangeActionGrid'
@@ -475,8 +476,9 @@ function useAnalytics<T>(view: string, filters: Filters, token: string | null) {
         setTeam(d.team ?? null)
         setLoading(false)
       })
-      .catch(() => {
+      .catch(e => {
         if (cancelled) return
+        captureError(e, { area: 'coach-analytics', view })
         setError('Erro ao carregar')
         setLoading(false)
       })
@@ -504,7 +506,7 @@ function useRangeGrid(rangeId: number | null, days: number | null, from: number 
     fetch(`/api/admin/analytics?${qs.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
       .then(d => { if (!cancelled) { setCells(d.cells ?? []); setLoading(false) } })
-      .catch(() => { if (!cancelled) { setError('Erro ao carregar'); setLoading(false) } })
+      .catch(e => { if (!cancelled) { captureError(e, { area: 'coach-range-grid', view: 'range-grid' }); setError('Erro ao carregar'); setLoading(false) } })
     return () => { cancelled = true }
   }, [token, rangeId, days, from, to, idsKey, stackIdx])
 
@@ -539,7 +541,7 @@ function useTrend(filters: Filters, token: string | null) {
         setUsers(d.users ?? [])
         setLoading(false)
       })
-      .catch(() => { if (!cancelled) { setError('Erro ao carregar'); setLoading(false) } })
+      .catch(e => { if (!cancelled) { captureError(e, { area: 'coach-analytics', view: 'trend' }); setError('Erro ao carregar'); setLoading(false) } })
     return () => { cancelled = true }
   }, [token, idsKey, filters.rangeId, filters.days, filters.from, filters.to, tick])
 
@@ -573,7 +575,7 @@ function useSegments(filters: Filters, token: string | null) {
         setByAction(d.byAction ?? [])
         setLoading(false)
       })
-      .catch(() => { if (!cancelled) { setError('Erro ao carregar'); setLoading(false) } })
+      .catch(e => { if (!cancelled) { captureError(e, { area: 'coach-analytics', view: 'segments' }); setError('Erro ao carregar'); setLoading(false) } })
     return () => { cancelled = true }
   }, [token, idsKey, filters.rangeId, filters.days, filters.from, filters.to, tick])
 
@@ -602,7 +604,7 @@ function usePlayerRanges(filters: Filters, token: string | null) {
     fetch(`/api/admin/analytics?${qs.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
       .then(d => { if (!cancelled) { setRows(d.rows ?? []); setUsers(d.users ?? []); setLoading(false) } })
-      .catch(() => { if (!cancelled) { setError('Erro ao carregar'); setLoading(false) } })
+      .catch(e => { if (!cancelled) { captureError(e, { area: 'coach-analytics', view: 'player-ranges' }); setError('Erro ao carregar'); setLoading(false) } })
     return () => { cancelled = true }
   }, [token, idsKey, filters.rangeId, filters.days, filters.from, filters.to, tick])
 
