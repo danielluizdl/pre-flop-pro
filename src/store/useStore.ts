@@ -12,6 +12,7 @@ import {
   POS_6MAX, POS_8MAX, SLOTS_6MAX, SLOTS_8MAX,
 } from '../types'
 import { validateRanges } from '../utils/validateRanges'
+import { addBreadcrumb, captureMessage, captureError } from '../utils/sentry'
 import { enqueue, flush } from '../utils/eventQueue'
 import { decodeRanges, encodeRanges } from '../utils/sparseGrid'
 import { DEFAULT_RANGES } from '../data/defaultRanges'
@@ -86,6 +87,7 @@ function loadRangesValidated(): Range[] {
   const problems = validateRanges(ranges)
   if (problems.length > 0) {
     console.warn(`[validateRanges] ${problems.length} problema(s) nos ranges:\n` + problems.join('\n'))
+    captureMessage(`validateRanges: ${problems.length} problema(s) nos ranges no load`, 'warning')
   }
   return ranges
 }
@@ -277,7 +279,7 @@ export const useStore = create<AppState>()(
       page: 'dashboard',
       darkMode: false,
       activeCategory: null,
-      setPage: (page) => set({ page }),
+      setPage: (page) => { addBreadcrumb('nav', `page → ${page}`); set({ page }) },
       toggleDarkMode: () => set(s => ({ darkMode: !s.darkMode })),
       setActiveCategory: (activeCategory) => set({ activeCategory }),
 
@@ -855,6 +857,7 @@ export const useStore = create<AppState>()(
       },
 
       startDrillSession: () => {
+        addBreadcrumb('drill', 'start', { ranges: get().selectedDrillRangeIds.length })
         set({
           sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 },
           handHistory: [],
@@ -1203,6 +1206,7 @@ export const useStore = create<AppState>()(
             userMode: data.user.role === 'coach' ? 'admin' : 'visitor',
             justSignedUp: false,
           })
+          addBreadcrumb('auth', 'login ok', { role: data.user.role })
           void flush(data.token)
           void get().syncTeamRanges()
           return { ok: true }
@@ -1238,6 +1242,7 @@ export const useStore = create<AppState>()(
           } catch { /* logout local mesmo offline */ }
         }
         sessionStorage.removeItem('pfp-auth-token')
+        addBreadcrumb('auth', 'logout')
         set({ currentUser: null, authToken: null, userMode: null, adminToken: null, justSignedUp: false })
       },
       changePassword: async (newPassword) => {
@@ -1347,8 +1352,9 @@ export const useStore = create<AppState>()(
           const data = await res.json().catch(() => null)
           if (!res.ok || !data?.ok) return { ok: false, error: data?.error ?? `Erro do servidor (${res.status})` }
           localStorage.setItem(TEAM_VERSION_KEY, String(data.version))
+          addBreadcrumb('publish', 'team ranges ok', { version: data.version, count: data.count })
           return { ok: true, version: data.version, count: data.count }
-        } catch { return { ok: false, error: 'Erro de conexão' } }
+        } catch (e) { captureError(e, { area: 'publish-team-ranges' }); return { ok: false, error: 'Erro de conexão' } }
       },
 
       // ── Admin ───────────────────────────────────────────────────────────────────
@@ -1394,5 +1400,8 @@ export const useStore = create<AppState>()(
 )
 
 storageErrorReporter = (blocked) => {
-  if (useStore.getState().storageBlocked !== blocked) useStore.setState({ storageBlocked: blocked })
+  if (useStore.getState().storageBlocked !== blocked) {
+    if (blocked) captureMessage('localStorage cheio: gravação local bloqueada', 'warning')
+    useStore.setState({ storageBlocked: blocked })
+  }
 }
