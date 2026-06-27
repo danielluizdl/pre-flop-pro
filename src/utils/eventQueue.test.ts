@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { captureMessage } from './sentry'
 import { enqueue, flush } from './eventQueue'
+
+vi.mock('./sentry', () => ({ captureMessage: vi.fn() }))
 
 const KEY = 'pfp-event-queue'
 
@@ -66,7 +69,8 @@ describe('eventQueue', () => {
     expect(getQueue()).toHaveLength(1)
   })
 
-  it('cap de 500 descarta os mais antigos', async () => {
+  it('cap de 500 descarta os mais antigos e reporta uma vez', async () => {
+    vi.mocked(captureMessage).mockClear()
     globalThis.fetch = vi.fn(async () => {
       throw new Error('network')
     }) as unknown as typeof fetch
@@ -75,6 +79,23 @@ describe('eventQueue', () => {
     expect(q.length).toBe(500)
     expect(q[0].body.n).toBe(100)
     expect(q[499].body.n).toBe(599)
+    expect(captureMessage).toHaveBeenCalledTimes(1)
+    expect(captureMessage).toHaveBeenCalledWith(expect.stringContaining('cheia'), 'warning')
     await new Promise(r => setTimeout(r, 0))
+  })
+
+  it('reporta falha de gravação por cota uma única vez', () => {
+    vi.mocked(captureMessage).mockClear()
+    const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError')
+    })
+    try {
+      enqueue('hand', { n: 1 }, 'tok')
+      enqueue('hand', { n: 2 }, 'tok')
+    } finally {
+      spy.mockRestore()
+    }
+    expect(captureMessage).toHaveBeenCalledTimes(1)
+    expect(captureMessage).toHaveBeenCalledWith(expect.stringContaining('gravar'), 'warning')
   })
 })

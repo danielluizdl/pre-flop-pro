@@ -1,3 +1,5 @@
+import { captureMessage } from './sentry'
+
 const KEY = 'pfp-event-queue'
 const CAP = 500
 
@@ -6,6 +8,9 @@ export interface QueueItem {
   body: object
   ts: number
 }
+
+let overflowReported = false
+let writeFailReported = false
 
 function read(): QueueItem[] {
   try {
@@ -23,6 +28,10 @@ function write(items: QueueItem[]): void {
     localStorage.setItem(KEY, JSON.stringify(items))
   } catch {
     /* cota estourada: descarta silenciosamente */
+    if (!writeFailReported) {
+      writeFailReported = true
+      captureMessage('fila de telemetria: falha ao gravar (cota de localStorage)', 'warning')
+    }
   }
 }
 
@@ -32,6 +41,10 @@ export function enqueue(path: string, body: object, token: string | null): void 
   if (!token) return
   const items = read()
   items.push({ path, body, ts: Date.now() })
+  if (items.length > CAP && !overflowReported) {
+    overflowReported = true
+    captureMessage('fila de telemetria cheia (cap 500): descartando eventos antigos', 'warning')
+  }
   while (items.length > CAP) items.shift()
   write(items)
   void flush(token)

@@ -32,6 +32,8 @@ e scrub de PII no `beforeSend`. UMA FATIA SUBSTANCIAL por execução.
 
 ### FASE 4 — Sinais de estado degradado
 - [x] `captureMessage('warning')`: cota de localStorage (`storageBlocked`) e `validateRanges` no load. (27/06)
+- [x] `eventQueue`: telemetria degradada reporta UMA vez por sessão (flags deduplicadoras) —
+      fila cheia (cap 500, descarte de antigos) e falha de gravação por cota. Testes mockam `sentry`. (27/06)
 
 ### FASE 5 — Documentação
 - [x] Seção de observabilidade no CLAUDE.md (API, privacidade, o que é/não é capturado). (27/06)
