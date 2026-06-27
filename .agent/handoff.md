@@ -21,18 +21,19 @@ Epic **#11 (performance de render) essencialmente concluído** (FASE 1–5; PR #
 - **ErrorBoundary por área (FASE 5)**: `variant="section"` (fallback compacto) + `resetKey`; AppLayout envolve
   a área de página com `resetKey={page}` → crash de página não derruba a navegação; navegar recupera. Testes.
 
-### Feito também (#13 FASE 3 parcial)
-- DrillRangeSelect: alerts de validação ("Selecione pelo menos um range", "Nenhuma mão selecionada")
-  viram aviso inline `role="alert"`. Resta só o `alert('Sem mais mãos!')` do DrillActive (~1080, no loop
-  com `stopDrill` — edge raro; trocar exige rotear pro resumo, fazer com cuidado).
+### Feito também (#13 FASE 3 e 4 — EPIC #13 FECHADO)
+- **FASE 3**: todos os `alert()` removidos. Seleção/filtro do drill → inline `role="alert"`; esgotar as
+  mãos no drill → abre o `DrillSummary` (via `onShowSummary`) no lugar de alert+stop.
+- **FASE 4**: `src/components/ui/Skeleton.tsx` (pulse, respeita reduced-motion). MyAccountStats loading =
+  cards-skeleton espelhando o layout (sem salto); seções do CoachPanel = barras. `role="status"`+`aria-busy`.
 
 ### Estado (#13)
-- **380 testes verdes**. FASE 1 (auditoria), FASE 2 (retry em todas as superfícies), FASE 5 (área
-  ErrorBoundary) FEITAS; FASE 3 quase toda (1 alert de edge no drill restante).
+- **EPIC #13 CONCLUÍDO (FASE 1–5)**. **384 testes verdes (55 arquivos)**, build verde.
+- PR #12 cobre os dois epics (#11 perf + #13 robustez). NÃO mergeada (gate humano).
 
-### Próximas fatias (#13 — menor prioridade)
-1. **FASE 3 (resto)**: `alert('Sem mais mãos!')` do DrillActive → rotear pro DrillSummary em vez de alert+stop.
-2. **FASE 4 (opcional, baixo valor)**: skeletons sem layout shift (hoje texto "Carregando…").
+### Próximo epic (a propor em issue `agente`)
+Sugestões: **responsividade/mobile** (drill e matrizes em telas pequenas — maior risco visual, validar no
+preview) · **i18n/strings centralizadas** · **observabilidade de erros no front** (sem tocar backend).
 
 ---
 

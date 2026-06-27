@@ -25,13 +25,18 @@ de produção. Issue do epic: **#13** (label `agente`). UMA FATIA SUBSTANCIAL po
 - [x] `ErrorBoundary` ganhou `variant="section"` + `resetKey`; AppLayout isola a área de página
       (`resetKey={page}`) — crash de página não derruba a navegação. (26/06)
 
-### FASE 3 — Estados vazios consistentes (próxima — menor prioridade)
-- [ ] Empty states já existem na maioria; revisar CTAs. Trocar os `alert()` do drill/seleção
-      (`TrainerPage` linhas ~518/671/1080: "Nenhuma mão selecionada", "Selecione pelo menos um range",
-      "Sem mais mãos") por mensagens inline — toca o fluxo do drill, fazer com cuidado/teste.
+### FASE 3 — Estados vazios consistentes
+- [x] Todos os `alert()` do drill viram mensagens amigáveis: seleção/filtro → inline `role="alert"`;
+      esgotar as mãos no drill → abre o DrillSummary (em vez de alert+stop). (26/06)
 
-### FASE 4 — Loading consistente (opcional, baixo valor)
-- [ ] Skeleton/placeholder sem layout shift nas seções pesadas (hoje é texto "Carregando…").
+### FASE 4 — Loading consistente
+- [x] Componente `Skeleton` (pulse, respeita reduced-motion). MyAccountStats (cards-skeleton espelhando o
+      layout → sem salto) e seções do CoachPanel (barras). Containers `role="status"`+`aria-busy`. (26/06)
+
+## EPIC #13 CONCLUÍDO (26/06/2026)
+FASE 1–5 entregues: auditoria, erros de rede com retry (MyAccountStats + 7 seções do coach), avisos
+inline no lugar de alert(), skeletons sem layout shift, e ErrorBoundary por área (crash de página não
+derruba a navegação). 384 testes verdes. **Próximo epic a propor em issue `agente`.**
 
 ## Definição de pronto por fatia
 - Estado novo coberto por teste + axe; caminho feliz intacto; `npm test`/`npm run build` verdes;
