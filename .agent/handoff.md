@@ -1,5 +1,41 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-06-28 (cobertura incremental + type-safety — aguardando decisão da issue #17)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- **Epic #15 (observabilidade) já estava FECHADO.** Daniel ainda NÃO escolheu o próximo epic na **issue #17**
+  (opções: 1=responsividade/mobile [recomendado], 2=i18n, 3=qualidade de código). Sem decisão, esta run fez
+  só **cobertura incremental segura + qualidade de código** (Opção 3), nada de novo epic, nada no backend.
+- **PR #16** (auto/daily-improvements → feature/auth-telemetry) atualizada com as fatias de hoje. NÃO mergeada (gate humano).
+- **449 testes verdes (58 arquivos)**, build verde. Branch `auto/daily-improvements` pushada. `main`/produção intactos.
+
+### Feito nesta run (7 fatias, cada uma commit+push+verde)
+1. **test(hands):** `src/utils/handsHelpers.test.ts` (novo) — grupos de mãos, `weightedPick`, `focusWeight`,
+   `generateSuits`, `getHighestFrequencyAction`, `countNonFoldHands`, `stackRangesOverlap`. (+34)
+2. **refactor(types):** zero `any` no código de produção — `CoachPanel.detail` → `CoachDetailRow` tipada;
+   `Turnstile` tipa `window.turnstile` via global augmentation (remove `window as any`).
+3. **test(stats):** StatsPage — precisão global, fluxo Ver detalhes↔Voltar, gate da aba de nuvem.
+4. **test(combo):** ComboCounter — estado vazio, total ✓ (1326) e ⚠ (soma incompleta).
+5. **test(dashboard):** estado vazio (navega range-setup) + seção secundária >3 ranges.
+6. **test(a11y):** useModalA11y — Tab no meio não prende; modal sem focáveis ignora Tab.
+7. **test(admin):** AdminPanel — bloqueio por validação + "Publicar mesmo assim", status token_expired/erro,
+   descarte de hash legado.
+
+### Notas técnicas úteis
+- Coverage: instalar `@vitest/coverage-v8` (mesma versão do vitest) e rodar
+  `npx vitest run --coverage.enabled --coverage.provider=v8 --coverage.reporter=text` para achar lacunas.
+  NÃO commitar a dep — usar só para análise (foi revertida nesta run).
+- Maiores gaps de cobertura restantes (componentes, em ordem de tamanho): `StatsPage`/`TrainerPage`/`useStore`
+  (muito ligado a DOM/localStorage — baixo ROI), `CoachPanel` (43% branch), `HandMatrix`, `TopNav`.
+- `getByText` único quebra com texto repetido (ex.: "88%" no card global e no SessionCard) — usar `getAllByText`.
+
+### PRÓXIMA FATIA
+**Aguardar decisão do Daniel na issue #17.** Se escolher antes do run, começar o epic escolhido. Sem decisão,
+seguir cobertura incremental segura: próximos alvos sugeridos = comportamento do `CoachPanel` (abas/filtros já
+parcialmente testados; faltam ramos de erro/empty por seção) e do `TrainerPage` (navegação prev/próxima, Ver Range).
+
+---
+
 ## 2026-06-27 (run das 5h — EPIC #15 FECHADO; próximo epic à espera de decisão)
 
 ### Estado atual (PONTO DE PARTIDA do próximo run)
