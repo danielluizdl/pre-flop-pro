@@ -240,6 +240,24 @@ interface CoachUser {
 
 type CoachTab = 'hands' | 'consults' | 'sessions'
 
+interface CoachDetailRow {
+  hand?: string
+  range_name?: string
+  range_names?: string
+  action_taken?: string
+  correct_action?: string
+  is_correct?: number | boolean
+  severity?: string
+  created_at?: number
+  count?: number
+  ended_at?: number
+  hands?: number
+  correct?: number
+  errors?: number
+  consults?: number
+  duration_seconds?: number
+}
+
 const TAB_LABELS: Record<CoachTab, string> = { hands: 'Mãos', consults: 'Consultas', sessions: 'Sessões' }
 
 function formatDate(unix: number): string {
@@ -1415,7 +1433,7 @@ function PlayersView({ token }: { token: string | null }) {
   const [users, setUsers] = useState<CoachUser[]>([])
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [activeTab, setActiveTab] = useState<CoachTab>('hands')
-  const [detail, setDetail] = useState<any[]>([])
+  const [detail, setDetail] = useState<CoachDetailRow[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [resetting, setResetting] = useState(false)
@@ -1569,7 +1587,7 @@ function PlayersView({ token }: { token: string | null }) {
                       <td className="py-2 pr-3">{row.correct_action}</td>
                       <td className={`py-2 pr-3 ${row.is_correct ? 'text-green-400' : 'text-red-400'}`}>{row.is_correct ? 'Sim' : 'Não'}</td>
                       <td className="py-2 pr-3 text-warm-400">{row.severity ?? ''}</td>
-                      <td className="py-2 text-warm-400">{formatDate(row.created_at)}</td>
+                      <td className="py-2 text-warm-400">{formatDate(row.created_at ?? 0)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1609,13 +1627,13 @@ function PlayersView({ token }: { token: string | null }) {
                 <tbody>
                   {detail.map((row, i) => (
                     <tr key={i} className="border-b border-warm-800">
-                      <td className="py-2 pr-3 text-warm-300">{parseRangeNames(row.range_names)}</td>
+                      <td className="py-2 pr-3 text-warm-300">{parseRangeNames(row.range_names ?? '')}</td>
                       <td className="py-2 pr-3">{row.hands}</td>
-                      <td className="py-2 pr-3">{row.hands > 0 ? `${Math.round((row.correct / row.hands) * 100)}%` : '-'}</td>
+                      <td className="py-2 pr-3">{(row.hands ?? 0) > 0 ? `${Math.round(((row.correct ?? 0) / (row.hands ?? 1)) * 100)}%` : '-'}</td>
                       <td className="py-2 pr-3">{row.errors}</td>
                       <td className="py-2 pr-3">{row.consults}</td>
-                      <td className="py-2 pr-3">{formatDuration(row.duration_seconds)}</td>
-                      <td className="py-2 text-warm-400">{formatDate(row.ended_at)}</td>
+                      <td className="py-2 pr-3">{formatDuration(row.duration_seconds ?? 0)}</td>
+                      <td className="py-2 text-warm-400">{formatDate(row.ended_at ?? 0)}</td>
                     </tr>
                   ))}
                 </tbody>
