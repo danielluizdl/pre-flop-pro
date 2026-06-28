@@ -32,6 +32,31 @@ describe('StatsPage', () => {
     expect(screen.queryByText('Nenhuma sessão registrada ainda.')).not.toBeInTheDocument()
   })
 
+  it('exibe a precisão global calculada (88%)', () => {
+    useStore.setState({ trainingHistory: [SESSION], currentUser: null })
+    render(<StatsPage />)
+    expect(screen.getAllByText('88%').length).toBeGreaterThan(0)
+  })
+
+  it('abre o detalhe da sessão pelo botão Ver detalhes e volta', () => {
+    useStore.setState({ trainingHistory: [SESSION], ranges: [], currentUser: null })
+    render(<StatsPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Ver detalhes' }))
+    expect(screen.getByRole('button', { name: /Voltar/ })).toBeInTheDocument()
+    expect(screen.getByText('Ranges desta sessão não encontrados.')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /Voltar/ }))
+    expect(screen.getByText('Histórico de Sessões')).toBeInTheDocument()
+  })
+
+  it('só mostra a aba de nuvem quando há usuário logado', () => {
+    useStore.setState({ trainingHistory: [SESSION], currentUser: null })
+    const { rerender } = render(<StatsPage />)
+    expect(screen.queryByRole('button', { name: 'Meus dados na nuvem' })).not.toBeInTheDocument()
+    useStore.setState({ currentUser: { id: 1, username: 'p1', name: 'P1', email: '', role: 'player', firstLogin: false } })
+    rerender(<StatsPage />)
+    expect(screen.getByRole('button', { name: 'Meus dados na nuvem' })).toBeInTheDocument()
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     useStore.setState({ trainingHistory: [SESSION], currentUser: null })
     const { container } = render(<StatsPage />)
