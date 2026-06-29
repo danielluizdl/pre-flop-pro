@@ -1,5 +1,43 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-06-29 (cobertura incremental + a11y polish — ainda aguardando decisão da issue #17)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- **Issue #17 (próximo epic) SEM resposta do Daniel** (sem comentários). Sem decisão, esta run seguiu o protocolo
+  do handoff: **cobertura incremental segura + pequenos polimentos de a11y/UX** (Opção 3), nada de backend, nada de novo epic.
+- **PR #16** (auto/daily-improvements → feature/auth-telemetry) atualizada com a seção de hoje no topo. NÃO mergeada (gate humano).
+- **462 testes verdes (58 arquivos)**, build verde. Branch `auto/daily-improvements` pushada. `main`/produção intactos.
+
+### Feito nesta run (9 fatias, cada uma commit+push+verde)
+1. **feat(coach):** `RangeSelect` rola a opção ativa para a vista ao navegar por setas (`scrollIntoView`); stub de
+   `scrollIntoView` em `src/test/setup.ts` (jsdom não implementa — sem ele jsdom loga "Not implemented").
+2. **test(drill):** navegação "← Anterior"/"← Mão atual" do `DrillActive`. Padrão: stub `nextDrillHand` via setState
+   que retorna `true` (e seta novo `activeHand`) para habilitar o snapshot anterior.
+3. **test(coach):** erro de rede + "Tentar novamente" da seção "Por range" (flag `failByRange` no mock de fetch que vira `false` no retry).
+4. **test(matrix):** `HandMatrix` — clearHand em célula preenchida, aviso brush >100% (não aplica), tooltip de precisão
+   no modo Erro/Acerto (treinado e "Não treinado"), troca de modo.
+5. **a11y:** `aria-label="Fechar"` nos 4 botões ✕ de modais (RangePreviewModal/AdminPanel/SituationsPage heatmap/Ver Range do drill).
+   **GOTCHA:** o teste do RangePreviewModal usava `getByRole('button',{name:'✕'})` → trocar para `name:'Fechar'`.
+6. **a11y:** `aria-pressed` nos toggles Ações/Erro-Acerto da HandMatrix e no "2s" do drill (+ `aria-label` "Avanço automático em 2 segundos").
+   **GOTCHA:** ao dar `aria-label` no "2s", os testes que o buscavam por `name:'2s'` quebram → usar o novo nome.
+7. **test(stats):** tooltip de hover do `AccuracySparkline` (mouseEnter mostra %, mouseLeave esconde).
+8. **test(coach):** busca por nome no `MultiPlayerSelect` (digitar restringe a lista; mock de `/admin/users`).
+9. **test(topnav):** navegação (setPage), toggle de tema, menu de perfil + logout, "Painel Coach" só para coach.
+   **GOTCHA:** `CurrentUser` usa `firstLogin: boolean` (NÃO `first_login`); shape errado passa no vitest mas quebra o `tsc` do build.
+
+### Notas técnicas úteis
+- `useStore.setState({ acao: vi.fn() })` substitui ações no store p/ asserir chamadas (não há reset entre testes do mesmo arquivo — independência por ordem).
+- Para tooltips/hover SVG: `fireEvent.mouseEnter(circle)` + asserir texto; `mouseLeave` some.
+- Maiores gaps restantes (baixo ROI): `useStore`/`TrainerPage`/`StatsPage` ramos muito ligados a DOM/localStorage; `CoachPanel` ramos por seção (cada seção tem error/empty/loading via `Section`).
+
+### PRÓXIMA FATIA
+**Aguardar decisão do Daniel na issue #17.** Se escolher antes do run, começar o epic escolhido (Opção 1 responsividade =
+mudanças aditivas `sm:`/`md:` + teste de render por fatia, validar no preview Cloudflare). Sem decisão, seguir cobertura
+incremental: alvos sugeridos = `SessionDetailView` (acordeão por range + heatmap dentro do detalhe) e ramos de error/empty
+das seções restantes do `CoachPanel` (Segmentos/Lacunas/Leaks/Evolução).
+
+---
+
 ## 2026-06-28 (cobertura incremental + type-safety — aguardando decisão da issue #17)
 
 ### Estado (PONTO DE PARTIDA do próximo run)
