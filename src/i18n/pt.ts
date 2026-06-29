@@ -201,6 +201,16 @@ export const pt = {
     yes: 'Sim',
     no: 'Não',
   },
+  errorBoundary: {
+    resetConfirm: 'Esta ação é irreversível. Confirmar reset dos dados locais?',
+    sectionTitle: 'Esta seção falhou ao carregar',
+    sectionDefault: 'Erro inesperado.',
+    sectionHint: ' Tente outra página ou recarregue.',
+    reload: 'Recarregar',
+    appTitle: 'Algo deu errado',
+    appDefault: 'Erro inesperado na aplicação.',
+    exportReset: 'Exportar backup e resetar dados locais',
+  },
   app: {
     storageFull: 'Armazenamento cheio: seus dados NÃO estão sendo salvos. Exporte um backup no Dashboard e libere espaço.',
   },
@@ -302,6 +312,12 @@ export const pt = {
     colHand: 'Mão',
     colAttempts: 'Tentativas',
     colCorrect: 'Acertos',
+  },
+  sparkline: {
+    title: 'Evolução da precisão',
+  },
+  table: {
+    pot: 'Pote',
   },
   stats: {
     back: '← Voltar',

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { TrainingSession } from '../../types'
+import { t } from '../../i18n'
 
 function formatDate(ts: number): string {
   return new Date(ts).toLocaleDateString('pt-BR', {
@@ -24,7 +25,7 @@ export function AccuracySparkline({ sessions }: { sessions: TrainingSession[] })
 
   return (
     <div className="card-surface p-4">
-      <div className="eyebrow mb-2">Evolução da precisão</div>
+      <div className="eyebrow mb-2">{t.sparkline.title}</div>
       <div className="relative">
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full" preserveAspectRatio="xMidYMid meet" style={{ display: 'block' }}>
           <line x1={padX} y1={ref80} x2={W - padX} y2={ref80} stroke="#5a5247" strokeWidth="1" strokeDasharray="5 5" />
