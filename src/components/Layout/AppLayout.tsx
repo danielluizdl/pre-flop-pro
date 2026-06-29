@@ -8,6 +8,7 @@ import { WelcomeModal } from '../Auth/WelcomeModal'
 import { ChangePasswordModal } from '../Auth/ChangePasswordModal'
 import { RouterSync } from './RouterSync'
 import { ErrorBoundary } from './ErrorBoundary'
+import { t } from '../../i18n'
 
 const TrainerPage = lazy(() => import('../Trainer/TrainerPage').then(m => ({ default: m.TrainerPage })))
 const StatsPage = lazy(() => import('../Stats/StatsPage').then(m => ({ default: m.StatsPage })))
@@ -48,7 +49,7 @@ export function AppLayout() {
       <div className="min-h-screen bg-warm-950 text-warm-100">
         {storageBlocked && (
           <div className="bg-red-900/40 border-b border-red-700 text-red-200 text-sm px-6 py-2.5 text-center">
-            Armazenamento cheio: seus dados NÃO estão sendo salvos. Exporte um backup no Dashboard e libere espaço.
+            {t.app.storageFull}
           </div>
         )}
         {justSignedUp
@@ -57,7 +58,7 @@ export function AppLayout() {
         <TopNav />
         <main className="w-full max-w-[1800px] mx-auto px-4 sm:px-6 md:px-10 pt-6 sm:pt-8 pb-16">
           <ErrorBoundary variant="section" resetKey={page}>
-            <Suspense fallback={<p className="text-sm text-warm-500">Carregando…</p>}>
+            <Suspense fallback={<p className="text-sm text-warm-500">{t.common.loading}</p>}>
               {renderPage()}
             </Suspense>
           </ErrorBoundary>

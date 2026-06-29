@@ -3,6 +3,7 @@ import { useStore } from '../../store/useStore'
 import { validateRanges } from '../../utils/validateRanges'
 import { djb2 } from '../../utils/hash'
 import { useModalA11y } from '../../utils/useModalA11y'
+import { t } from '../../i18n'
 import { LogOut } from 'lucide-react'
 
 const PUBLISHED_HASH_KEY = 'pfp-last-published-hash'
@@ -89,14 +90,14 @@ export function AdminPanel({ open: externalOpen, onClose: externalClose }: Props
           <button
             onClick={() => setInternalOpen(true)}
             className="flex-1 flex items-center gap-3 px-2 py-2.5 rounded-lg text-sm text-warm-600 hover:bg-warm-800 hover:text-warm-400 transition-all"
-            title="Publicar ranges"
+            title={t.nav.publishRanges}
           >
-            Publicar
+            {t.admin.publish}
           </button>
           <button
             onClick={logout}
             className="flex items-center px-2 py-2.5 rounded-lg text-sm text-warm-600 hover:bg-warm-800 hover:text-warm-400 transition-all"
-            title="Sair"
+            title={t.nav.logout}
           >
             <LogOut size={16} />
           </button>
@@ -117,18 +118,18 @@ export function AdminPanel({ open: externalOpen, onClose: externalClose }: Props
             aria-labelledby="admin-publish-title"
           >
             <div className="flex justify-between items-center">
-              <h3 id="admin-publish-title" className="font-bold text-white">Publicar Ranges</h3>
-              <button onClick={handleClose} aria-label="Fechar" className="text-warm-400 hover:text-white text-xl">✕</button>
+              <h3 id="admin-publish-title" className="font-bold text-white">{t.admin.publishTitle}</h3>
+              <button onClick={handleClose} aria-label={t.common.close} className="text-warm-400 hover:text-white text-xl">✕</button>
             </div>
 
             <p className="text-xs text-warm-400">
-              Envia todos os {ranges.length} ranges atuais como padrão nativo. Aguarde ~2 min para o deploy.
+              {t.admin.publishIntro(ranges.length)}
             </p>
 
             {problems.length > 0 && (
               <div className="space-y-2 border border-red-700/50 bg-red-900/15 rounded-lg p-3">
                 <p className="text-xs text-red-400 font-semibold">
-                  {problems.length} problema{problems.length !== 1 ? 's' : ''} de validação encontrado{problems.length !== 1 ? 's' : ''}:
+                  {t.admin.validationFound(problems.length)}
                 </p>
                 <div className="max-h-40 overflow-y-auto space-y-1">
                   {problems.map((p, i) => (
@@ -141,14 +142,14 @@ export function AdminPanel({ open: externalOpen, onClose: externalClose }: Props
                     checked={confirmedAnyway}
                     onChange={e => setConfirmedAnyway(e.target.checked)}
                   />
-                  Publicar mesmo assim
+                  {t.admin.publishAnyway}
                 </label>
               </div>
             )}
 
             {needPassword ? (
               <div className="space-y-2">
-                <label className="text-xs text-warm-400 block">Confirme a senha</label>
+                <label className="text-xs text-warm-400 block">{t.admin.confirmPassword}</label>
                 <input
                   type="password"
                   value={password}
@@ -160,28 +161,28 @@ export function AdminPanel({ open: externalOpen, onClose: externalClose }: Props
                 />
               </div>
             ) : (
-              <p className="text-xs text-warm-500">Sessão de admin ativa. Publique sem redigitar a senha.</p>
+              <p className="text-xs text-warm-500">{t.admin.sessionActive}</p>
             )}
 
             {status === 'ok' && (
               <p className="text-xs text-emerald-400 font-semibold">
-                Publicado. Aguarde ~2 min para o deploy entrar no ar.
+                {t.admin.okPublished}
               </p>
             )}
             {status === 'wrong' && (
-              <p className="text-xs text-red-400">Senha incorreta.</p>
+              <p className="text-xs text-red-400">{t.admin.wrongPassword}</p>
             )}
             {status === 'token_expired' && (
-              <p className="text-xs text-red-400">Sessão expirada. Digite a senha novamente para publicar.</p>
+              <p className="text-xs text-red-400">{t.admin.tokenExpired}</p>
             )}
             {status === 'invalid_token' && (
-              <p className="text-xs text-red-400">GITHUB_TOKEN expirado. Gere um novo token e atualize no Cloudflare Worker.</p>
+              <p className="text-xs text-red-400">{t.admin.invalidToken}</p>
             )}
             {status === 'missing_token' && (
-              <p className="text-xs text-red-400">GITHUB_TOKEN não configurado no Worker. Verifique as variáveis de ambiente.</p>
+              <p className="text-xs text-red-400">{t.admin.missingToken}</p>
             )}
             {status === 'error' && (
-              <p className="text-xs text-red-400 break-all">{adminLastError || 'Erro ao publicar. Tente novamente.'}</p>
+              <p className="text-xs text-red-400 break-all">{adminLastError || t.admin.genericError}</p>
             )}
 
             <button
@@ -189,7 +190,7 @@ export function AdminPanel({ open: externalOpen, onClose: externalClose }: Props
               disabled={(needPassword && !password) || status === 'loading' || isPublished || blockedByValidation}
               className="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
             >
-              {status === 'loading' ? 'Publicando...' : isPublished ? 'Publicado' : blockedByValidation ? 'Corrija a validação' : 'Publicar'}
+              {status === 'loading' ? t.admin.publishing : isPublished ? t.admin.published : blockedByValidation ? t.admin.fixValidation : t.admin.publish}
             </button>
           </div>
         </div>
