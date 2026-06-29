@@ -5,6 +5,7 @@ import { SEAT_ROLE_LABELS } from '../../types'
 import type { PositionConfig } from '../../types'
 import { countNonFoldHands } from '../../utils/hands'
 import { useModalA11y } from '../../utils/useModalA11y'
+import { t } from '../../i18n'
 import { X } from 'lucide-react'
 
 function getStackLabel(data: Record<string, PositionConfig>): string {
@@ -29,7 +30,7 @@ function getScenarioSummary(
     if (!d || d.role === 'fold' || d.role === 'post') return
     acts.push(`${p.label} ${d.role.charAt(0).toUpperCase() + d.role.slice(1)} (${d.bet}bb)`)
   })
-  return acts.length === 0 ? 'Nenhuma ação agressiva' : acts.join(' → ')
+  return acts.length === 0 ? t.tableEditor.noAggressiveAction : acts.join(' → ')
 }
 
 export function TableEditorPage() {
@@ -100,7 +101,7 @@ export function TableEditorPage() {
 
   function handleFinalize() {
     if (tempScenarios.length === 0) {
-      if (!confirm('Nenhum cenário salvo. Salvar o cenário atual?')) return
+      if (!confirm(t.tableEditor.confirmSaveCurrent)) return
       const summary = getScenarioSummary(currentScenario, activePositions)
       addScenario(pot.toFixed(1), summary)
     }
@@ -116,7 +117,7 @@ export function TableEditorPage() {
   }
 
   function handleConfirmName() {
-    if (!primaryName.trim()) { alert('Digite um nome para o range.'); return }
+    if (!primaryName.trim()) { alert(t.tableEditor.alertNameRequired); return }
     setNameModalOpen(false)
     finalizeRange(primaryName.trim())
   }
@@ -124,7 +125,7 @@ export function TableEditorPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display uppercase text-warm-100 text-[28px] leading-none tracking-wide">Configurar Cenários</h1>
+        <h1 className="font-display uppercase text-warm-100 text-[28px] leading-none tracking-wide">{t.tableEditor.title}</h1>
         <p className="text-xs text-warm-400 mt-0.5">
           Configure as ações de cada posição na mesa. Você pode salvar múltiplos cenários por range.
         </p>
@@ -134,7 +135,7 @@ export function TableEditorPage() {
         {/* Left: config panel */}
         <div className="lg:w-80 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="font-bold text-sm text-warm-300">Ação na Mesa</h2>
+            <h2 className="font-bold text-sm text-warm-300">{t.tableEditor.tableAction}</h2>
             <button
               onClick={initTableConfig}
               className="text-xs px-2 py-1 border border-warm-600 bg-warm-800 rounded text-warm-400 hover:bg-warm-700"
@@ -145,7 +146,7 @@ export function TableEditorPage() {
 
           {/* Global stack setter */}
           <div className="flex items-center gap-1.5 py-2 border-b border-warm-700 flex-wrap">
-            <span className="text-xs text-warm-400 flex-shrink-0">Todos os stacks:</span>
+            <span className="text-xs text-warm-400 flex-shrink-0">{t.tableEditor.allStacks}</span>
             {[100, 250].map(v => (
               <button
                 key={v}
@@ -158,16 +159,16 @@ export function TableEditorPage() {
             <div className="flex items-center gap-1 flex-1 min-w-0">
               <input
                 type="number" min={1}
-                aria-label="Stack para todos os jogadores"
+                aria-label={t.tableEditor.allStacksAria}
                 className="flex-1 min-w-0 p-1 border border-warm-600 rounded text-xs bg-warm-900 text-warm-200 text-center"
-                placeholder="Preencher"
+                placeholder={t.tableEditor.fill}
                 value={customStack || ''}
                 onChange={e => setCustomStack(Number(e.target.value))}
               />
               <button
                 onClick={() => { if (customStack > 0) setAllStacks(customStack) }}
                 className="px-2 py-1 text-xs border border-warm-600 bg-warm-700 rounded hover:bg-warm-600 text-warm-200 flex-shrink-0"
-                title="Aplicar"
+                title={t.tableEditor.apply}
               >
                 ✓
               </button>
@@ -176,11 +177,11 @@ export function TableEditorPage() {
 
           {/* Column headers */}
           <div className="grid items-center gap-1 px-2" style={{ gridTemplateColumns: '20px 44px 1fr 56px 56px' }}>
-            <span className="text-[10px] text-amber-400 font-bold text-center" title="Clique para definir como HERO">H</span>
-            <span className="text-[10px] text-warm-500 text-center">Pos</span>
-            <span className="text-[10px] text-warm-500">Ação</span>
-            <span className="text-[10px] text-warm-500 text-center">Stack</span>
-            <span className="text-[10px] text-warm-500 text-center">Aposta</span>
+            <span className="text-[10px] text-amber-400 font-bold text-center" title={t.tableEditor.setAsHero}>H</span>
+            <span className="text-[10px] text-warm-500 text-center">{t.tableEditor.colPos}</span>
+            <span className="text-[10px] text-warm-500">{t.tableEditor.colAction}</span>
+            <span className="text-[10px] text-warm-500 text-center">{t.tableEditor.colStack}</span>
+            <span className="text-[10px] text-warm-500 text-center">{t.tableEditor.colBet}</span>
           </div>
 
           {/* Position rows */}
@@ -198,7 +199,7 @@ export function TableEditorPage() {
                 <div className="grid items-center gap-1" style={{ gridTemplateColumns: '20px 44px 1fr 56px 56px' }}>
                   <input
                     type="radio" name="hero-select"
-                    aria-label={`Definir ${pos.label} como HERO`}
+                    aria-label={t.tableEditor.setHeroAria(pos.label)}
                     className="w-4 h-4 cursor-pointer accent-amber-500"
                     onChange={() => updateHero(pos.id)}
                     checked={data.isHero}
@@ -208,10 +209,10 @@ export function TableEditorPage() {
                     data.isHero ? 'text-amber-400' : 'text-warm-300',
                   ].join(' ')}>
                     {pos.label}
-                    {data.isHero && <div className="text-[8px] text-amber-500 font-bold">HERO</div>}
+                    {data.isHero && <div className="text-[8px] text-amber-500 font-bold">{t.tableEditor.hero}</div>}
                   </div>
                   <select
-                    aria-label={`Ação de ${pos.label}`}
+                    aria-label={t.tableEditor.actionAria(pos.label)}
                     className="w-full p-1 rounded border border-warm-600 text-xs bg-warm-900 text-warm-200 cursor-pointer"
                     value={data.role}
                     onChange={e => updateRole(pos.id, e.target.value)}
@@ -222,35 +223,35 @@ export function TableEditorPage() {
                   </select>
                   <input
                     type="number"
-                    aria-label={`Stack de ${pos.label}`}
+                    aria-label={t.tableEditor.stackAria(pos.label)}
                     className="p-1 text-center border border-warm-600 rounded text-xs bg-warm-900 text-warm-200"
                     value={data.stack}
                     onChange={e => updateStack(pos.id, Number(e.target.value))}
-                    title="Stack (bb)"
+                    title={t.tableEditor.stackBbTitle}
                   />
                   <input
                     type="number" step={0.1}
-                    aria-label={`Aposta de ${pos.label}`}
+                    aria-label={t.tableEditor.betAria(pos.label)}
                     className="p-1 text-center border border-warm-600 rounded text-xs bg-warm-900 text-warm-200"
                     value={data.bet}
                     onChange={e => updateBet(pos.id, parseFloat(e.target.value) || 0)}
-                    placeholder="bb"
+                    placeholder={t.tableEditor.bb}
                   />
                 </div>
 
                 {/* Hero raise size input */}
                 {data.isHero && (
                   <div className="flex items-center gap-2 pl-6 pt-1 border-t border-amber-800/30">
-                    <label className="text-xs text-amber-400 flex-shrink-0">Raise futuro:</label>
+                    <label className="text-xs text-amber-400 flex-shrink-0">{t.tableEditor.futureRaise}</label>
                     <input
                       type="number" min={0} step={0.5}
-                      aria-label="Tamanho do raise futuro"
+                      aria-label={t.tableEditor.futureRaiseAria}
                       className="w-20 p-1 border border-amber-600/50 rounded text-xs bg-warm-900 text-amber-200 text-center"
-                      placeholder="bb"
+                      placeholder={t.tableEditor.bb}
                       value={currentHeroRaiseSize || ''}
                       onChange={e => setHeroRaiseSize(parseFloat(e.target.value) || 0)}
                     />
-                    <span className="text-xs text-warm-500">bb</span>
+                    <span className="text-xs text-warm-500">{t.tableEditor.bb}</span>
                   </div>
                 )}
               </div>
@@ -284,13 +285,13 @@ export function TableEditorPage() {
                 onClick={handleSaveEdit}
                 className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold transition-colors"
               >
-                Salvar alterações no #{editingIdx + 1}
+                {t.tableEditor.saveChangesTo(editingIdx + 1)}
               </button>
               <button
                 onClick={() => setEditingIdx(null)}
                 className="px-4 py-3 bg-warm-700 hover:bg-warm-600 text-white rounded-lg font-bold transition-colors"
               >
-                Cancelar
+                {t.tableEditor.cancel}
               </button>
             </div>
           ) : (
@@ -298,7 +299,7 @@ export function TableEditorPage() {
               onClick={handleAddScenario}
               className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold transition-colors"
             >
-              + Adicionar Cenário à Lista
+              {t.tableEditor.addScenario}
             </button>
           )}
 
@@ -306,7 +307,7 @@ export function TableEditorPage() {
           {tempScenarios.length > 0 && (
             <div className="space-y-1.5">
               <h3 className="text-xs font-bold text-warm-400 uppercase tracking-wider">
-                Cenários Salvos ({tempScenarios.length})
+                {t.tableEditor.savedScenarios(tempScenarios.length)}
               </h3>
               {tempScenarios.map((scen, idx) => (
                 <div
@@ -322,8 +323,8 @@ export function TableEditorPage() {
                   <span className="text-warm-200">
                     <span className="font-bold text-warm-400">#{idx + 1}</span>{' '}
                     {scen.summary}{' '}
-                    <span className="text-warm-500">(Pote: {scen.pot}bb)</span>
-                    {!!scen.heroRaiseSize && <span className="text-amber-500"> · Raise: {scen.heroRaiseSize}bb</span>}
+                    <span className="text-warm-500">{t.tableEditor.pot(scen.pot)}</span>
+                    {!!scen.heroRaiseSize && <span className="text-amber-500">{t.tableEditor.raise(scen.heroRaiseSize)}</span>}
                     <span className="text-blue-400"> · {getStackLabel(scen.data)}</span>
                   </span>
                   <button
@@ -343,13 +344,13 @@ export function TableEditorPage() {
               onClick={handleFinalize}
               className="flex-1 py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-lg font-bold transition-colors"
             >
-              ✅ Finalizar e Salvar Range
+              {t.tableEditor.finalize}
             </button>
             <button
               onClick={() => setPage('editor')}
               className="w-28 py-3 bg-warm-700 hover:bg-warm-600 text-white rounded-lg font-bold transition-colors"
             >
-              ← Voltar
+              {t.tableEditor.back}
             </button>
           </div>
         </div>
@@ -369,9 +370,9 @@ export function TableEditorPage() {
             aria-modal="true"
             aria-labelledby="range-name-modal-title"
           >
-            <h3 id="range-name-modal-title" className="font-bold text-white text-lg mb-1">Nome do Range</h3>
+            <h3 id="range-name-modal-title" className="font-bold text-white text-lg mb-1">{t.tableEditor.nameModalTitle}</h3>
             <p className="text-xs text-warm-400 mb-4">
-              {modalEntries.length} variações de stack serão salvas em um único range. Escolha o nome principal.
+              {t.tableEditor.nameModalBody(modalEntries.length)}
             </p>
 
             {/* Preview das variações */}
@@ -384,7 +385,7 @@ export function TableEditorPage() {
                       {entry.stackRange}
                     </span>
                   )}
-                  <span className="text-xs text-warm-500">{countNonFoldHands(entry.grid)} mãos</span>
+                  <span className="text-xs text-warm-500">{countNonFoldHands(entry.grid)} {t.common.hands}</span>
                   {entry.sessionIdx >= 0 && (
                     <button
                       onClick={() => removeSessionGrid(entry.sessionIdx)}
@@ -400,9 +401,9 @@ export function TableEditorPage() {
             <input
               type="text"
               autoFocus
-              aria-label="Nome do range"
+              aria-label={t.tableEditor.nameAria}
               className="w-full px-3 py-2.5 border border-warm-600 rounded-lg text-sm bg-warm-800 text-white placeholder-warm-500 focus:border-brand-500 focus:outline-none mb-4"
-              placeholder="Ex: Defesa BB vs UTG"
+              placeholder={t.editor.namePlaceholder}
               value={primaryName}
               onChange={e => setPrimaryName(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') handleConfirmName() }}
@@ -413,13 +414,13 @@ export function TableEditorPage() {
                 onClick={handleConfirmName}
                 className="flex-1 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-lg font-bold transition-colors"
               >
-                Confirmar
+                {t.tableEditor.confirm}
               </button>
               <button
                 onClick={() => setNameModalOpen(false)}
                 className="px-4 py-2.5 bg-warm-700 hover:bg-warm-600 text-white rounded-lg font-bold transition-colors"
               >
-                Cancelar
+                {t.tableEditor.cancel}
               </button>
             </div>
           </div>
