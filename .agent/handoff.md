@@ -39,11 +39,27 @@
   no `src/test/setup.ts`. Padding da mesa virou `px-8 sm:px-10`.
 - **i18n +2 áreas:** `Dashboard` (t.dashboard) e `RangeSetupPage` (t.rangeSetup).
 
+### Continuação (mesma sessão — Daniel: "siga migrando até terminar")
+- **i18n CONCLUÍDO em TODO o app.** Todas as áreas migradas para `src/i18n/pt.ts` (dicionário tipado `as const` + `t`):
+  auth (Login/Welcome/ChangePassword), nav (TopNav/Sidebar), AppLayout, Dashboard, RangeSetup, RangeEditor, TableEditor,
+  Situations, CategoryDetail, TrainerPage (drill inteiro), StatsPage, MyAccountStats, AccuracySparkline, AdminPanel,
+  CoachPanel (TODAS as seções/tabelas/matriz/PlayersView/legendas/metas), RangeHeatGrid, RangeActionGrid, ComboCounter,
+  BrushControls, HandMatrix, PrereqRangePicker, RangePreviewModal, PokerTableEditor, ErrorBoundary, e strings de UI do
+  **store** (feedback do drill em `checkDrillAnswer`, erros de rede `t.netErrors`).
+- **Mesa de poker responsiva** entregue (scale via ResizeObserver no DrillActive).
+- **472 testes verdes (60 arquivos)**, build verde. Branch `auto/daily-improvements` pushada. PR #22 atualizada (NÃO mergeada — gate humano).
+
+### Padrão i18n (replicável para novas strings)
+- `import { t } from '<path>/i18n'`; trocar literal por `t.area.chave`. Parametrizado = função `(x) => \`...${x}...\``.
+- **SEMPRE casar o texto atual EXATAMENTE** (rodar o teste do componente: `getByText`/`getByRole name`/`getByLabelText`).
+- Strings com markup inline → dividir em `before`/`after` + span no meio (ex.: legendas do CoachPanel).
+- Tokens de domínio NÃO traduzidos (são constantes): FOLD/CALL/RAISE/ALL-IN, BB, RNG, posições (BTN/CO/…), nomes de mãos.
+- **Gotcha:** `.map(t => …)` sombreia o import `t` — renomeie o param (ex.: `tab`, `col`) se precisar de i18n dentro.
+
 ### PRÓXIMA FATIA
-Continuar i18n incremental nas áreas restantes (SituationsPage, TrainerPage/drill, StatsPage, CoachPanel, editores) —
-mesmo padrão: `import { t } from '../../i18n'`, casar EXATAMENTE o texto atual (conferir testes `getByText`/`getByRole name`),
-strings com markup → dividir em before/after + `t.common.appName`. PR #22 aberta p/ revisão do Daniel.
-Sem nova decisão, manter cobertura incremental segura.
+Épico #17 essencialmente concluído (3 opções entregues). Próximos passos possíveis (precisam de aval/decisão do Daniel):
+revisar/mergear PR #22; criar `en.ts` e um seletor de idioma (a fundação já permite); responsividade fina adicional
+validada no preview. Sem nova decisão, manter cobertura incremental segura.
 
 ---
 
