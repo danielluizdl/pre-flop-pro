@@ -38,6 +38,18 @@ export const pt = {
     empty: 'Nenhum range criado ainda.',
     createFirst: 'Criar primeiro range',
   },
+  rangeSetup: {
+    title: 'Novo Range',
+    subtitle: 'Configure o formato do jogo antes de criar o range.',
+    howManyPlayers: 'Quantos players?',
+    straddleQuestion: 'Terá Straddle obrigatório?',
+    anteQuestion: 'Terá ante?',
+    anteAmount: 'Quanto o ante?',
+    yes: 'Sim',
+    no: 'Não',
+    continue: 'Continuar',
+    cancel: 'Cancelar',
+  },
   welcome: {
     greeting: (name: string) => `Bem-vindo(a), ${name}!`,
     accountCreated: 'Conta criada com sucesso',
