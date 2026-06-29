@@ -265,7 +265,9 @@ interface CoachDetailRow {
   duration_seconds?: number
 }
 
-const TAB_LABELS: Record<CoachTab, string> = { hands: t.coach.tabHands, consults: t.coach.tabConsults, sessions: t.coach.tabSessions }
+function tabLabel(tab: CoachTab): string {
+  return tab === 'hands' ? t.coach.tabHands : tab === 'consults' ? t.coach.tabConsults : t.coach.tabSessions
+}
 
 function formatDate(unix: number): string {
   if (!unix) return '—'
@@ -636,11 +638,17 @@ function usePlayerRanges(filters: Filters, token: string | null) {
   return { rows, users, loading, error, reload: () => setTick(t => t + 1) }
 }
 
-const TREND_META: Record<TrendDir, { label: string; arrow: string; cls: string }> = {
-  improving: { label: t.coach.trendImproving, arrow: '▲', cls: 'text-emerald-400' },
-  regressing: { label: t.coach.trendRegressing, arrow: '▼', cls: 'text-red-400' },
-  stable: { label: t.coach.trendStable, arrow: '▬', cls: 'text-warm-400' },
-  insufficient: { label: t.coach.trendInsufficient, arrow: '–', cls: 'text-warm-600' },
+const TREND_META: Record<TrendDir, { arrow: string; cls: string }> = {
+  improving: { arrow: '▲', cls: 'text-emerald-400' },
+  regressing: { arrow: '▼', cls: 'text-red-400' },
+  stable: { arrow: '▬', cls: 'text-warm-400' },
+  insufficient: { arrow: '–', cls: 'text-warm-600' },
+}
+function trendLabel(dir: TrendDir): string {
+  return dir === 'improving' ? t.coach.trendImproving
+    : dir === 'regressing' ? t.coach.trendRegressing
+    : dir === 'stable' ? t.coach.trendStable
+    : t.coach.trendInsufficient
 }
 
 function TrendBadge({ t }: { t: PlayerTrend }) {
@@ -649,7 +657,7 @@ function TrendBadge({ t }: { t: PlayerTrend }) {
   return (
     <span className={`inline-flex items-center gap-1 text-xs font-semibold ${m.cls}`}>
       <span>{m.arrow}</span>
-      <span>{m.label}</span>
+      <span>{trendLabel(t.classification)}</span>
       {t.classification !== 'insufficient' && (
         <span className="text-warm-500 font-normal">{sign}{t.slope}pp/sem</span>
       )}
@@ -749,18 +757,23 @@ const CONF_DOT: Record<Confidence, { cls: string; title: string }> = {
 interface GapRow { rangeId: number; rangeName: string; hand: string; consults: number; total: number; correct: number; graves: number; imprecisos: number }
 interface ByRangeRow { rangeId: number; rangeName: string; hands: number; accuracy: number; graves: number; imprecisos: number; consults: number; players: number }
 
-const SEVERITY_META: Record<SeverityClass, { label: string; cls: string }> = {
-  conceitual: { label: t.coach.legendConceptual, cls: 'text-red-300' },
-  misto: { label: t.coach.legendMixed, cls: 'text-yellow-300' },
-  'estrategia-mista': { label: t.coach.legendMixedStrategy, cls: 'text-sky-300' },
-  na: { label: '—', cls: 'text-warm-600' },
+const SEVERITY_CLS: Record<SeverityClass, string> = {
+  conceitual: 'text-red-300',
+  misto: 'text-yellow-300',
+  'estrategia-mista': 'text-sky-300',
+  na: 'text-warm-600',
 }
-
-const SEVERITY_HELP: Record<SeverityClass, string> = {
-  conceitual: t.coach.severityHelpConceptual,
-  'estrategia-mista': t.coach.severityHelpMixedStrategy,
-  misto: t.coach.severityHelpMixed,
-  na: '',
+function severityLabel(c: SeverityClass): string {
+  return c === 'conceitual' ? t.coach.legendConceptual
+    : c === 'misto' ? t.coach.legendMixed
+    : c === 'estrategia-mista' ? t.coach.legendMixedStrategy
+    : '—'
+}
+function severityHelp(c: SeverityClass): string {
+  return c === 'conceitual' ? t.coach.severityHelpConceptual
+    : c === 'estrategia-mista' ? t.coach.severityHelpMixedStrategy
+    : c === 'misto' ? t.coach.severityHelpMixed
+    : ''
 }
 
 export function PlayerQuickSummary({ userId, days, from, to, token }: { userId: number; days: number | null; from: number | null; to: number | null; token: string | null }) {
@@ -863,7 +876,6 @@ const ByRangeTableRow = memo(function ByRangeTableRow({ row: r, selected, onSele
 }) {
   countRender('byRangeRow')
   const sev = severityProfile(r.graves, r.imprecisos)
-  const sm = SEVERITY_META[sev.classification]
   return (
     <tr
       onClick={() => onSelect(r.rangeId)}
@@ -873,8 +885,8 @@ const ByRangeTableRow = memo(function ByRangeTableRow({ row: r, selected, onSele
       <td className={`${TDR} text-warm-300`}>{r.hands}</td>
       <td className={`${TDR} font-bold ${accColor(r.accuracy)}`}>{r.accuracy}%</td>
       <td className={`${TDR} text-red-400`}>{r.graves}</td>
-      <td className={`${TD} whitespace-nowrap`} title={SEVERITY_HELP[sev.classification] || undefined}>
-        <span className={`font-semibold ${sm.cls}`}>{sm.label}</span>
+      <td className={`${TD} whitespace-nowrap`} title={severityHelp(sev.classification) || undefined}>
+        <span className={`font-semibold ${SEVERITY_CLS[sev.classification]}`}>{severityLabel(sev.classification)}</span>
         {sev.classification !== 'na' && (
           <span className="block text-[0.65rem] text-warm-500">{t.coach.blundersImprecise(r.graves, r.imprecisos)}</span>
         )}
@@ -1562,7 +1574,7 @@ function PlayersView({ token }: { token: string | null }) {
                   onClick={() => setActiveTab(tab)}
                   className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${activeTab === tab ? 'border-brand-500 text-brand-300 bg-warm-800' : 'border-warm-600 text-warm-300 hover:bg-warm-800'}`}
                 >
-                  {TAB_LABELS[tab]}
+                  {tabLabel(tab)}
                 </button>
               ))}
             </div>

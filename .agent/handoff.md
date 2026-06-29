@@ -1,5 +1,30 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-06-29 (sessão interativa — seletor de idiomas PT/EN/ES)
+
+### Estado
+- **i18n completo do app** (PR #22) foi **mergeado** em `feature/auth-telemetry`. Em cima dele, esta sessão entregou o
+  **seletor de idiomas** (PT-BR/EN/ES). **PR #23 ABERTA** (auto/daily-improvements → feature/auth-telemetry), NÃO mergeada.
+- **482 testes verdes (61 arquivos)**, build verde. `main`/produção intactos.
+
+### Arquitetura i18n reativa (importante p/ futuras strings)
+- `src/i18n/index.ts`: `t` é um **Proxy** que lê o dicionário do idioma vigente (`current`), trocado por `setLangDict(lang)`.
+  Componentes seguem `import { t }` e o texto acompanha a troca **ao re-renderizar**.
+- `pt.ts` SEM `as const` → `Messages = typeof pt` é estrutural; `en.ts`/`es.ts` `: Messages` → **tsc força completude**.
+  Ao adicionar uma chave nova: adicione em pt, en E es (senão não compila). 507 chaves nas 3 línguas.
+- **GOTCHA crítico:** NÃO capturar `t.x.y` em constante de MÓDULO (valor congela no idioma do boot). Use função/label em
+  tempo de render (ver NAV_ITEMS, metricLabel, tabLabel, trendLabel, severityLabel/Help). Componentes memoizados com texto
+  traduzido pegam o idioma via `key={lang}` no AppLayout (re-monta na troca; estado do drill vive no store, não se perde).
+- Store: `lang`+`setLang` persistidos em `fbr-ui-state`; `setLangDict` no boot (main.tsx) + `onRehydrateStorage`.
+- `LanguageSelect` em TopNav/Sidebar/LoginPage. Tokens de poker (Raise/Call/Fold/All-in/Range/Stack/BB/RNG/Blunder) NÃO traduzidos.
+
+### Próximas fatias possíveis
+Revisar/mergear PR #23. Idiomas extras seguem o mesmo padrão (criar `xx.ts: Messages`, adicionar a `DICTS`/`LANGS`).
+Sem nova decisão, manter cobertura incremental segura.
+
+---
+
+
 ## 2026-06-29 (sessão interativa — Daniel mandou fazer as 3 opções da #17 + mergear o que aguardava aval)
 
 ### Estado (PONTO DE PARTIDA do próximo run)

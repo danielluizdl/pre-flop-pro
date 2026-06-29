@@ -21,7 +21,7 @@ const TableEditorPage = lazy(() => import('../TableEditor/TableEditorPage').then
 const CategoryDetailPage = lazy(() => import('../Situations/CategoryDetailPage').then(m => ({ default: m.CategoryDetailPage })))
 
 export function AppLayout() {
-  const { page, darkMode, userMode } = useStore()
+  const { page, darkMode, userMode, lang } = useStore()
   const storageBlocked = useStore(s => s.storageBlocked)
   const currentUser = useStore(s => s.currentUser)
   const justSignedUp = useStore(s => s.justSignedUp)
@@ -46,7 +46,9 @@ export function AppLayout() {
   return (
     <div className={darkMode ? 'dark' : ''}>
       <RouterSync />
-      <div className="min-h-screen bg-warm-950 text-warm-100">
+      {/* key={lang}: troca de idioma re-monta a árvore (estado do drill vive no
+          store, não se perde) garantindo que até componentes memoizados peguem o novo idioma. */}
+      <div key={lang} className="min-h-screen bg-warm-950 text-warm-100">
         {storageBlocked && (
           <div className="bg-red-900/40 border-b border-red-700 text-red-200 text-sm px-6 py-2.5 text-center">
             {t.app.storageFull}

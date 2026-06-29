@@ -3,14 +3,15 @@ import { LayoutDashboard, Layers, Edit3, PlayCircle, Clock, Moon, Sun, LogOut, M
 import { clsx } from 'clsx'
 import type { Page } from '../../types'
 import { AdminPanel } from '../Admin/AdminPanel'
+import { LanguageSelect } from './LanguageSelect'
 import { t } from '../../i18n'
 
-const NAV_ITEMS: { id: Page; label: string; icon: React.ElementType }[] = [
-  { id: 'dashboard',   label: t.nav.dashboard,   icon: LayoutDashboard },
-  { id: 'ranges',      label: t.nav.ranges,      icon: Layers },
-  { id: 'range-setup', label: t.nav.createRange, icon: Edit3 },
-  { id: 'drill',       label: t.nav.drill,       icon: PlayCircle },
-  { id: 'history',     label: t.nav.history,     icon: Clock },
+const NAV_ICONS: { id: Page; icon: React.ElementType }[] = [
+  { id: 'dashboard',   icon: LayoutDashboard },
+  { id: 'ranges',      icon: Layers },
+  { id: 'range-setup', icon: Edit3 },
+  { id: 'drill',       icon: PlayCircle },
+  { id: 'history',     icon: Clock },
 ]
 
 interface Props {
@@ -20,6 +21,11 @@ interface Props {
 
 export function Sidebar({ collapsed, onToggle }: Props) {
   const { page, setPage, darkMode, toggleDarkMode, userMode, logout } = useStore()
+  const NAV_LABELS: Partial<Record<Page, string>> = {
+    dashboard: t.nav.dashboard, ranges: t.nav.ranges, 'range-setup': t.nav.createRange,
+    drill: t.nav.drill, history: t.nav.history,
+  }
+  const NAV_ITEMS = NAV_ICONS.map(n => ({ ...n, label: NAV_LABELS[n.id] ?? n.id }))
 
   return (
     <aside className={clsx(
@@ -84,6 +90,7 @@ export function Sidebar({ collapsed, onToggle }: Props) {
 
       {/* Bottom */}
       <div className="px-2 py-3 border-t border-warm-700/50 space-y-0.5">
+        <LanguageSelect compact={collapsed} />
         <button
           onClick={toggleDarkMode}
           className={clsx(

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { RangeMark } from '../ui/RangeMark'
 import { Turnstile, turnstileEnabled } from './Turnstile'
+import { LanguageSelect } from '../Layout/LanguageSelect'
 import { t } from '../../i18n'
 
 type View = 'login' | 'signup' | 'forgot'
@@ -49,6 +50,9 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen bg-warm-950 flex items-center justify-center p-4">
+      <div className="absolute top-3 right-3">
+        <LanguageSelect />
+      </div>
       <div className="w-full max-w-sm space-y-8">
         <div className="flex flex-col items-center mb-8">
           <div className="flex items-center gap-3">

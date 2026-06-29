@@ -536,6 +536,6 @@ export const pt = {
       unexpected: 'Erro inesperado',
     },
   },
-} as const
+}
 
 export type Messages = typeof pt
