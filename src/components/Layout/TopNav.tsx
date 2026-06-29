@@ -45,7 +45,7 @@ export function TopNav() {
       <header className="sticky top-0 z-50 h-16 bg-warm-900 border-b border-warm-700">
         <div className="max-w-[1800px] mx-auto w-full h-full flex items-center px-6 md:px-10">
         {/* Brand */}
-        <div className="flex items-center pr-6 mr-8 border-r border-warm-700 flex-shrink-0">
+        <div className="flex items-center pr-3 mr-3 sm:pr-6 sm:mr-8 border-r border-warm-700 flex-shrink-0">
           <button
             onClick={() => setPage('dashboard')}
             className="flex items-center gap-2.5 flex-shrink-0 hover:opacity-80 transition-opacity"
@@ -75,7 +75,7 @@ export function TopNav() {
                 )}
               >
                 <Icon size={16} className="flex-shrink-0" />
-                <span>{item.label}</span>
+                <span className="sr-only sm:not-sr-only">{item.label}</span>
                 {active && (
                   <span
                     className="ml-0.5 w-1.5 h-1.5 rounded-full flex-shrink-0"
@@ -134,17 +134,19 @@ export function TopNav() {
         {/* + Novo Range */}
         <button
           onClick={() => setPage('range-setup')}
-          className="ml-3 flex items-center gap-1.5 rounded-full bg-warm-100 hover:bg-warm-50 text-warm-950 transition-colors font-display uppercase"
+          aria-label="Novo Range"
+          className="ml-2 sm:ml-3 flex items-center gap-1.5 rounded-full bg-warm-100 hover:bg-warm-50 text-warm-950 transition-colors font-display uppercase"
           style={{ fontSize: 13, letterSpacing: '0.10em', padding: '6px 14px' }}
         >
           <Plus size={14} strokeWidth={2.5} />
-          Novo Range
+          <span className="hidden sm:inline">Novo Range</span>
         </button>
 
         {/* Profile */}
-        <div ref={profileRef} className="relative flex items-center gap-2.5 pl-4 ml-3 border-l border-warm-700">
+        <div ref={profileRef} className="relative flex items-center gap-2.5 pl-2 ml-2 sm:pl-4 sm:ml-3 border-l border-warm-700">
           <button
             onClick={() => setProfileOpen(o => !o)}
+            aria-label="Menu de conta"
             className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
           >
             <div
@@ -153,7 +155,7 @@ export function TopNav() {
             >
               <span className="text-white leading-none" style={{ fontSize: 11, fontWeight: 700 }}>{initial}</span>
             </div>
-            <span className="text-warm-300 uppercase leading-none whitespace-nowrap" style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.18em' }}>
+            <span className="hidden sm:inline text-warm-300 uppercase leading-none whitespace-nowrap" style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.18em' }}>
               {role}
             </span>
           </button>

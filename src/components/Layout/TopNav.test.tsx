@@ -17,6 +17,15 @@ describe('TopNav', () => {
     expect(screen.getByText('Visitante')).toBeInTheDocument()
   })
 
+  it('mantém nomes acessíveis mesmo com rótulos ocultos no mobile', () => {
+    setup()
+    render(<TopNav />)
+    expect(screen.getByRole('button', { name: 'Dashboard' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Histórico' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Novo Range' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Menu de conta' })).toBeInTheDocument()
+  })
+
   it('clicar num item de navegação muda a página', () => {
     setup()
     const setPage = vi.fn()

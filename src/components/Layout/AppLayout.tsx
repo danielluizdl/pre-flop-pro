@@ -55,7 +55,7 @@ export function AppLayout() {
           ? <WelcomeModal />
           : currentUser?.firstLogin === true && <ChangePasswordModal />}
         <TopNav />
-        <main className="w-full max-w-[1800px] mx-auto px-6 md:px-10 pt-8 pb-16">
+        <main className="w-full max-w-[1800px] mx-auto px-4 sm:px-6 md:px-10 pt-6 sm:pt-8 pb-16">
           <ErrorBoundary variant="section" resetKey={page}>
             <Suspense fallback={<p className="text-sm text-warm-500">Carregando…</p>}>
               {renderPage()}
