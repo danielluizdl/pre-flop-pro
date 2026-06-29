@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { useModalA11y } from '../../utils/useModalA11y'
 import { RangeMark } from '../ui/RangeMark'
+import { t } from '../../i18n'
 
 const DURATION = 6000
 
@@ -60,21 +61,21 @@ export function WelcomeModal() {
         </div>
 
         <h2 id="welcome-modal-title" className="text-2xl font-bold text-white mb-1">
-          Bem-vindo(a), {firstName}!
+          {t.welcome.greeting(firstName)}
         </h2>
         <p className="text-brand-400 text-sm font-semibold mb-5">
-          Conta criada com sucesso
+          {t.welcome.accountCreated}
         </p>
 
         <p className="text-warm-300 text-sm leading-relaxed mb-7">
-          Aproveite bastante o <span className="text-white font-semibold">Pre-Flop Pro</span> para estudar seus ranges, treinar situações reais de mesa e subir de nível no pré-flop. Bons estudos e boa sorte nas mesas!
+          {t.welcome.bodyBefore}<span className="text-white font-semibold">{t.common.appName}</span>{t.welcome.bodyAfter}
         </p>
 
         <button
           onClick={handleClose}
           className="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold transition-colors"
         >
-          Bora treinar!
+          {t.welcome.cta}
         </button>
 
         <div className="mt-4 h-1 bg-warm-800 rounded-full overflow-hidden">

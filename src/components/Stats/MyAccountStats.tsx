@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { Skeleton } from '../ui/Skeleton'
 import { captureError } from '../../utils/sentry'
+import { t } from '../../i18n'
 import type { DeviceSession } from '../../types'
 
 interface Overview {
@@ -89,36 +90,36 @@ function DevicesSection() {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <div className="eyebrow">Sessões ativas</div>
+        <div className="eyebrow">{t.myAccount.activeSessions}</div>
         {others > 0 && (
           <button
             onClick={handleRevokeOthers}
             disabled={busy}
             className="text-xs font-semibold text-red-400 hover:text-red-300 disabled:opacity-50"
           >
-            Encerrar as outras ({others})
+            {t.myAccount.endOthers(others)}
           </button>
         )}
       </div>
       {loading ? (
-        <p className="text-warm-500 text-sm">Carregando sessões…</p>
+        <p className="text-warm-500 text-sm">{t.myAccount.loadingSessions}</p>
       ) : error ? (
         <p className="text-red-400 text-sm">
-          Não foi possível carregar as sessões.{' '}
-          <button onClick={() => { setLoading(true); void reload() }} className="underline font-semibold hover:text-red-300">Tentar novamente</button>
+          {t.myAccount.sessionsLoadError}{' '}
+          <button onClick={() => { setLoading(true); void reload() }} className="underline font-semibold hover:text-red-300">{t.common.retry}</button>
         </p>
       ) : devices.length === 0 ? (
-        <p className="text-warm-500 text-sm">Nenhuma sessão ativa.</p>
+        <p className="text-warm-500 text-sm">{t.myAccount.noActiveSessions}</p>
       ) : (
         <ul className="rounded-xl border border-warm-700 divide-y divide-warm-700/60">
           {devices.map(d => (
             <li key={d.id} className="flex items-center justify-between gap-3 px-3 py-2.5">
               <div className="min-w-0">
                 <div className="text-sm text-warm-100 font-semibold flex items-center gap-2">
-                  Sessão #{d.id}
-                  {d.current && <span className="text-[10px] uppercase font-bold text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded">Esta sessão</span>}
+                  {t.myAccount.session(d.id)}
+                  {d.current && <span className="text-[10px] uppercase font-bold text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded">{t.myAccount.thisSession}</span>}
                 </div>
-                <div className="text-xs text-warm-500">Iniciada em {formatDateTime(d.createdAt)} · expira em {formatDate(d.expiresAt)}</div>
+                <div className="text-xs text-warm-500">{t.myAccount.startedExpires(formatDateTime(d.createdAt), formatDate(d.expiresAt))}</div>
               </div>
               {!d.current && (
                 <button
@@ -126,7 +127,7 @@ function DevicesSection() {
                   disabled={busy}
                   className="shrink-0 text-xs font-semibold text-red-400 hover:text-red-300 disabled:opacity-50"
                 >
-                  Encerrar
+                  {t.myAccount.end}
                 </button>
               )}
             </li>
@@ -171,14 +172,14 @@ export function MyAccountStats() {
       .catch(e => {
         if (cancelled) return
         captureError(e, { area: 'me-stats' })
-        setError('Não foi possível carregar os dados da nuvem.')
+        setError(t.myAccount.statsLoadError)
         setLoading(false)
       })
     return () => { cancelled = true }
   }, [authToken, retry])
 
   if (loading) return (
-    <div className="space-y-6 max-w-2xl" role="status" aria-busy="true" aria-label="Carregando dados da nuvem">
+    <div className="space-y-6 max-w-2xl" role="status" aria-busy="true" aria-label={t.myAccount.loadingCloud}>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {Array.from({ length: 7 }).map((_, i) => (
           <div key={i} className="card-surface p-4 flex flex-col items-center gap-2">
@@ -198,20 +199,20 @@ export function MyAccountStats() {
         onClick={() => setRetry(n => n + 1)}
         className="text-sm font-semibold px-4 py-2 rounded-lg border border-warm-600 bg-warm-800 text-warm-200 hover:bg-warm-700 transition-colors"
       >
-        Tentar novamente
+        {t.common.retry}
       </button>
     </div>
   )
   if (!overview) return null
 
   const cards = [
-    { label: 'Mãos', value: overview.hands.toLocaleString(), color: 'text-warm-100' },
-    { label: 'Precisão', value: `${overview.accuracy}%`, color: accColor(overview.accuracy) },
-    { label: 'Blunders', value: String(overview.graves), color: 'text-red-400' },
-    { label: 'Imprecisos', value: String(overview.imprecisos), color: 'text-yellow-400' },
-    { label: 'Consultas', value: String(overview.consults), color: 'text-warm-300' },
-    { label: 'Sessões', value: String(overview.sessions), color: 'text-brand-400' },
-    { label: 'Tempo treinado', value: formatDuration(overview.durationSeconds), color: 'text-blue-400' },
+    { label: t.myAccount.cardHands, value: overview.hands.toLocaleString(), color: 'text-warm-100' },
+    { label: t.myAccount.cardAccuracy, value: `${overview.accuracy}%`, color: accColor(overview.accuracy) },
+    { label: t.myAccount.cardBlunders, value: String(overview.graves), color: 'text-red-400' },
+    { label: t.myAccount.cardImprecise, value: String(overview.imprecisos), color: 'text-yellow-400' },
+    { label: t.myAccount.cardConsults, value: String(overview.consults), color: 'text-warm-300' },
+    { label: t.myAccount.cardSessions, value: String(overview.sessions), color: 'text-brand-400' },
+    { label: t.myAccount.cardTimeTrained, value: formatDuration(overview.durationSeconds), color: 'text-blue-400' },
   ]
 
   return (
@@ -226,20 +227,20 @@ export function MyAccountStats() {
       </div>
 
       <div>
-        <div className="eyebrow mb-2">Por range</div>
+        <div className="eyebrow mb-2">{t.myAccount.byRange}</div>
         {rangeRows.length === 0 ? (
-          <p className="text-warm-500 text-sm">Sem dados ainda.</p>
+          <p className="text-warm-500 text-sm">{t.myAccount.noDataYet}</p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-warm-700">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-warm-800 text-warm-400 text-xs uppercase">
-                  <th className="text-left font-semibold px-3 py-2">Range</th>
-                  <th className="text-right font-semibold px-3 py-2">Mãos</th>
-                  <th className="text-right font-semibold px-3 py-2">Precisão</th>
-                  <th className="text-right font-semibold px-3 py-2">Blunder</th>
-                  <th className="text-right font-semibold px-3 py-2">Consultas</th>
-                  <th className="text-right font-semibold px-3 py-2">Último</th>
+                  <th className="text-left font-semibold px-3 py-2">{t.myAccount.colRange}</th>
+                  <th className="text-right font-semibold px-3 py-2">{t.myAccount.colHands}</th>
+                  <th className="text-right font-semibold px-3 py-2">{t.myAccount.colAccuracy}</th>
+                  <th className="text-right font-semibold px-3 py-2">{t.myAccount.colBlunder}</th>
+                  <th className="text-right font-semibold px-3 py-2">{t.myAccount.colConsults}</th>
+                  <th className="text-right font-semibold px-3 py-2">{t.myAccount.colLast}</th>
                 </tr>
               </thead>
               <tbody>
@@ -260,18 +261,18 @@ export function MyAccountStats() {
       </div>
 
       <div>
-        <div className="eyebrow mb-2">Suas piores mãos</div>
+        <div className="eyebrow mb-2">{t.myAccount.worstHands}</div>
         {handRows.length === 0 ? (
-          <p className="text-warm-500 text-sm">Sem mãos com 3+ tentativas ainda.</p>
+          <p className="text-warm-500 text-sm">{t.myAccount.noHands3}</p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-warm-700">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-warm-800 text-warm-400 text-xs uppercase">
-                  <th className="text-left font-semibold px-3 py-2">Mão</th>
-                  <th className="text-right font-semibold px-3 py-2">Tentativas</th>
-                  <th className="text-right font-semibold px-3 py-2">Acertos</th>
-                  <th className="text-right font-semibold px-3 py-2">Precisão</th>
+                  <th className="text-left font-semibold px-3 py-2">{t.myAccount.colHand}</th>
+                  <th className="text-right font-semibold px-3 py-2">{t.myAccount.colAttempts}</th>
+                  <th className="text-right font-semibold px-3 py-2">{t.myAccount.colCorrect}</th>
+                  <th className="text-right font-semibold px-3 py-2">{t.myAccount.colAccuracy}</th>
                 </tr>
               </thead>
               <tbody>

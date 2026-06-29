@@ -1,4 +1,5 @@
 ﻿import { useStore } from '../../store/useStore'
+import { t } from '../../i18n'
 
 const PRESETS = [0, 25, 50, 75, 100]
 const CUSTOM_COLORS = ['#a855f7', '#f97316', '#06b6d4', '#eab308', '#ec4899', '#84cc16']
@@ -39,7 +40,7 @@ function ActionRow({ label, color, field, value, onChange, extra }: ActionRowPro
           {extra}
           <input
             type="number"
-            aria-label={`${label} porcentagem`}
+            aria-label={t.brush.pct(label)}
             className="w-12 p-1 text-right font-bold border border-warm-600 rounded text-sm bg-warm-900 text-white"
             value={value}
             min={0} max={100}
@@ -50,7 +51,7 @@ function ActionRow({ label, color, field, value, onChange, extra }: ActionRowPro
       </div>
       <input
         type="range" min={0} max={100} value={value}
-        aria-label={`${label} porcentagem (controle deslizante)`}
+        aria-label={t.brush.pctSlider(label)}
         className="w-full cursor-pointer"
         style={{ accentColor: color }}
         onChange={e => onChange(field, Number(e.target.value))}
@@ -88,12 +89,12 @@ export function BrushControls() {
       <div className="p-3 rounded-lg bg-warm-800 border border-warm-700 flex justify-between items-center">
         <div className="flex items-center gap-1.5 font-semibold text-sm text-white">
           <span className="w-3 h-3 rounded-full bg-warm-500 inline-block" />
-          Fold
+          {t.brush.fold}
         </div>
         <div className="flex items-center gap-1">
           <input
             type="text"
-            aria-label="Fold porcentagem (calculado)"
+            aria-label={t.brush.foldCalc}
             className="w-12 p-1 text-right font-bold border border-warm-600 rounded text-sm bg-warm-900/50 text-warm-400"
             value={fold}
             disabled
@@ -102,23 +103,23 @@ export function BrushControls() {
         </div>
       </div>
 
-      <ActionRow label="Call"   color="#22c55e" field="call"  value={brush.call}  onChange={setBrush} />
+      <ActionRow label={t.brush.call}   color="#22c55e" field="call"  value={brush.call}  onChange={setBrush} />
 
       <ActionRow
-        label="Raise" color="#ef4444" field="raise" value={brush.raise} onChange={setBrush}
+        label={t.brush.raise} color="#ef4444" field="raise" value={brush.raise} onChange={setBrush}
         extra={
           <input
             type="text"
-            aria-label="Tamanho do raise em bb"
+            aria-label={t.brush.raiseSizeBb}
             className="w-14 p-1 border border-warm-600 rounded text-xs text-center bg-warm-900 text-white"
-            placeholder="bb"
+            placeholder={t.brush.bb}
             value={brush.raiseSize}
             onChange={e => setBrush('raiseSize', e.target.value)}
           />
         }
       />
 
-      <ActionRow label="All-In" color="#6b2d0d" field="allin" value={brush.allin} onChange={setBrush} />
+      <ActionRow label={t.brush.allin} color="#6b2d0d" field="allin" value={brush.allin} onChange={setBrush} />
 
       {brush.extraLabel ? (
         <div className="p-3 rounded-lg bg-warm-800 border border-warm-700 flex flex-col gap-2">
@@ -127,7 +128,7 @@ export function BrushControls() {
               <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: brush.extraColor }} />
               <input
                 type="text"
-                aria-label="Nome da condição custom"
+                aria-label={t.brush.customName}
                 value={brush.extraLabel}
                 onChange={e => setBrush('extraLabel', e.target.value)}
                 className="flex-1 min-w-0 bg-transparent text-white font-semibold text-sm border-b border-warm-600 focus:border-brand-500 focus:outline-none"
@@ -136,7 +137,7 @@ export function BrushControls() {
             <div className="flex items-center gap-1">
               <input
                 type="number"
-                aria-label="Condição custom porcentagem"
+                aria-label={t.brush.customPct}
                 className="w-12 p-1 text-right font-bold border border-warm-600 rounded text-sm bg-warm-900 text-white"
                 value={brush.extra}
                 min={0} max={100}
@@ -150,7 +151,7 @@ export function BrushControls() {
               <button
                 key={c}
                 onClick={() => setBrush('extraColor', c)}
-                aria-label={`Cor ${c}`}
+                aria-label={t.brush.colorAria(c)}
                 className="w-5 h-5 rounded-full border-2 transition-all flex-shrink-0"
                 style={{
                   backgroundColor: c,
@@ -163,12 +164,12 @@ export function BrushControls() {
               onClick={handleRemoveExtra}
               className="ml-auto text-xs text-warm-500 hover:text-red-400 transition-colors"
             >
-              remover
+              {t.brush.remove}
             </button>
           </div>
           <input
             type="range" min={0} max={100} value={brush.extra}
-            aria-label="Condição custom porcentagem (controle deslizante)"
+            aria-label={t.brush.customPctSlider}
             className="w-full cursor-pointer"
             style={{ accentColor: brush.extraColor }}
             onChange={e => setBrush('extra', Number(e.target.value))}
@@ -181,10 +182,10 @@ export function BrushControls() {
         </div>
       ) : (
         <button
-          onClick={() => setBrush('extraLabel', 'Custom')}
+          onClick={() => setBrush('extraLabel', t.brush.customDefault)}
           className="w-full py-2 border border-dashed border-warm-600 rounded-lg text-sm text-warm-500 hover:text-warm-300 hover:border-warm-400 transition-colors"
         >
-          + Nova Condição
+          {t.brush.newCondition}
         </button>
       )}
     </div>

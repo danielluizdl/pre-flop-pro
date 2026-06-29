@@ -16,6 +16,7 @@ import { addBreadcrumb, captureMessage, captureError } from '../utils/sentry'
 import { enqueue, flush } from '../utils/eventQueue'
 import { decodeRanges, encodeRanges } from '../utils/sparseGrid'
 import { DEFAULT_RANGES } from '../data/defaultRanges'
+import { t } from '../i18n'
 import adminRangesRaw from '../data/adminRanges.json'
 
 const RANGES_KEY        = 'fbr-ranges-v1'
@@ -1117,18 +1118,18 @@ export const useStore = create<AppState>()(
           client_event_id: crypto.randomUUID(),
         }, get().authToken)
 
-        const rngTag = useRngForFrequency ? ` (RNG: ${currentRng})` : ''
+        const rngTag = useRngForFrequency ? t.feedback.rngTag(currentRng) : ''
         let message: string
         if (validNotPrincipal) {
           const principalLabel = correctActions.map(a => `${a} ${freqOf(a)}%`).join(' ou ')
-          message = `~ Válido — ação principal: ${principalLabel}`
+          message = t.feedback.valid(principalLabel)
         } else if (correct) {
-          message = `✓ ${action}!${rngTag}`
+          message = t.feedback.correct(action, rngTag)
         } else if (severity === 'grave') {
-          message = `✗ Blunder — ${action} tinha 0%. Correto: ${correctAction}${rngTag}`
+          message = t.feedback.blunder(action, correctAction, rngTag)
         } else {
           const principalLabel = correctActions.map(a => `${a} ${freqOf(a)}%`).join(' ou ')
-          message = `✗ Impreciso — ${action} tinha ${freqOf(action)}%. Principal: ${principalLabel}${rngTag}`
+          message = t.feedback.imprecise(action, freqOf(action), principalLabel, rngTag)
         }
         return { correct, message, severity }
       },
@@ -1202,7 +1203,7 @@ export const useStore = create<AppState>()(
             body: JSON.stringify({ username, password, turnstileToken: turnstileToken ?? undefined }),
           })
           const data = await res.json().catch(() => null)
-          if (!res.ok || !data) return { ok: false, error: data?.error ?? `Erro do servidor (${res.status})` }
+          if (!res.ok || !data) return { ok: false, error: data?.error ?? t.netErrors.server(res.status) }
           sessionStorage.setItem('pfp-auth-token', data.token)
           set({
             authToken: data.token,
@@ -1214,7 +1215,7 @@ export const useStore = create<AppState>()(
           void flush(data.token)
           void get().syncTeamRanges()
           return { ok: true }
-        } catch (e) { captureError(e, { area: 'auth-login' }); return { ok: false, error: 'Erro de conexão' } }
+        } catch (e) { captureError(e, { area: 'auth-login' }); return { ok: false, error: t.netErrors.connection } }
       },
       authSignup: async (username, password, teamCode, name, email, turnstileToken) => {
         try {
@@ -1224,7 +1225,7 @@ export const useStore = create<AppState>()(
             body: JSON.stringify({ username, password, teamCode, name, email, turnstileToken: turnstileToken ?? undefined }),
           })
           const data = await res.json().catch(() => null)
-          if (!res.ok || !data) return { ok: false, error: data?.error ?? `Erro do servidor (${res.status})` }
+          if (!res.ok || !data) return { ok: false, error: data?.error ?? t.netErrors.server(res.status) }
           sessionStorage.setItem('pfp-auth-token', data.token)
           set({
             authToken: data.token,
@@ -1233,7 +1234,7 @@ export const useStore = create<AppState>()(
             justSignedUp: true,
           })
           return { ok: true }
-        } catch (e) { captureError(e, { area: 'auth-signup' }); return { ok: false, error: 'Erro de conexão' } }
+        } catch (e) { captureError(e, { area: 'auth-signup' }); return { ok: false, error: t.netErrors.connection } }
       },
       authLogout: async () => {
         const { authToken } = get()
@@ -1259,10 +1260,10 @@ export const useStore = create<AppState>()(
             body: JSON.stringify({ newPassword }),
           })
           const data = await res.json().catch(() => null)
-          if (!res.ok) return { ok: false, error: data?.error ?? `Erro do servidor (${res.status})` }
+          if (!res.ok) return { ok: false, error: data?.error ?? t.netErrors.server(res.status) }
           if (currentUser) set({ currentUser: { ...currentUser, firstLogin: false } })
           return { ok: true }
-        } catch (e) { captureError(e, { area: 'change-password' }); return { ok: false, error: 'Erro de conexão' } }
+        } catch (e) { captureError(e, { area: 'change-password' }); return { ok: false, error: t.netErrors.connection } }
       },
       listDevices: async () => {
         const { authToken } = get()
@@ -1270,9 +1271,9 @@ export const useStore = create<AppState>()(
         try {
           const res = await fetch('/api/me/devices', { headers: { Authorization: `Bearer ${authToken}` } })
           const data = await res.json().catch(() => null)
-          if (!res.ok) return { ok: false, error: data?.error ?? `Erro do servidor (${res.status})` }
+          if (!res.ok) return { ok: false, error: data?.error ?? t.netErrors.server(res.status) }
           return { ok: true, devices: data?.devices ?? [] }
-        } catch (e) { captureError(e, { area: 'list-devices' }); return { ok: false, error: 'Erro de conexão' } }
+        } catch (e) { captureError(e, { area: 'list-devices' }); return { ok: false, error: t.netErrors.connection } }
       },
       revokeDevice: async (id) => {
         const { authToken } = get()
@@ -1284,9 +1285,9 @@ export const useStore = create<AppState>()(
             body: JSON.stringify({ action: 'revoke', id }),
           })
           const data = await res.json().catch(() => null)
-          if (!res.ok) return { ok: false, error: data?.error ?? `Erro do servidor (${res.status})` }
+          if (!res.ok) return { ok: false, error: data?.error ?? t.netErrors.server(res.status) }
           return { ok: true }
-        } catch (e) { captureError(e, { area: 'revoke-device' }); return { ok: false, error: 'Erro de conexão' } }
+        } catch (e) { captureError(e, { area: 'revoke-device' }); return { ok: false, error: t.netErrors.connection } }
       },
       revokeOtherDevices: async () => {
         const { authToken } = get()
@@ -1298,9 +1299,9 @@ export const useStore = create<AppState>()(
             body: JSON.stringify({ action: 'revoke-others' }),
           })
           const data = await res.json().catch(() => null)
-          if (!res.ok) return { ok: false, error: data?.error ?? `Erro do servidor (${res.status})` }
+          if (!res.ok) return { ok: false, error: data?.error ?? t.netErrors.server(res.status) }
           return { ok: true }
-        } catch (e) { captureError(e, { area: 'revoke-other-devices' }); return { ok: false, error: 'Erro de conexão' } }
+        } catch (e) { captureError(e, { area: 'revoke-other-devices' }); return { ok: false, error: t.netErrors.connection } }
       },
       restoreSession: async () => {
         const token = sessionStorage.getItem('pfp-auth-token')
@@ -1354,11 +1355,11 @@ export const useStore = create<AppState>()(
             body: JSON.stringify({ ranges: sparse }),
           })
           const data = await res.json().catch(() => null)
-          if (!res.ok || !data?.ok) return { ok: false, error: data?.error ?? `Erro do servidor (${res.status})` }
+          if (!res.ok || !data?.ok) return { ok: false, error: data?.error ?? t.netErrors.server(res.status) }
           localStorage.setItem(TEAM_VERSION_KEY, String(data.version))
           addBreadcrumb('publish', 'team ranges ok', { version: data.version, count: data.count })
           return { ok: true, version: data.version, count: data.count }
-        } catch (e) { captureError(e, { area: 'publish-team-ranges' }); return { ok: false, error: 'Erro de conexão' } }
+        } catch (e) { captureError(e, { area: 'publish-team-ranges' }); return { ok: false, error: t.netErrors.connection } }
       },
 
       // ── Admin ───────────────────────────────────────────────────────────────────

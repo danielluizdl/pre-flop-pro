@@ -6,6 +6,7 @@ import { Edit3, Trash2, PlayCircle, BarChart2, Eye, Link2 } from 'lucide-react'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import { RangePreviewModal } from '../ui/RangePreviewModal'
 import { useModalA11y } from '../../utils/useModalA11y'
+import { t } from '../../i18n'
 import type { Range } from '../../types'
 
 const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'UTG']
@@ -29,7 +30,7 @@ function RangeCard({ r, allRanges, onViewHeatmap, onPreview }: CardProps) {
     useStore.setState({ selectedDrillRangeIds: [r.id], drillExcludedHands: [] })
     startDrillSession()
     const ok = nextDrillHand()
-    if (!ok) { alert('Nenhuma mão disponível neste range.'); return }
+    if (!ok) { alert(t.ranges.noHandsAvailable); return }
     setPage('drill')
   }
 
@@ -83,32 +84,32 @@ function RangeCard({ r, allRanges, onViewHeatmap, onPreview }: CardProps) {
           onClick={handleQuickDrill}
           className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md bg-brand-700 hover:bg-brand-600 text-xs text-white transition-colors"
         >
-          <PlayCircle size={11} /> Treinar
+          <PlayCircle size={11} /> {t.ranges.train}
         </button>
         <button
           onClick={() => loadRangeForEdit(r.id)}
           className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md bg-warm-700 hover:bg-warm-600 text-xs text-warm-200 transition-colors"
         >
-          <Edit3 size={11} /> Editar
+          <Edit3 size={11} /> {t.ranges.edit}
         </button>
         <button
           onClick={() => onPreview(r.id)}
           className="flex items-center justify-center py-1.5 px-2 rounded-md bg-warm-700 hover:bg-blue-900/30 text-xs text-warm-400 hover:text-blue-400 transition-colors"
-          title="Visualizar range"
+          title={t.ranges.viewRange}
         >
           <Eye size={11} />
         </button>
         <button
           onClick={() => onViewHeatmap(r.id)}
           className="flex items-center justify-center py-1.5 px-2 rounded-md bg-warm-700 hover:bg-orange-900/30 text-xs text-warm-400 hover:text-orange-400 transition-colors"
-          title="Ver heatmap"
+          title={t.ranges.viewHeatmap}
         >
           <BarChart2 size={11} />
         </button>
         <button
-          onClick={() => { if (confirm('Apagar este range?')) deleteRange(r.id) }}
+          onClick={() => { if (confirm(t.ranges.confirmDelete)) deleteRange(r.id) }}
           className="flex items-center justify-center py-1.5 px-2 rounded-md bg-warm-700 hover:bg-red-900/30 text-xs text-warm-400 hover:text-red-400 transition-colors"
-          title="Apagar range"
+          title={t.ranges.deleteRange}
         >
           <Trash2 size={11} />
         </button>
@@ -169,25 +170,25 @@ export function SituationsPage() {
     <div className="space-y-4 max-w-2xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display uppercase text-warm-100 text-[28px] leading-none tracking-wide">Meus Ranges</h1>
-          <p className="text-xs text-warm-400 mt-0.5">{ranges.length} range{ranges.length !== 1 ? 's' : ''} criado{ranges.length !== 1 ? 's' : ''}</p>
+          <h1 className="font-display uppercase text-warm-100 text-[28px] leading-none tracking-wide">{t.ranges.title}</h1>
+          <p className="text-xs text-warm-400 mt-0.5">{t.ranges.createdCount(ranges.length)}</p>
         </div>
         <button
           onClick={() => setPage('range-setup')}
           className="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-sm font-semibold transition-colors"
         >
-          + Novo Range
+          {t.ranges.newRange}
         </button>
       </div>
 
       {ranges.length === 0 ? (
         <div className="text-center py-16 border border-dashed border-warm-700 rounded-xl">
-          <p className="text-warm-400 mb-4">Nenhum range criado ainda.</p>
+          <p className="text-warm-400 mb-4">{t.ranges.empty}</p>
           <button
             onClick={() => setPage('range-setup')}
             className="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2.5 rounded-lg text-sm font-semibold"
           >
-            Criar primeiro range
+            {t.ranges.createFirst}
           </button>
         </div>
       ) : (
@@ -205,7 +206,7 @@ export function SituationsPage() {
                 >
                   <div className="flex items-center gap-3">
                     <span className="font-extrabold text-white text-sm w-10 text-left">{pos}</span>
-                    <span className="text-warm-400 text-xs">{group.length} range{group.length !== 1 ? 's' : ''}</span>
+                    <span className="text-warm-400 text-xs">{t.ranges.rangeCount(group.length)}</span>
                   </div>
                   <span className={`text-warm-400 text-lg transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
                     ›
@@ -242,7 +243,7 @@ export function SituationsPage() {
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h3 id="situations-heatmap-title" className="font-bold text-white text-lg">{heatmapRange.name}</h3>
-                <p className="text-xs text-warm-400 mt-0.5">Heatmap de erros por combo</p>
+                <p className="text-xs text-warm-400 mt-0.5">{t.ranges.heatmapSubtitle}</p>
               </div>
               <button onClick={() => setHeatmapId(null)} aria-label="Fechar" className="text-warm-400 hover:text-white text-xl ml-4">✕</button>
             </div>
@@ -268,8 +269,8 @@ export function SituationsPage() {
 
             {!hasData ? (
               <div className="text-center py-12 text-warm-500">
-                <p className="mb-2">Nenhum dado de treino ainda.</p>
-                <p className="text-xs">Treine este range para gerar o heatmap.</p>
+                <p className="mb-2">{t.ranges.noTrainingData}</p>
+                <p className="text-xs">{t.ranges.trainToGenerate}</p>
               </div>
             ) : (
               <HandMatrix readOnly grid={heatmapGrid} heatmap={heatmapPerf} />
@@ -291,7 +292,7 @@ export function SituationsPage() {
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="w-3 h-3 rounded-sm inline-block bg-warm-700 border border-warm-600" />
-                  Não treinado
+                  {t.ranges.notTrained}
                 </span>
               </div>
               {hasData && (
@@ -299,7 +300,7 @@ export function SituationsPage() {
                   onClick={() => { clearHandPerformance(heatmapId!); setHeatmapId(null) }}
                   className="text-xs text-warm-500 hover:text-red-400 transition-colors"
                 >
-                  Resetar dados
+                  {t.ranges.resetData}
                 </button>
               )}
             </div>

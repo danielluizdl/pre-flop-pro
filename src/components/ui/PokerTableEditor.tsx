@@ -1,4 +1,5 @@
 import { useStore } from '../../store/useStore'
+import { t } from '../../i18n'
 import type { PositionConfig, Slot } from '../../types'
 import styles from './PokerTable.module.css'
 import { chipAnchor, dealerAnchor } from './tableGeometry'
@@ -156,7 +157,7 @@ export function PokerTableEditor({ heroCards }: { heroCards?: HeroCards } = {}) 
       {/* Pot */}
       <div className={styles.potWrap}>
         <div className={styles.potInner}>
-          <div className={styles.potEyebrow}>Pote</div>
+          <div className={styles.potEyebrow}>{t.table.pot}</div>
           <div className={styles.potValue}>
             {pot.toFixed(1)}<span className={styles.potUnit}>BB</span>
           </div>

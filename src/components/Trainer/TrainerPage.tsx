@@ -9,6 +9,8 @@ import { Eye } from 'lucide-react'
 import { RANKS, SUIT_ICONS } from '../../types'
 import { ALL_HANDS, getRngBands, formatRngBands } from '../../utils/hands'
 import { useModalA11y } from '../../utils/useModalA11y'
+import { t } from '../../i18n'
+import type { CSSProperties } from 'react'
 import type { HandHistoryEntry, Range, TrainingSession } from '../../types'
 
 /* ── Label helpers (compartilhados entre mão atual e replay do histórico) ─── */
@@ -90,11 +92,11 @@ const HandHistorySidebar = memo(function HandHistorySidebar({ onOpenModal, onRep
         onClick={onOpenModal}
         className="text-xs font-bold text-warm-400 mb-2 flex-shrink-0 text-left hover:text-white transition-colors"
       >
-        HISTÓRICO <span className="text-warm-500">({history.length})</span>
+        {t.drill.historyHeader} <span className="text-warm-500">({history.length})</span>
       </button>
       <div className="flex flex-col gap-1.5 overflow-y-auto flex-1">
         {reversed.length === 0 ? (
-          <p className="text-xs text-warm-600 text-center mt-4">Sem mãos ainda</p>
+          <p className="text-xs text-warm-600 text-center mt-4">{t.drill.noHandsYet}</p>
         ) : (
           reversed.map(entry => (
             <HandHistoryItem key={entry.id} entry={entry} onClick={onReplayEntry ? () => onReplayEntry(entry) : undefined} />
@@ -134,30 +136,30 @@ function SessionDetail({ session, ranges }: {
   return (
     <div className="border-t border-warm-700 bg-warm-900/40 p-4 space-y-4">
       <div className="bg-warm-800 border border-warm-700 rounded-xl p-4">
-        <div className="grid grid-cols-4 gap-3 text-center">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
           <div>
             <div className="text-2xl font-extrabold text-white">{session.hands}</div>
-            <div className="text-xs text-warm-400">Mãos</div>
+            <div className="text-xs text-warm-400">{t.stats.hands}</div>
           </div>
           <div>
             <div className="text-2xl font-extrabold text-emerald-400">{session.correct}</div>
-            <div className="text-xs text-warm-400">Acertos</div>
+            <div className="text-xs text-warm-400">{t.stats.correct}</div>
           </div>
           <div>
             <div className="text-2xl font-extrabold text-red-400">{session.errors}</div>
-            <div className="text-xs text-warm-400">Erros</div>
+            <div className="text-xs text-warm-400">{t.stats.errors}</div>
           </div>
           <div>
             <div className={`text-2xl font-extrabold ${acc !== null ? (acc >= 80 ? 'text-emerald-400' : acc >= 50 ? 'text-yellow-400' : 'text-red-400') : 'text-warm-600'}`}>
               {acc !== null ? `${acc}%` : '—'}
             </div>
-            <div className="text-xs text-warm-400">Precisão</div>
+            <div className="text-xs text-warm-400">{t.stats.accuracy}</div>
           </div>
         </div>
       </div>
 
       {sessionRanges.length === 0 ? (
-        <p className="text-warm-500 text-sm text-center py-2">Ranges desta sessão não encontrados.</p>
+        <p className="text-warm-500 text-sm text-center py-2">{t.stats.rangesNotFound}</p>
       ) : (
         <div className="space-y-2">
           {sessionRanges.map(r => {
@@ -194,7 +196,7 @@ function SessionDetail({ session, ranges }: {
                         {accuracy}%
                       </span>
                     ) : (
-                      <span className="text-warm-600 text-xs">sem dados</span>
+                      <span className="text-warm-600 text-xs">{t.stats.noData}</span>
                     )}
                     <span className={`text-warm-400 text-lg transition-transform duration-200 inline-block ${isOpenR ? 'rotate-180' : ''}`}>›</span>
                   </div>
@@ -203,7 +205,7 @@ function SessionDetail({ session, ranges }: {
                 {isOpenR && (
                   <div className="border-t border-warm-700/60 bg-warm-900/40 p-4">
                     {sessionPerf === null ? (
-                      <p className="text-warm-500 text-xs text-center py-4">Dados por mão não disponíveis para sessões anteriores.</p>
+                      <p className="text-warm-500 text-xs text-center py-4">{t.stats.perHandUnavailable}</p>
                     ) : (
                       <>
                         {stackRanges.length > 0 && (
@@ -228,7 +230,7 @@ function SessionDetail({ session, ranges }: {
                               onClick={() => setViewMode(mode)}
                               className={`px-2 py-0.5 text-xs border rounded-lg transition-colors ${viewMode === mode ? 'border-brand-500 bg-brand-900/30 text-brand-300' : 'border-warm-600 bg-warm-900/80 text-warm-300 hover:bg-warm-700'}`}
                             >
-                              {mode === 'heatmap' ? 'Erro / Acerto' : 'Ver Range'}
+                              {mode === 'heatmap' ? t.matrix.errorMode : t.stats.viewRange}
                             </button>
                           ))}
                         </div>
@@ -273,8 +275,8 @@ function HistoryModal({ onClose }: { onClose: () => void }) {
 
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">Histórico de Treino</h2>
-          <p className="text-warm-400 text-sm">Clique em uma sessão para ver o desempenho por mão.</p>
+          <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">{t.drill.historyTitle}</h2>
+          <p className="text-warm-400 text-sm">{t.drill.historyIntro}</p>
         </div>
         <button
           onClick={onClose}
@@ -285,7 +287,7 @@ function HistoryModal({ onClose }: { onClose: () => void }) {
       </div>
 
       {sessions.length === 0 && (
-        <p className="text-warm-600 text-sm text-center py-16">Nenhuma sessão registrada ainda.</p>
+        <p className="text-warm-600 text-sm text-center py-16">{t.drill.noSessionsYet}</p>
       )}
 
       <div className="space-y-2">
@@ -308,7 +310,7 @@ function HistoryModal({ onClose }: { onClose: () => void }) {
                     <div className={`text-sm font-bold ${acc >= 80 ? 'text-emerald-400' : acc >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
                       {acc}%
                     </div>
-                    <div className="text-xs text-warm-500">{session.hands} mãos</div>
+                    <div className="text-xs text-warm-500">{session.hands} {t.common.hands}</div>
                   </div>
                   <span className={`text-warm-400 text-lg transition-transform duration-200 inline-block ${isOpen ? 'rotate-180' : ''}`}>›</span>
                 </div>
@@ -365,26 +367,26 @@ function HandFilterGrid() {
           onClick={() => setExcluded([])}
           className="px-2.5 py-1 text-xs border border-warm-600 bg-warm-800 rounded-md hover:bg-warm-700 text-warm-300 transition-colors"
         >
-          Tudo ✓
+          {t.drill.all}
         </button>
         <button
           onClick={() => setExcluded([...ALL_HANDS])}
           className="px-2.5 py-1 text-xs border border-warm-600 bg-warm-800 rounded-md hover:bg-warm-700 text-warm-300 transition-colors"
         >
-          Nada ✗
+          {t.drill.none}
         </button>
 
         <div className="h-4 border-l border-warm-600 mx-0.5" />
 
         {/* RNG */}
-        <span className="text-xs text-warm-500">RNG:</span>
+        <span className="text-xs text-warm-500">{t.drill.rngLabel}</span>
         <button
           onClick={() => setUseRng(true)}
           className={['px-2.5 py-1 text-xs rounded-md border font-semibold transition-colors',
             useRng ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:bg-warm-700',
           ].join(' ')}
         >
-          Sim
+          {t.drill.yes}
         </button>
         <button
           onClick={() => setUseRng(false)}
@@ -392,7 +394,7 @@ function HandFilterGrid() {
             !useRng ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:bg-warm-700',
           ].join(' ')}
         >
-          Não
+          {t.drill.no}
         </button>
 
         {!useRng && (
@@ -400,12 +402,12 @@ function HandFilterGrid() {
             <div className="h-4 border-l border-warm-600 mx-0.5" />
             <button
               onClick={() => setAcceptAnyFreq(!acceptAnyFreq)}
-              title="Aceita como acerto qualquer ação com frequência maior que zero"
+              title={t.drill.acceptFreqTitle}
               className={['px-2.5 py-1 text-xs rounded-md border font-semibold transition-colors',
                 acceptAnyFreq ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:bg-warm-700',
               ].join(' ')}
             >
-              Aceitar freq. {'>'} 0
+              {t.drill.acceptFreq}
             </button>
           </>
         )}
@@ -413,12 +415,12 @@ function HandFilterGrid() {
         <div className="h-4 border-l border-warm-600 mx-0.5" />
         <button
           onClick={() => setFocusErrors(!focusErrors)}
-          title="Sorteia mais as mãos em que você erra mais (e as nunca treinadas)"
+          title={t.drill.focusErrorsTitle}
           className={['px-2.5 py-1 text-xs rounded-md border font-semibold transition-colors',
             focusErrors ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:bg-warm-700',
           ].join(' ')}
         >
-          Focar erros
+          {t.drill.focusErrors}
         </button>
       </div>
 
@@ -539,13 +541,13 @@ function DrillRangeSelect() {
       <>
       <div className="space-y-4 max-w-2xl mx-auto">
         <div>
-          <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">Drill</h2>
-          <p className="text-warm-400 text-sm">Selecione os ranges para o treino. Clique em uma posição para expandir.</p>
+          <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">{t.drill.title}</h2>
+          <p className="text-warm-400 text-sm">{t.drill.selectIntro}</p>
         </div>
 
         {ranges.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-warm-400 mb-4">Nenhum range criado.</p>
+            <p className="text-warm-400 mb-4">{t.drill.noRanges}</p>
             <button
               onClick={() => setPage('ranges')}
               className="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2.5 rounded-lg text-sm font-semibold"
@@ -583,10 +585,10 @@ function DrillRangeSelect() {
                     >
                       <div className="flex items-center gap-3">
                         <span className="font-extrabold text-white text-sm w-10 text-left">{pos}</span>
-                        <span className="text-warm-400 text-xs">{group.length} range{group.length !== 1 ? 's' : ''}</span>
+                        <span className="text-warm-400 text-xs">{t.ranges.rangeCount(group.length)}</span>
                         {selectedInGroup > 0 && (
                           <span className="bg-brand-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                            {selectedInGroup} selecionado{selectedInGroup !== 1 ? 's' : ''}
+                            {t.drill.selectedBadge(selectedInGroup)}
                           </span>
                         )}
                       </div>
@@ -607,7 +609,7 @@ function DrillRangeSelect() {
                               : 'bg-warm-800 border-warm-600 text-warm-400 hover:bg-warm-700 hover:text-warm-200',
                           ].join(' ')}
                         >
-                          {allGroupSelected ? 'Desfazer seleção' : 'Selecionar todos'}
+                          {allGroupSelected ? t.drill.deselect : t.drill.selectAll}
                         </button>
                       <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
                         {group.map(r => {
@@ -646,12 +648,12 @@ function DrillRangeSelect() {
                                 <button
                                   onClick={e => { e.stopPropagation(); setPreviewId(r.id) }}
                                   className="flex-shrink-0 text-warm-500 hover:text-blue-400 transition-colors"
-                                  title="Visualizar range"
+                                  title={t.ranges.viewRange}
                                 >
                                   <Eye size={13} />
                                 </button>
                               </div>
-                              <div className="text-xs text-warm-500 mt-1">{r.tableSize}-max · {r.scenarios.length} cenário{r.scenarios.length !== 1 ? 's' : ''}</div>
+                              <div className="text-xs text-warm-500 mt-1">{r.tableSize}-max · {t.common.scenarioCount(r.scenarios.length)}</div>
                             </div>
                           )
                         })}
@@ -666,17 +668,17 @@ function DrillRangeSelect() {
             {notice && <p role="alert" className="text-sm text-red-400 pt-2 text-right">{notice}</p>}
             <div className="flex items-center justify-between pt-2">
               <span className="text-sm text-warm-400">
-                {selectedIds.length > 0 ? `${selectedIds.length} range${selectedIds.length !== 1 ? 's' : ''} selecionado${selectedIds.length !== 1 ? 's' : ''}` : 'Nenhum selecionado'}
+                {selectedIds.length > 0 ? t.drill.selectedCount(selectedIds.length) : t.drill.noneSelected}
               </span>
               <button
                 onClick={() => {
-                  if (selectedIds.length === 0) { setNotice('Selecione pelo menos um range.'); return }
+                  if (selectedIds.length === 0) { setNotice(t.drill.selectAtLeastOne); return }
                   setNotice('')
                   setStep('filter')
                 }}
                 className="btn-commit"
               >
-                CONTINUAR →
+                {t.drill.continue}
               </button>
             </div>
           </>
@@ -693,8 +695,8 @@ function DrillRangeSelect() {
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       <div className="text-center">
-        <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">Filtro de Mãos</h2>
-        <p className="text-warm-400 text-sm">Arraste para selecionar/remover várias mãos.</p>
+        <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">{t.drill.handFilter}</h2>
+        <p className="text-warm-400 text-sm">{t.drill.handFilterIntro}</p>
       </div>
       <HandFilterGrid />
       {notice && <p role="alert" className="text-sm text-red-400 text-center">{notice}</p>}
@@ -703,13 +705,13 @@ function DrillRangeSelect() {
           onClick={handleStartDrill}
           className="btn-commit"
         >
-          INICIAR TREINO
+          {t.drill.startTraining}
         </button>
         <button
           onClick={() => setStep('select')}
           className="px-4 py-2 border border-warm-600 bg-warm-800 text-warm-300 rounded-lg text-sm font-semibold hover:bg-warm-700"
         >
-          Voltar
+          {t.drill.back}
         </button>
       </div>
     </div>
@@ -769,8 +771,8 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
     <div className="space-y-4 max-w-2xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">Resumo do Treino</h2>
-          <p className="text-warm-400 text-sm">Clique em um range para ver o desempenho por mão.</p>
+          <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">{t.drill.summaryTitle}</h2>
+          <p className="text-warm-400 text-sm">{t.drill.summaryIntro}</p>
         </div>
         <div className="flex gap-2">
           {onBack && (
@@ -778,43 +780,43 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
               onClick={onBack}
               className="px-4 py-2 border border-brand-700/50 bg-brand-900/20 text-brand-400 rounded-lg text-sm font-semibold hover:bg-brand-900/40 transition-colors"
             >
-              ← Voltar ao treino
+              {t.drill.backToTraining}
             </button>
           )}
           <button
             onClick={onClose}
             className="px-4 py-2 border border-warm-600 bg-warm-800 text-warm-300 rounded-lg text-sm font-semibold hover:bg-warm-700 transition-colors"
           >
-            Encerrar
+            {t.drill.finish}
           </button>
         </div>
       </div>
 
       <div className="bg-warm-800 border border-warm-700 rounded-xl p-4">
-        <div className="grid grid-cols-4 gap-3 text-center">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
           <div>
             <div className="text-2xl font-extrabold text-white">{sessionStats.hands}</div>
-            <div className="text-xs text-warm-400">Mãos</div>
+            <div className="text-xs text-warm-400">{t.stats.hands}</div>
           </div>
           <div>
             <div className="text-2xl font-extrabold text-emerald-400">{sessionStats.correct}</div>
-            <div className="text-xs text-warm-400">Acertos</div>
+            <div className="text-xs text-warm-400">{t.stats.correct}</div>
           </div>
           <div>
             <div className="text-2xl font-extrabold text-red-400">{sessionStats.errors}</div>
-            <div className="text-xs text-warm-400">Erros</div>
+            <div className="text-xs text-warm-400">{t.stats.errors}</div>
           </div>
           <div>
             <div className={`text-2xl font-extrabold ${sessionAccuracy !== null ? (sessionAccuracy >= 80 ? 'text-emerald-400' : sessionAccuracy >= 50 ? 'text-yellow-400' : 'text-red-400') : 'text-warm-600'}`}>
               {sessionAccuracy !== null ? `${sessionAccuracy}%` : '—'}
             </div>
-            <div className="text-xs text-warm-400">Precisão</div>
+            <div className="text-xs text-warm-400">{t.stats.accuracy}</div>
           </div>
         </div>
         {sessionStats.errors > 0 && (
           <div className="mt-3 pt-3 border-t border-warm-700 flex justify-center gap-6 text-xs">
-            <span className="text-warm-400">Blunders: <span className="text-red-400 font-bold">{sessionSeverity.grave}</span></span>
-            <span className="text-warm-400">Imprecisos: <span className="text-yellow-400 font-bold">{sessionSeverity.impreciso}</span></span>
+            <span className="text-warm-400">{t.drill.blunders} <span className="text-red-400 font-bold">{sessionSeverity.grave}</span></span>
+            <span className="text-warm-400">{t.drill.imprecise} <span className="text-yellow-400 font-bold">{sessionSeverity.impreciso}</span></span>
           </div>
         )}
       </div>
@@ -846,10 +848,10 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
                 <div className="flex items-center gap-3">
                   {accuracy !== null ? (
                     <span className={`text-sm font-bold ${accuracy >= 80 ? 'text-emerald-400' : accuracy >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
-                      {accuracy}% · {sess.total} mão{sess.total !== 1 ? 's' : ''}
+                      {accuracy}% · {t.drill.handCount(sess.total)}
                     </span>
                   ) : (
-                    <span className="text-warm-600 text-xs">sem dados</span>
+                    <span className="text-warm-600 text-xs">{t.stats.noData}</span>
                   )}
                   <span className={`text-warm-400 text-lg transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>›</span>
                 </div>
@@ -858,7 +860,7 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
               {isOpen && (
                 <div className="border-t border-warm-700 bg-warm-900/40 p-4">
                   {sess.total === 0 ? (
-                    <p className="text-warm-500 text-sm text-center py-4">Nenhuma mão treinada neste range nesta sessão.</p>
+                    <p className="text-warm-500 text-sm text-center py-4">{t.drill.noHandTrained}</p>
                   ) : (
                     <>
                       {stackRanges.length > 0 && (
@@ -881,13 +883,13 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
                           onClick={() => setViewMode('heatmap')}
                           className={`px-2 py-0.5 text-xs border rounded-lg transition-colors ${viewMode === 'heatmap' ? 'border-brand-500 bg-brand-900/30 text-brand-300' : 'border-warm-600 bg-warm-900/80 text-warm-300 hover:bg-warm-700'}`}
                         >
-                          Erro / Acerto
+                          {t.matrix.errorMode}
                         </button>
                         <button
                           onClick={() => setViewMode('actions')}
                           className={`px-2 py-0.5 text-xs border rounded-lg transition-colors ${viewMode === 'actions' ? 'border-brand-500 bg-brand-900/30 text-brand-300' : 'border-warm-600 bg-warm-900/80 text-warm-300 hover:bg-warm-700'}`}
                         >
-                          Ver Range
+                          {t.stats.viewRange}
                         </button>
                       </div>
                       <HandMatrix
@@ -1025,6 +1027,27 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
   const goNextRef = useRef<() => void>(() => {})
   const keyHandlerRef = useRef<(e: KeyboardEvent) => void>(() => {})
 
+  // A mesa (PokerTableEditor) tem assentos em px fixos posicionados por %, então
+  // encolher só a largura faz os assentos se sobreporem. Escalamos a mesa inteira
+  // de forma proporcional quando o espaço fica abaixo da largura de projeto (529px),
+  // preservando o layout do desktop em telas pequenas.
+  const TABLE_DESIGN_W = 529
+  const TABLE_DESIGN_H = TABLE_DESIGN_W * 0.63
+  const tableFitRef = useRef<HTMLDivElement>(null)
+  const [tableScale, setTableScale] = useState(1)
+  useEffect(() => {
+    const el = tableFitRef.current
+    if (!el) return
+    const update = () => {
+      const w = el.clientWidth
+      setTableScale(w > 0 && w < TABLE_DESIGN_W ? w / TABLE_DESIGN_W : 1)
+    }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   const sidebarW = sidebarCollapsed ? 28 : 208
 
   useEffect(() => {
@@ -1040,7 +1063,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
   }, [])
 
   const handleReplayEntry = useCallback((entry: HandHistoryEntry) => {
-    const feedbackMsg = entry.correct ? `✓ ${entry.actionTaken}!` : `✗ Correto: ${entry.correctAction}`
+    const feedbackMsg = entry.correct ? `✓ ${entry.actionTaken}!` : t.drill.replayCorrect(entry.correctAction)
     // Resolve por id (fallback por nome para entradas antigas) e reusa o stackGridIdx gravado.
     const entryRange = ranges.find(r => r.id === entry.rangeId) ?? ranges.find(r => r.name === entry.rangeName) ?? activeDrillRange!
     const stackGridIdx = entry.stackGridIdx ?? -1
@@ -1134,7 +1157,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
 
   return (
     <div className="w-full h-[calc(100vh-96px)] overflow-auto">
-      <div className="flex gap-2 min-h-full">
+      <div className="flex flex-col lg:flex-row gap-2 min-h-full">
 
         {/* LEFT: dark box + controles */}
         <div className="flex-1 min-w-0 flex flex-col gap-2">
@@ -1158,21 +1181,27 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                   onClick={() => setModalViewMode('heatmap')}
                   className="px-2 py-0.5 text-xs border border-warm-600 bg-warm-900/80 text-warm-300 rounded-lg hover:bg-warm-700 transition-colors"
                 >
-                  Erro / Acerto
+                  {t.matrix.errorMode}
                 </button>
                 <button
                   onClick={() => { setModalViewMode('actions'); incrementConsults(); if (activeDrillRange) logConsult(activeDrillRange.id, activeDrillRange.name, activeHand) }}
                   className="px-2 py-0.5 text-xs border border-warm-600 bg-warm-900/80 text-warm-300 rounded-lg hover:bg-warm-700 transition-colors"
                 >
-                  Ver Range
+                  {t.stats.viewRange}
                 </button>
               </div>
             </div>
 
             {/* Mesa com cartas do hero */}
-            <div className="flex justify-center px-10 pt-1 pb-[60px]">
-              <div className="w-full max-w-[529px]">
-                <PokerTableEditor heroCards={{ r1, s1, r2, s2 }} />
+            <div className="flex justify-center px-8 sm:px-10 pt-1 pb-[60px]">
+              <div
+                ref={tableFitRef}
+                className="w-full max-w-[529px]"
+                style={tableScale < 1 ? { height: TABLE_DESIGN_H * tableScale } : undefined}
+              >
+                <div style={tableScale < 1 ? { width: TABLE_DESIGN_W, transform: `scale(${tableScale})`, transformOrigin: 'top center' } : undefined}>
+                  <PokerTableEditor heroCards={{ r1, s1, r2, s2 }} />
+                </div>
               </div>
             </div>
 
@@ -1224,7 +1253,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                   isAnswered ? 'bg-brand-600 hover:bg-brand-500 text-white' : 'bg-warm-700 hover:bg-warm-600 text-white',
                 ].join(' ')}
               >
-                {viewingPrev ? '← Mão atual' : 'Próxima Mão →'}
+                {viewingPrev ? t.drill.currentHand : t.drill.nextHand}
               </button>
               <button
                 onClick={() => setAutoAdvance(a => !a)}
@@ -1246,21 +1275,24 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                 disabled={!prevSnapshot || viewingPrev}
                 className="px-4 py-2 rounded-xl border border-warm-600 bg-warm-800 text-warm-400 hover:bg-warm-700 font-semibold text-xs transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                ← Anterior
+                {t.drill.prev}
               </button>
             </div>
           </div>
         </div>
 
         {/* RIGHT: histórico + stats */}
-        <div className="flex-shrink-0 flex flex-col gap-2 sticky top-0 self-start" style={{ width: sidebarW, height: 'calc(100vh - 96px)' }}>
+        <div
+          className="flex flex-col gap-2 w-full h-[60vh] lg:flex-shrink-0 lg:w-[var(--sw)] lg:h-[calc(100vh-96px)] lg:sticky lg:top-0 lg:self-start"
+          style={{ ['--sw']: `${sidebarW}px` } as CSSProperties}
+        >
           {sidebarCollapsed ? (
             <button
               onClick={() => setSidebarCollapsed(false)}
               className="flex-1 min-h-0 bg-warm-800 border border-warm-700 rounded-xl flex items-center justify-center text-warm-500 hover:text-white hover:bg-warm-700 transition-colors"
-              title="Expandir histórico"
+              title={t.drill.expandHistory}
             >
-              <span className="font-bold tracking-wider" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', fontSize: 10 }}>HIST ›</span>
+              <span className="font-bold tracking-wider" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', fontSize: 10 }}>{t.drill.histShort} ›</span>
             </button>
           ) : (
             <>
@@ -1269,7 +1301,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                 <button
                   onClick={() => setSidebarCollapsed(true)}
                   className="absolute top-2 right-2 z-10 w-5 h-5 rounded-full bg-warm-700 text-warm-400 hover:text-white hover:bg-warm-600 flex items-center justify-center text-xs transition-colors"
-                  title="Minimizar histórico"
+                  title={t.drill.minimizeHistory}
                 >‹</button>
               </div>
 
@@ -1284,13 +1316,13 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                   </span>
                 )}
                 <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
-                  <span className="text-warm-400">Mãos</span>
+                  <span className="text-warm-400">{t.stats.hands}</span>
                   <span className="text-white font-bold text-right">{stats.hands}</span>
-                  <span className="text-emerald-400">Acertos</span>
+                  <span className="text-emerald-400">{t.stats.correct}</span>
                   <span className="text-emerald-400 font-bold text-right">{stats.correct}</span>
-                  <span className="text-red-400">Erros</span>
+                  <span className="text-red-400">{t.stats.errors}</span>
                   <span className="text-red-400 font-bold text-right">{stats.errors}</span>
-                  <span className="text-warm-400">Consultas</span>
+                  <span className="text-warm-400">{t.drill.consults}</span>
                   <span className="text-white font-bold text-right">{stats.consults}</span>
                 </div>
                 <div className="pt-1 border-t border-warm-700 space-y-1.5">
@@ -1298,13 +1330,13 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                     onClick={stopDrill}
                     className="w-full py-1.5 text-xs border border-warm-700 bg-warm-900 text-warm-500 rounded-lg hover:bg-warm-700 hover:text-warm-200 font-semibold transition-colors"
                   >
-                    Encerrar Treino
+                    {t.drill.finishTraining}
                   </button>
                   <button
                     onClick={onShowSummary}
                     className="w-full py-1.5 text-xs border border-brand-700/50 bg-brand-900/20 text-brand-400 rounded-lg hover:bg-brand-900/40 font-semibold transition-colors"
                   >
-                    Encerrar e ver resumo
+                    {t.drill.finishAndSummary}
                   </button>
                 </div>
               </div>

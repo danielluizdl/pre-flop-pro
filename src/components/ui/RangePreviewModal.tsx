@@ -2,6 +2,7 @@
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import { ComboCounter } from './ComboCounter'
 import { useModalA11y } from '../../utils/useModalA11y'
+import { t } from '../../i18n'
 import type { Range } from '../../types'
 
 interface Props {
@@ -38,7 +39,7 @@ export function RangePreviewModal({ range, onClose }: Props) {
               {!!displayStackRange && <span className="ml-1 text-brand-400">· {displayStackRange}</span>}
             </p>
           </div>
-          <button onClick={onClose} aria-label="Fechar" className="text-warm-400 hover:text-white text-xl ml-4 flex-shrink-0">✕</button>
+          <button onClick={onClose} aria-label={t.common.close} className="text-warm-400 hover:text-white text-xl ml-4 flex-shrink-0">✕</button>
         </div>
 
         {/* Stack grid selector */}
@@ -68,7 +69,7 @@ export function RangePreviewModal({ range, onClose }: Props) {
           </div>
 
           <div className="flex-1 min-w-[200px]">
-            <p className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-3">Cenários</p>
+            <p className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-3">{t.preview.scenarios}</p>
             <div className="space-y-2">
               {range.scenarios.map((s, i) => (
                 <div key={s.id} className="bg-warm-800 border border-warm-700/50 rounded-lg p-3">

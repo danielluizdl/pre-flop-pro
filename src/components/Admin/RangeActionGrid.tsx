@@ -1,6 +1,7 @@
 import { useMemo, useState, useCallback, memo } from 'react'
 import { RANKS } from '../../utils/hands'
 import { countRender } from '../../test/renderCount'
+import { t } from '../../i18n'
 
 export interface ActionFreq { call?: number; raise?: number; allin?: number; extra?: number; fold?: number }
 
@@ -22,14 +23,14 @@ function cellBackground(d: ActionFreq): string {
 function freqText(d: ActionFreq): string {
   const parts: string[] = []
   const r = Math.round(d.raise ?? 0), c = Math.round(d.call ?? 0), a = Math.round(d.allin ?? 0), e = Math.round(d.extra ?? 0)
-  if (a > 0) parts.push(`${a}% All-in`)
-  if (r > 0) parts.push(`${r}% Raise`)
-  if (c > 0) parts.push(`${c}% Call`)
-  if (e > 0) parts.push(`${e}% Extra`)
+  if (a > 0) parts.push(`${a}% ${t.common.actions.allin}`)
+  if (r > 0) parts.push(`${r}% ${t.common.actions.raise}`)
+  if (c > 0) parts.push(`${c}% ${t.common.actions.call}`)
+  if (e > 0) parts.push(`${e}% ${t.common.actions.extra}`)
   const nonFold = a + r + c + e
   const fold = Math.max(0, 100 - nonFold)
-  if (fold > 0) parts.push(`${fold}% Fold`)
-  return parts.join(' · ') || 'Fold'
+  if (fold > 0) parts.push(`${fold}% ${t.common.actions.fold}`)
+  return parts.join(' · ') || t.common.actions.fold
 }
 
 const ActionCell = memo(function ActionCell({ hand, bg, empty, onEnter }: {

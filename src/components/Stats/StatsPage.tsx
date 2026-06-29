@@ -4,6 +4,7 @@ import type { Range, TrainingSession } from '../../types'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import { MyAccountStats } from './MyAccountStats'
 import { AccuracySparkline } from './AccuracySparkline'
+import { t } from '../../i18n'
 
 const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'EP', 'LJ', 'UTG']
 
@@ -56,19 +57,19 @@ function SessionDetailView({ session, ranges, onBack }: {
             onClick={onBack}
             className="flex items-center gap-1.5 text-warm-400 hover:text-white text-sm font-semibold transition-colors mb-1"
           >
-            ← Voltar
+            {t.stats.back}
           </button>
           <h2 className="text-xl font-extrabold text-white">{formatDate(session.timestamp)}</h2>
           <p className="text-warm-400 text-xs">{session.tableSize}-max · {formatDuration(session.durationSeconds)} · {session.rangeNames.join(', ')}</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-px bg-warm-700/30 rounded-2xl overflow-hidden">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-warm-700/30 rounded-2xl overflow-hidden">
         {[
-          { label:'Mãos',    value: String(session.hands),    color:'text-warm-100' },
-          { label:'Acertos', value: String(session.correct),  color:'text-result-good' },
-          { label:'Erros',   value: String(session.errors),   color:'text-result-bad' },
-          { label:'Precisão',value: acc !== null ? `${acc}%` : '—',
+          { label:t.stats.hands,    value: String(session.hands),    color:'text-warm-100' },
+          { label:t.stats.correct, value: String(session.correct),  color:'text-result-good' },
+          { label:t.stats.errors,   value: String(session.errors),   color:'text-result-bad' },
+          { label:t.stats.accuracy, value: acc !== null ? `${acc}%` : '—',
             color: acc === null ? 'text-warm-500' : acc >= 80 ? 'text-brand-500' : acc >= 50 ? 'text-gold' : 'text-result-bad' },
         ].map(item => (
           <div key={item.label} className="bg-warm-900 p-4 text-center">
@@ -79,7 +80,7 @@ function SessionDetailView({ session, ranges, onBack }: {
       </div>
 
       {sessionRanges.length === 0 ? (
-        <p className="text-warm-500 text-sm text-center py-4">Ranges desta sessão não encontrados.</p>
+        <p className="text-warm-500 text-sm text-center py-4">{t.stats.rangesNotFound}</p>
       ) : (
         <div className="space-y-2">
           {sessionRanges.map(r => {
@@ -115,7 +116,7 @@ function SessionDetailView({ session, ranges, onBack }: {
                         {accuracy}%
                       </span>
                     ) : (
-                      <span className="text-warm-600 text-xs">sem dados</span>
+                      <span className="text-warm-600 text-xs">{t.stats.noData}</span>
                     )}
                     <span className={`text-warm-400 text-lg transition-transform duration-200 inline-block ${isOpen ? 'rotate-180' : ''}`}>›</span>
                   </div>
@@ -124,7 +125,7 @@ function SessionDetailView({ session, ranges, onBack }: {
                 {isOpen && (
                   <div className="border-t border-warm-700 bg-warm-900/40 p-4">
                     {sessionPerf === null ? (
-                      <p className="text-warm-500 text-xs text-center py-4">Dados por mão não disponíveis para sessões anteriores.</p>
+                      <p className="text-warm-500 text-xs text-center py-4">{t.stats.perHandUnavailable}</p>
                     ) : (
                       <>
                         {stackRanges.length > 0 && (
@@ -149,7 +150,7 @@ function SessionDetailView({ session, ranges, onBack }: {
                               onClick={() => setViewMode(mode)}
                               className={`px-2 py-0.5 text-xs border rounded-lg transition-colors ${viewMode === mode ? 'border-brand-500 bg-brand-900/30 text-brand-300' : 'border-warm-600 bg-warm-900/80 text-warm-300 hover:bg-warm-700'}`}
                             >
-                              {mode === 'heatmap' ? 'Erro / Acerto' : 'Ver Range'}
+                              {mode === 'heatmap' ? t.matrix.errorMode : t.stats.viewRange}
                             </button>
                           ))}
                         </div>
@@ -192,20 +193,20 @@ function SessionCard({ session, onView }: { session: TrainingSession; onView: ()
           <span className="text-xs text-warm-400">{formatDuration(session.durationSeconds)}</span>
         </div>
         <div className="font-display uppercase text-warm-100 truncate mb-1.5 leading-none" style={{ fontSize:18, letterSpacing:'0.03em' }}>
-          {session.rangeNames.join(' · ') || 'Sem nome'}
+          {session.rangeNames.join(' · ') || t.stats.noName}
         </div>
         <div className="flex gap-4 text-sm flex-wrap">
-          <span className="text-warm-300">Mãos: <strong className="text-white">{session.hands}</strong></span>
-          <span className="text-emerald-400">Acertos: <strong>{session.correct}</strong></span>
-          <span className="text-red-400">Erros: <strong>{session.errors}</strong></span>
+          <span className="text-warm-300">{t.stats.handsLabel} <strong className="text-white">{session.hands}</strong></span>
+          <span className="text-emerald-400">{t.stats.correctLabel} <strong>{session.correct}</strong></span>
+          <span className="text-red-400">{t.stats.errorsLabel} <strong>{session.errors}</strong></span>
           {session.consults > 0 && (
-            <span className="text-warm-500">Consultas: <strong>{session.consults}</strong></span>
+            <span className="text-warm-500">{t.stats.consultsLabel} <strong>{session.consults}</strong></span>
           )}
         </div>
       </div>
       <button
         onClick={onView}
-        title="Ver detalhes"
+        title={t.stats.viewDetails}
         className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border border-warm-600 bg-warm-900/60 text-warm-400 hover:text-white hover:border-warm-400 transition-colors"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -265,8 +266,8 @@ function GlobalHistoryPanel() {
   if (orderedKeys.length === 0) {
     return (
       <div className="text-center py-16">
-        <p className="text-warm-400 text-sm">Nenhum dado de treino ainda.</p>
-        <p className="text-warm-500 text-xs mt-1">Complete um treino para ver o desempenho aqui.</p>
+        <p className="text-warm-400 text-sm">{t.stats.noTrainingData}</p>
+        <p className="text-warm-500 text-xs mt-1">{t.stats.completeToSeePerf}</p>
       </div>
     )
   }
@@ -285,7 +286,7 @@ function GlobalHistoryPanel() {
             >
               <div className="flex items-center gap-3">
                 <span className="font-extrabold text-white text-sm w-10 text-left">{pos}</span>
-                <span className="text-warm-400 text-xs">{group.length} range{group.length !== 1 ? 's' : ''}</span>
+                <span className="text-warm-400 text-xs">{t.ranges.rangeCount(group.length)}</span>
               </div>
               <span className={`text-warm-400 text-lg transition-transform duration-200 inline-block ${isPosOpen ? 'rotate-180' : ''}`}>›</span>
             </button>
@@ -319,7 +320,7 @@ function GlobalHistoryPanel() {
                               {accuracy}%
                             </span>
                           ) : (
-                            <span className="text-warm-600 text-xs">sem dados</span>
+                            <span className="text-warm-600 text-xs">{t.stats.noData}</span>
                           )}
                           <span className={`text-warm-400 text-lg transition-transform duration-200 inline-block ${isOpen ? 'rotate-180' : ''}`}>›</span>
                         </div>
@@ -349,7 +350,7 @@ function GlobalHistoryPanel() {
                                 onClick={() => setViewMode(mode)}
                                 className={`px-2 py-0.5 text-xs border rounded-lg transition-colors ${viewMode === mode ? 'border-brand-500 bg-brand-900/30 text-brand-300' : 'border-warm-600 bg-warm-900/80 text-warm-300 hover:bg-warm-700'}`}
                               >
-                                {mode === 'heatmap' ? 'Erro / Acerto' : 'Ver Range'}
+                                {mode === 'heatmap' ? t.matrix.errorMode : t.stats.viewRange}
                               </button>
                             ))}
                           </div>
@@ -392,16 +393,16 @@ export function StatsPage() {
     <div className="space-y-4 max-w-2xl">
       {/* Cabeçalho */}
       <div>
-        <h1 className="font-display uppercase text-warm-100 text-[28px] leading-none tracking-wide">Histórico de Treinos</h1>
-        <p className="text-xs text-warm-400">{sessions.length} sessão(ões) registrada(s)</p>
+        <h1 className="font-display uppercase text-warm-100 text-[28px] leading-none tracking-wide">{t.stats.title}</h1>
+        <p className="text-xs text-warm-400">{t.stats.sessionsCount(sessions.length)}</p>
       </div>
 
       {/* Abas */}
       <div className="flex border-b border-warm-700">
         {([
-          ...(currentUser ? [{ key: 'cloud' as const, label: 'Meus dados na nuvem' }] : []),
-          { key: 'sessions' as const, label: 'Histórico de Sessões' },
-          { key: 'global' as const,   label: 'Desempenho Global'   },
+          ...(currentUser ? [{ key: 'cloud' as const, label: t.stats.tabCloud }] : []),
+          { key: 'sessions' as const, label: t.stats.tabSessions },
+          { key: 'global' as const,   label: t.stats.tabGlobal },
         ]).map(tab => (
           <button
             key={tab.key}
@@ -431,12 +432,12 @@ export function StatsPage() {
         ) : (
           <div className="space-y-6">
             {sessions.length > 0 && (
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[
-                  { label: 'Sessões', value: sessions.length.toString(), color: 'text-brand-400' },
-                  { label: 'Mãos Totais', value: totalHands.toLocaleString(), color: 'text-blue-400' },
+                  { label: t.stats.statSessions, value: sessions.length.toString(), color: 'text-brand-400' },
+                  { label: t.stats.statTotalHands, value: totalHands.toLocaleString(), color: 'text-blue-400' },
                   {
-                    label: 'Precisão Global',
+                    label: t.stats.statGlobalAccuracy,
                     value: globalAccuracy !== null ? `${globalAccuracy}%` : '—',
                     color: globalAccuracy === null ? 'text-warm-500'
                          : globalAccuracy >= 70 ? 'text-emerald-400'
@@ -453,8 +454,8 @@ export function StatsPage() {
             <AccuracySparkline sessions={trainingHistory} />
             {sessions.length === 0 ? (
               <div className="text-center py-16">
-                <p className="text-warm-400 text-sm">Nenhuma sessão registrada ainda.</p>
-                <p className="text-warm-500 text-xs mt-1">Complete um treino para ver o histórico aqui.</p>
+                <p className="text-warm-400 text-sm">{t.stats.noSessions}</p>
+                <p className="text-warm-500 text-xs mt-1">{t.stats.completeToSeeHistory}</p>
               </div>
             ) : (
               <div className="flex flex-col gap-3">

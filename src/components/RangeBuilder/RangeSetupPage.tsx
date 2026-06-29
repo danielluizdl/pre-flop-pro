@@ -1,5 +1,6 @@
 ﻿import { useState } from 'react'
 import { useStore } from '../../store/useStore'
+import { t } from '../../i18n'
 import type { TableSize } from '../../types'
 
 function OptionButton({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: React.ReactNode }) {
@@ -34,13 +35,13 @@ export function RangeSetupPage() {
   return (
     <div className="max-w-md mx-auto space-y-5 pt-2">
       <div>
-        <h1 className="font-display uppercase text-warm-100 text-[28px] leading-none tracking-wide">Novo Range</h1>
-        <p className="text-xs text-warm-400 mt-0.5">Configure o formato do jogo antes de criar o range.</p>
+        <h1 className="font-display uppercase text-warm-100 text-[28px] leading-none tracking-wide">{t.rangeSetup.title}</h1>
+        <p className="text-xs text-warm-400 mt-0.5">{t.rangeSetup.subtitle}</p>
       </div>
 
       {/* Q1: Table size */}
       <div className="bg-warm-800 border border-warm-700 rounded-xl p-5 space-y-3">
-        <p className="font-semibold text-white text-sm">Quantos players?</p>
+        <p className="font-semibold text-white text-sm">{t.rangeSetup.howManyPlayers}</p>
         <div className="flex gap-3">
           <OptionButton selected={tableSize === 6} onClick={() => { setTableSize(6); setHasStraddle(false) }}>
             6-max
@@ -54,24 +55,24 @@ export function RangeSetupPage() {
       {/* Q2: Straddle — only for 8-max */}
       {tableSize === 8 && (
         <div className="bg-warm-800 border border-warm-700 rounded-xl p-5 space-y-3">
-          <p className="font-semibold text-white text-sm">Terá Straddle obrigatório?</p>
+          <p className="font-semibold text-white text-sm">{t.rangeSetup.straddleQuestion}</p>
           <div className="flex gap-3">
-            <OptionButton selected={hasStraddle} onClick={() => setHasStraddle(true)}>Sim</OptionButton>
-            <OptionButton selected={!hasStraddle} onClick={() => setHasStraddle(false)}>Não</OptionButton>
+            <OptionButton selected={hasStraddle} onClick={() => setHasStraddle(true)}>{t.rangeSetup.yes}</OptionButton>
+            <OptionButton selected={!hasStraddle} onClick={() => setHasStraddle(false)}>{t.rangeSetup.no}</OptionButton>
           </div>
         </div>
       )}
 
       {/* Q3: Ante */}
       <div className="bg-warm-800 border border-warm-700 rounded-xl p-5 space-y-3">
-        <p className="font-semibold text-white text-sm">Terá ante?</p>
+        <p className="font-semibold text-white text-sm">{t.rangeSetup.anteQuestion}</p>
         <div className="flex gap-3">
-          <OptionButton selected={hasAnte} onClick={() => setHasAnte(true)}>Sim</OptionButton>
-          <OptionButton selected={!hasAnte} onClick={() => setHasAnte(false)}>Não</OptionButton>
+          <OptionButton selected={hasAnte} onClick={() => setHasAnte(true)}>{t.rangeSetup.yes}</OptionButton>
+          <OptionButton selected={!hasAnte} onClick={() => setHasAnte(false)}>{t.rangeSetup.no}</OptionButton>
         </div>
         {hasAnte && (
           <div className="flex items-center gap-3 pt-1 border-t border-warm-700">
-            <label className="text-xs text-warm-400" htmlFor="ante-amount">Quanto o ante?</label>
+            <label className="text-xs text-warm-400" htmlFor="ante-amount">{t.rangeSetup.anteAmount}</label>
             <input
               id="ante-amount"
               type="number" step={0.1} min={0.1}
@@ -90,13 +91,13 @@ export function RangeSetupPage() {
           onClick={handleStart}
           className="btn-commit flex-1 justify-center"
         >
-          Continuar →
+          {t.rangeSetup.continue} →
         </button>
         <button
           onClick={() => setPage('dashboard')}
           className="w-28 py-3 bg-warm-700 hover:bg-warm-600 text-white rounded-xl font-bold transition-colors"
         >
-          Cancelar
+          {t.rangeSetup.cancel}
         </button>
       </div>
     </div>

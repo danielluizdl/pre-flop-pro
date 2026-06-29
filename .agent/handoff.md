@@ -1,5 +1,68 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-06-29 (sessão interativa — Daniel mandou fazer as 3 opções da #17 + mergear o que aguardava aval)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- **Daniel autorizou explicitamente:** fazer as **3 opções da issue #17** (responsividade, i18n, qualidade) e
+  **mergear o que estava no gate humano**.
+- **PR #16 MERGEADA** em `feature/auth-telemetry` (merge `406c582`) — observabilidade #15 + cobertura/a11y/type-safety.
+- **PR #22 ABERTA** (auto/daily-improvements → feature/auth-telemetry) com o trabalho das 3 opções. NÃO mergeada (deixei pra ele revisar/validar no preview).
+- **472 testes verdes (60 arquivos)**, build verde. `main`/produção intactos (nada foi pro `main`).
+
+### Feito nesta run (as 3 opções da #17)
+**Opção 1 — Responsividade (mudanças aditivas sm:/md:/lg:/xl:, desktop intacto):**
+- TopNav: rótulos de nav viram `sr-only` no mobile (ícones-only, nome acessível preservado); "Novo Range"/conta recolhem com `aria-label`; padding do `main` menor no mobile.
+- DrillActive: empilha mesa + histórico no mobile (`flex-col` → `lg:flex-row`); sidebar usa `--sw` p/ manter largura fixa sticky só em lg+.
+- CoachPanel: "Matriz do range" vira coluna abaixo de `xl` (real/jogado + precisão/Top20/detalhe); xl+ intacto.
+- Grids de stats (4 métricas) → 2x2 no mobile; 3 cards de nuvem → 1 coluna.
+- Editor/TableEditor JÁ eram responsivos (flex-col xl:flex-row).
+- **PENDENTE (precisa de validação visual no preview, NÃO fiz por risco):** escalonar a mesa de poker (`PokerTableEditor`)
+  em telas <360px — os assentos são `w-[55px]` posicionados por % e vazam/sobrepõem quando o container encolhe. Abordagem
+  provável: `transform: scale()` no wrapper da mesa em mobile (cuidar do espaço vertical que o scale deixa). Conferir no preview.
+
+**Opção 2 — i18n (fundação + áreas-chave):**
+- `src/i18n/pt.ts` (dicionário tipado `as const`) + `src/i18n/index.ts` (`t = pt`). Teste `src/i18n/i18n.test.ts`.
+- Migrados: `LoginPage`, `WelcomeModal`, `ChangePasswordModal`, `TopNav`. **Texto visível idêntico** (conferi contra os testes).
+- PADRÃO: `import { t } from '../../i18n'` e trocar literal por `t.area.chave`. Greeting parametrizado = função `(name) => ...`.
+  Strings com markup inline: dividir em `bodyBefore`/`bodyAfter` + `t.common.appName`. **Gotcha:** casar EXATAMENTE o texto atual
+  (ex.: ChangePasswordModal era "Defina sua senha"/"Salvar senha", não inventar) senão quebra os testes que usam `getByText`.
+- Áreas a migrar depois (incremental): Dashboard, SituationsPage, TrainerPage (drill), StatsPage, CoachPanel, editores.
+
+**Opção 3 — Qualidade/type-safety:**
+- tsconfig: `noUnusedLocals`/`noUnusedParameters` = true (código já passava com 0 erros; agora barra código morto futuro).
+- Cobertura de store: `src/store/editorActions.test.ts` (toggleEditorPosition single-select + apostas do updateRole).
+
+### Continuação (mesma sessão — Daniel validou o preview e mandou "continue com o resto")
+- **Mesa de poker responsiva (FEITO):** `ResizeObserver` no DrillActive mede o wrapper e aplica `transform: scale`
+  proporcional abaixo de 529px (largura de projeto), com `transformOrigin: top center` e altura ajustada
+  (`TABLE_DESIGN_H * scale`) p/ não deixar gap. Desktop (>=529px) → scale 1 (intacto). Stub de `ResizeObserver`
+  no `src/test/setup.ts`. Padding da mesa virou `px-8 sm:px-10`.
+- **i18n +2 áreas:** `Dashboard` (t.dashboard) e `RangeSetupPage` (t.rangeSetup).
+
+### Continuação (mesma sessão — Daniel: "siga migrando até terminar")
+- **i18n CONCLUÍDO em TODO o app.** Todas as áreas migradas para `src/i18n/pt.ts` (dicionário tipado `as const` + `t`):
+  auth (Login/Welcome/ChangePassword), nav (TopNav/Sidebar), AppLayout, Dashboard, RangeSetup, RangeEditor, TableEditor,
+  Situations, CategoryDetail, TrainerPage (drill inteiro), StatsPage, MyAccountStats, AccuracySparkline, AdminPanel,
+  CoachPanel (TODAS as seções/tabelas/matriz/PlayersView/legendas/metas), RangeHeatGrid, RangeActionGrid, ComboCounter,
+  BrushControls, HandMatrix, PrereqRangePicker, RangePreviewModal, PokerTableEditor, ErrorBoundary, e strings de UI do
+  **store** (feedback do drill em `checkDrillAnswer`, erros de rede `t.netErrors`).
+- **Mesa de poker responsiva** entregue (scale via ResizeObserver no DrillActive).
+- **472 testes verdes (60 arquivos)**, build verde. Branch `auto/daily-improvements` pushada. PR #22 atualizada (NÃO mergeada — gate humano).
+
+### Padrão i18n (replicável para novas strings)
+- `import { t } from '<path>/i18n'`; trocar literal por `t.area.chave`. Parametrizado = função `(x) => \`...${x}...\``.
+- **SEMPRE casar o texto atual EXATAMENTE** (rodar o teste do componente: `getByText`/`getByRole name`/`getByLabelText`).
+- Strings com markup inline → dividir em `before`/`after` + span no meio (ex.: legendas do CoachPanel).
+- Tokens de domínio NÃO traduzidos (são constantes): FOLD/CALL/RAISE/ALL-IN, BB, RNG, posições (BTN/CO/…), nomes de mãos.
+- **Gotcha:** `.map(t => …)` sombreia o import `t` — renomeie o param (ex.: `tab`, `col`) se precisar de i18n dentro.
+
+### PRÓXIMA FATIA
+Épico #17 essencialmente concluído (3 opções entregues). Próximos passos possíveis (precisam de aval/decisão do Daniel):
+revisar/mergear PR #22; criar `en.ts` e um seletor de idioma (a fundação já permite); responsividade fina adicional
+validada no preview. Sem nova decisão, manter cobertura incremental segura.
+
+---
+
 ## 2026-06-29 (cobertura incremental + a11y polish — ainda aguardando decisão da issue #17)
 
 ### Estado (PONTO DE PARTIDA do próximo run)

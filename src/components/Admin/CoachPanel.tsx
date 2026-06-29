@@ -6,6 +6,7 @@ import { useStore } from '../../store/useStore'
 import { RangeHeatGrid, type GridCell } from './RangeHeatGrid'
 import { RangeActionGrid, type ActionFreq } from './RangeActionGrid'
 import { rangeComboStats, TOTAL_COMBOS, type ComboStats } from '../../utils/rangeCombos'
+import { t } from '../../i18n'
 
 const ACTION_COLOR: Record<string, string> = { Raise: 'text-red-400', Call: 'text-emerald-400', 'All-in': 'text-purple-300', Extra: 'text-brand-300' }
 
@@ -19,9 +20,9 @@ function ComboSummary({ stats }: { stats: ComboStats }) {
   ].filter(x => x.v > 0.05)
   return (
     <div className="mt-3 pt-2 border-t border-warm-700/50 text-[0.7rem] text-warm-400 space-y-1">
-      <div>Abertura: <span className="text-brand-300 font-semibold">{stats.openPct.toFixed(1)}%</span> <span className="text-warm-500">({Math.round(stats.openCombos)} de 1326 combos)</span></div>
+      <div>{t.coach.opening}<span className="text-brand-300 font-semibold">{stats.openPct.toFixed(1)}%</span> <span className="text-warm-500">({Math.round(stats.openCombos)} de 1326 combos)</span></div>
       <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-        {items.length === 0 ? <span className="text-warm-600">Sem ações</span> : items.map(x => (
+        {items.length === 0 ? <span className="text-warm-600">{t.coach.noActions}</span> : items.map(x => (
           <span key={x.label}><span className={`font-semibold ${ACTION_COLOR[x.label]}`}>{x.label}</span> {pct(x.v).toFixed(1)}%</span>
         ))}
       </div>
@@ -39,7 +40,7 @@ interface RangeOpt { id: number; name: string; positions?: string[]; stackGrids?
 function groupRangesByPosition(ranges: RangeOpt[]) {
   const groups = new Map<string, RangeOpt[]>()
   for (const r of ranges) {
-    const pos = r.positions?.[0] ?? 'Outros'
+    const pos = r.positions?.[0] ?? t.coach.othersGroup
     if (!groups.has(pos)) groups.set(pos, [])
     groups.get(pos)!.push(r)
   }
@@ -66,7 +67,7 @@ function MultiPlayerSelect({ users, selected, onChange }: {
   }, [open])
 
   const nameOf = (id: number) => { const u = users.find(x => x.id === id); return u ? (u.name || u.username) : '' }
-  const label = selected.length === 0 ? 'Todos os jogadores' : selected.length === 1 ? nameOf(selected[0]) : `${selected.length} jogadores`
+  const label = selected.length === 0 ? t.coach.allPlayers : selected.length === 1 ? nameOf(selected[0]) : t.coach.playersCount(selected.length)
   const toggle = (id: number) => onChange(selected.includes(id) ? selected.filter(x => x !== id) : [...selected, id])
   const q = query.trim().toLowerCase()
   const shownUsers = q ? users.filter(u => (u.name || '').toLowerCase().includes(q) || u.username.toLowerCase().includes(q)) : users
@@ -77,7 +78,7 @@ function MultiPlayerSelect({ users, selected, onChange }: {
         onClick={() => setOpen(o => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-label="Filtrar jogadores"
+        aria-label={t.coach.filterPlayers}
         className="bg-warm-900 border border-warm-600 rounded-lg px-2.5 py-1.5 text-sm text-warm-100 flex items-center gap-2 min-w-[190px] justify-between"
       >
         <span className="truncate">{label}</span>
@@ -92,8 +93,8 @@ function MultiPlayerSelect({ users, selected, onChange }: {
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Buscar jogador…"
-            aria-label="Buscar jogador"
+            placeholder={`${t.coach.searchPlayer}…`}
+            aria-label={t.coach.searchPlayer}
             className="w-full bg-warm-950 border border-warm-700 rounded px-2 py-1.5 text-sm text-warm-100 placeholder-warm-500 mb-1"
             autoFocus
           />
@@ -101,11 +102,11 @@ function MultiPlayerSelect({ users, selected, onChange }: {
             onClick={() => onChange([])}
             className={`w-full text-left px-2 py-1.5 rounded text-sm ${selected.length === 0 ? 'text-brand-300 font-semibold' : 'text-warm-300 hover:bg-warm-800'}`}
           >
-            Todos os jogadores
+            {t.coach.allPlayers}
           </button>
           <div className="h-px bg-warm-700 my-1" />
-          <div role="group" aria-label="Jogadores">
-            {shownUsers.length === 0 && <p className="px-2 py-1.5 text-xs text-warm-500">Nenhum jogador.</p>}
+          <div role="group" aria-label={t.coach.players}>
+            {shownUsers.length === 0 && <p className="px-2 py-1.5 text-xs text-warm-500">{t.coach.noPlayer}</p>}
             {shownUsers.map(u => (
               <label key={u.id} className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-warm-200 hover:bg-warm-800 cursor-pointer">
                 <input type="checkbox" checked={selected.includes(u.id)} onChange={() => toggle(u.id)} className="accent-brand-500" />
@@ -145,7 +146,7 @@ function RangeSelect({ groups, value, onChange }: {
   }, [open, activeIndex])
 
   const selected = groups.flatMap(g => g.items).find(r => r.id === value)
-  const label = selected ? selected.name : 'Todos os ranges'
+  const label = selected ? selected.name : t.coach.allRanges
 
   const q = query.trim().toLowerCase()
   const filtered = q
@@ -171,7 +172,7 @@ function RangeSelect({ groups, value, onChange }: {
         onClick={() => setOpen(o => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-label="Filtrar por range"
+        aria-label={t.coach.filterRange}
         className="bg-warm-900 border border-warm-600 rounded-lg px-2.5 py-1.5 text-sm text-warm-100 flex items-center gap-2 min-w-[200px] justify-between"
       >
         <span className="truncate">{label}</span>
@@ -184,7 +185,7 @@ function RangeSelect({ groups, value, onChange }: {
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={onInputKeyDown}
-            placeholder="Buscar range…"
+            placeholder={t.coach.searchRange}
             aria-label="Buscar range"
             role="combobox"
             aria-expanded={open}
@@ -202,10 +203,10 @@ function RangeSelect({ groups, value, onChange }: {
                 onClick={() => pick(null)}
                 className={`w-full text-left px-2 py-1.5 rounded text-sm ${i === activeIndex ? 'ring-1 ring-brand-500 ' : ''}${value === null ? 'text-brand-300 font-semibold' : 'text-warm-300 hover:bg-warm-800'}`}
               >
-                Todos os ranges
+                {t.coach.allRanges}
               </button>
             ) })()}
-            {flatIds.length === 1 && <p className="px-2 py-1.5 text-xs text-warm-500">Nenhum range.</p>}
+            {flatIds.length === 1 && <p className="px-2 py-1.5 text-xs text-warm-500">{t.coach.noRange}</p>}
             {filtered.map(g => (
               <div key={g.pos} role="group" aria-label={g.pos}>
                 <p aria-hidden="true" className="px-2 pt-1.5 pb-0.5 text-[0.65rem] uppercase font-semibold text-warm-500 tracking-wider">{g.pos}</p>
@@ -264,7 +265,7 @@ interface CoachDetailRow {
   duration_seconds?: number
 }
 
-const TAB_LABELS: Record<CoachTab, string> = { hands: 'Mãos', consults: 'Consultas', sessions: 'Sessões' }
+const TAB_LABELS: Record<CoachTab, string> = { hands: t.coach.tabHands, consults: t.coach.tabConsults, sessions: t.coach.tabSessions }
 
 function formatDate(unix: number): string {
   if (!unix) return '—'
@@ -323,13 +324,13 @@ export function TopHandsPanel({ cells, selected, onSelect }: { cells: GridCell[]
   return (
     <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-3 w-[260px] shrink-0">
       <div className="flex gap-1 mb-1.5">
-        <button onClick={() => setTab('errors')} className={tabCls(tab === 'errors')}>Top 20 erros</button>
-        <button onClick={() => setTab('consults')} className={tabCls(tab === 'consults')}>Top 20 consultas</button>
+        <button onClick={() => setTab('errors')} className={tabCls(tab === 'errors')}>{t.coach.top20errors}</button>
+        <button onClick={() => setTab('consults')} className={tabCls(tab === 'consults')}>{t.coach.top20consults}</button>
       </div>
-      <p className="text-[0.62rem] text-warm-500 mb-1.5">Clique numa mão para ver o detalhe →</p>
+      <p className="text-[0.62rem] text-warm-500 mb-1.5">{t.coach.clickHandDetail}</p>
       <div className="space-y-0.5 max-h-[460px] overflow-y-auto pr-1">
         {list.length === 0 ? (
-          <p className="text-xs text-warm-500 py-2">Sem dados.</p>
+          <p className="text-xs text-warm-500 py-2">{t.coach.noData}</p>
         ) : list.map((c, i) => (
           <button
             key={c.hand}
@@ -373,18 +374,18 @@ export function HandDetailCard({ cell }: { cell: GridCell }) {
         <span className={`text-lg font-bold ${accColor(cell.accuracy)}`}>{cell.accuracy}%</span>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <Stat label="Tentativas" v={cell.total} />
-        <Stat label="Acertos" v={cell.correct} cls="text-emerald-300" />
-        <Stat label="Blunder" v={cell.graves} cls="text-red-400" />
-        <Stat label="Consultas" v={cell.consults} cls="text-purple-300" />
+        <Stat label={t.coach.detailAttempts} v={cell.total} />
+        <Stat label={t.coach.detailCorrect} v={cell.correct} cls="text-emerald-300" />
+        <Stat label={t.coach.detailBlunder} v={cell.graves} cls="text-red-400" />
+        <Stat label={t.coach.detailConsults} v={cell.consults} cls="text-purple-300" />
       </div>
       <div className="text-xs space-y-0.5">
-        <div className="text-emerald-300">✓ Correto: {cell.correctAction ?? '—'}</div>
-        <div className="text-red-300">✗ Erram mais: {cell.topWrong ? `${cell.topWrong.action} (${cell.topWrong.n}x)` : '—'}</div>
+        <div className="text-emerald-300">{t.coach.detailCorrectPrefix}{cell.correctAction ?? '—'}</div>
+        <div className="text-red-300">{t.coach.detailErrMost}{cell.topWrong ? `${cell.topWrong.action} (${cell.topWrong.n}x)` : '—'}</div>
       </div>
       {pp && (
         <div>
-          <p className="text-[0.7rem] text-warm-400 mb-1">Como o time jogou esta mão</p>
+          <p className="text-[0.7rem] text-warm-400 mb-1">{t.coach.howTeamPlayed}</p>
           <div className="flex h-4 rounded overflow-hidden border border-warm-700">
             {seg(pp.raise, '#ef4444', 'Raise')}
             {seg(pp.call, '#22c55e', 'Call')}
@@ -447,7 +448,7 @@ function PeriodFilter({ days, from, to, onChange }: {
   return (
     <div className="flex items-center gap-2">
       <select
-        aria-label="Período"
+        aria-label={t.coach.period}
         className={selectCls}
         value={custom ? 'custom' : (days ?? '')}
         onChange={e => {
@@ -456,18 +457,18 @@ function PeriodFilter({ days, from, to, onChange }: {
           else { setCustom(false); onChange({ days: v ? Number(v) : null, from: null, to: null }) }
         }}
       >
-        <option value="">Tudo</option>
-        <option value="7">7 dias</option>
-        <option value="30">30 dias</option>
-        <option value="90">90 dias</option>
-        <option value="custom">Custom</option>
+        <option value="">{t.coach.periodAll}</option>
+        <option value="7">{t.coach.period7}</option>
+        <option value="30">{t.coach.period30}</option>
+        <option value="90">{t.coach.period90}</option>
+        <option value="custom">{t.coach.periodCustom}</option>
       </select>
       {custom && (
         <div className="flex items-center gap-1.5">
-          <input type="date" aria-label="Data inicial" value={start} max={end || undefined}
+          <input type="date" aria-label={t.coach.dateStart} value={start} max={end || undefined}
             onChange={e => { setStart(e.target.value); apply(e.target.value, end) }} className={dateCls} />
           <span className="text-warm-500 text-xs">→</span>
-          <input type="date" aria-label="Data final" value={end} min={start || undefined}
+          <input type="date" aria-label={t.coach.dateEnd} value={end} min={start || undefined}
             onChange={e => { setEnd(e.target.value); apply(start, e.target.value) }} className={dateCls} />
         </div>
       )}
@@ -503,7 +504,7 @@ function useAnalytics<T>(view: string, filters: Filters, token: string | null) {
       .catch(e => {
         if (cancelled) return
         captureError(e, { area: 'coach-analytics', view })
-        setError('Erro ao carregar')
+        setError(t.coach.loadError)
         setLoading(false)
       })
     return () => { cancelled = true }
@@ -530,7 +531,7 @@ function useRangeGrid(rangeId: number | null, days: number | null, from: number 
     fetch(`/api/admin/analytics?${qs.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
       .then(d => { if (!cancelled) { setCells(d.cells ?? []); setLoading(false) } })
-      .catch(e => { if (!cancelled) { captureError(e, { area: 'coach-range-grid', view: 'range-grid' }); setError('Erro ao carregar'); setLoading(false) } })
+      .catch(e => { if (!cancelled) { captureError(e, { area: 'coach-range-grid', view: 'range-grid' }); setError(t.coach.loadError); setLoading(false) } })
     return () => { cancelled = true }
   }, [token, rangeId, days, from, to, idsKey, stackIdx])
 
@@ -565,7 +566,7 @@ function useTrend(filters: Filters, token: string | null) {
         setUsers(d.users ?? [])
         setLoading(false)
       })
-      .catch(e => { if (!cancelled) { captureError(e, { area: 'coach-analytics', view: 'trend' }); setError('Erro ao carregar'); setLoading(false) } })
+      .catch(e => { if (!cancelled) { captureError(e, { area: 'coach-analytics', view: 'trend' }); setError(t.coach.loadError); setLoading(false) } })
     return () => { cancelled = true }
   }, [token, idsKey, filters.rangeId, filters.days, filters.from, filters.to, tick])
 
@@ -599,7 +600,7 @@ function useSegments(filters: Filters, token: string | null) {
         setByAction(d.byAction ?? [])
         setLoading(false)
       })
-      .catch(e => { if (!cancelled) { captureError(e, { area: 'coach-analytics', view: 'segments' }); setError('Erro ao carregar'); setLoading(false) } })
+      .catch(e => { if (!cancelled) { captureError(e, { area: 'coach-analytics', view: 'segments' }); setError(t.coach.loadError); setLoading(false) } })
     return () => { cancelled = true }
   }, [token, idsKey, filters.rangeId, filters.days, filters.from, filters.to, tick])
 
@@ -628,7 +629,7 @@ function usePlayerRanges(filters: Filters, token: string | null) {
     fetch(`/api/admin/analytics?${qs.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
       .then(d => { if (!cancelled) { setRows(d.rows ?? []); setUsers(d.users ?? []); setLoading(false) } })
-      .catch(e => { if (!cancelled) { captureError(e, { area: 'coach-analytics', view: 'player-ranges' }); setError('Erro ao carregar'); setLoading(false) } })
+      .catch(e => { if (!cancelled) { captureError(e, { area: 'coach-analytics', view: 'player-ranges' }); setError(t.coach.loadError); setLoading(false) } })
     return () => { cancelled = true }
   }, [token, idsKey, filters.rangeId, filters.days, filters.from, filters.to, tick])
 
@@ -636,10 +637,10 @@ function usePlayerRanges(filters: Filters, token: string | null) {
 }
 
 const TREND_META: Record<TrendDir, { label: string; arrow: string; cls: string }> = {
-  improving: { label: 'melhorando', arrow: '▲', cls: 'text-emerald-400' },
-  regressing: { label: 'regredindo', arrow: '▼', cls: 'text-red-400' },
-  stable: { label: 'estável', arrow: '▬', cls: 'text-warm-400' },
-  insufficient: { label: 'sem base', arrow: '–', cls: 'text-warm-600' },
+  improving: { label: t.coach.trendImproving, arrow: '▲', cls: 'text-emerald-400' },
+  regressing: { label: t.coach.trendRegressing, arrow: '▼', cls: 'text-red-400' },
+  stable: { label: t.coach.trendStable, arrow: '▬', cls: 'text-warm-400' },
+  insufficient: { label: t.coach.trendInsufficient, arrow: '–', cls: 'text-warm-600' },
 }
 
 function TrendBadge({ t }: { t: PlayerTrend }) {
@@ -715,11 +716,11 @@ function Section({ title, loading, error, empty, children, defaultOpen = true, o
           <p className="text-sm text-red-400 px-3 py-3">
             {error}
             {onRetry && (
-              <button onClick={onRetry} className="ml-2 underline font-semibold hover:text-red-300">Tentar novamente</button>
+              <button onClick={onRetry} className="ml-2 underline font-semibold hover:text-red-300">{t.coach.retry}</button>
             )}
           </p>
         ) : empty ? (
-          <p className="text-sm text-warm-500 px-3 py-3">Sem dados.</p>
+          <p className="text-sm text-warm-500 px-3 py-3">{t.coach.noData}</p>
         ) : (
           <div className="overflow-x-auto border-t border-warm-700">{children}</div>
         )
@@ -749,16 +750,16 @@ interface GapRow { rangeId: number; rangeName: string; hand: string; consults: n
 interface ByRangeRow { rangeId: number; rangeName: string; hands: number; accuracy: number; graves: number; imprecisos: number; consults: number; players: number }
 
 const SEVERITY_META: Record<SeverityClass, { label: string; cls: string }> = {
-  conceitual: { label: 'Conceitual', cls: 'text-red-300' },
-  misto: { label: 'Misto', cls: 'text-yellow-300' },
-  'estrategia-mista': { label: 'Estratégia mista', cls: 'text-sky-300' },
+  conceitual: { label: t.coach.legendConceptual, cls: 'text-red-300' },
+  misto: { label: t.coach.legendMixed, cls: 'text-yellow-300' },
+  'estrategia-mista': { label: t.coach.legendMixedStrategy, cls: 'text-sky-300' },
   na: { label: '—', cls: 'text-warm-600' },
 }
 
 const SEVERITY_HELP: Record<SeverityClass, string> = {
-  conceitual: 'Conceitual: erra a ação certa (escolhe jogada com 0% de freq) — não sabe o range.',
-  'estrategia-mista': 'Estratégia mista: escolhe ação válida, mas não a principal — só erra a frequência.',
-  misto: 'Misto: mistura de erros conceituais e de estratégia mista.',
+  conceitual: t.coach.severityHelpConceptual,
+  'estrategia-mista': t.coach.severityHelpMixedStrategy,
+  misto: t.coach.severityHelpMixed,
   na: '',
 }
 
@@ -779,8 +780,8 @@ export function PlayerQuickSummary({ userId, days, from, to, token }: { userId: 
     return () => { cancelled = true }
   }, [userId, days, from, to, token])
 
-  if (loading) return <div className="px-4 py-3 text-xs text-warm-500">Carregando resumo…</div>
-  if (rows.length === 0) return <div className="px-4 py-3 text-xs text-warm-500">Sem dados de range para este jogador.</div>
+  if (loading) return <div className="px-4 py-3 text-xs text-warm-500">{t.coach.loadingSummary}</div>
+  if (rows.length === 0) return <div className="px-4 py-3 text-xs text-warm-500">{t.coach.noRangeDataPlayer}</div>
 
   const treinados = [...rows].sort((a, b) => b.hands - a.hands).slice(0, 5)
   const piores = [...rows].filter(r => r.hands >= 5).sort((a, b) => a.accuracy - b.accuracy).slice(0, 5)
@@ -804,9 +805,9 @@ export function PlayerQuickSummary({ userId, days, from, to, token }: { userId: 
 
   return (
     <div className="grid gap-5 md:grid-cols-3 px-4 py-3 bg-warm-900/50 border-t border-warm-700/60">
-      <Col title="Mais treinados" items={treinados} render={r => <span className="text-warm-200">{r.hands} mãos</span>} />
-      <Col title="Onde mais erra" items={piores} render={r => <span className={accColor(r.accuracy)}>{r.accuracy}%</span>} />
-      <Col title="Mais consultados" items={consultados} render={r => <span className="text-purple-300">{r.consults}x</span>} />
+      <Col title={t.coach.mostTrained} items={treinados} render={r => <span className="text-warm-200">{r.hands} {t.common.hands}</span>} />
+      <Col title={t.coach.whereErrsMost} items={piores} render={r => <span className={accColor(r.accuracy)}>{r.accuracy}%</span>} />
+      <Col title={t.coach.mostConsulted} items={consultados} render={r => <span className="text-purple-300">{r.consults}x</span>} />
     </div>
   )
 }
@@ -875,7 +876,7 @@ const ByRangeTableRow = memo(function ByRangeTableRow({ row: r, selected, onSele
       <td className={`${TD} whitespace-nowrap`} title={SEVERITY_HELP[sev.classification] || undefined}>
         <span className={`font-semibold ${sm.cls}`}>{sm.label}</span>
         {sev.classification !== 'na' && (
-          <span className="block text-[0.65rem] text-warm-500">{r.graves} blunders · {r.imprecisos} imprecisos</span>
+          <span className="block text-[0.65rem] text-warm-500">{t.coach.blundersImprecise(r.graves, r.imprecisos)}</span>
         )}
       </td>
       <td className={`${TDR} text-warm-400`}>{r.consults}</td>
@@ -1045,21 +1046,21 @@ function TeamView({ token }: { token: string | null }) {
         />
       </div>
 
-      <Section title="Por range" defaultOpen={false} loading={byRange.loading} error={byRange.error} empty={byRange.rows.length === 0} onRetry={byRange.reload}>
+      <Section title={t.coach.sectionByRange} defaultOpen={false} loading={byRange.loading} error={byRange.error} empty={byRange.rows.length === 0} onRetry={byRange.reload}>
         <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60 leading-relaxed">
-          Clique no cabeçalho para ordenar · clique numa linha para ver a matriz do range. Tipo de erro:{' '}
-          <span className="text-red-300 font-semibold">Conceitual</span> = erra a ação certa (joga 0% de freq), não sabe o range ·{' '}
-          <span className="text-sky-300 font-semibold">Estratégia mista</span> = ação válida, mas não a principal, só erra a frequência ·{' '}
-          <span className="text-yellow-300 font-semibold">Misto</span> = mistura dos dois.
+          {t.coach.byRangeLegendIntro}
+          <span className="text-red-300 font-semibold">{t.coach.legendConceptual}</span>{t.coach.legendConceptualDesc}
+          <span className="text-sky-300 font-semibold">{t.coach.legendMixedStrategy}</span>{t.coach.legendMixedStrategyDesc}
+          <span className="text-yellow-300 font-semibold">{t.coach.legendMixed}</span>{t.coach.legendMixedDesc}
         </div>
         <table className="text-sm">
           <thead>
             <tr className="bg-warm-800 text-warm-400 text-xs uppercase select-none">
-              <th className={TH}>Range</th>
+              <th className={TH}>{t.coach.colRange}</th>
               {([
-                { k: 'hands', label: 'Mãos' },
-                { k: 'accuracy', label: 'Precisão' },
-                { k: 'graves', label: 'Blunder' },
+                { k: 'hands', label: t.coach.colHands },
+                { k: 'accuracy', label: t.coach.colAccuracy },
+                { k: 'graves', label: t.coach.colBlunder },
               ] as { k: ByRangeSortKey; label: string }[]).map(col => (
                 <th key={col.k} className={THR}>
                   <button
@@ -1071,10 +1072,10 @@ function TeamView({ token }: { token: string | null }) {
                   </button>
                 </th>
               ))}
-              <th className={TH}>Tipo de erro</th>
+              <th className={TH}>{t.coach.colErrorType}</th>
               {([
-                { k: 'consults', label: 'Consultas' },
-                { k: 'players', label: 'Jogadores' },
+                { k: 'consults', label: t.coach.colConsults },
+                { k: 'players', label: t.coach.colPlayers },
               ] as { k: ByRangeSortKey; label: string }[]).map(col => (
                 <th key={col.k} className={THR}>
                   <button
@@ -1096,21 +1097,21 @@ function TeamView({ token }: { token: string | null }) {
         </table>
       </Section>
 
-      <Section title="Resumo do time" defaultOpen={false} loading={overview.loading} error={overview.error} empty={overview.rows.length === 0} onRetry={overview.reload}>
+      <Section title={t.coach.sectionTeamSummary} defaultOpen={false} loading={overview.loading} error={overview.error} empty={overview.rows.length === 0} onRetry={overview.reload}>
         <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60">
-          Clique no cabeçalho para ordenar · clique num jogador para o resumo rápido.
+          {t.coach.overviewLegend}
         </div>
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-warm-800 text-warm-400 text-xs uppercase select-none">
               {([
-                { k: 'name', label: 'Jogador', align: 'l' },
-                { k: 'hands', label: 'Mãos', align: 'r' },
-                { k: 'accuracy', label: 'Precisão', align: 'r' },
-                { k: 'graves', label: 'Blunder', align: 'r' },
-                { k: 'consults', label: 'Consultas', align: 'r' },
-                { k: 'durationSeconds', label: 'Tempo', align: 'r' },
-                { k: 'lastActivity', label: 'Última ativ.', align: 'r' },
+                { k: 'name', label: t.coach.colPlayer, align: 'l' },
+                { k: 'hands', label: t.coach.colHands, align: 'r' },
+                { k: 'accuracy', label: t.coach.colAccuracy, align: 'r' },
+                { k: 'graves', label: t.coach.colBlunder, align: 'r' },
+                { k: 'consults', label: t.coach.colConsults, align: 'r' },
+                { k: 'durationSeconds', label: t.coach.colTime, align: 'r' },
+                { k: 'lastActivity', label: t.coach.colLastActivity, align: 'r' },
               ] as { k: SortKey; label: string; align: 'l' | 'r' }[]).map(col => (
                 <th key={col.k} className={col.align === 'l' ? TH : THR}>
                   <button
@@ -1154,10 +1155,10 @@ function TeamView({ token }: { token: string | null }) {
       </Section>
 
 
-      <Section title="Evolução (tendência semanal)" defaultOpen={false} loading={trend.loading} error={trend.error} empty={playerTrends.length === 0} onRetry={trend.reload}>
+      <Section title={t.coach.sectionTrend} defaultOpen={false} loading={trend.loading} error={trend.error} empty={playerTrends.length === 0} onRetry={trend.reload}>
         <div className="p-3 flex flex-col gap-3">
           <div className="flex items-center gap-4 rounded-lg bg-warm-800/40 border border-warm-700/60 px-3 py-2">
-            <span className="text-xs font-semibold text-warm-300 uppercase w-20">Time</span>
+            <span className="text-xs font-semibold text-warm-300 uppercase w-20">{t.coach.colTeam}</span>
             <Sparkline weeks={teamTrend.weeks} width={160} height={34} />
             <div className="flex flex-col">
               <TrendBadge t={teamTrend} />
@@ -1171,10 +1172,10 @@ function TeamView({ token }: { token: string | null }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-warm-800 text-warm-400 text-xs uppercase">
-                <th className={TH}>Jogador</th>
-                <th className={TH}>Evolução</th>
-                <th className={THR}>Início → Fim</th>
-                <th className={TH}>Tendência</th>
+                <th className={TH}>{t.coach.colPlayer}</th>
+                <th className={TH}>{t.coach.colTrend}</th>
+                <th className={THR}>{t.coach.colStartEnd}</th>
+                <th className={TH}>{t.coach.colTrendLabel}</th>
               </tr>
             </thead>
             <tbody>
@@ -1193,19 +1194,19 @@ function TeamView({ token }: { token: string | null }) {
         </div>
       </Section>
 
-      <Section title="Maiores leaks" defaultOpen={false} loading={leaks.loading} error={leaks.error} empty={rankedLeaks.length === 0} onRetry={leaks.reload}>
+      <Section title={t.coach.sectionLeaks} defaultOpen={false} loading={leaks.loading} error={leaks.error} empty={rankedLeaks.length === 0} onRetry={leaks.reload}>
         <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60">
-          Ordenado por <span className="text-warm-300">impacto</span> (erros ponderados por gravidade). Precisão mostra o piso de confiança (mín = limite inferior de Wilson 95%); o ponto indica o tamanho da amostra.
+          {t.coach.leaksLegendBefore}<span className="text-warm-300">{t.coach.colImpactLower}</span>{t.coach.leaksLegendAfter}
         </div>
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-warm-800 text-warm-400 text-xs uppercase">
-              <th className={TH}>Mão</th>
-              <th className={TH}>Range</th>
-              <th className={THR}>Tent.</th>
-              <th className={THR}>Precisão (mín)</th>
-              <th className={THR}>Blunder</th>
-              <th className={THR}>Impacto</th>
+              <th className={TH}>{t.coach.colHand}</th>
+              <th className={TH}>{t.coach.colRange}</th>
+              <th className={THR}>{t.coach.colAttempts}</th>
+              <th className={THR}>{t.coach.colAccuracyMin}</th>
+              <th className={THR}>{t.coach.colBlunder}</th>
+              <th className={THR}>{t.coach.colImpact}</th>
             </tr>
           </thead>
           <tbody>
@@ -1233,18 +1234,18 @@ function TeamView({ token }: { token: string | null }) {
         </table>
       </Section>
 
-      <Section title="Segmentos (categoria e ação correta)" defaultOpen={false} loading={segments.loading} error={segments.error} empty={categorySegs.length === 0 && segments.byAction.length === 0} onRetry={segments.reload}>
+      <Section title={t.coach.sectionSegments} defaultOpen={false} loading={segments.loading} error={segments.error} empty={categorySegs.length === 0 && segments.byAction.length === 0} onRetry={segments.reload}>
         <div className="p-3 grid gap-5 md:grid-cols-2">
           <div>
-            <p className="text-xs text-warm-400 mb-2 uppercase font-semibold">Por categoria de mão</p>
+            <p className="text-xs text-warm-400 mb-2 uppercase font-semibold">{t.coach.byHandCategory}</p>
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-warm-800 text-warm-400 text-[11px] uppercase">
-                  <th className={TH}>Categoria</th>
-                  <th className={THR}>Mãos</th>
-                  <th className={THR}>Precisão</th>
-                  <th className={THR}>Blunder</th>
-                  <th className={THR}>Impacto</th>
+                  <th className={TH}>{t.coach.colCategory}</th>
+                  <th className={THR}>{t.coach.colHands}</th>
+                  <th className={THR}>{t.coach.colAccuracy}</th>
+                  <th className={THR}>{t.coach.colBlunder}</th>
+                  <th className={THR}>{t.coach.colImpact}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1261,14 +1262,14 @@ function TeamView({ token }: { token: string | null }) {
             </table>
           </div>
           <div>
-            <p className="text-xs text-warm-400 mb-2 uppercase font-semibold">Por ação correta</p>
+            <p className="text-xs text-warm-400 mb-2 uppercase font-semibold">{t.coach.byCorrectAction}</p>
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-warm-800 text-warm-400 text-[11px] uppercase">
-                  <th className={TH}>Ação correta</th>
-                  <th className={THR}>Mãos</th>
-                  <th className={THR}>Precisão</th>
-                  <th className={THR}>Blunder</th>
+                  <th className={TH}>{t.coach.colCorrectAction}</th>
+                  <th className={THR}>{t.coach.colHands}</th>
+                  <th className={THR}>{t.coach.colAccuracy}</th>
+                  <th className={THR}>{t.coach.colBlunder}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1286,19 +1287,19 @@ function TeamView({ token }: { token: string | null }) {
         </div>
       </Section>
 
-      <Section title="Lacunas de conhecimento (consulta × erro)" defaultOpen={false} loading={gaps.loading} error={gaps.error} empty={rankedGaps.length === 0} onRetry={gaps.reload}>
+      <Section title={t.coach.sectionGaps} defaultOpen={false} loading={gaps.loading} error={gaps.error} empty={rankedGaps.length === 0} onRetry={gaps.reload}>
         <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60">
-          Mãos que o time mais <span className="text-warm-300">consulta E ainda erra</span> — lacuna real de conhecimento. Score = consultas × taxa de erro ponderada.
+          {t.coach.gapsLegendBefore}<span className="text-warm-300">{t.coach.consultsAndErrs}</span>{t.coach.gapsLegendAfter}
         </div>
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-warm-800 text-warm-400 text-xs uppercase">
-              <th className={TH}>Mão</th>
-              <th className={TH}>Range</th>
-              <th className={THR}>Consultas</th>
-              <th className={THR}>Precisão (mín)</th>
-              <th className={THR}>Blunder</th>
-              <th className={THR}>Score</th>
+              <th className={TH}>{t.coach.colHand}</th>
+              <th className={TH}>{t.coach.colRange}</th>
+              <th className={THR}>{t.coach.colConsults}</th>
+              <th className={THR}>{t.coach.colAccuracyMin}</th>
+              <th className={THR}>{t.coach.colBlunder}</th>
+              <th className={THR}>{t.coach.colScore}</th>
             </tr>
           </thead>
           <tbody>
@@ -1327,18 +1328,18 @@ function TeamView({ token }: { token: string | null }) {
       </Section>
 
 
-      <Section title="Leaks relativos (jogador vs time)" defaultOpen={false} loading={playerRanges.loading} error={playerRanges.error} empty={relativeLeaks.length === 0} onRetry={playerRanges.reload}>
+      <Section title={t.coach.sectionRelative} defaultOpen={false} loading={playerRanges.loading} error={playerRanges.error} empty={relativeLeaks.length === 0} onRetry={playerRanges.reload}>
         <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60">
-          Onde cada jogador está <span className="text-warm-300">abaixo dos colegas</span> no mesmo range (z-score). Considera jogadores com ≥15 mãos e ranges com ≥3 jogadores. Selecione vários jogadores para comparar.
+          {t.coach.relativeLegendBefore}<span className="text-warm-300">{t.coach.belowPeers}</span>{t.coach.relativeLegendAfter}
         </div>
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-warm-800 text-warm-400 text-xs uppercase">
-              <th className={TH}>Jogador</th>
-              <th className={TH}>Range</th>
-              <th className={THR}>Mãos</th>
-              <th className={THR}>Precisão</th>
-              <th className={THR}>Média time</th>
+              <th className={TH}>{t.coach.colPlayer}</th>
+              <th className={TH}>{t.coach.colRange}</th>
+              <th className={THR}>{t.coach.colHands}</th>
+              <th className={THR}>{t.coach.colAccuracy}</th>
+              <th className={THR}>{t.coach.colTeamAvg}</th>
               <th className={THR}>Δ</th>
               <th className={THR}>z</th>
             </tr>
@@ -1361,12 +1362,12 @@ function TeamView({ token }: { token: string | null }) {
 
       <div style={{ order: -1 }}>
         <h3 className="text-sm font-semibold text-warm-200 mb-2">
-          Matriz do range {selectedRangeName ? <span className="text-brand-400">· {selectedRangeName}</span> : ''}
-          {filters.playerIds.length > 0 && <span className="text-warm-500 text-xs font-normal"> · {filters.playerIds.length} jogador(es)</span>}
+          {t.coach.matrixTitle} {selectedRangeName ? <span className="text-brand-400">· {selectedRangeName}</span> : ''}
+          {filters.playerIds.length > 0 && <span className="text-warm-500 text-xs font-normal">{t.coach.playersSuffix(filters.playerIds.length)}</span>}
         </h3>
         {filters.rangeId !== null && selectedStackGrids.length > 1 && (
           <div className="flex flex-wrap items-center gap-1.5 mb-3">
-            <span className="text-xs text-warm-500 mr-1">Stack efetivo:</span>
+            <span className="text-xs text-warm-500 mr-1">{t.coach.effectiveStack}</span>
             <button
               onClick={() => setStackIdx(null)}
               className={[
@@ -1374,7 +1375,7 @@ function TeamView({ token }: { token: string | null }) {
                 stackIdx === null ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:text-warm-200',
               ].join(' ')}
             >
-              Todos
+              {t.coach.matrixAll}
             </button>
             {selectedStackGrids.map((sg, i) => (
               <button
@@ -1391,35 +1392,35 @@ function TeamView({ token }: { token: string | null }) {
           </div>
         )}
         {filters.rangeId === null ? (
-          <p className="text-sm text-warm-500">Selecione um range no filtro acima (ou clique numa linha da tabela "Por range") para ver a matriz 13×13.</p>
+          <p className="text-sm text-warm-500">{t.coach.selectRangeForMatrix}</p>
         ) : grid.loading ? (
-          <p className="text-sm text-warm-500">Carregando…</p>
+          <p className="text-sm text-warm-500">{t.coach.loading}</p>
         ) : grid.error ? (
           <p className="text-sm text-red-400">{grid.error}</p>
         ) : grid.cells.length === 0 ? (
-          <p className="text-sm text-warm-500">Sem dados para este range no período/jogador selecionado.</p>
+          <p className="text-sm text-warm-500">{t.coach.noRangeData}</p>
         ) : (
           <div className="space-y-5">
             <div className="flex items-center gap-3 text-[0.7rem] text-warm-400">
-              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded" style={{ background: '#ef4444' }} />Raise</span>
-              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded" style={{ background: '#22c55e' }} />Call</span>
-              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded" style={{ background: '#6b2d0d' }} />All-in</span>
-              <span className="text-warm-600">·  fundo escuro = Fold</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded" style={{ background: '#ef4444' }} />{t.coach.legendRaise}</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded" style={{ background: '#22c55e' }} />{t.coach.legendCall}</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded" style={{ background: '#6b2d0d' }} />{t.coach.legendAllin}</span>
+              <span className="text-warm-600">{t.coach.legendFold}</span>
             </div>
-            <div className="flex items-start gap-6">
+            <div className="flex flex-col xl:flex-row items-start gap-6">
               <div className="flex flex-wrap items-start gap-6 flex-1 min-w-0">
                 <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
-                  <RangeActionGrid title="Range real (gabarito)" subtitle="o que o range manda jogar" grid={realGrid} />
+                  <RangeActionGrid title={t.coach.actionGridRealTitle} subtitle={t.coach.actionGridRealSub} grid={realGrid} />
                   <ComboSummary stats={comboReal} />
                 </div>
                 <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
-                  <RangeActionGrid title="Range jogado (time)" subtitle="frequências do que jogaram de fato" grid={playedGrid} />
+                  <RangeActionGrid title={t.coach.actionGridPlayedTitle} subtitle={t.coach.actionGridPlayedSub} grid={playedGrid} />
                   <ComboSummary stats={comboPlayed} />
                 </div>
               </div>
-              <div className="flex items-start gap-4 shrink-0">
+              <div className="flex flex-wrap xl:flex-nowrap items-start gap-4 xl:shrink-0">
                 <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
-                  <h4 className="text-xs font-semibold text-warm-200 mb-2">Precisão / erros</h4>
+                  <h4 className="text-xs font-semibold text-warm-200 mb-2">{t.coach.accuracyErrors}</h4>
                   <RangeHeatGrid cells={grid.cells} />
                 </div>
                 <TopHandsPanel cells={grid.cells} selected={detailHand} onSelect={h => setDetailHand(h === detailHand ? null : h)} />
@@ -1501,9 +1502,9 @@ function PlayersView({ token }: { token: string | null }) {
   return (
     <div className="flex h-[calc(100vh-160px)] bg-warm-950 text-warm-100 rounded-2xl border border-warm-700/50 overflow-hidden">
       <div className="w-64 border-r border-warm-700/50 overflow-y-auto">
-        <h2 className="px-4 py-3 text-sm font-semibold text-warm-300 border-b border-warm-700/50">Jogadores</h2>
+        <h2 className="px-4 py-3 text-sm font-semibold text-warm-300 border-b border-warm-700/50">{t.coach.players}</h2>
         {users.length === 0 ? (
-          <p className="px-4 py-4 text-sm text-warm-500">Nenhum jogador cadastrado ainda.</p>
+          <p className="px-4 py-4 text-sm text-warm-500">{t.coach.noPlayersYet}</p>
         ) : (
           users.map(u => (
             <button
@@ -1513,7 +1514,7 @@ function PlayersView({ token }: { token: string | null }) {
             >
               <span className="block text-sm font-medium text-warm-100">{u.name || u.username}</span>
               <span className="block text-xs text-warm-500">{u.username}</span>
-              <span className="block text-xs text-warm-400">{u.total_hands} mãos · {accuracyOf(u)}</span>
+              <span className="block text-xs text-warm-400">{t.coach.handsAccSuffix(u.total_hands, accuracyOf(u))}</span>
             </button>
           ))
         )}
@@ -1521,7 +1522,7 @@ function PlayersView({ token }: { token: string | null }) {
 
       <div className="flex-1 p-4 overflow-y-auto">
         {!selectedUser ? (
-          <p className="text-sm text-warm-500">Selecione um jogador.</p>
+          <p className="text-sm text-warm-500">{t.coach.selectPlayer}</p>
         ) : (
           <>
             <div className="flex items-start justify-between gap-3 flex-wrap">
@@ -1534,21 +1535,21 @@ function PlayersView({ token }: { token: string | null }) {
                 disabled={resetting}
                 className="px-3 py-1.5 text-sm rounded-lg border border-warm-600 text-warm-300 hover:bg-warm-800 hover:text-white disabled:opacity-40 transition-colors"
               >
-                {resetting ? 'Resetando…' : 'Resetar senha'}
+                {resetting ? t.coach.resetting : t.coach.resetPassword}
               </button>
             </div>
 
             {resetError && <p className="text-sm text-red-400 mb-3">{resetError}</p>}
             {resetResult && resetResult.userId === selectedUser.id && (
               <div className="mb-4 rounded-xl border border-brand-600/50 bg-warm-800/60 p-3">
-                <p className="text-xs text-warm-400 mb-1.5">Senha temporária — repasse ao jogador. Ele definirá uma nova senha no próximo acesso.</p>
+                <p className="text-xs text-warm-400 mb-1.5">{t.coach.tempPassword}</p>
                 <div className="flex items-center gap-2">
                   <code className="text-lg font-bold tracking-widest text-brand-300 select-all">{resetResult.tempPassword}</code>
                   <button
                     onClick={() => { navigator.clipboard?.writeText(resetResult.tempPassword); setCopied(true) }}
                     className="px-2.5 py-1 text-xs rounded-lg border border-warm-600 text-warm-300 hover:bg-warm-800 transition-colors"
                   >
-                    {copied ? 'Copiado' : 'Copiar'}
+                    {copied ? t.coach.copied : t.coach.copy}
                   </button>
                 </div>
               </div>
@@ -1568,20 +1569,20 @@ function PlayersView({ token }: { token: string | null }) {
 
             {error && <p className="text-sm text-red-400 mb-3">{error}</p>}
             {loading ? (
-              <p className="text-sm text-warm-500">Carregando...</p>
+              <p className="text-sm text-warm-500">{t.coach.loadingDots}</p>
             ) : detail.length === 0 ? (
-              <p className="text-sm text-warm-500">Sem dados.</p>
+              <p className="text-sm text-warm-500">{t.coach.noData}</p>
             ) : activeTab === 'hands' ? (
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-xs text-warm-400 border-b border-warm-700">
-                    <th className="py-2 pr-3">Mão</th>
-                    <th className="py-2 pr-3">Range</th>
-                    <th className="py-2 pr-3">Ação</th>
-                    <th className="py-2 pr-3">Correto</th>
-                    <th className="py-2 pr-3">Acertou</th>
-                    <th className="py-2 pr-3">Severidade</th>
-                    <th className="py-2">Data</th>
+                    <th className="py-2 pr-3">{t.coach.colHand}</th>
+                    <th className="py-2 pr-3">{t.coach.colRange}</th>
+                    <th className="py-2 pr-3">{t.coach.colAction}</th>
+                    <th className="py-2 pr-3">{t.coach.colCorrect}</th>
+                    <th className="py-2 pr-3">{t.coach.colHit}</th>
+                    <th className="py-2 pr-3">{t.coach.colSeverity}</th>
+                    <th className="py-2">{t.coach.colDate}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1591,7 +1592,7 @@ function PlayersView({ token }: { token: string | null }) {
                       <td className="py-2 pr-3 text-warm-300">{row.range_name}</td>
                       <td className="py-2 pr-3">{row.action_taken}</td>
                       <td className="py-2 pr-3">{row.correct_action}</td>
-                      <td className={`py-2 pr-3 ${row.is_correct ? 'text-green-400' : 'text-red-400'}`}>{row.is_correct ? 'Sim' : 'Não'}</td>
+                      <td className={`py-2 pr-3 ${row.is_correct ? 'text-green-400' : 'text-red-400'}`}>{row.is_correct ? t.coach.yes : t.coach.no}</td>
                       <td className="py-2 pr-3 text-warm-400">{row.severity ?? ''}</td>
                       <td className="py-2 text-warm-400">{formatDate(row.created_at ?? 0)}</td>
                     </tr>
@@ -1602,9 +1603,9 @@ function PlayersView({ token }: { token: string | null }) {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-xs text-warm-400 border-b border-warm-700">
-                    <th className="py-2 pr-3">Range</th>
-                    <th className="py-2 pr-3">Mão</th>
-                    <th className="py-2">Consultas</th>
+                    <th className="py-2 pr-3">{t.coach.colRange}</th>
+                    <th className="py-2 pr-3">{t.coach.colHand}</th>
+                    <th className="py-2">{t.coach.colConsults}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1621,13 +1622,13 @@ function PlayersView({ token }: { token: string | null }) {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-xs text-warm-400 border-b border-warm-700">
-                    <th className="py-2 pr-3">Ranges</th>
-                    <th className="py-2 pr-3">Mãos</th>
-                    <th className="py-2 pr-3">Acerto</th>
-                    <th className="py-2 pr-3">Erros</th>
-                    <th className="py-2 pr-3">Consultas</th>
-                    <th className="py-2 pr-3">Duração</th>
-                    <th className="py-2">Data</th>
+                    <th className="py-2 pr-3">{t.coach.colRanges}</th>
+                    <th className="py-2 pr-3">{t.coach.colHands}</th>
+                    <th className="py-2 pr-3">{t.coach.colHit2}</th>
+                    <th className="py-2 pr-3">{t.coach.colErrors}</th>
+                    <th className="py-2 pr-3">{t.coach.colConsults}</th>
+                    <th className="py-2 pr-3">{t.coach.colDuration}</th>
+                    <th className="py-2">{t.coach.colDate}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1660,14 +1661,14 @@ function PublishTeamRanges() {
 
   async function handlePublish() {
     if (publishing) return
-    if (!confirm(`Publicar ${rangeCount} range(s) para o time no D1? Os jogadores recebem essa versão no próximo login.`)) return
+    if (!confirm(t.coach.publishConfirm(rangeCount))) return
     setPublishing(true)
     setMsg(null)
     const res = await publishTeamRanges()
     setPublishing(false)
     setMsg(res.ok
-      ? { ok: true, text: `Publicado: ${res.count} range(s) · versão ${res.version}` }
-      : { ok: false, text: res.error ?? 'Falha ao publicar' })
+      ? { ok: true, text: t.coach.published(res.count, res.version) }
+      : { ok: false, text: res.error ?? t.coach.publishFailed })
   }
 
   return (
@@ -1677,7 +1678,7 @@ function PublishTeamRanges() {
         disabled={publishing}
         className="px-3.5 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-40 text-white text-sm font-semibold transition-colors"
       >
-        {publishing ? 'Publicando…' : 'Publicar ranges para o time (D1)'}
+        {publishing ? t.coach.publishing : t.coach.publishTeamButton}
       </button>
       {msg && <span className={msg.ok ? 'text-xs text-emerald-400' : 'text-xs text-red-400'}>{msg.text}</span>}
     </div>
@@ -1693,18 +1694,18 @@ export default function CoachPanel() {
       <PublishTeamRanges />
       <div className="flex gap-1 border-b border-warm-700">
         {([
-          { key: 'team', label: 'Visão do time' },
-          { key: 'players', label: 'Por jogador' },
-        ] as const).map(t => (
+          { key: 'team', label: t.coach.tabTeam },
+          { key: 'players', label: t.coach.tabPlayer },
+        ] as const).map(tab => (
           <button
-            key={t.key}
-            onClick={() => setArea(t.key)}
+            key={tab.key}
+            onClick={() => setArea(tab.key)}
             className={[
               'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors',
-              area === t.key ? 'border-brand-500 text-white' : 'border-transparent text-warm-400 hover:text-warm-200',
+              area === tab.key ? 'border-brand-500 text-white' : 'border-transparent text-warm-400 hover:text-warm-200',
             ].join(' ')}
           >
-            {t.label}
+            {tab.label}
           </button>
         ))}
       </div>
