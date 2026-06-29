@@ -5,13 +5,14 @@ import { clsx } from 'clsx'
 import type { Page } from '../../types'
 import { AdminPanel } from '../Admin/AdminPanel'
 import { RangeMark } from '../ui/RangeMark'
+import { LanguageSelect } from './LanguageSelect'
 import { t } from '../../i18n'
 
-const NAV_ITEMS: { id: Page; label: string; icon: React.ElementType }[] = [
-  { id: 'dashboard', label: t.nav.dashboard, icon: LayoutDashboard },
-  { id: 'ranges',    label: t.nav.ranges,    icon: Layers },
-  { id: 'drill',     label: t.nav.drill,     icon: PlayCircle },
-  { id: 'history',   label: t.nav.history,   icon: Clock },
+const NAV_ICONS: { id: Page; icon: React.ElementType }[] = [
+  { id: 'dashboard', icon: LayoutDashboard },
+  { id: 'ranges',    icon: Layers },
+  { id: 'drill',     icon: PlayCircle },
+  { id: 'history',   icon: Clock },
 ]
 
 export function TopNav() {
@@ -23,6 +24,11 @@ export function TopNav() {
 
   const currentUser    = useStore(s => s.currentUser)
   const authLogout     = useStore(s => s.authLogout)
+
+  const NAV_LABELS: Partial<Record<Page, string>> = {
+    dashboard: t.nav.dashboard, ranges: t.nav.ranges, drill: t.nav.drill, history: t.nav.history,
+  }
+  const NAV_ITEMS = NAV_ICONS.map(n => ({ ...n, label: NAV_LABELS[n.id] ?? n.id }))
 
   const [adminOpen, setAdminOpen]     = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
@@ -109,6 +115,7 @@ export function TopNav() {
 
         {/* Util buttons */}
         <div className="flex items-center gap-1">
+          <LanguageSelect />
           <button
             onClick={toggleDarkMode}
             className="w-9 h-9 flex items-center justify-center rounded-full text-warm-400 hover:bg-warm-800 hover:text-warm-100 transition-colors"

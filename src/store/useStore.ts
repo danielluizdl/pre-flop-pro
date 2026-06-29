@@ -16,7 +16,7 @@ import { addBreadcrumb, captureMessage, captureError } from '../utils/sentry'
 import { enqueue, flush } from '../utils/eventQueue'
 import { decodeRanges, encodeRanges } from '../utils/sparseGrid'
 import { DEFAULT_RANGES } from '../data/defaultRanges'
-import { t } from '../i18n'
+import { t, setLangDict, type Lang } from '../i18n'
 import adminRangesRaw from '../data/adminRanges.json'
 
 const RANGES_KEY        = 'fbr-ranges-v1'
@@ -132,9 +132,11 @@ interface AppState {
   // ── Navigation ──────────────────────────────────────────────────────────────
   page: Page
   darkMode: boolean
+  lang: Lang
   activeCategory: string | null
   setPage: (p: Page) => void
   toggleDarkMode: () => void
+  setLang: (lang: Lang) => void
   setActiveCategory: (key: string | null) => void
 
   // ── Persistent data ─────────────────────────────────────────────────────────
@@ -279,9 +281,11 @@ export const useStore = create<AppState>()(
       // ── Navigation ────────────────────────────────────────────────────────────
       page: 'dashboard',
       darkMode: false,
+      lang: 'pt',
       activeCategory: null,
       setPage: (page) => { addBreadcrumb('nav', `page → ${page}`); set({ page }) },
       toggleDarkMode: () => set(s => ({ darkMode: !s.darkMode })),
+      setLang: (lang) => { setLangDict(lang); addBreadcrumb('nav', `lang → ${lang}`); set({ lang }) },
       setActiveCategory: (activeCategory) => set({ activeCategory }),
 
       // ── Persistent data ───────────────────────────────────────────────────────
@@ -1399,7 +1403,8 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'fbr-ui-state',
-      partialize: (state) => ({ darkMode: state.darkMode }),
+      partialize: (state) => ({ darkMode: state.darkMode, lang: state.lang }),
+      onRehydrateStorage: () => (state) => { if (state) setLangDict(state.lang) },
     }
   )
 )

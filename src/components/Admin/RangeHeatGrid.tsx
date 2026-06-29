@@ -17,12 +17,13 @@ export interface GridCell {
 
 type Metric = 'accuracy' | 'graves' | 'consults' | 'volume'
 
-const METRICS: { key: Metric; label: string }[] = [
-  { key: 'accuracy', label: t.coach.metricAccuracy },
-  { key: 'graves', label: t.coach.metricBlunders },
-  { key: 'consults', label: t.coach.metricConsults },
-  { key: 'volume', label: t.coach.metricVolume },
-]
+const METRIC_KEYS: Metric[] = ['accuracy', 'graves', 'consults', 'volume']
+function metricLabel(m: Metric): string {
+  return m === 'accuracy' ? t.coach.metricAccuracy
+    : m === 'graves' ? t.coach.metricBlunders
+    : m === 'consults' ? t.coach.metricConsults
+    : t.coach.metricVolume
+}
 
 function accColor(acc: number): string {
   if (acc >= 80) return 'rgba(34,197,94,0.6)'
@@ -95,16 +96,16 @@ export function RangeHeatGrid({ cells }: { cells: GridCell[] }) {
   return (
     <div className="relative">
       <div className="flex gap-1 mb-3">
-        {METRICS.map(m => (
+        {METRIC_KEYS.map(m => (
           <button
-            key={m.key}
-            onClick={() => setMetric(m.key)}
+            key={m}
+            onClick={() => setMetric(m)}
             className={[
               'px-3 py-1 rounded-full text-xs font-semibold border transition-colors',
-              metric === m.key ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:text-warm-200',
+              metric === m ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:text-warm-200',
             ].join(' ')}
           >
-            {m.label}
+            {metricLabel(m)}
           </button>
         ))}
       </div>
