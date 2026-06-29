@@ -32,9 +32,18 @@
 - tsconfig: `noUnusedLocals`/`noUnusedParameters` = true (código já passava com 0 erros; agora barra código morto futuro).
 - Cobertura de store: `src/store/editorActions.test.ts` (toggleEditorPosition single-select + apostas do updateRole).
 
+### Continuação (mesma sessão — Daniel validou o preview e mandou "continue com o resto")
+- **Mesa de poker responsiva (FEITO):** `ResizeObserver` no DrillActive mede o wrapper e aplica `transform: scale`
+  proporcional abaixo de 529px (largura de projeto), com `transformOrigin: top center` e altura ajustada
+  (`TABLE_DESIGN_H * scale`) p/ não deixar gap. Desktop (>=529px) → scale 1 (intacto). Stub de `ResizeObserver`
+  no `src/test/setup.ts`. Padding da mesa virou `px-8 sm:px-10`.
+- **i18n +2 áreas:** `Dashboard` (t.dashboard) e `RangeSetupPage` (t.rangeSetup).
+
 ### PRÓXIMA FATIA
-Continuar i18n incremental (próximas áreas acima) e a responsividade da mesa de poker (após Daniel validar a abordagem no preview).
-Se ele revisar/mergear a PR #22, seguir o backlog. Sem nova decisão, manter cobertura incremental segura.
+Continuar i18n incremental nas áreas restantes (SituationsPage, TrainerPage/drill, StatsPage, CoachPanel, editores) —
+mesmo padrão: `import { t } from '../../i18n'`, casar EXATAMENTE o texto atual (conferir testes `getByText`/`getByRole name`),
+strings com markup → dividir em before/after + `t.common.appName`. PR #22 aberta p/ revisão do Daniel.
+Sem nova decisão, manter cobertura incremental segura.
 
 ---
 
