@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react'
 import { RANKS } from '../../utils/hands'
 import { useStore } from '../../store/useStore'
 import { countRender } from '../../test/renderCount'
+import { t } from '../../i18n'
 import type { HandData } from '../../types'
 
 const C = { allin: '#6b2d0d', raise: '#ef4444', call: '#22c55e' }
@@ -204,7 +205,7 @@ export function HandMatrix({ readOnly = false, grid: externalGrid, heatmap, cust
       {showWarning && (
         <div className="absolute -top-9 left-0 right-0 flex justify-center z-20 pointer-events-none">
           <div className="bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
-            ⚠ Soma das frequências ultrapassa 100%
+            {t.matrix.warning}
           </div>
         </div>
       )}
@@ -223,7 +224,7 @@ export function HandMatrix({ readOnly = false, grid: externalGrid, heatmap, cust
                   : 'bg-warm-800 border-warm-600 text-warm-400 hover:text-warm-200',
               ].join(' ')}
             >
-              {mode === 'actions' ? 'Ações' : 'Erro / Acerto'}
+              {mode === 'actions' ? t.matrix.actionsMode : t.matrix.errorMode}
             </button>
           ))}
         </div>
@@ -233,7 +234,7 @@ export function HandMatrix({ readOnly = false, grid: externalGrid, heatmap, cust
         const perf = heatmap[hoveredHand]
         const text = perf && perf.t > 0
           ? `${perf.c}/${perf.t}  ${Math.round((perf.c / perf.t) * 100)}%`
-          : 'Não treinado'
+          : t.matrix.notTrained
         return (
           <div
             className="fixed z-50 pointer-events-none px-2 py-1 rounded bg-warm-900 border border-warm-600 text-xs text-white shadow-lg whitespace-nowrap"

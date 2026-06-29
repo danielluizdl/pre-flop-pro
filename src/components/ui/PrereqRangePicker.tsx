@@ -2,6 +2,7 @@
 import { X, Check } from 'lucide-react'
 import { countNonFoldHands } from '../../utils/hands'
 import { useModalA11y } from '../../utils/useModalA11y'
+import { t } from '../../i18n'
 import type { Range } from '../../types'
 
 const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'UTG']
@@ -64,8 +65,8 @@ export function PrereqRangePicker({ ranges, excludeId, filterPositions, currentP
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-warm-700 flex-shrink-0">
-          <h2 id="prereq-picker-title" className="text-sm font-bold text-white">Selecionar Range Pré-requisito</h2>
-          <button onClick={onClose} aria-label="Fechar" className="text-warm-400 hover:text-white transition-colors">
+          <h2 id="prereq-picker-title" className="text-sm font-bold text-white">{t.prereqPicker.title}</h2>
+          <button onClick={onClose} aria-label={t.common.close} className="text-warm-400 hover:text-white transition-colors">
             <X size={16} />
           </button>
         </div>
@@ -82,7 +83,7 @@ export function PrereqRangePicker({ ranges, excludeId, filterPositions, currentP
                 : 'bg-warm-800 border-warm-700 text-warm-400 hover:border-warm-500 hover:text-white',
             ].join(' ')}
           >
-            <span>— sem pré-requisito —</span>
+            <span>{t.editor.noPrereq}</span>
             {currentPrereqId === undefined && <Check size={14} className="text-brand-400" />}
           </button>
 
@@ -98,7 +99,7 @@ export function PrereqRangePicker({ ranges, excludeId, filterPositions, currentP
                 >
                   <div className="flex items-center gap-2">
                     <span className="font-extrabold text-white text-sm w-10 text-left">{pos}</span>
-                    <span className="text-warm-400 text-xs">{group.length} range{group.length !== 1 ? 's' : ''}</span>
+                    <span className="text-warm-400 text-xs">{t.ranges.rangeCount(group.length)}</span>
                   </div>
                   <span className={`text-warm-400 text-lg transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>›</span>
                 </button>
@@ -120,7 +121,7 @@ export function PrereqRangePicker({ ranges, excludeId, filterPositions, currentP
                         >
                           <div>
                             <p className="text-sm font-semibold text-white leading-tight">{r.name}</p>
-                            <p className="text-xs text-warm-500 mt-0.5">{countNonFoldHands(r.grid)} mãos</p>
+                            <p className="text-xs text-warm-500 mt-0.5">{countNonFoldHands(r.grid)} {t.common.hands}</p>
                           </div>
                           {selected && <Check size={14} className="text-brand-400 flex-shrink-0" />}
                         </button>

@@ -3,13 +3,14 @@ import { LayoutDashboard, Layers, Edit3, PlayCircle, Clock, Moon, Sun, LogOut, M
 import { clsx } from 'clsx'
 import type { Page } from '../../types'
 import { AdminPanel } from '../Admin/AdminPanel'
+import { t } from '../../i18n'
 
 const NAV_ITEMS: { id: Page; label: string; icon: React.ElementType }[] = [
-  { id: 'dashboard',   label: 'Dashboard',    icon: LayoutDashboard },
-  { id: 'ranges',      label: 'Meus Ranges',  icon: Layers },
-  { id: 'range-setup', label: 'Criar Range',  icon: Edit3 },
-  { id: 'drill',       label: 'Drill',        icon: PlayCircle },
-  { id: 'history',     label: 'Histórico',    icon: Clock },
+  { id: 'dashboard',   label: t.nav.dashboard,   icon: LayoutDashboard },
+  { id: 'ranges',      label: t.nav.ranges,      icon: Layers },
+  { id: 'range-setup', label: t.nav.createRange, icon: Edit3 },
+  { id: 'drill',       label: t.nav.drill,       icon: PlayCircle },
+  { id: 'history',     label: t.nav.history,     icon: Clock },
 ]
 
 interface Props {
@@ -46,7 +47,7 @@ export function Sidebar({ collapsed, onToggle }: Props) {
         <button
           onClick={onToggle}
           className="p-1.5 rounded-lg text-warm-400 hover:text-white hover:bg-warm-800 transition-colors flex-shrink-0"
-          title={collapsed ? 'Expandir sidebar' : 'Recolher sidebar'}
+          title={collapsed ? t.nav.expandSidebar : t.nav.collapseSidebar}
         >
           <Menu size={18} />
         </button>
@@ -89,10 +90,10 @@ export function Sidebar({ collapsed, onToggle }: Props) {
             'w-full flex items-center gap-3 px-2 py-2.5 rounded-lg text-sm text-warm-400 hover:bg-warm-800 hover:text-white transition-all',
             collapsed && 'justify-center px-0',
           )}
-          title={darkMode ? 'Modo claro' : 'Modo escuro'}
+          title={darkMode ? t.nav.lightMode : t.nav.darkMode}
         >
           {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-          {!collapsed && <span>{darkMode ? 'Modo Claro' : 'Modo Escuro'}</span>}
+          {!collapsed && <span>{darkMode ? t.nav.lightModeLabel : t.nav.darkModeLabel}</span>}
         </button>
 
         {userMode === 'admin' && !collapsed && <AdminPanel />}
@@ -103,7 +104,7 @@ export function Sidebar({ collapsed, onToggle }: Props) {
             className="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg text-sm text-warm-600 hover:bg-warm-800 hover:text-warm-400 transition-all"
           >
             <LogOut size={16} className="flex-shrink-0" />
-            <span>Sair</span>
+            <span>{t.nav.logout}</span>
           </button>
         )}
 
@@ -111,7 +112,7 @@ export function Sidebar({ collapsed, onToggle }: Props) {
           <button
             onClick={logout}
             className="w-full flex items-center justify-center px-0 py-2.5 rounded-lg text-sm text-warm-600 hover:bg-warm-800 hover:text-warm-400 transition-all"
-            title="Sair"
+            title={t.nav.logout}
           >
             <LogOut size={16} />
           </button>
