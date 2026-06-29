@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { Skeleton } from '../ui/Skeleton'
+import { captureError } from '../../utils/sentry'
 import type { DeviceSession } from '../../types'
 
 interface Overview {
@@ -167,8 +168,9 @@ export function MyAccountStats() {
         setHandRows(h.rows ?? [])
         setLoading(false)
       })
-      .catch(() => {
+      .catch(e => {
         if (cancelled) return
+        captureError(e, { area: 'me-stats' })
         setError('Não foi possível carregar os dados da nuvem.')
         setLoading(false)
       })

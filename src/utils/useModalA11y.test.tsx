@@ -13,6 +13,11 @@ function Modal({ open = true, onClose }: { open?: boolean; onClose?: () => void 
   )
 }
 
+function EmptyModal() {
+  const ref = useModalA11y<HTMLDivElement>(true)
+  return <div ref={ref} role="dialog" aria-label="vazio">sem foco</div>
+}
+
 describe('useModalA11y', () => {
   it('move o foco inicial para o primeiro elemento focável', () => {
     render(<Modal onClose={() => {}} />)
@@ -47,5 +52,18 @@ describe('useModalA11y', () => {
     first.focus()
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Tab', shiftKey: true })
     expect(screen.getByRole('button', { name: 'último' })).toHaveFocus()
+  })
+
+  it('Tab no elemento do meio não prende o foco (deixa o fluxo seguir)', () => {
+    render(<Modal onClose={() => {}} />)
+    const meio = screen.getByRole('button', { name: 'meio' })
+    meio.focus()
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Tab' })
+    expect(meio).toHaveFocus()
+  })
+
+  it('modal sem elementos focáveis ignora o Tab sem lançar', () => {
+    render(<EmptyModal />)
+    expect(() => fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Tab' })).not.toThrow()
   })
 })

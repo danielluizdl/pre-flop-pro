@@ -1,43 +1,55 @@
-# EPIC ATIVO — Robustez de estados de UX (loading / empty / error)
+# EPIC ATIVO — Observabilidade de erros no front (Sentry já plugado)
 
-> Epics anteriores CONCLUÍDOS: testes+a11y (PR #5, #10 mergeados; issues #2/#4 fechadas) e
-> **performance de render** (#11, PR #12 — FASE 1–5 entregues). Histórico no `.agent/handoff.md`.
+> Epics anteriores CONCLUÍDOS e mergeados em `feature/auth-telemetry`: testes+a11y (#5/#10),
+> performance de render (#11) e robustez de estados de UX (#13) — tudo na PR #12 (merge `36f0b03`).
+> Histórico no `.agent/handoff.md`. Issue do epic: **#15** (label `agente`).
 
-Objetivo: toda superfície assíncrona ou potencialmente vazia tem estados de **loading**,
-**vazio** e **erro** consistentes e claros — sem telas brancas/quebradas. Valor para o cutover
-de produção. Issue do epic: **#13** (label `agente`). UMA FATIA SUBSTANCIAL por execução.
+Objetivo: capturar os erros "silenciosos" do front (catches que só setam estado) e dar contexto
+(breadcrumbs), sem tocar backend. Sentry já tem init condicional (`VITE_SENTRY_DSN`), `captureError`
+e scrub de PII no `beforeSend`. UMA FATIA SUBSTANCIAL por execução.
 
-## Regras / padrões
-- Sem regressão visual no caminho feliz. Cada estado novo coberto por teste (RTL + `fetch` mockado) + axe.
-- `npm test` + `npm run build` verdes por fatia. NÃO tocar auth/functions/api/worker/D1/seed.
-- Mensagens em PT-BR, sem emojis. Erro de rede → mensagem amigável + ação (tentar de novo) quando fizer sentido.
+## Princípios (invioláveis)
+- `captureError`/`addBreadcrumb`/`captureMessage` são **no-op sem `VITE_SENTRY_DSN`** (caso dos testes).
+- Não spammar: capturar erro real (rede/lógica), NÃO validação esperada do usuário.
+- Sem PII nova: redigir strings (e-mail/token) e dropar Authorization/Cookie (helpers já existem).
+- Caminho feliz intacto. Cada fatia com teste dos helpers (no-op sem DSN, scrub) — sem rede.
+- NÃO tocar auth/`functions/api`/worker/D1/seed.
 
 ## Backlog (pegue a próxima fatia do topo)
-### FASE 1 — Auditoria
-- [x] Superfícies async mapeadas (handoff): store (ações `{ok}`), eventQueue (retry próprio),
-      CoachPanel (loading/empty/error por seção), MyAccountStats (tinha gaps → corrigidos). (26/06)
+### FASE 1 — Helpers de observabilidade
+- [x] `sentry.ts`: `addBreadcrumb` e `captureMessage` (no-op sem DSN, redação de PII); `captureError`
+      passa a dar scrub no `extra`. Testes (no-op sem DSN, redação, níveis). (27/06)
 
-### FASE 2 — Erros de rede sem tela quebrada
-- [x] MyAccountStats: erro → mensagem + "Tentar novamente"; DevicesSection distingue falha de vazio. (26/06)
-- [x] CoachPanel: hooks expõem `reload()`; `Section` mostra "Tentar novamente" no erro (7 seções). (26/06)
+### FASE 2 — Capturar erros silenciosos de rede / render
+- [x] `ErrorBoundary`: `captureError` agora inclui `variant` (page/section) p/ distinguir crash de
+      app inteiro vs área isolada. Testes mockam `sentry` e checam o `variant`. (27/06)
+- [x] `CoachPanel` reset de senha (coach): catch de rede ganha `captureError(e,{area:'admin-reset-password'})`. (27/06)
+- [x] `MyAccountStats` + hooks do CoachPanel (`useAnalytics`/`useRangeGrid`/`useTrend`/`useSegments`/
+      `usePlayerRanges`) + `publishTeamRanges`: `captureError(e, { area, view })` no catch. (27/06)
+- [x] demais catches silenciosos do store: `authLogin`/`authSignup`/`changePassword`/`restoreSession`/
+      `syncTeamRanges`/`listDevices`/`revokeDevice`/`revokeOtherDevices`/`adminSaveRanges` ganham
+      `captureError(e, { area })` sem mudar o retorno. (Sem PII; no-op sem DSN.) (27/06)
 
-### FASE 5 — Isolamento de falhas
-- [x] `ErrorBoundary` ganhou `variant="section"` + `resetKey`; AppLayout isola a área de página
-      (`resetKey={page}`) — crash de página não derruba a navegação. (26/06)
+### FASE 3 — Breadcrumbs de ações-chave
+- [x] nav (`setPage`), drill start, login ok (role), logout, publish de team ranges. (27/06)
+- [x] ações de dados: `finalizeRange` (criar/editar), `deleteRange`, `exportData`, `resetLocalData`.
+      Teste novo `src/store/breadcrumbs.test.ts` (mocka `sentry`, cobre nav + as 4 novas). (27/06)
 
-### FASE 3 — Estados vazios consistentes
-- [x] Todos os `alert()` do drill viram mensagens amigáveis: seleção/filtro → inline `role="alert"`;
-      esgotar as mãos no drill → abre o DrillSummary (em vez de alert+stop). (26/06)
+### FASE 4 — Sinais de estado degradado
+- [x] `captureMessage('warning')`: cota de localStorage (`storageBlocked`) e `validateRanges` no load. (27/06)
+- [x] `eventQueue`: telemetria degradada reporta UMA vez por sessão (flags deduplicadoras) —
+      fila cheia (cap 500, descarte de antigos) e falha de gravação por cota. Testes mockam `sentry`. (27/06)
 
-### FASE 4 — Loading consistente
-- [x] Componente `Skeleton` (pulse, respeita reduced-motion). MyAccountStats (cards-skeleton espelhando o
-      layout → sem salto) e seções do CoachPanel (barras). Containers `role="status"`+`aria-busy`. (26/06)
+### FASE 5 — Documentação
+- [x] Seção de observabilidade no CLAUDE.md (API, privacidade, o que é/não é capturado). (27/06)
 
-## EPIC #13 CONCLUÍDO (26/06/2026)
-FASE 1–5 entregues: auditoria, erros de rede com retry (MyAccountStats + 7 seções do coach), avisos
-inline no lugar de alert(), skeletons sem layout shift, e ErrorBoundary por área (crash de página não
-derruba a navegação). 384 testes verdes. **Próximo epic a propor em issue `agente`.**
+## EPIC #15 — CONCLUÍDO (27/06, run das 5h)
+Todas as fases + continuações entregues: helpers (FASE 1), todos os catches silenciosos de rede do front
+capturam erro (FASE 2: store completo, ErrorBoundary com `variant`, reset de senha do coach), breadcrumbs
+de nav/drill/auth/publish + ações de dados (FASE 3), sinais de estado degradado em storage/validateRanges/
+eventQueue (FASE 4) e doc no CLAUDE.md (FASE 5). **402 testes verdes.** PR #16 atualizada.
+**Próximo epic à espera de decisão do Daniel: issue #17.**
 
 ## Definição de pronto por fatia
-- Estado novo coberto por teste + axe; caminho feliz intacto; `npm test`/`npm run build` verdes;
+- Helpers no-op sem DSN; sem PII nova; caminho feliz intacto; `npm test`/`npm run build` verdes;
   commit PT-BR por área; PR do dia + handoff atualizados.

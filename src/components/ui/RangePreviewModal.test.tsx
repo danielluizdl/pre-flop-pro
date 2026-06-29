@@ -21,7 +21,7 @@ describe('RangePreviewModal', () => {
   it('chama onClose ao clicar no botão de fechar', () => {
     const onClose = vi.fn()
     render(<RangePreviewModal range={RANGE} onClose={onClose} />)
-    fireEvent.click(screen.getByRole('button', { name: '✕' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar' }))
     expect(onClose).toHaveBeenCalled()
   })
 

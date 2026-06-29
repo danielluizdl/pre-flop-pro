@@ -1,5 +1,142 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-06-29 (cobertura incremental + a11y polish — ainda aguardando decisão da issue #17)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- **Issue #17 (próximo epic) SEM resposta do Daniel** (sem comentários). Sem decisão, esta run seguiu o protocolo
+  do handoff: **cobertura incremental segura + pequenos polimentos de a11y/UX** (Opção 3), nada de backend, nada de novo epic.
+- **PR #16** (auto/daily-improvements → feature/auth-telemetry) atualizada com a seção de hoje no topo. NÃO mergeada (gate humano).
+- **462 testes verdes (58 arquivos)**, build verde. Branch `auto/daily-improvements` pushada. `main`/produção intactos.
+
+### Feito nesta run (9 fatias, cada uma commit+push+verde)
+1. **feat(coach):** `RangeSelect` rola a opção ativa para a vista ao navegar por setas (`scrollIntoView`); stub de
+   `scrollIntoView` em `src/test/setup.ts` (jsdom não implementa — sem ele jsdom loga "Not implemented").
+2. **test(drill):** navegação "← Anterior"/"← Mão atual" do `DrillActive`. Padrão: stub `nextDrillHand` via setState
+   que retorna `true` (e seta novo `activeHand`) para habilitar o snapshot anterior.
+3. **test(coach):** erro de rede + "Tentar novamente" da seção "Por range" (flag `failByRange` no mock de fetch que vira `false` no retry).
+4. **test(matrix):** `HandMatrix` — clearHand em célula preenchida, aviso brush >100% (não aplica), tooltip de precisão
+   no modo Erro/Acerto (treinado e "Não treinado"), troca de modo.
+5. **a11y:** `aria-label="Fechar"` nos 4 botões ✕ de modais (RangePreviewModal/AdminPanel/SituationsPage heatmap/Ver Range do drill).
+   **GOTCHA:** o teste do RangePreviewModal usava `getByRole('button',{name:'✕'})` → trocar para `name:'Fechar'`.
+6. **a11y:** `aria-pressed` nos toggles Ações/Erro-Acerto da HandMatrix e no "2s" do drill (+ `aria-label` "Avanço automático em 2 segundos").
+   **GOTCHA:** ao dar `aria-label` no "2s", os testes que o buscavam por `name:'2s'` quebram → usar o novo nome.
+7. **test(stats):** tooltip de hover do `AccuracySparkline` (mouseEnter mostra %, mouseLeave esconde).
+8. **test(coach):** busca por nome no `MultiPlayerSelect` (digitar restringe a lista; mock de `/admin/users`).
+9. **test(topnav):** navegação (setPage), toggle de tema, menu de perfil + logout, "Painel Coach" só para coach.
+   **GOTCHA:** `CurrentUser` usa `firstLogin: boolean` (NÃO `first_login`); shape errado passa no vitest mas quebra o `tsc` do build.
+
+### Notas técnicas úteis
+- `useStore.setState({ acao: vi.fn() })` substitui ações no store p/ asserir chamadas (não há reset entre testes do mesmo arquivo — independência por ordem).
+- Para tooltips/hover SVG: `fireEvent.mouseEnter(circle)` + asserir texto; `mouseLeave` some.
+- Maiores gaps restantes (baixo ROI): `useStore`/`TrainerPage`/`StatsPage` ramos muito ligados a DOM/localStorage; `CoachPanel` ramos por seção (cada seção tem error/empty/loading via `Section`).
+
+### PRÓXIMA FATIA
+**Aguardar decisão do Daniel na issue #17.** Se escolher antes do run, começar o epic escolhido (Opção 1 responsividade =
+mudanças aditivas `sm:`/`md:` + teste de render por fatia, validar no preview Cloudflare). Sem decisão, seguir cobertura
+incremental: alvos sugeridos = `SessionDetailView` (acordeão por range + heatmap dentro do detalhe) e ramos de error/empty
+das seções restantes do `CoachPanel` (Segmentos/Lacunas/Leaks/Evolução).
+
+---
+
+## 2026-06-28 (cobertura incremental + type-safety — aguardando decisão da issue #17)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- **Epic #15 (observabilidade) já estava FECHADO.** Daniel ainda NÃO escolheu o próximo epic na **issue #17**
+  (opções: 1=responsividade/mobile [recomendado], 2=i18n, 3=qualidade de código). Sem decisão, esta run fez
+  só **cobertura incremental segura + qualidade de código** (Opção 3), nada de novo epic, nada no backend.
+- **PR #16** (auto/daily-improvements → feature/auth-telemetry) atualizada com as fatias de hoje. NÃO mergeada (gate humano).
+- **449 testes verdes (58 arquivos)**, build verde. Branch `auto/daily-improvements` pushada. `main`/produção intactos.
+
+### Feito nesta run (7 fatias, cada uma commit+push+verde)
+1. **test(hands):** `src/utils/handsHelpers.test.ts` (novo) — grupos de mãos, `weightedPick`, `focusWeight`,
+   `generateSuits`, `getHighestFrequencyAction`, `countNonFoldHands`, `stackRangesOverlap`. (+34)
+2. **refactor(types):** zero `any` no código de produção — `CoachPanel.detail` → `CoachDetailRow` tipada;
+   `Turnstile` tipa `window.turnstile` via global augmentation (remove `window as any`).
+3. **test(stats):** StatsPage — precisão global, fluxo Ver detalhes↔Voltar, gate da aba de nuvem.
+4. **test(combo):** ComboCounter — estado vazio, total ✓ (1326) e ⚠ (soma incompleta).
+5. **test(dashboard):** estado vazio (navega range-setup) + seção secundária >3 ranges.
+6. **test(a11y):** useModalA11y — Tab no meio não prende; modal sem focáveis ignora Tab.
+7. **test(admin):** AdminPanel — bloqueio por validação + "Publicar mesmo assim", status token_expired/erro,
+   descarte de hash legado.
+
+### Notas técnicas úteis
+- Coverage: instalar `@vitest/coverage-v8` (mesma versão do vitest) e rodar
+  `npx vitest run --coverage.enabled --coverage.provider=v8 --coverage.reporter=text` para achar lacunas.
+  NÃO commitar a dep — usar só para análise (foi revertida nesta run).
+- Maiores gaps de cobertura restantes (componentes, em ordem de tamanho): `StatsPage`/`TrainerPage`/`useStore`
+  (muito ligado a DOM/localStorage — baixo ROI), `CoachPanel` (43% branch), `HandMatrix`, `TopNav`.
+- `getByText` único quebra com texto repetido (ex.: "88%" no card global e no SessionCard) — usar `getAllByText`.
+
+### PRÓXIMA FATIA
+**Aguardar decisão do Daniel na issue #17.** Se escolher antes do run, começar o epic escolhido. Sem decisão,
+seguir cobertura incremental segura: próximos alvos sugeridos = comportamento do `CoachPanel` (abas/filtros já
+parcialmente testados; faltam ramos de erro/empty por seção) e do `TrainerPage` (navegação prev/próxima, Ver Range).
+
+---
+
+## 2026-06-27 (run das 5h — EPIC #15 FECHADO; próximo epic à espera de decisão)
+
+### Estado atual (PONTO DE PARTIDA do próximo run)
+- **Epic #15 (observabilidade) COMPLETO** — todas as fases + continuações. **PR #16 ABERTA e atualizada**
+  (auto/daily-improvements → feature/auth-telemetry), NÃO mergeada (gate humano). **402 testes verdes (57 arquivos)**, build verde.
+- Comentei na issue **#15** marcando como completo (fechar quando a PR #16 for revisada).
+- **Próximo epic à espera da escolha do Daniel: issue #17** (3 opções: 1=responsividade/mobile [recomendado],
+  2=i18n, 3=qualidade de código). Enquanto não decide, o agente faz só cobertura incremental segura.
+- Branch `auto/daily-improvements` ✓ pushada; base `feature/auth-telemetry`; `main`/produção intactos.
+
+### Feito nesta run (6 fatias, cada uma commit+push+verde)
+1. **FASE 2 (resto):** `captureError(e,{area})` nos demais catches silenciosos do `useStore.ts`
+   (`authLogin`/`authSignup`/`changePassword`/`restoreSession`/`syncTeamRanges`/`listDevices`/`revokeDevice`/
+   `revokeOtherDevices`/`adminSaveRanges`) — sem mudar o retorno.
+2. **FASE 4 (extensão):** `eventQueue` reporta telemetria degradada UMA vez por sessão (flags dedup) —
+   fila cheia (cap 500) e falha de gravação por cota. Testes mockam `./sentry`.
+3. **FASE 3 (extensão):** breadcrumbs nas ações de dados (`finalizeRange`/`deleteRange`/`exportData`/
+   `resetLocalData`) + novo `src/store/breadcrumbs.test.ts` (mocka sentry).
+4. **FASE 2:** `ErrorBoundary.componentDidCatch` passa `variant` (page/section) no `captureError`; teste cobre.
+5. **FASE 2:** reset de senha do `CoachPanel` (coach) reporta `captureError(e,{area:'admin-reset-password'})`.
+6. **Cobertura:** `src/store/networkErrors.test.ts` — authLogin/changePassword/listDevices/publishTeamRanges
+   com fetch rejeitando → `{ok:false}` e `captureError` com a area certa.
+
+### Padrão útil (replicável)
+- Testar observabilidade: `vi.mock('../utils/sentry', () => ({ addBreadcrumb: vi.fn(), captureMessage: vi.fn(), captureError: vi.fn() }))`
+  e asserir as chamadas. Helpers são no-op sem DSN, então o mock é a forma de verificar o payload.
+- jsdom: para forçar erro de `localStorage.setItem`, use `vi.spyOn(Storage.prototype, 'setItem')` (atribuição direta não pega).
+
+### PRÓXIMA FATIA
+Aguardar decisão do Daniel na **issue #17**. Se ele escolher antes do run: começar a opção escolhida
+(responsividade = mudanças aditivas `sm:`/`md:` + teste de render por fatia; validar no preview Cloudflare).
+Sem decisão: cobertura incremental de testes/a11y sem abrir epic novo.
+
+---
+
+## 2026-06-27 (epics #11 e #13 MERGEADOS; epic #15 observabilidade — núcleo feito)
+
+### Estado atual (PONTO DE PARTIDA do próximo run)
+- **PR #12 MERGEADA** em `feature/auth-telemetry` (merge `36f0b03`) entregando os epics **#11 (perf)** e
+  **#13 (robustez de UX)**. Issues #11 e #13 **fechadas**. #14 fechada (decisão: seguir observabilidade).
+- **Epic ATIVO: #15 — observabilidade de erros no front** (`.agent/epic.md`). **PR #16 ABERTA**
+  (auto/daily-improvements → feature/auth-telemetry), NÃO mergeada. **390 testes verdes (55 arquivos)**, build verde.
+- Branch de trabalho `auto/daily-improvements` rebaseada no `feature/auth-telemetry` pós-merge.
+
+### Feito hoje no #15 (FASE 1,2,3,4,5 — núcleo completo)
+- **FASE 1**: `sentry.ts` ganhou `addBreadcrumb`/`captureMessage` (no-op sem DSN, redação de PII);
+  `captureError` dá scrub no `extra`. Testes em `sentry.test.ts`.
+- **FASE 2**: `captureError(e,{area,view})` nos catches silenciosos de `MyAccountStats` e dos 5 hooks do
+  CoachPanel + `publishTeamRanges`.
+- **FASE 3**: breadcrumbs em nav/drill-start/login/logout/publish (no store).
+- **FASE 4**: `captureMessage('warning')` em `storageBlocked` e `validateRanges` no load.
+- **FASE 5**: seção de observabilidade no CLAUDE.md.
+
+### PRÓXIMA FATIA (continuar de onde parei — segura, no-DSN no-op, sem PII)
+**FASE 2 (resto):** adicionar `captureError(e,{area})` nos demais catches silenciosos do `src/store/useStore.ts`
+que hoje só fazem `catch { return {ok:false} }`: `authLogin`, `authSignup`, `changePassword`,
+`restoreSession`, `syncTeamRanges`, `listDevices`, `revokeDevice`, `revokeOtherDevices`, `adminSaveRanges`.
+Não mudar o retorno; `import { captureError }` já existe no store. Depois: atualizar PR #16 + handoff.
+Quando o #15 fechar de vez, propor próximo epic (responsividade #1 ou i18n #2 da issue #14 — ambos pedem
+decisão do Daniel; responsividade precisa de validação no preview).
+
+---
+
 ## 2026-06-26 (continuação 3 — epic #11 FECHADO + início do epic #13 robustez de UX)
 
 Epic **#11 (performance de render) essencialmente concluído** (FASE 1–5; PR #12 atualizada). Aberto o

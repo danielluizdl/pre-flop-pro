@@ -81,6 +81,63 @@ describe('CoachPanel', () => {
     expect(screen.getByText('BTN RFI')).toBeInTheDocument()
   })
 
+  it('o filtro de jogadores busca por nome no dropdown', async () => {
+    vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      const data = url.includes('/admin/users')
+        ? { users: [
+            { id: 1, username: 'alice', name: 'Alice', email: '', created_at: 0, total_hands: 0, correct_hands: 0 },
+            { id: 2, username: 'bob', name: 'Bob', email: '', created_at: 0, total_hands: 0, correct_hands: 0 },
+          ] }
+        : { rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(data) } as unknown as Response)
+    })
+    useStore.setState({ authToken: 'tok' })
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Filtrar jogadores' }))
+    expect(await screen.findByText('Alice')).toBeInTheDocument()
+    expect(screen.getByText('Bob')).toBeInTheDocument()
+    fireEvent.change(screen.getByRole('textbox', { name: 'Buscar jogador' }), { target: { value: 'ali' } })
+    expect(screen.getByText('Alice')).toBeInTheDocument()
+    expect(screen.queryByText('Bob')).not.toBeInTheDocument()
+  })
+
+  it('seção "Por range" mostra erro e "Tentar novamente" recarrega', async () => {
+    let failByRange = true
+    vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/admin/users')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ users: [] }) } as unknown as Response)
+      }
+      if (url.includes('view=by-range') && failByRange) {
+        return Promise.resolve({ ok: false, json: () => Promise.resolve({}) } as unknown as Response)
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }) } as unknown as Response)
+    })
+    useStore.setState({ authToken: 'tok' })
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Por range/ }))
+    expect(await screen.findByText('Erro ao carregar')).toBeInTheDocument()
+    failByRange = false
+    fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }))
+    expect(await screen.findByText('Sem dados.')).toBeInTheDocument()
+  })
+
+  it('navegar por setas rola a opção ativa para dentro da lista', async () => {
+    mockApi()
+    const ranges: Range[] = Array.from({ length: 8 }, (_, i) => ({
+      id: i + 1, name: `BTN RFI ${i + 1}`, positions: ['BTN'], grid: makeEmptyGrid(), scenarios: [], tableSize: 8,
+    }))
+    useStore.setState({ authToken: 'tok', ranges })
+    const spy = vi.spyOn(Element.prototype, 'scrollIntoView')
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Filtrar por range' }))
+    const search = screen.getByRole('combobox', { name: 'Buscar range' })
+    fireEvent.keyDown(search, { key: 'ArrowDown' })
+    fireEvent.keyDown(search, { key: 'ArrowDown' })
+    expect(spy).toHaveBeenCalled()
+  })
+
   it('Esc no campo de busca fecha o filtro de range', async () => {
     mockApi()
     const range: Range = { id: 1, name: 'BTN RFI', positions: ['BTN'], grid: makeEmptyGrid(), scenarios: [], tableSize: 8 }

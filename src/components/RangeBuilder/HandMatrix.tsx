@@ -215,6 +215,7 @@ export function HandMatrix({ readOnly = false, grid: externalGrid, heatmap, cust
             <button
               key={mode}
               onClick={() => setViewMode(mode)}
+              aria-pressed={activeViewMode === mode}
               className={[
                 'px-3 py-1 rounded-full text-xs font-semibold border transition-colors',
                 activeViewMode === mode

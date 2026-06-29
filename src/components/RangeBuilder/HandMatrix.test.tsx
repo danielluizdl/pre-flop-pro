@@ -32,6 +32,50 @@ describe('HandMatrix', () => {
     expect(applyBrush).toHaveBeenCalledWith('AA')
   })
 
+  it('limpa a mão ao clicar numa célula já preenchida', () => {
+    const clearHand = vi.fn()
+    useStore.setState({ clearHand })
+    const grid = makeEmptyGrid()
+    grid['AA'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const { container } = render(<HandMatrix grid={grid} />)
+    fireEvent.mouseDown(container.querySelector('[data-hand="AA"]')!)
+    expect(clearHand).toHaveBeenCalledWith('AA')
+  })
+
+  it('avisa quando a soma das frequências do brush passa de 100%', () => {
+    const applyBrush = vi.fn()
+    useStore.setState({
+      applyBrush,
+      brush: { call: 60, raise: 60, allin: 0, extra: 0, raiseSize: '', extraLabel: '', extraColor: '#d97757' },
+    })
+    const { container } = render(<HandMatrix grid={makeEmptyGrid()} />)
+    fireEvent.mouseDown(container.querySelector('[data-hand="AA"]')!)
+    expect(screen.getByText(/ultrapassa 100%/)).toBeInTheDocument()
+    expect(applyBrush).not.toHaveBeenCalled()
+  })
+
+  it('no modo Erro/Acerto, passar o mouse mostra o tooltip de precisão', () => {
+    const { container } = render(
+      <HandMatrix grid={makeEmptyGrid()} heatmap={{ AA: { c: 3, t: 4 } }} forceViewMode="heatmap" />,
+    )
+    fireEvent.mouseEnter(container.querySelector('[data-hand="AA"]')!)
+    expect(screen.getByText(/3\/4/)).toBeInTheDocument()
+    expect(screen.getByText(/75%/)).toBeInTheDocument()
+    fireEvent.mouseEnter(container.querySelector('[data-hand="KK"]')!)
+    expect(screen.getByText('Não treinado')).toBeInTheDocument()
+  })
+
+  it('alternar para "Ações" troca o modo de visualização (aria-pressed)', () => {
+    render(<HandMatrix grid={makeEmptyGrid()} heatmap={{ AA: { c: 1, t: 1 } }} readOnly />)
+    const acoes = screen.getByRole('button', { name: 'Ações' })
+    const erro = screen.getByRole('button', { name: 'Erro / Acerto' })
+    expect(erro).toHaveAttribute('aria-pressed', 'true')
+    expect(acoes).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(acoes)
+    expect(acoes).toHaveAttribute('aria-pressed', 'true')
+    expect(acoes).toHaveClass('bg-brand-600')
+  })
+
   it('mover o mouse no heatmap não re-renderiza as 169 células (memoização)', () => {
     const { container } = render(<HandMatrix grid={makeEmptyGrid()} heatmap={{ AA: { c: 1, t: 1 } }} forceViewMode="heatmap" />)
     const gridEl = container.querySelector('.grid')!

@@ -26,7 +26,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('[ErrorBoundary]', error, info.componentStack)
-    captureError(error, { componentStack: info.componentStack })
+    captureError(error, { componentStack: info.componentStack, variant: this.props.variant ?? 'page' })
   }
 
   componentDidUpdate(prevProps: Props) {

@@ -2,10 +2,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 const init = vi.fn()
 const captureException = vi.fn()
+const captureMessage = vi.fn()
+const addBreadcrumb = vi.fn()
 
 vi.mock('@sentry/react', () => ({
   init: (...args: unknown[]) => init(...args),
   captureException: (...args: unknown[]) => captureException(...args),
+  captureMessage: (...args: unknown[]) => captureMessage(...args),
+  addBreadcrumb: (...args: unknown[]) => addBreadcrumb(...args),
 }))
 
 async function loadWithDsn(dsn: string | undefined) {
@@ -19,6 +23,8 @@ describe('sentry', () => {
   beforeEach(() => {
     init.mockClear()
     captureException.mockClear()
+    captureMessage.mockClear()
+    addBreadcrumb.mockClear()
   })
 
   afterEach(() => {
@@ -106,6 +112,50 @@ describe('sentry', () => {
       const err = new Error('falha')
       captureError(err, { rangeId: 7 })
       expect(captureException).toHaveBeenCalledWith(err, { extra: { rangeId: 7 } })
+    })
+
+    it('faz scrub de PII no extra', async () => {
+      const { captureError } = await loadWithDsn('https://exemplo@sentry.io/1')
+      captureError(new Error('x'), { email: 'joao@teste.com', token: 'a'.repeat(40) })
+      const extra = captureException.mock.calls[0][1].extra
+      expect(extra.email).toBe('[email]')
+      expect(extra.token).toBe('[redacted]')
+    })
+  })
+
+  describe('captureMessage', () => {
+    it('não envia nada sem DSN', async () => {
+      const { captureMessage: cm } = await loadWithDsn(undefined)
+      cm('estado degradado')
+      expect(captureMessage).not.toHaveBeenCalled()
+    })
+
+    it('envia mensagem redigida com o nível dado', async () => {
+      const { captureMessage: cm } = await loadWithDsn('https://exemplo@sentry.io/1')
+      cm('cota cheia para joao@teste.com', 'warning')
+      expect(captureMessage).toHaveBeenCalledWith('cota cheia para [email]', 'warning')
+    })
+
+    it('usa nível info por padrão', async () => {
+      const { captureMessage: cm } = await loadWithDsn('https://exemplo@sentry.io/1')
+      cm('algo')
+      expect(captureMessage).toHaveBeenCalledWith('algo', 'info')
+    })
+  })
+
+  describe('addBreadcrumb', () => {
+    it('não registra nada sem DSN', async () => {
+      const { addBreadcrumb: ab } = await loadWithDsn(undefined)
+      ab('drill', 'iniciou treino')
+      expect(addBreadcrumb).not.toHaveBeenCalled()
+    })
+
+    it('registra a migalha redigindo mensagem e dados', async () => {
+      const { addBreadcrumb: ab } = await loadWithDsn('https://exemplo@sentry.io/1')
+      ab('auth', 'login de joao@teste.com', { token: 'a'.repeat(40) })
+      const crumb = addBreadcrumb.mock.calls[0][0]
+      expect(crumb).toMatchObject({ category: 'auth', message: 'login de [email]', level: 'info' })
+      expect(crumb.data.token).toBe('[redacted]')
     })
   })
 })

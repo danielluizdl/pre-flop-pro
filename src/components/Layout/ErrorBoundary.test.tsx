@@ -1,7 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { axe } from 'jest-axe'
+import { captureError } from '../../utils/sentry'
 import { ErrorBoundary } from './ErrorBoundary'
+
+vi.mock('../../utils/sentry', () => ({ captureError: vi.fn() }))
 
 function Boom(): never {
   throw new Error('explodiu')
@@ -41,6 +44,28 @@ describe('ErrorBoundary', () => {
     )
     expect(screen.getByText('página nova ok')).toBeInTheDocument()
     expect(screen.queryByText('Esta seção falhou ao carregar')).not.toBeInTheDocument()
+    spy.mockRestore()
+  })
+
+  it('reporta o erro ao Sentry com a variante (page por padrão)', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(captureError).mockClear()
+    render(<ErrorBoundary><Boom /></ErrorBoundary>)
+    expect(captureError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ variant: 'page' }),
+    )
+    spy.mockRestore()
+  })
+
+  it('reporta variant "section" quando a área isolada cai', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(captureError).mockClear()
+    render(<ErrorBoundary variant="section"><Boom /></ErrorBoundary>)
+    expect(captureError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ variant: 'section' }),
+    )
     spy.mockRestore()
   })
 

@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState, useCallback, memo } from 'react'
 import { countRender } from '../../test/renderCount'
 import { Skeleton } from '../ui/Skeleton'
+import { captureError } from '../../utils/sentry'
 import { useStore } from '../../store/useStore'
 import { RangeHeatGrid, type GridCell } from './RangeHeatGrid'
 import { RangeActionGrid, type ActionFreq } from './RangeActionGrid'
@@ -137,6 +138,12 @@ function RangeSelect({ groups, value, onChange }: {
 
   useEffect(() => { if (open) setActiveIndex(0) }, [open, query])
 
+  useEffect(() => {
+    if (!open) return
+    const el = document.getElementById(`range-opt-${activeIndex}`)
+    el?.scrollIntoView?.({ block: 'nearest' })
+  }, [open, activeIndex])
+
   const selected = groups.flatMap(g => g.items).find(r => r.id === value)
   const label = selected ? selected.name : 'Todos os ranges'
 
@@ -238,6 +245,24 @@ interface CoachUser {
 }
 
 type CoachTab = 'hands' | 'consults' | 'sessions'
+
+interface CoachDetailRow {
+  hand?: string
+  range_name?: string
+  range_names?: string
+  action_taken?: string
+  correct_action?: string
+  is_correct?: number | boolean
+  severity?: string
+  created_at?: number
+  count?: number
+  ended_at?: number
+  hands?: number
+  correct?: number
+  errors?: number
+  consults?: number
+  duration_seconds?: number
+}
 
 const TAB_LABELS: Record<CoachTab, string> = { hands: 'Mãos', consults: 'Consultas', sessions: 'Sessões' }
 
@@ -475,8 +500,9 @@ function useAnalytics<T>(view: string, filters: Filters, token: string | null) {
         setTeam(d.team ?? null)
         setLoading(false)
       })
-      .catch(() => {
+      .catch(e => {
         if (cancelled) return
+        captureError(e, { area: 'coach-analytics', view })
         setError('Erro ao carregar')
         setLoading(false)
       })
@@ -504,7 +530,7 @@ function useRangeGrid(rangeId: number | null, days: number | null, from: number 
     fetch(`/api/admin/analytics?${qs.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
       .then(d => { if (!cancelled) { setCells(d.cells ?? []); setLoading(false) } })
-      .catch(() => { if (!cancelled) { setError('Erro ao carregar'); setLoading(false) } })
+      .catch(e => { if (!cancelled) { captureError(e, { area: 'coach-range-grid', view: 'range-grid' }); setError('Erro ao carregar'); setLoading(false) } })
     return () => { cancelled = true }
   }, [token, rangeId, days, from, to, idsKey, stackIdx])
 
@@ -539,7 +565,7 @@ function useTrend(filters: Filters, token: string | null) {
         setUsers(d.users ?? [])
         setLoading(false)
       })
-      .catch(() => { if (!cancelled) { setError('Erro ao carregar'); setLoading(false) } })
+      .catch(e => { if (!cancelled) { captureError(e, { area: 'coach-analytics', view: 'trend' }); setError('Erro ao carregar'); setLoading(false) } })
     return () => { cancelled = true }
   }, [token, idsKey, filters.rangeId, filters.days, filters.from, filters.to, tick])
 
@@ -573,7 +599,7 @@ function useSegments(filters: Filters, token: string | null) {
         setByAction(d.byAction ?? [])
         setLoading(false)
       })
-      .catch(() => { if (!cancelled) { setError('Erro ao carregar'); setLoading(false) } })
+      .catch(e => { if (!cancelled) { captureError(e, { area: 'coach-analytics', view: 'segments' }); setError('Erro ao carregar'); setLoading(false) } })
     return () => { cancelled = true }
   }, [token, idsKey, filters.rangeId, filters.days, filters.from, filters.to, tick])
 
@@ -602,7 +628,7 @@ function usePlayerRanges(filters: Filters, token: string | null) {
     fetch(`/api/admin/analytics?${qs.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
       .then(d => { if (!cancelled) { setRows(d.rows ?? []); setUsers(d.users ?? []); setLoading(false) } })
-      .catch(() => { if (!cancelled) { setError('Erro ao carregar'); setLoading(false) } })
+      .catch(e => { if (!cancelled) { captureError(e, { area: 'coach-analytics', view: 'player-ranges' }); setError('Erro ao carregar'); setLoading(false) } })
     return () => { cancelled = true }
   }, [token, idsKey, filters.rangeId, filters.days, filters.from, filters.to, tick])
 
@@ -1413,7 +1439,7 @@ function PlayersView({ token }: { token: string | null }) {
   const [users, setUsers] = useState<CoachUser[]>([])
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [activeTab, setActiveTab] = useState<CoachTab>('hands')
-  const [detail, setDetail] = useState<any[]>([])
+  const [detail, setDetail] = useState<CoachDetailRow[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [resetting, setResetting] = useState(false)
@@ -1447,7 +1473,8 @@ function PlayersView({ token }: { token: string | null }) {
       const data = await res.json().catch(() => null)
       if (!res.ok || !data?.ok) { setResetError(data?.error ?? `Erro do servidor (${res.status})`); return }
       setResetResult({ userId, tempPassword: data.tempPassword })
-    } catch {
+    } catch (e) {
+      captureError(e, { area: 'admin-reset-password' })
       setResetError('Erro de conexão')
     } finally {
       setResetting(false)
@@ -1566,7 +1593,7 @@ function PlayersView({ token }: { token: string | null }) {
                       <td className="py-2 pr-3">{row.correct_action}</td>
                       <td className={`py-2 pr-3 ${row.is_correct ? 'text-green-400' : 'text-red-400'}`}>{row.is_correct ? 'Sim' : 'Não'}</td>
                       <td className="py-2 pr-3 text-warm-400">{row.severity ?? ''}</td>
-                      <td className="py-2 text-warm-400">{formatDate(row.created_at)}</td>
+                      <td className="py-2 text-warm-400">{formatDate(row.created_at ?? 0)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1606,13 +1633,13 @@ function PlayersView({ token }: { token: string | null }) {
                 <tbody>
                   {detail.map((row, i) => (
                     <tr key={i} className="border-b border-warm-800">
-                      <td className="py-2 pr-3 text-warm-300">{parseRangeNames(row.range_names)}</td>
+                      <td className="py-2 pr-3 text-warm-300">{parseRangeNames(row.range_names ?? '')}</td>
                       <td className="py-2 pr-3">{row.hands}</td>
-                      <td className="py-2 pr-3">{row.hands > 0 ? `${Math.round((row.correct / row.hands) * 100)}%` : '-'}</td>
+                      <td className="py-2 pr-3">{(row.hands ?? 0) > 0 ? `${Math.round(((row.correct ?? 0) / (row.hands ?? 1)) * 100)}%` : '-'}</td>
                       <td className="py-2 pr-3">{row.errors}</td>
                       <td className="py-2 pr-3">{row.consults}</td>
-                      <td className="py-2 pr-3">{formatDuration(row.duration_seconds)}</td>
-                      <td className="py-2 text-warm-400">{formatDate(row.ended_at)}</td>
+                      <td className="py-2 pr-3">{formatDuration(row.duration_seconds ?? 0)}</td>
+                      <td className="py-2 text-warm-400">{formatDate(row.ended_at ?? 0)}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -1,5 +1,15 @@
 import { useEffect, useRef } from 'react'
 
+interface TurnstileApi {
+  render: (el: HTMLElement, opts: Record<string, unknown>) => string
+  remove: (id: string) => void
+}
+declare global {
+  interface Window {
+    turnstile?: TurnstileApi
+  }
+}
+
 const SITE_KEY = (import.meta.env.VITE_TURNSTILE_KEY ?? import.meta.env.VITE_TURNSTILE_SITE_KEY) as string | undefined
 export const turnstileEnabled = !!SITE_KEY
 
@@ -28,7 +38,7 @@ export function Turnstile({ onToken }: { onToken: (token: string | null) => void
     loadScript()
       .then(() => {
         if (cancelled || !ref.current) return
-        const ts = (window as any).turnstile
+        const ts = window.turnstile
         if (!ts) return
         widgetId.current = ts.render(ref.current, {
           sitekey: SITE_KEY,
@@ -41,7 +51,7 @@ export function Turnstile({ onToken }: { onToken: (token: string | null) => void
       .catch(() => { console.warn('Turnstile não carregou — seguindo sem widget') })
     return () => {
       cancelled = true
-      const ts = (window as any).turnstile
+      const ts = window.turnstile
       if (ts && widgetId.current) { try { ts.remove(widgetId.current) } catch { /* noop */ } }
     }
   }, [])
