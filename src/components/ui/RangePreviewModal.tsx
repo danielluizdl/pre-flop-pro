@@ -38,7 +38,7 @@ export function RangePreviewModal({ range, onClose }: Props) {
               {!!displayStackRange && <span className="ml-1 text-brand-400">· {displayStackRange}</span>}
             </p>
           </div>
-          <button onClick={onClose} className="text-warm-400 hover:text-white text-xl ml-4 flex-shrink-0">✕</button>
+          <button onClick={onClose} aria-label="Fechar" className="text-warm-400 hover:text-white text-xl ml-4 flex-shrink-0">✕</button>
         </div>
 
         {/* Stack grid selector */}

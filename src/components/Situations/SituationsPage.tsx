@@ -244,7 +244,7 @@ export function SituationsPage() {
                 <h3 id="situations-heatmap-title" className="font-bold text-white text-lg">{heatmapRange.name}</h3>
                 <p className="text-xs text-warm-400 mt-0.5">Heatmap de erros por combo</p>
               </div>
-              <button onClick={() => setHeatmapId(null)} className="text-warm-400 hover:text-white text-xl ml-4">✕</button>
+              <button onClick={() => setHeatmapId(null)} aria-label="Fechar" className="text-warm-400 hover:text-white text-xl ml-4">✕</button>
             </div>
 
             {heatmapGrids && (

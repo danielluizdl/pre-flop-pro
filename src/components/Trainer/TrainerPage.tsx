@@ -1320,7 +1320,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
             <div ref={viewRangeDialogRef} className="bg-warm-900 border border-warm-700 rounded-2xl p-6 max-w-3xl w-full" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="drill-range-modal-title">
               <div className="flex justify-between items-center mb-4">
                 <h3 id="drill-range-modal-title" className="font-bold text-white text-lg">{modalRange.name}</h3>
-                <button onClick={() => setModalViewMode(null)} className="text-warm-400 hover:text-white text-xl">✕</button>
+                <button onClick={() => setModalViewMode(null)} aria-label="Fechar" className="text-warm-400 hover:text-white text-xl">✕</button>
               </div>
               <HandMatrix
                 readOnly

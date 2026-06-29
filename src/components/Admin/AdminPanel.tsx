@@ -118,7 +118,7 @@ export function AdminPanel({ open: externalOpen, onClose: externalClose }: Props
           >
             <div className="flex justify-between items-center">
               <h3 id="admin-publish-title" className="font-bold text-white">Publicar Ranges</h3>
-              <button onClick={handleClose} className="text-warm-400 hover:text-white text-xl">✕</button>
+              <button onClick={handleClose} aria-label="Fechar" className="text-warm-400 hover:text-white text-xl">✕</button>
             </div>
 
             <p className="text-xs text-warm-400">
