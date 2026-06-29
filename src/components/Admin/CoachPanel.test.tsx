@@ -81,6 +81,21 @@ describe('CoachPanel', () => {
     expect(screen.getByText('BTN RFI')).toBeInTheDocument()
   })
 
+  it('navegar por setas rola a opção ativa para dentro da lista', async () => {
+    mockApi()
+    const ranges: Range[] = Array.from({ length: 8 }, (_, i) => ({
+      id: i + 1, name: `BTN RFI ${i + 1}`, positions: ['BTN'], grid: makeEmptyGrid(), scenarios: [], tableSize: 8,
+    }))
+    useStore.setState({ authToken: 'tok', ranges })
+    const spy = vi.spyOn(Element.prototype, 'scrollIntoView')
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Filtrar por range' }))
+    const search = screen.getByRole('combobox', { name: 'Buscar range' })
+    fireEvent.keyDown(search, { key: 'ArrowDown' })
+    fireEvent.keyDown(search, { key: 'ArrowDown' })
+    expect(spy).toHaveBeenCalled()
+  })
+
   it('Esc no campo de busca fecha o filtro de range', async () => {
     mockApi()
     const range: Range = { id: 1, name: 'BTN RFI', positions: ['BTN'], grid: makeEmptyGrid(), scenarios: [], tableSize: 8 }

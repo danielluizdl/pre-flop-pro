@@ -138,6 +138,12 @@ function RangeSelect({ groups, value, onChange }: {
 
   useEffect(() => { if (open) setActiveIndex(0) }, [open, query])
 
+  useEffect(() => {
+    if (!open) return
+    const el = document.getElementById(`range-opt-${activeIndex}`)
+    el?.scrollIntoView?.({ block: 'nearest' })
+  }, [open, activeIndex])
+
   const selected = groups.flatMap(g => g.items).find(r => r.id === value)
   const label = selected ? selected.name : 'Todos os ranges'
 
