@@ -135,7 +135,7 @@ function SessionDetail({ session, ranges }: {
   return (
     <div className="border-t border-warm-700 bg-warm-900/40 p-4 space-y-4">
       <div className="bg-warm-800 border border-warm-700 rounded-xl p-4">
-        <div className="grid grid-cols-4 gap-3 text-center">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
           <div>
             <div className="text-2xl font-extrabold text-white">{session.hands}</div>
             <div className="text-xs text-warm-400">Mãos</div>
@@ -792,7 +792,7 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
       </div>
 
       <div className="bg-warm-800 border border-warm-700 rounded-xl p-4">
-        <div className="grid grid-cols-4 gap-3 text-center">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
           <div>
             <div className="text-2xl font-extrabold text-white">{sessionStats.hands}</div>
             <div className="text-xs text-warm-400">Mãos</div>

@@ -63,7 +63,7 @@ function SessionDetailView({ session, ranges, onBack }: {
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-px bg-warm-700/30 rounded-2xl overflow-hidden">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-warm-700/30 rounded-2xl overflow-hidden">
         {[
           { label:'Mãos',    value: String(session.hands),    color:'text-warm-100' },
           { label:'Acertos', value: String(session.correct),  color:'text-result-good' },
@@ -431,7 +431,7 @@ export function StatsPage() {
         ) : (
           <div className="space-y-6">
             {sessions.length > 0 && (
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[
                   { label: 'Sessões', value: sessions.length.toString(), color: 'text-brand-400' },
                   { label: 'Mãos Totais', value: totalHands.toLocaleString(), color: 'text-blue-400' },
