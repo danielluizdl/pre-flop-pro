@@ -232,6 +232,18 @@ export const pt = {
     published: 'Publicado',
     fixValidation: 'Corrija a validação',
   },
+  feedback: {
+    valid: (principal: string) => `~ Válido — ação principal: ${principal}`,
+    correct: (action: string, rngTag: string) => `✓ ${action}!${rngTag}`,
+    blunder: (action: string, correctAction: string, rngTag: string) => `✗ Blunder — ${action} tinha 0%. Correto: ${correctAction}${rngTag}`,
+    imprecise: (action: string, freq: number, principal: string, rngTag: string) => `✗ Impreciso — ${action} tinha ${freq}%. Principal: ${principal}${rngTag}`,
+    rngTag: (rng: number) => ` (RNG: ${rng})`,
+  },
+  netErrors: {
+    server: (status: number) => `Erro do servidor (${status})`,
+    connection: 'Erro de conexão',
+    storageFull: 'localStorage cheio: gravação local bloqueada',
+  },
   drill: {
     title: 'Drill',
     selectIntro: 'Selecione os ranges para o treino. Clique em uma posição para expandir.',
