@@ -1,10 +1,30 @@
 export const pt = {
   common: {
+    appName: 'Pre-Flop Pro',
     back: 'Voltar',
     close: 'Fechar',
     wait: 'Aguarde...',
     retry: 'Tentar novamente',
     loading: 'Carregando…',
+  },
+  welcome: {
+    greeting: (name: string) => `Bem-vindo(a), ${name}!`,
+    accountCreated: 'Conta criada com sucesso',
+    bodyBefore: 'Aproveite bastante o ',
+    bodyAfter: ' para estudar seus ranges, treinar situações reais de mesa e subir de nível no pré-flop. Bons estudos e boa sorte nas mesas!',
+    cta: 'Bora treinar!',
+  },
+  changePassword: {
+    title: 'Defina sua senha',
+    subtitle: 'Este é seu primeiro acesso. Escolha uma nova senha para continuar.',
+    newPassword: 'Nova senha:',
+    confirmPassword: 'Confirmar senha:',
+    submit: 'Salvar senha',
+    submitting: 'Salvando...',
+    errors: {
+      min: 'Senha deve ter ao menos 8 caracteres',
+      mismatch: 'As senhas não coincidem',
+    },
   },
   auth: {
     tagline: 'Treine seus ranges pré-flop',
