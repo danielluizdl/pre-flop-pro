@@ -9,6 +9,7 @@ import { Eye } from 'lucide-react'
 import { RANKS, SUIT_ICONS } from '../../types'
 import { ALL_HANDS, getRngBands, formatRngBands } from '../../utils/hands'
 import { useModalA11y } from '../../utils/useModalA11y'
+import type { CSSProperties } from 'react'
 import type { HandHistoryEntry, Range, TrainingSession } from '../../types'
 
 /* ── Label helpers (compartilhados entre mão atual e replay do histórico) ─── */
@@ -1134,7 +1135,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
 
   return (
     <div className="w-full h-[calc(100vh-96px)] overflow-auto">
-      <div className="flex gap-2 min-h-full">
+      <div className="flex flex-col lg:flex-row gap-2 min-h-full">
 
         {/* LEFT: dark box + controles */}
         <div className="flex-1 min-w-0 flex flex-col gap-2">
@@ -1253,7 +1254,10 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
         </div>
 
         {/* RIGHT: histórico + stats */}
-        <div className="flex-shrink-0 flex flex-col gap-2 sticky top-0 self-start" style={{ width: sidebarW, height: 'calc(100vh - 96px)' }}>
+        <div
+          className="flex flex-col gap-2 w-full h-[60vh] lg:flex-shrink-0 lg:w-[var(--sw)] lg:h-[calc(100vh-96px)] lg:sticky lg:top-0 lg:self-start"
+          style={{ ['--sw']: `${sidebarW}px` } as CSSProperties}
+        >
           {sidebarCollapsed ? (
             <button
               onClick={() => setSidebarCollapsed(false)}
