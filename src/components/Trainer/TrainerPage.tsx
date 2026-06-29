@@ -1026,6 +1026,27 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
   const goNextRef = useRef<() => void>(() => {})
   const keyHandlerRef = useRef<(e: KeyboardEvent) => void>(() => {})
 
+  // A mesa (PokerTableEditor) tem assentos em px fixos posicionados por %, então
+  // encolher só a largura faz os assentos se sobreporem. Escalamos a mesa inteira
+  // de forma proporcional quando o espaço fica abaixo da largura de projeto (529px),
+  // preservando o layout do desktop em telas pequenas.
+  const TABLE_DESIGN_W = 529
+  const TABLE_DESIGN_H = TABLE_DESIGN_W * 0.63
+  const tableFitRef = useRef<HTMLDivElement>(null)
+  const [tableScale, setTableScale] = useState(1)
+  useEffect(() => {
+    const el = tableFitRef.current
+    if (!el) return
+    const update = () => {
+      const w = el.clientWidth
+      setTableScale(w > 0 && w < TABLE_DESIGN_W ? w / TABLE_DESIGN_W : 1)
+    }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   const sidebarW = sidebarCollapsed ? 28 : 208
 
   useEffect(() => {
@@ -1171,9 +1192,15 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
             </div>
 
             {/* Mesa com cartas do hero */}
-            <div className="flex justify-center px-10 pt-1 pb-[60px]">
-              <div className="w-full max-w-[529px]">
-                <PokerTableEditor heroCards={{ r1, s1, r2, s2 }} />
+            <div className="flex justify-center px-8 sm:px-10 pt-1 pb-[60px]">
+              <div
+                ref={tableFitRef}
+                className="w-full max-w-[529px]"
+                style={tableScale < 1 ? { height: TABLE_DESIGN_H * tableScale } : undefined}
+              >
+                <div style={tableScale < 1 ? { width: TABLE_DESIGN_W, transform: `scale(${tableScale})`, transformOrigin: 'top center' } : undefined}>
+                  <PokerTableEditor heroCards={{ r1, s1, r2, s2 }} />
+                </div>
               </div>
             </div>
 
