@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { RangeMark } from '../ui/RangeMark'
 import { Turnstile, turnstileEnabled } from './Turnstile'
+import { t } from '../../i18n'
 
 type View = 'login' | 'signup' | 'forgot'
 
@@ -27,9 +28,9 @@ export function LoginPage() {
   async function handleSubmit() {
     if (!canSubmit || loading) return
     if (view === 'signup') {
-      if (username.length < 6) { setError('Usuário deve ter ao menos 6 caracteres'); return }
-      if (password.length < 8) { setError('Senha deve ter ao menos 8 caracteres'); return }
-      if (!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/.test(email)) { setError('Informe um e-mail válido'); return }
+      if (username.length < 6) { setError(t.auth.errors.usernameMin); return }
+      if (password.length < 8) { setError(t.auth.errors.passwordMin); return }
+      if (!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/.test(email)) { setError(t.auth.errors.invalidEmail); return }
     }
     setLoading(true)
     setError('')
@@ -37,7 +38,7 @@ export function LoginPage() {
       ? await authLogin(username, password, tsToken)
       : await authSignup(username, password, teamCode, name, email, tsToken)
     setLoading(false)
-    if (!result.ok) setError(result.error ?? 'Erro inesperado')
+    if (!result.ok) setError(result.error ?? t.auth.errors.unexpected)
   }
 
   function switchView(next: View) {
@@ -59,21 +60,21 @@ export function LoginPage() {
               Pre-Flop <em className="not-italic" style={{ color: '#d97757' }}>Pro</em>
             </span>
           </div>
-          <p className="text-warm-500 text-sm mt-4">Treine seus ranges pré-flop</p>
+          <p className="text-warm-500 text-sm mt-4">{t.auth.tagline}</p>
         </div>
 
         <div className="bg-warm-900 border border-warm-700/50 rounded-2xl p-6 space-y-4">
           {view === 'forgot' ? (
             <>
-              <h2 className="text-base font-semibold text-white">Esqueci minha senha</h2>
+              <h2 className="text-base font-semibold text-white">{t.auth.forgotTitle}</h2>
               <p className="text-sm text-warm-400">
-                Peça ao coach do seu time para resetar sua senha. Você receberá uma senha temporária e vai definir uma nova no próximo login.
+                {t.auth.forgotBody}
               </p>
               <button
                 onClick={() => switchView('login')}
                 className="w-full py-2.5 rounded-xl border border-warm-700 hover:border-warm-500 hover:bg-warm-800 text-warm-400 hover:text-white text-sm font-semibold transition-colors"
               >
-                Voltar
+                {t.common.back}
               </button>
             </>
           ) : (
@@ -81,7 +82,7 @@ export function LoginPage() {
               {view === 'signup' && (
                 <>
                   <div className="space-y-2">
-                    <label htmlFor="lp-name" className="text-xs text-warm-400 block">Nome Completo:</label>
+                    <label htmlFor="lp-name" className="text-xs text-warm-400 block">{t.auth.fullName}</label>
                     <input
                       id="lp-name"
                       type="text"
@@ -92,7 +93,7 @@ export function LoginPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label htmlFor="lp-email" className="text-xs text-warm-400 block">E-mail:</label>
+                    <label htmlFor="lp-email" className="text-xs text-warm-400 block">{t.auth.emailLabel}</label>
                     <input
                       id="lp-email"
                       type="email"
@@ -106,7 +107,7 @@ export function LoginPage() {
               )}
 
               <div className="space-y-2">
-                <label htmlFor="lp-username" className="text-xs text-warm-400 block">Usuário:</label>
+                <label htmlFor="lp-username" className="text-xs text-warm-400 block">{t.auth.usernameLabel}</label>
                 <input
                   id="lp-username"
                   type="text"
@@ -118,7 +119,7 @@ export function LoginPage() {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="lp-password" className="text-xs text-warm-400 block">Senha:</label>
+                <label htmlFor="lp-password" className="text-xs text-warm-400 block">{t.auth.passwordLabel}</label>
                 <input
                   id="lp-password"
                   type="password"
@@ -132,7 +133,7 @@ export function LoginPage() {
 
               {view === 'signup' && (
                 <div className="space-y-2">
-                  <label htmlFor="lp-teamcode" className="text-xs text-warm-400 block">Código do time:</label>
+                  <label htmlFor="lp-teamcode" className="text-xs text-warm-400 block">{t.auth.teamCodeLabel}</label>
                   <input
                     id="lp-teamcode"
                     type="text"
@@ -157,7 +158,7 @@ export function LoginPage() {
                 disabled={!canSubmit || loading}
                 className="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
               >
-                {loading ? 'Aguarde...' : view === 'login' ? 'Entrar' : 'Criar conta'}
+                {loading ? t.common.wait : view === 'login' ? t.auth.login : t.auth.createAccount}
               </button>
 
               {view === 'login' ? (
@@ -166,13 +167,13 @@ export function LoginPage() {
                     onClick={() => switchView('signup')}
                     className="text-xs text-warm-400 hover:text-warm-100 transition-colors"
                   >
-                    Criar conta
+                    {t.auth.createAccount}
                   </button>
                   <button
                     onClick={() => switchView('forgot')}
                     className="text-xs text-warm-400 hover:text-warm-100 transition-colors"
                   >
-                    Esqueci minha senha
+                    {t.auth.forgotPassword}
                   </button>
                 </div>
               ) : (
@@ -181,7 +182,7 @@ export function LoginPage() {
                     onClick={() => switchView('login')}
                     className="text-xs text-warm-400 hover:text-warm-100 transition-colors"
                   >
-                    Já tenho conta — entrar
+                    {t.auth.haveAccount}
                   </button>
                 </div>
               )}
