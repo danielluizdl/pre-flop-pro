@@ -65,10 +65,15 @@ describe('HandMatrix', () => {
     expect(screen.getByText('Não treinado')).toBeInTheDocument()
   })
 
-  it('alternar para "Ações" troca o modo de visualização', () => {
+  it('alternar para "Ações" troca o modo de visualização (aria-pressed)', () => {
     render(<HandMatrix grid={makeEmptyGrid()} heatmap={{ AA: { c: 1, t: 1 } }} readOnly />)
-    fireEvent.click(screen.getByRole('button', { name: 'Ações' }))
-    expect(screen.getByRole('button', { name: 'Ações' })).toHaveClass('bg-brand-600')
+    const acoes = screen.getByRole('button', { name: 'Ações' })
+    const erro = screen.getByRole('button', { name: 'Erro / Acerto' })
+    expect(erro).toHaveAttribute('aria-pressed', 'true')
+    expect(acoes).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(acoes)
+    expect(acoes).toHaveAttribute('aria-pressed', 'true')
+    expect(acoes).toHaveClass('bg-brand-600')
   })
 
   it('mover o mouse no heatmap não re-renderiza as 169 células (memoização)', () => {

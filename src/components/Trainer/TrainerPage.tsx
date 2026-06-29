@@ -1228,6 +1228,8 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
               </button>
               <button
                 onClick={() => setAutoAdvance(a => !a)}
+                aria-pressed={autoAdvance}
+                aria-label="Avanço automático em 2 segundos"
                 className={[
                   'relative overflow-hidden px-6 py-2 rounded-xl border font-semibold text-sm transition-colors',
                   autoAdvance ? 'bg-brand-600/40 border-brand-500 text-brand-300' : 'bg-warm-800 border-warm-600 text-warm-400 hover:bg-warm-700',

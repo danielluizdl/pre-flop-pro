@@ -145,7 +145,7 @@ describe('TrainerPage', () => {
     })
     try {
       render(<TrainerPage />)
-      fireEvent.click(screen.getByRole('button', { name: '2s' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Avanço automático em 2 segundos' }))
       fireEvent.click(screen.getByRole('button', { name: /FOLD/ }))
       expect(nextDrillHand).not.toHaveBeenCalled()
       act(() => { vi.advanceTimersByTime(2000) })
@@ -249,8 +249,8 @@ describe('TrainerPage', () => {
     })
     render(<TrainerPage />)
     resetRenderCount('historySidebar')
-    fireEvent.click(screen.getByRole('button', { name: '2s' }))
-    fireEvent.click(screen.getByRole('button', { name: '2s' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Avanço automático em 2 segundos' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Avanço automático em 2 segundos' }))
     expect(getRenderCount('historySidebar')).toBe(0)
   })
 
