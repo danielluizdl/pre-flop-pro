@@ -177,7 +177,7 @@ export function Dashboard() {
                   {r.name}
                 </div>
                 <div className="text-xs text-warm-400 mt-2 relative">
-                  {r.nonFold} mãos · {r.scenarios.length} cenário{r.scenarios.length !== 1 ? 's' : ''}
+                  {r.nonFold} {t.common.hands} · {t.common.scenarioCount(r.scenarios.length)}
                 </div>
                 <div className="mt-auto flex items-end justify-between relative">
                   <div>
@@ -215,7 +215,7 @@ export function Dashboard() {
                       style={{ fontSize: 24, letterSpacing: '0.01em' }}>
                       {r.accuracy !== null ? `${r.accuracy}%` : '—'}
                     </div>
-                    <div className="text-[10px] text-warm-500">{r.nonFold} mãos</div>
+                    <div className="text-[10px] text-warm-500">{r.nonFold} {t.common.hands}</div>
                   </div>
                 </button>
               ))}

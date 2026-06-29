@@ -6,6 +6,13 @@ export const pt = {
     wait: 'Aguarde...',
     retry: 'Tentar novamente',
     loading: 'Carregando…',
+    hands: 'mãos',
+    scenarioCount: (n: number) => `${n} cenário${n !== 1 ? 's' : ''}`,
+  },
+  category: {
+    home: '← Início',
+    empty: 'Nenhum range nesta categoria.',
+    createRange: 'Criar range',
   },
   nav: {
     dashboard: 'Dashboard',

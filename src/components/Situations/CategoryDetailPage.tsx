@@ -1,5 +1,6 @@
 import { useStore } from '../../store/useStore'
 import { countNonFoldHands } from '../../utils/hands'
+import { t } from '../../i18n'
 
 const CATEGORY_POSITIONS: Record<string, string[]> = {
   early:    ['UTG', 'MP', 'HJ'],
@@ -32,7 +33,7 @@ export function CategoryDetailPage() {
     useStore.setState({ selectedDrillRangeIds: [rangeId], drillExcludedHands: [] })
     startDrillSession()
     const ok = nextDrillHand()
-    if (!ok) { alert('Nenhuma mão disponível neste range.'); return }
+    if (!ok) { alert(t.ranges.noHandsAvailable); return }
     setPage('drill')
   }
 
@@ -44,25 +45,25 @@ export function CategoryDetailPage() {
             {label.name}
           </h1>
           <p className="text-xs text-warm-400 mt-1">
-            {label.sub} · {categoryRanges.length} range{categoryRanges.length !== 1 ? 's' : ''}
+            {label.sub} · {t.ranges.rangeCount(categoryRanges.length)}
           </p>
         </div>
         <button
           onClick={() => setPage('dashboard')}
           className="px-4 py-2 bg-warm-800 hover:bg-warm-700 text-warm-300 border border-warm-600 rounded-lg text-sm font-semibold transition-colors"
         >
-          ← Início
+          {t.category.home}
         </button>
       </div>
 
       {categoryRanges.length === 0 ? (
         <div className="text-center py-16 border border-dashed border-warm-700 rounded-xl">
-          <p className="text-warm-400 mb-4">Nenhum range nesta categoria.</p>
+          <p className="text-warm-400 mb-4">{t.category.empty}</p>
           <button
             onClick={() => setPage('range-setup')}
             className="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors"
           >
-            Criar range
+            {t.category.createRange}
           </button>
         </div>
       ) : (
@@ -80,7 +81,7 @@ export function CategoryDetailPage() {
                   <h2 className="font-bold text-white text-sm leading-tight">{r.name}</h2>
                   <div className="flex items-center gap-3 mt-1">
                     <span className="text-xs text-warm-500">
-                      {r.positions.join(', ')} · {countNonFoldHands(r.grid)} mãos · {r.scenarios.length} cenário{r.scenarios.length !== 1 ? 's' : ''}
+                      {r.positions.join(', ')} · {countNonFoldHands(r.grid)} {t.common.hands} · {t.common.scenarioCount(r.scenarios.length)}
                     </span>
                     {accuracy !== null && (
                       <span className={[
@@ -98,13 +99,13 @@ export function CategoryDetailPage() {
                     className="flex-1 py-1.5 rounded-md bg-warm-700 hover:bg-warm-600 text-xs text-white font-semibold transition-colors"
                     style={{ background: 'var(--claude-600)' }}
                   >
-                    Treinar
+                    {t.ranges.train}
                   </button>
                   <button
                     onClick={() => loadRangeForEdit(r.id)}
                     className="flex-1 py-1.5 rounded-md bg-warm-700 hover:bg-warm-600 text-xs text-warm-200 font-semibold transition-colors"
                   >
-                    Editar
+                    {t.ranges.edit}
                   </button>
                 </div>
               </div>
