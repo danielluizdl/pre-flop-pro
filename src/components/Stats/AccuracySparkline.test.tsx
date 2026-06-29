@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { axe } from 'jest-axe'
 import { AccuracySparkline } from './AccuracySparkline'
 import type { TrainingSession } from '../../types'
@@ -42,6 +42,19 @@ describe('AccuracySparkline', () => {
     expect(screen.getByText('Evolução da precisão')).toBeInTheDocument()
     expect(screen.getByText('80%')).toBeInTheDocument()
     expect(container.querySelectorAll('circle')).toHaveLength(3)
+  })
+
+  it('passar o mouse num ponto mostra o tooltip com a precisão', () => {
+    const sessions = [
+      session({ id: 1, hands: 10, correct: 9 }),
+      session({ id: 2, hands: 10, correct: 5 }),
+    ]
+    const { container } = render(<AccuracySparkline sessions={sessions} />)
+    const circles = container.querySelectorAll('circle')
+    fireEvent.mouseEnter(circles[0])
+    expect(screen.getByText('90%')).toBeInTheDocument()
+    fireEvent.mouseLeave(circles[0])
+    expect(screen.queryByText('90%')).not.toBeInTheDocument()
   })
 
   it('não tem violações de acessibilidade (axe)', async () => {
