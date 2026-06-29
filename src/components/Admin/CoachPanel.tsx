@@ -6,6 +6,7 @@ import { useStore } from '../../store/useStore'
 import { RangeHeatGrid, type GridCell } from './RangeHeatGrid'
 import { RangeActionGrid, type ActionFreq } from './RangeActionGrid'
 import { rangeComboStats, TOTAL_COMBOS, type ComboStats } from '../../utils/rangeCombos'
+import { t } from '../../i18n'
 
 const ACTION_COLOR: Record<string, string> = { Raise: 'text-red-400', Call: 'text-emerald-400', 'All-in': 'text-purple-300', Extra: 'text-brand-300' }
 
@@ -19,9 +20,9 @@ function ComboSummary({ stats }: { stats: ComboStats }) {
   ].filter(x => x.v > 0.05)
   return (
     <div className="mt-3 pt-2 border-t border-warm-700/50 text-[0.7rem] text-warm-400 space-y-1">
-      <div>Abertura: <span className="text-brand-300 font-semibold">{stats.openPct.toFixed(1)}%</span> <span className="text-warm-500">({Math.round(stats.openCombos)} de 1326 combos)</span></div>
+      <div>{t.coach.opening}<span className="text-brand-300 font-semibold">{stats.openPct.toFixed(1)}%</span> <span className="text-warm-500">({Math.round(stats.openCombos)} de 1326 combos)</span></div>
       <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-        {items.length === 0 ? <span className="text-warm-600">Sem ações</span> : items.map(x => (
+        {items.length === 0 ? <span className="text-warm-600">{t.coach.noActions}</span> : items.map(x => (
           <span key={x.label}><span className={`font-semibold ${ACTION_COLOR[x.label]}`}>{x.label}</span> {pct(x.v).toFixed(1)}%</span>
         ))}
       </div>
@@ -66,7 +67,7 @@ function MultiPlayerSelect({ users, selected, onChange }: {
   }, [open])
 
   const nameOf = (id: number) => { const u = users.find(x => x.id === id); return u ? (u.name || u.username) : '' }
-  const label = selected.length === 0 ? 'Todos os jogadores' : selected.length === 1 ? nameOf(selected[0]) : `${selected.length} jogadores`
+  const label = selected.length === 0 ? t.coach.allPlayers : selected.length === 1 ? nameOf(selected[0]) : t.coach.playersCount(selected.length)
   const toggle = (id: number) => onChange(selected.includes(id) ? selected.filter(x => x !== id) : [...selected, id])
   const q = query.trim().toLowerCase()
   const shownUsers = q ? users.filter(u => (u.name || '').toLowerCase().includes(q) || u.username.toLowerCase().includes(q)) : users
@@ -77,7 +78,7 @@ function MultiPlayerSelect({ users, selected, onChange }: {
         onClick={() => setOpen(o => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-label="Filtrar jogadores"
+        aria-label={t.coach.filterPlayers}
         className="bg-warm-900 border border-warm-600 rounded-lg px-2.5 py-1.5 text-sm text-warm-100 flex items-center gap-2 min-w-[190px] justify-between"
       >
         <span className="truncate">{label}</span>
@@ -92,8 +93,8 @@ function MultiPlayerSelect({ users, selected, onChange }: {
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Buscar jogador…"
-            aria-label="Buscar jogador"
+            placeholder={`${t.coach.searchPlayer}…`}
+            aria-label={t.coach.searchPlayer}
             className="w-full bg-warm-950 border border-warm-700 rounded px-2 py-1.5 text-sm text-warm-100 placeholder-warm-500 mb-1"
             autoFocus
           />
@@ -101,11 +102,11 @@ function MultiPlayerSelect({ users, selected, onChange }: {
             onClick={() => onChange([])}
             className={`w-full text-left px-2 py-1.5 rounded text-sm ${selected.length === 0 ? 'text-brand-300 font-semibold' : 'text-warm-300 hover:bg-warm-800'}`}
           >
-            Todos os jogadores
+            {t.coach.allPlayers}
           </button>
           <div className="h-px bg-warm-700 my-1" />
-          <div role="group" aria-label="Jogadores">
-            {shownUsers.length === 0 && <p className="px-2 py-1.5 text-xs text-warm-500">Nenhum jogador.</p>}
+          <div role="group" aria-label={t.coach.players}>
+            {shownUsers.length === 0 && <p className="px-2 py-1.5 text-xs text-warm-500">{t.coach.noPlayer}</p>}
             {shownUsers.map(u => (
               <label key={u.id} className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-warm-200 hover:bg-warm-800 cursor-pointer">
                 <input type="checkbox" checked={selected.includes(u.id)} onChange={() => toggle(u.id)} className="accent-brand-500" />
@@ -145,7 +146,7 @@ function RangeSelect({ groups, value, onChange }: {
   }, [open, activeIndex])
 
   const selected = groups.flatMap(g => g.items).find(r => r.id === value)
-  const label = selected ? selected.name : 'Todos os ranges'
+  const label = selected ? selected.name : t.coach.allRanges
 
   const q = query.trim().toLowerCase()
   const filtered = q
@@ -171,7 +172,7 @@ function RangeSelect({ groups, value, onChange }: {
         onClick={() => setOpen(o => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-label="Filtrar por range"
+        aria-label={t.coach.filterRange}
         className="bg-warm-900 border border-warm-600 rounded-lg px-2.5 py-1.5 text-sm text-warm-100 flex items-center gap-2 min-w-[200px] justify-between"
       >
         <span className="truncate">{label}</span>
@@ -184,7 +185,7 @@ function RangeSelect({ groups, value, onChange }: {
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={onInputKeyDown}
-            placeholder="Buscar range…"
+            placeholder={t.coach.searchRange}
             aria-label="Buscar range"
             role="combobox"
             aria-expanded={open}
@@ -202,10 +203,10 @@ function RangeSelect({ groups, value, onChange }: {
                 onClick={() => pick(null)}
                 className={`w-full text-left px-2 py-1.5 rounded text-sm ${i === activeIndex ? 'ring-1 ring-brand-500 ' : ''}${value === null ? 'text-brand-300 font-semibold' : 'text-warm-300 hover:bg-warm-800'}`}
               >
-                Todos os ranges
+                {t.coach.allRanges}
               </button>
             ) })()}
-            {flatIds.length === 1 && <p className="px-2 py-1.5 text-xs text-warm-500">Nenhum range.</p>}
+            {flatIds.length === 1 && <p className="px-2 py-1.5 text-xs text-warm-500">{t.coach.noRange}</p>}
             {filtered.map(g => (
               <div key={g.pos} role="group" aria-label={g.pos}>
                 <p aria-hidden="true" className="px-2 pt-1.5 pb-0.5 text-[0.65rem] uppercase font-semibold text-warm-500 tracking-wider">{g.pos}</p>
@@ -447,7 +448,7 @@ function PeriodFilter({ days, from, to, onChange }: {
   return (
     <div className="flex items-center gap-2">
       <select
-        aria-label="Período"
+        aria-label={t.coach.period}
         className={selectCls}
         value={custom ? 'custom' : (days ?? '')}
         onChange={e => {
@@ -456,18 +457,18 @@ function PeriodFilter({ days, from, to, onChange }: {
           else { setCustom(false); onChange({ days: v ? Number(v) : null, from: null, to: null }) }
         }}
       >
-        <option value="">Tudo</option>
-        <option value="7">7 dias</option>
-        <option value="30">30 dias</option>
-        <option value="90">90 dias</option>
-        <option value="custom">Custom</option>
+        <option value="">{t.coach.periodAll}</option>
+        <option value="7">{t.coach.period7}</option>
+        <option value="30">{t.coach.period30}</option>
+        <option value="90">{t.coach.period90}</option>
+        <option value="custom">{t.coach.periodCustom}</option>
       </select>
       {custom && (
         <div className="flex items-center gap-1.5">
-          <input type="date" aria-label="Data inicial" value={start} max={end || undefined}
+          <input type="date" aria-label={t.coach.dateStart} value={start} max={end || undefined}
             onChange={e => { setStart(e.target.value); apply(e.target.value, end) }} className={dateCls} />
           <span className="text-warm-500 text-xs">→</span>
-          <input type="date" aria-label="Data final" value={end} min={start || undefined}
+          <input type="date" aria-label={t.coach.dateEnd} value={end} min={start || undefined}
             onChange={e => { setEnd(e.target.value); apply(start, e.target.value) }} className={dateCls} />
         </div>
       )}
@@ -1045,7 +1046,7 @@ function TeamView({ token }: { token: string | null }) {
         />
       </div>
 
-      <Section title="Por range" defaultOpen={false} loading={byRange.loading} error={byRange.error} empty={byRange.rows.length === 0} onRetry={byRange.reload}>
+      <Section title={t.coach.sectionByRange} defaultOpen={false} loading={byRange.loading} error={byRange.error} empty={byRange.rows.length === 0} onRetry={byRange.reload}>
         <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60 leading-relaxed">
           Clique no cabeçalho para ordenar · clique numa linha para ver a matriz do range. Tipo de erro:{' '}
           <span className="text-red-300 font-semibold">Conceitual</span> = erra a ação certa (joga 0% de freq), não sabe o range ·{' '}
@@ -1096,7 +1097,7 @@ function TeamView({ token }: { token: string | null }) {
         </table>
       </Section>
 
-      <Section title="Resumo do time" defaultOpen={false} loading={overview.loading} error={overview.error} empty={overview.rows.length === 0} onRetry={overview.reload}>
+      <Section title={t.coach.sectionTeamSummary} defaultOpen={false} loading={overview.loading} error={overview.error} empty={overview.rows.length === 0} onRetry={overview.reload}>
         <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60">
           Clique no cabeçalho para ordenar · clique num jogador para o resumo rápido.
         </div>
@@ -1154,7 +1155,7 @@ function TeamView({ token }: { token: string | null }) {
       </Section>
 
 
-      <Section title="Evolução (tendência semanal)" defaultOpen={false} loading={trend.loading} error={trend.error} empty={playerTrends.length === 0} onRetry={trend.reload}>
+      <Section title={t.coach.sectionTrend} defaultOpen={false} loading={trend.loading} error={trend.error} empty={playerTrends.length === 0} onRetry={trend.reload}>
         <div className="p-3 flex flex-col gap-3">
           <div className="flex items-center gap-4 rounded-lg bg-warm-800/40 border border-warm-700/60 px-3 py-2">
             <span className="text-xs font-semibold text-warm-300 uppercase w-20">Time</span>
@@ -1193,7 +1194,7 @@ function TeamView({ token }: { token: string | null }) {
         </div>
       </Section>
 
-      <Section title="Maiores leaks" defaultOpen={false} loading={leaks.loading} error={leaks.error} empty={rankedLeaks.length === 0} onRetry={leaks.reload}>
+      <Section title={t.coach.sectionLeaks} defaultOpen={false} loading={leaks.loading} error={leaks.error} empty={rankedLeaks.length === 0} onRetry={leaks.reload}>
         <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60">
           Ordenado por <span className="text-warm-300">impacto</span> (erros ponderados por gravidade). Precisão mostra o piso de confiança (mín = limite inferior de Wilson 95%); o ponto indica o tamanho da amostra.
         </div>
@@ -1233,7 +1234,7 @@ function TeamView({ token }: { token: string | null }) {
         </table>
       </Section>
 
-      <Section title="Segmentos (categoria e ação correta)" defaultOpen={false} loading={segments.loading} error={segments.error} empty={categorySegs.length === 0 && segments.byAction.length === 0} onRetry={segments.reload}>
+      <Section title={t.coach.sectionSegments} defaultOpen={false} loading={segments.loading} error={segments.error} empty={categorySegs.length === 0 && segments.byAction.length === 0} onRetry={segments.reload}>
         <div className="p-3 grid gap-5 md:grid-cols-2">
           <div>
             <p className="text-xs text-warm-400 mb-2 uppercase font-semibold">Por categoria de mão</p>
@@ -1286,7 +1287,7 @@ function TeamView({ token }: { token: string | null }) {
         </div>
       </Section>
 
-      <Section title="Lacunas de conhecimento (consulta × erro)" defaultOpen={false} loading={gaps.loading} error={gaps.error} empty={rankedGaps.length === 0} onRetry={gaps.reload}>
+      <Section title={t.coach.sectionGaps} defaultOpen={false} loading={gaps.loading} error={gaps.error} empty={rankedGaps.length === 0} onRetry={gaps.reload}>
         <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60">
           Mãos que o time mais <span className="text-warm-300">consulta E ainda erra</span> — lacuna real de conhecimento. Score = consultas × taxa de erro ponderada.
         </div>
@@ -1327,7 +1328,7 @@ function TeamView({ token }: { token: string | null }) {
       </Section>
 
 
-      <Section title="Leaks relativos (jogador vs time)" defaultOpen={false} loading={playerRanges.loading} error={playerRanges.error} empty={relativeLeaks.length === 0} onRetry={playerRanges.reload}>
+      <Section title={t.coach.sectionRelative} defaultOpen={false} loading={playerRanges.loading} error={playerRanges.error} empty={relativeLeaks.length === 0} onRetry={playerRanges.reload}>
         <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60">
           Onde cada jogador está <span className="text-warm-300">abaixo dos colegas</span> no mesmo range (z-score). Considera jogadores com ≥15 mãos e ranges com ≥3 jogadores. Selecione vários jogadores para comparar.
         </div>
@@ -1660,14 +1661,14 @@ function PublishTeamRanges() {
 
   async function handlePublish() {
     if (publishing) return
-    if (!confirm(`Publicar ${rangeCount} range(s) para o time no D1? Os jogadores recebem essa versão no próximo login.`)) return
+    if (!confirm(t.coach.publishConfirm(rangeCount))) return
     setPublishing(true)
     setMsg(null)
     const res = await publishTeamRanges()
     setPublishing(false)
     setMsg(res.ok
-      ? { ok: true, text: `Publicado: ${res.count} range(s) · versão ${res.version}` }
-      : { ok: false, text: res.error ?? 'Falha ao publicar' })
+      ? { ok: true, text: t.coach.published(res.count, res.version) }
+      : { ok: false, text: res.error ?? t.coach.publishFailed })
   }
 
   return (
@@ -1677,7 +1678,7 @@ function PublishTeamRanges() {
         disabled={publishing}
         className="px-3.5 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-40 text-white text-sm font-semibold transition-colors"
       >
-        {publishing ? 'Publicando…' : 'Publicar ranges para o time (D1)'}
+        {publishing ? t.coach.publishing : t.coach.publishTeamButton}
       </button>
       {msg && <span className={msg.ok ? 'text-xs text-emerald-400' : 'text-xs text-red-400'}>{msg.text}</span>}
     </div>
@@ -1693,18 +1694,18 @@ export default function CoachPanel() {
       <PublishTeamRanges />
       <div className="flex gap-1 border-b border-warm-700">
         {([
-          { key: 'team', label: 'Visão do time' },
-          { key: 'players', label: 'Por jogador' },
-        ] as const).map(t => (
+          { key: 'team', label: t.coach.tabTeam },
+          { key: 'players', label: t.coach.tabPlayer },
+        ] as const).map(tab => (
           <button
-            key={t.key}
-            onClick={() => setArea(t.key)}
+            key={tab.key}
+            onClick={() => setArea(tab.key)}
             className={[
               'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors',
-              area === t.key ? 'border-brand-500 text-white' : 'border-transparent text-warm-400 hover:text-warm-200',
+              area === tab.key ? 'border-brand-500 text-white' : 'border-transparent text-warm-400 hover:text-warm-200',
             ].join(' ')}
           >
-            {t.label}
+            {tab.label}
           </button>
         ))}
       </div>
