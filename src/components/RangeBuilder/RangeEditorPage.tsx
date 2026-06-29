@@ -7,6 +7,7 @@ import { ComboCounter } from '../ui/ComboCounter'
 import { countNonFoldHands, stackRangesOverlap } from '../../utils/hands'
 import { Link2, X } from 'lucide-react'
 import { PrereqRangePicker } from '../ui/PrereqRangePicker'
+import { t } from '../../i18n'
 import type { SessionGrid } from '../../types'
 
 export function RangeEditorPage() {
@@ -49,8 +50,8 @@ export function RangeEditorPage() {
   }
 
   function validate() {
-    if (!rangeData.name.trim()) { alert('Dê um nome ao range.'); return false }
-    if (selectedPositions.length === 0) { alert('Selecione pelo menos uma posição.'); return false }
+    if (!rangeData.name.trim()) { alert(t.editor.alertNameRequired); return false }
+    if (selectedPositions.length === 0) { alert(t.editor.alertSelectPosition); return false }
     return true
   }
 
@@ -85,7 +86,7 @@ export function RangeEditorPage() {
   function handlePushToSession() {
     if (!validate()) return
     const overlapMsg = checkOverlap(rangeData.stackRange)
-    if (overlapMsg) { alert(`Stack range inválido: ${overlapMsg}`); return }
+    if (overlapMsg) { alert(t.editor.alertInvalidStack(overlapMsg)); return }
     pushGridToSession()
   }
 
@@ -117,7 +118,7 @@ export function RangeEditorPage() {
   function handleSaveSessionEdit() {
     if (editingIdx === null) return
     const overlapMsg = checkOverlap(rangeData.stackRange, editingIdx)
-    if (overlapMsg) { alert(`Stack range inválido: ${overlapMsg}`); return }
+    if (overlapMsg) { alert(t.editor.alertInvalidStack(overlapMsg)); return }
     updateSessionGrid(editingIdx, {
       name: rangeData.name,
       stackRange: rangeData.stackRange,
@@ -147,10 +148,10 @@ export function RangeEditorPage() {
       {/* Header */}
       <div>
         <h1 className="font-display uppercase text-warm-100 text-[28px] leading-none tracking-wide">
-          {rangeData.id !== null ? 'Editar Range' : 'Criar Range'}
+          {rangeData.id !== null ? t.editor.titleEdit : t.editor.titleCreate}
         </h1>
         <p className="text-xs text-warm-500 mt-0.5">
-          Pinte as mãos com as frequências de cada ação, depois configure os cenários.
+          {t.editor.subtitle}
         </p>
       </div>
 
@@ -158,7 +159,7 @@ export function RangeEditorPage() {
       {sessionGrids.length > 0 && (
         <div className="card-surface p-3 space-y-2">
           <p className="text-xs font-semibold text-warm-400 uppercase tracking-wide">
-            Salvos nesta sessão ({sessionGrids.length})
+            {t.editor.savedThisSession(sessionGrids.length)}
           </p>
           <div className="flex flex-wrap gap-2">
             {sessionGrids.map((sg, i) => (
@@ -178,12 +179,12 @@ export function RangeEditorPage() {
                     {sg.stackRange}
                   </span>
                 )}
-                <span className="text-xs text-warm-500">{countNonFoldHands(sg.grid)} mãos</span>
-                {editingIdx === i && <span className="text-[10px] text-brand-400 font-bold ml-1">editando</span>}
+                <span className="text-xs text-warm-500">{countNonFoldHands(sg.grid)} {t.common.hands}</span>
+                {editingIdx === i && <span className="text-[10px] text-brand-400 font-bold ml-1">{t.editor.editing}</span>}
                 <button
                   onClick={e => {
                     e.stopPropagation()
-                    if (!confirm(`Remover "${sg.name}${sg.stackRange ? ` (${sg.stackRange})` : ''}"?`)) return
+                    if (!confirm(t.editor.removeConfirm(`${sg.name}${sg.stackRange ? ` (${sg.stackRange})` : ''}`))) return
                     if (editingIdx === i) {
                       handleCancelSessionEdit()
                     } else if (editingIdx !== null && editingIdx > i) {
@@ -206,7 +207,7 @@ export function RangeEditorPage() {
         <div className="flex-1 min-w-0 space-y-3">
           {/* Posição do HERO — single select */}
           <div>
-            <label className="eyebrow mb-2 block">Posição do HERO</label>
+            <label className="eyebrow mb-2 block">{t.editor.heroPosition}</label>
             <div className="flex gap-1.5 flex-wrap">
               {activePositions.map(p => {
                 const active = selectedPositions.includes(p.label)
@@ -234,12 +235,12 @@ export function RangeEditorPage() {
           {/* Nome */}
           <div className="flex items-center gap-2 max-w-xs">
             <label className="text-xs font-semibold text-warm-400 whitespace-nowrap flex-shrink-0">
-              Nome:
+              {t.editor.name}
             </label>
             <input
               type="text"
               className="input flex-1 min-w-0"
-              placeholder="Ex: Defesa BB vs UTG"
+              placeholder={t.editor.namePlaceholder}
               value={rangeData.name}
               onChange={e => setRangeName(e.target.value)}
             />
@@ -249,12 +250,12 @@ export function RangeEditorPage() {
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
               <label className="text-xs font-semibold text-warm-400 whitespace-nowrap flex-shrink-0">
-                Stack:
+                {t.editor.stack}
               </label>
               <input
                 type="text"
                 className="input w-52"
-                placeholder="Ex: <= 250, ou 250-300"
+                placeholder={t.editor.stackPlaceholder}
                 value={rangeData.stackRange}
                 onChange={e => setStackRange(e.target.value)}
               />
@@ -263,7 +264,7 @@ export function RangeEditorPage() {
                   onClick={() => setStackRange('')}
                   className="text-xs text-warm-500 hover:text-warm-300 transition-colors"
                 >
-                  limpar
+                  {t.editor.clear}
                 </button>
               )}
             </div>
@@ -289,7 +290,7 @@ export function RangeEditorPage() {
           <div className="flex items-center gap-2">
             <Link2 size={13} className="text-warm-500 flex-shrink-0" />
             <label className="text-xs font-semibold text-warm-400 whitespace-nowrap flex-shrink-0">
-              Pré-req:
+              {t.editor.prereq}
             </label>
             <button
               type="button"
@@ -303,14 +304,14 @@ export function RangeEditorPage() {
             >
               {rangeData.prereqRangeId !== undefined
                 ? (ranges.find(x => x.id === rangeData.prereqRangeId)?.name ?? '?')
-                : '— sem pré-requisito —'}
+                : t.editor.noPrereq}
             </button>
           </div>
 
           {/* Matrix */}
           <div>
             <label className="block text-xs font-semibold text-warm-400 mb-1.5 uppercase tracking-wider">
-              Grade de Mãos
+              {t.editor.handGrid}
             </label>
             <HandMatrix />
           </div>
@@ -321,7 +322,7 @@ export function RangeEditorPage() {
           <div className="bg-warm-800/60 rounded-xl p-4 border border-warm-700 space-y-3">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <h2 className="font-bold text-xs text-warm-400 uppercase tracking-wider whitespace-nowrap">
-                Ações &amp; Frequências
+                {t.editor.actionsFreq}
               </h2>
               <HandQuickSelect mode="brush" />
             </div>
@@ -336,10 +337,10 @@ export function RangeEditorPage() {
           </div>
 
           <button
-            onClick={() => { if (confirm('Limpar todo o grid?')) resetGrid() }}
+            onClick={() => { if (confirm(t.editor.clearGridConfirm)) resetGrid() }}
             className="w-full py-2 bg-warm-800 text-red-400 border border-red-900/50 rounded-lg font-semibold text-sm hover:bg-red-900/20 transition-colors"
           >
-            Limpar Grid
+            {t.editor.clearGrid}
           </button>
 
           {editingIdx !== null ? (
@@ -354,13 +355,13 @@ export function RangeEditorPage() {
                     : 'bg-warm-800 text-warm-600 border-warm-700 cursor-not-allowed',
                 ].join(' ')}
               >
-                Salvar alterações no #{editingIdx + 1}
+                {t.editor.saveChangesTo(editingIdx + 1)}
               </button>
               <button
                 onClick={handleCancelSessionEdit}
                 className="w-full py-2.5 bg-warm-700 hover:bg-warm-600 text-white rounded-lg font-bold text-sm transition-colors border border-warm-600"
               >
-                Cancelar
+                {t.editor.cancel}
               </button>
             </>
           ) : (
@@ -368,7 +369,7 @@ export function RangeEditorPage() {
               onClick={handlePushToSession}
               className="w-full py-2.5 bg-warm-700 hover:bg-warm-600 text-white rounded-lg font-bold text-sm transition-colors border border-warm-600"
             >
-              + Salvar e criar outro
+              {t.editor.saveAndCreate}
             </button>
           )}
 
@@ -376,7 +377,7 @@ export function RangeEditorPage() {
             onClick={handleNext}
             className="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-lg font-bold text-sm transition-colors"
           >
-            PRÓXIMO: CONFIGURAR CENÁRIOS →
+            {t.editor.nextScenarios}
           </button>
         </div>
       </div>
