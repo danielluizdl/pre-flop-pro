@@ -3,6 +3,7 @@ import { countNonFoldHands } from '../../utils/hands'
 import { RangeMark } from '../ui/RangeMark'
 import { MyAccountStats } from '../Stats/MyAccountStats'
 import { AccuracySparkline } from '../Stats/AccuracySparkline'
+import { t } from '../../i18n'
 
 const CATEGORY_POSITIONS: Record<string, string[]> = {
   EARLY:    ['UTG','MP','HJ'],
@@ -40,9 +41,9 @@ export function Dashboard() {
   ]
 
   const statItems = [
-    { label: 'Ranges',         value: ranges.length.toString(), accent: false },
-    { label: 'Mãos treinadas', value: totalHands > 0 ? totalHands.toLocaleString() : '0', accent: false },
-    { label: 'Precisão global', value: globalAccuracy !== null ? `${globalAccuracy}%` : '—', accent: globalAccuracy !== null && globalAccuracy >= 60 },
+    { label: t.dashboard.statRanges,   value: ranges.length.toString(), accent: false },
+    { label: t.dashboard.statHands,    value: totalHands > 0 ? totalHands.toLocaleString() : '0', accent: false },
+    { label: t.dashboard.statAccuracy, value: globalAccuracy !== null ? `${globalAccuracy}%` : '—', accent: globalAccuracy !== null && globalAccuracy >= 60 },
   ]
 
   return (
@@ -55,27 +56,27 @@ export function Dashboard() {
         </div>
         <div className="relative h-full flex flex-col justify-end p-10">
           <div className="text-brand-500 mb-3 uppercase" style={{ fontWeight: 700, fontSize: 11, letterSpacing: '0.25em' }}>
-            Comece agora
+            {t.dashboard.eyebrow}
           </div>
           <h1 className="text-warm-100 uppercase mb-4 font-display"
               style={{ fontSize: 76, lineHeight: 0.88, letterSpacing: '0.005em' }}>
-            Drill your<br />pre-flop.
+            {t.dashboard.heroTitle1}<br />{t.dashboard.heroTitle2}
           </h1>
           <p className="text-warm-300 text-base mb-6 max-w-md leading-relaxed">
-            Treine até virar reflexo. Domine antes do flop.
+            {t.dashboard.subtitle}
           </p>
           <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => setPage('drill')}
               className="btn-commit"
             >
-              Iniciar treino →
+              {t.dashboard.startTraining} →
             </button>
             <button
               onClick={() => setPage('ranges')}
               className="btn-commit-outline"
             >
-              Ver ranges
+              {t.dashboard.viewRanges}
             </button>
           </div>
         </div>
@@ -107,7 +108,7 @@ export function Dashboard() {
       {/* Category grid */}
       <div className="flex items-baseline justify-between mb-4">
         <h2 className="text-warm-100 uppercase font-display" style={{ fontSize: 28, lineHeight: 1, letterSpacing: '0.03em' }}>
-          Treine por categoria
+          {t.dashboard.trainByCategory}
         </h2>
       </div>
 
@@ -134,7 +135,7 @@ export function Dashboard() {
               <p className="text-xs text-warm-400 mb-3">{c.sub}</p>
               <div className="flex items-center gap-1 text-warm-300 text-xs">
                 <span className="tabular-nums" style={{ fontWeight: 600 }}>{c.count}</span>
-                <span>ranges</span>
+                <span>{t.dashboard.rangesWord}</span>
                 <span className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">→</span>
               </div>
             </div>
@@ -147,13 +148,13 @@ export function Dashboard() {
         <>
           <div className="flex items-baseline justify-between mb-4">
             <h2 className="text-warm-100 uppercase font-display" style={{ fontSize: 28, lineHeight: 1, letterSpacing: '0.03em' }}>
-              Recentes
+              {t.dashboard.recent}
             </h2>
             <button
               onClick={() => setPage('ranges')}
               className="text-brand-500 hover:text-brand-400 text-sm transition-colors font-semibold"
             >
-              Ver todos →
+              {t.dashboard.viewAll} →
             </button>
           </div>
 
@@ -180,7 +181,7 @@ export function Dashboard() {
                 </div>
                 <div className="mt-auto flex items-end justify-between relative">
                   <div>
-                    <div className="text-warm-500 uppercase" style={{ fontWeight: 700, fontSize: 10, letterSpacing: '0.18em' }}>Precisão</div>
+                    <div className="text-warm-500 uppercase" style={{ fontWeight: 700, fontSize: 10, letterSpacing: '0.18em' }}>{t.dashboard.accuracy}</div>
                     <div className={'tabular-nums mt-1 font-display ' +
                       (r.accuracy !== null && r.accuracy >= 80 ? 'text-brand-500' : r.accuracy !== null && r.accuracy >= 50 ? 'text-gold' : 'text-warm-400')}
                       style={{ fontSize: 40, lineHeight: 0.85, letterSpacing: '0.01em' }}>
@@ -225,9 +226,9 @@ export function Dashboard() {
 
       {recentRanges.length === 0 && (
         <div className="card-surface p-8 text-center">
-          <p className="text-warm-400 text-sm mb-4">Nenhum range criado ainda.</p>
+          <p className="text-warm-400 text-sm mb-4">{t.dashboard.empty}</p>
           <button onClick={() => setPage('range-setup')} className="btn-commit">
-            Criar primeiro range
+            {t.dashboard.createFirst}
           </button>
         </div>
       )}
