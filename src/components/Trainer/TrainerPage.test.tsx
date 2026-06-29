@@ -174,6 +174,34 @@ describe('TrainerPage', () => {
     expect(screen.getByText('Resumo do Treino')).toBeInTheDocument()
   })
 
+  it('"← Anterior" mostra a mão anterior e "← Mão atual" volta', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    const nextDrillHand = vi.fn(() => { useStore.setState({ activeHand: 'AA' }); return true })
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
+      useRngForFrequency: false, acceptAnyFreq: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
+      nextDrillHand,
+    })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /FOLD/ }))
+    expect(screen.getByText(/Blunder/)).toBeInTheDocument()
+    const prev = screen.getByRole('button', { name: '← Anterior' })
+    expect(prev).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: /Próxima Mão/ }))
+    expect(nextDrillHand).toHaveBeenCalled()
+    expect(prev).toBeEnabled()
+    fireEvent.click(prev)
+    const back = screen.getByRole('button', { name: '← Mão atual' })
+    expect(back).toBeInTheDocument()
+    expect(screen.getByText(/Blunder/)).toBeInTheDocument()
+    fireEvent.click(back)
+    expect(screen.queryByRole('button', { name: '← Mão atual' })).not.toBeInTheDocument()
+  })
+
   it('"Encerrar e ver resumo" abre o resumo com precisão e severidade', () => {
     const g = makeEmptyGrid()
     g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
