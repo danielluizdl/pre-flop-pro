@@ -1,6 +1,7 @@
 import { useMemo, useState, useCallback, memo } from 'react'
 import { RANKS } from '../../utils/hands'
 import { countRender } from '../../test/renderCount'
+import { t } from '../../i18n'
 
 export interface GridCell {
   hand: string
@@ -17,10 +18,10 @@ export interface GridCell {
 type Metric = 'accuracy' | 'graves' | 'consults' | 'volume'
 
 const METRICS: { key: Metric; label: string }[] = [
-  { key: 'accuracy', label: 'Precisão' },
-  { key: 'graves', label: 'Blunders' },
-  { key: 'consults', label: 'Consultas' },
-  { key: 'volume', label: 'Volume' },
+  { key: 'accuracy', label: t.coach.metricAccuracy },
+  { key: 'graves', label: t.coach.metricBlunders },
+  { key: 'consults', label: t.coach.metricConsults },
+  { key: 'volume', label: t.coach.metricVolume },
 ]
 
 function accColor(acc: number): string {

@@ -52,6 +52,12 @@ export const pt = {
     empty: 'Nenhuma ação pintada ainda.',
     total: 'Total',
   },
+  coach: {
+    metricAccuracy: 'Precisão',
+    metricBlunders: 'Blunders',
+    metricConsults: 'Consultas',
+    metricVolume: 'Volume',
+  },
   app: {
     storageFull: 'Armazenamento cheio: seus dados NÃO estão sendo salvos. Exporte um backup no Dashboard e libere espaço.',
   },
