@@ -81,6 +81,27 @@ describe('CoachPanel', () => {
     expect(screen.getByText('BTN RFI')).toBeInTheDocument()
   })
 
+  it('o filtro de jogadores busca por nome no dropdown', async () => {
+    vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      const data = url.includes('/admin/users')
+        ? { users: [
+            { id: 1, username: 'alice', name: 'Alice', email: '', created_at: 0, total_hands: 0, correct_hands: 0 },
+            { id: 2, username: 'bob', name: 'Bob', email: '', created_at: 0, total_hands: 0, correct_hands: 0 },
+          ] }
+        : { rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(data) } as unknown as Response)
+    })
+    useStore.setState({ authToken: 'tok' })
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Filtrar jogadores' }))
+    expect(await screen.findByText('Alice')).toBeInTheDocument()
+    expect(screen.getByText('Bob')).toBeInTheDocument()
+    fireEvent.change(screen.getByRole('textbox', { name: 'Buscar jogador' }), { target: { value: 'ali' } })
+    expect(screen.getByText('Alice')).toBeInTheDocument()
+    expect(screen.queryByText('Bob')).not.toBeInTheDocument()
+  })
+
   it('seção "Por range" mostra erro e "Tentar novamente" recarrega', async () => {
     let failByRange = true
     vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
