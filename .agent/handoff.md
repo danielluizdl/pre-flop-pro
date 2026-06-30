@@ -1,21 +1,73 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
-## 2026-06-30 (sessão interativa — Tailwind 4)
+## 2026-06-30 (sessão interativa — Tailwind 4 + varredura geral)
 
 ### Estado (PONTO DE PARTIDA do próximo run)
-- **PR #30 MERGEADA** — Vite 6→8 + @vitejs/plugin-react 4→6. Validado no browser pelo Daniel.
-- **PR #32 MERGEADA** — Tailwind 3→4. Validado no browser pelo Daniel.
+- **PR #30 MERGEADA** — Vite 6→8 + @vitejs/plugin-react 4→6. Validado no browser.
+- **PR #32 MERGEADA** — Tailwind 3→4. Validado no browser.
+- **MFA GitHub e Cloudflare** — concluídos em 30/06/2026.
 - **582 testes verdes (63 arquivos)**, build verde. `main`/produção intactos.
+- Stack atual: React 19, Vite 8, TypeScript 6, Tailwind 4, react-router 7, lucide-react 1.
 
-### Feito nesta sessão
-- Migração Tailwind 3→4: instalou `tailwindcss@4` + `@tailwindcss/vite`; vite plugin substitui PostCSS plugin.
-- `tailwind.config.js` removido; config migrada para bloco `@theme` em `src/index.css`.
-- `postcss.config.js` reduzido a `autoprefixer` apenas.
-- Ajuste necessário: em TW4, `@apply` só aceita utilitários nativos — classes de componente (`.eyebrow`, `.btn-commit`, `.stat-num`) foram inlineadas onde eram reutilizadas via `@apply`.
-- Validação visual no preview Cloudflare: Daniel confirmou sem erros.
+### Varredura geral — conclusões (30/06/2026)
+- Zero TODOs/FIXMEs no código. Cobertura de testes excelente, i18n completo (507 chaves PT/EN/ES), a11y boa.
+- **Principais gaps encontrados:**
+  1. `coachTrend.ts` (`buildTrend`, `classifyTrend`) calcula regressão linear de precisão semanal mas **o resultado nunca é renderizado** no CoachPanel (seção "Evolução" existe mas está colapsada sem gráfico real).
+  2. Ranges publicados pelo coach (D1) chegam ao localStorage do jogador sem **nenhum badge/indicador visual** — jogador não sabe qual range é do coach e pode sobrescrevê-lo acidentalmente.
+  3. `CoachPanel` (1728 linhas) e `TrainerPage` (1391 linhas) **não são `React.memo`** — re-render completo ao trocar abas/seções. Padrão de memoização já aplicado em HandMatrix/RangeHeatGrid/HandHistorySidebar.
+  4. Fetches de analytics do CoachPanel **sem cache** — cada troca de filtro/aba dispara novo fetch; resultado anterior descartado.
+  5. Endpoints `?view=foco` e `?view=consult-hotspots` existem no backend mas **UI foi removida** (código morto no analytics.js).
+  6. Datas hardcoded `'pt-BR'` em `MyAccountStats.tsx:48` — deveria usar locale do i18n.
 
-### Pendências
-- [ ] **MFA** GitHub e Cloudflare — manual, só Daniel.
+### Próximas fatias para o agente (priorizadas)
+
+#### P1 — Alto impacto, sem gate humano
+1. **Badge "Range do Time"** (`src/components/Situations/SituationsPage.tsx` + `src/store/useStore.ts`)
+   - Ranges que vieram do D1 (`syncTeamRanges`) têm `id` dentro da faixa dos admin ranges.
+   - Exibir badge visual "Coach" no `RangeCard` e bloquear edição (botão Editar desabilitado com tooltip "Range publicado pelo coach — não editável").
+   - Baixo risco: só visual + proteção de UX. Testes: RangeCard com range do time.
+
+2. **Renderizar gráfico de tendência no CoachPanel** (`src/components/Admin/CoachPanel.tsx` + `src/utils/coachTrend.ts`)
+   - A seção "Evolução" já existe e chama `useTrend` (fetch `?view=trend`). Retorna dados de regressão linear por semana.
+   - Renderizar SVG inline (mesmo padrão do `AccuracySparkline`) com accuracy % por semana + linha de tendência + classificação textual (`classifyTrend`: "melhorando", "estável", "piorando").
+   - `coachTrend.ts` já tem `buildTrend(weeks)` → `{slope, r2, label}`. Só falta o componente visual.
+   - Testes: dados mockados → SVG renderizado com pontos + label de tendência.
+
+3. **Cache de API analytics no CoachPanel** (`src/components/Admin/CoachPanel.tsx`)
+   - Padrão simples: guardar último resultado + timestamp por `cacheKey = view + JSON.stringify(params)`.
+   - Se mesmo key chamado em menos de 15s, retorna cache sem fetch.
+   - Sem biblioteca externa — apenas `useRef` com `{data, ts, key}`.
+   - Testes: segundo fetch com mesmos params retorna cache; params diferentes disparam fetch.
+
+#### P2 — Médio impacto, baixo risco
+4. **Memoizar CoachPanel e TrainerPage**
+   - Exportar como `const CoachPanel = memo(function CoachPanel(...) {...})`.
+   - Todos os handlers internos já usam `useCallback`/`useMemo` (varredura confirmou). Risco baixo.
+   - Prova com `countRender` (padrão do `src/test/renderCount.ts` já existe): trocar aba não re-renderiza o painel inteiro.
+
+5. **Corrigir locale de data** (`src/components/Stats/MyAccountStats.tsx:48`)
+   - Trocar `'pt-BR'` hardcoded por `store.lang === 'en' ? 'en-US' : store.lang === 'es' ? 'es-ES' : 'pt-BR'`.
+   - Ou criar helper `formatDate(ts, lang)` em `src/utils/` para reusar em StatsPage/CoachPanel.
+
+6. **Cobertura de testes: `functions/api/`**
+   - `analytics.js` (415 linhas) tem zero testes unitários. Extrair helpers puros (ex: `dateCond`, `buildLeaks`, `buildSegments`) para arquivo separado e testá-los com Vitest (mesmo padrão do `worker/index.test.js`).
+   - Não requer D1 real — mockar o binding `DB` com objeto `{ prepare: () => ({ bind: () => ({ all: () => ({results:[]}) }) }) }`.
+
+#### P3 — Nice-to-have (só se P1+P2 concluídos)
+7. **Remover endpoints mortos do backend** (`functions/api/admin/analytics.js`)
+   - `?view=foco` e `?view=consult-hotspots` — remover os blocos de código (sem UI, sem testes) para reduzir complexidade de manutenção.
+   - Confirmar que nenhum componente chama esses views antes de remover.
+
+8. **Exportar sessão de treino como CSV** (`src/store/useStore.ts` + `src/utils/download.ts`)
+   - `downloadText` já existe. Adicionar `exportSessionCsv(session: TrainingSession)` que gera CSV com colunas: mão, ação tomada, ação correta, acerto, RNG, range, timestamp.
+   - Botão no `SessionCard` do StatsPage.
+
+### Regras operacionais do agente (não mudar)
+- Nunca mergear em `main`. PRs sempre para `feature/auth-telemetry`.
+- Testar `npm run build` (tsc) E `npm test` antes de cada commit — build tsc e vitest podem divergir.
+- Mudanças visuais novas (novas seções, gráficos, badges) → sinalizar para validação humana no preview Cloudflare antes de mergear.
+- Fatias de cobertura e correções técnicas → pode abrir e mergear sem gate humano se testes passarem.
+- Auth/functions/api/worker/D1 com mudanças de schema → gate humano obrigatório.
 
 ---
 
