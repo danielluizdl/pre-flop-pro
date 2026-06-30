@@ -1,5 +1,49 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-06-30 (retomada — push da migração de dependências confirmado)
+- A run automática abaixo ("migração de dependências") tinha ficado com 3 commits locais
+  válidos (560 testes + build verdes) mas **sem conseguir fazer push** por falta de
+  autorização de escrita no proxy git daquela sessão (Claude Code on the web). O
+  container daquela sessão foi reciclado antes do Daniel conseguir intervir.
+- Recuperação: a sessão anterior havia salvo os 3 commits + o commit de handoff como
+  4 arquivos `.patch` (`git format-patch`) no scratchpad do próprio container. O Daniel
+  colou o conteúdo desses patches nesta conversa (sessão local, com push autorizado).
+- Esta sessão: recriou `auto/daily-improvements` a partir de `feature/auth-telemetry`
+  (que já tinha a PR #24 mergeada), aplicou os 4 patches com `git am` (sem conflitos,
+  autoria/mensagens originais preservadas), rodou `npm install` + `npm test` (560
+  testes verdes) + `npm run build` (verde) de novo do zero para confirmar, e então fez
+  o push.
+- **router 7 + RouterSync continua SEM validação humana no browser** — ver GOTCHA
+  abaixo. Isso não mudou; só o push foi destravado.
+
+## 2026-06-30 (run automático — migração de dependências: lucide-react, TypeScript, react-router-dom)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- Branch `auto/daily-improvements` recriada a partir de `feature/auth-telemetry` (PR #24 já mergeada).
+- **560 testes verdes (63 arquivos), build verde.** Todas as 3 migrações concluídas com commits locais.
+- **BLOQUEIO DE PUSH:** o proxy git desta sessão retornou "Not authorized to access repository danielluizdl/pre-flop-pro" para operações de escrita. Commits existem localmente. Daniel precisa verificar a autorização do GitHub no painel de configuração do ambiente Claude Code on the web e fazer o push manualmente, ou reautorizar e rodar de novo.
+  - Alternativa: `git push -u origin auto/daily-improvements` a partir de uma sessão com acesso de escrita.
+- **NÃO feito (conforme planejado):** Tailwind 4 (validação visual humana) e Vite 8 (smoke test no browser).
+
+### Feito nesta run (3 commits locais, cada um testado + build verde)
+
+1. **feat(deps): lucide-react 0.47 → 1.22** — todos os 18 ícones usados existem em v1 sem renomeação. Zero mudança de código-fonte.
+2. **feat(deps): TypeScript 5.7 → 6.0** — único ajuste necessário: substituir `vi.spyOn(global,` por `vi.spyOn(globalThis,` em 3 arquivos de teste (TS6 não reconhece `global` do Node no ambiente DOM). Zero erros de tipo na produção.
+3. **feat(deps): react-router-dom 6.30 → 7.18** — APIs usadas (BrowserRouter, useLocation, useNavigate, MemoryRouter) são idênticas em v7. RouterSync e seu ref `lastSynced` anti-loop-infinito intactos.
+
+### GOTCHA CRÍTICO — react-router-dom v7 + RouterSync
+- Testes e build passam, mas **router 7 + React 19 + RouterSync é a combinação mais frágil do projeto**.
+- O handoff anterior (PR #24) registrou que o RouterSync entrou em loop infinito com react-router 6 + React 19 — foi resolvido com o ref `lastSynced`. Com router 7 (nova versão), o timing de re-renders pode ser diferente novamente.
+- **REQUER VALIDACAO HUMANA NO BROWSER antes de mergear.** Abrir o app no preview do Cloudflare, navegar entre páginas, usar back/forward do browser, testar F5. Se o app travar ou piscar em loop: reverter o commit do router e registrar no handoff.
+
+### Pendências para próximas runs
+- Push dos 3 commits (bloqueado nesta sessão por falta de autorização de escrita no proxy).
+- Abertura de PR: auto/daily-improvements → feature/auth-telemetry.
+- Tailwind 4 e Vite 8 seguem fora do escopo até validação visual humana.
+- Cobertura incremental (alvos do run anterior continuam válidos: CoachPanel, TrainerPage, useStore).
+
+---
+
 ## 2026-06-30 (sessão interativa — migração base para React 19)
 - **React 18 → 19** (react/react-dom/@types). Feito interativamente e **VERIFICADO NO NAVEGADOR** (build+preview+Playwright: app monta, 0 pageerror). Mergeado JUNTO com as 13 fatias de cobertura do agente de hoje.
 - **Fix obrigatório:** `RouterSync` entrava em **loop infinito** no React 19 (ping-pong URL↔store entre os dois efeitos com react-router 6). Resolvido com um ref `lastSynced` que ignora a navegação recíproca que nós mesmos disparamos. Resto da suíte do agente passou no 19 sem mudança.

@@ -10,7 +10,7 @@ const OVERVIEW = {
 }
 
 function mockApi() {
-  vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+  vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
     const url = String(input)
     const data = url.includes('view=overview') ? { overview: OVERVIEW } : { rows: [] }
     return Promise.resolve({ json: () => Promise.resolve(data) } as unknown as Response)
@@ -47,7 +47,7 @@ describe('MyAccountStats', () => {
 
   it('erro de rede mostra mensagem + botão de tentar novamente que recarrega', async () => {
     let attempt = 0
-    vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
       attempt++
       // 1ª rodada (3 chamadas) falha; depois passa a responder.
       if (attempt <= 3) return Promise.reject(new Error('network'))
@@ -65,7 +65,7 @@ describe('MyAccountStats', () => {
   })
 
   it('falha ao listar sessões mostra erro (não "nenhuma sessão")', async () => {
-    vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
       const url = String(input)
       const data = url.includes('view=overview') ? { overview: OVERVIEW } : { rows: [] }
       return Promise.resolve({ json: () => Promise.resolve(data) } as unknown as Response)
@@ -79,7 +79,7 @@ describe('MyAccountStats', () => {
   })
 
   it('renderiza linhas das tabelas Por range e Piores mãos', async () => {
-    vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
       const url = String(input)
       let data: unknown = { rows: [] }
       if (url.includes('view=overview')) data = { overview: OVERVIEW }
@@ -95,7 +95,7 @@ describe('MyAccountStats', () => {
   })
 
   function mockDevices(over: { revokeDevice?: () => Promise<{ ok: boolean }>; revokeOtherDevices?: () => Promise<{ ok: boolean }> } = {}) {
-    vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
       const url = String(input)
       const data = url.includes('view=overview') ? { overview: OVERVIEW } : { rows: [] }
       return Promise.resolve({ json: () => Promise.resolve(data) } as unknown as Response)

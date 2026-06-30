@@ -73,7 +73,7 @@ describe('PlayerQuickSummary', () => {
   afterEach(() => vi.restoreAllMocks())
 
   function mockRows(rows: unknown[]) {
-    vi.spyOn(global, 'fetch').mockResolvedValue({ ok: true, json: () => Promise.resolve({ rows }) } as unknown as Response)
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: () => Promise.resolve({ rows }) } as unknown as Response)
   }
 
   it('mostra as três colunas com os ranges do jogador', async () => {

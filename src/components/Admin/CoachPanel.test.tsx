@@ -8,7 +8,7 @@ import { getRenderCount, resetRenderCount } from '../../test/renderCount'
 import type { Range } from '../../types'
 
 function mockApi() {
-  vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+  vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
     const url = String(input)
     const data = url.includes('/admin/users')
       ? { users: [] }
@@ -82,7 +82,7 @@ describe('CoachPanel', () => {
   })
 
   it('o filtro de jogadores busca por nome no dropdown', async () => {
-    vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
       const url = String(input)
       const data = url.includes('/admin/users')
         ? { users: [
@@ -104,7 +104,7 @@ describe('CoachPanel', () => {
 
   it('seção "Por range" mostra erro e "Tentar novamente" recarrega', async () => {
     let failByRange = true
-    vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
       const url = String(input)
       if (url.includes('/admin/users')) {
         return Promise.resolve({ ok: true, json: () => Promise.resolve({ users: [] }) } as unknown as Response)
@@ -154,7 +154,7 @@ describe('CoachPanel', () => {
       userId, username: name.toLowerCase(), name, hands: 100, accuracy: 70,
       graves: 5, imprecisos: 2, consults: 3, sessions: 4, durationSeconds: 3600, lastActivity: 0,
     })
-    vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
       const url = String(input)
       let data: unknown = { rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }
       if (url.includes('/admin/users')) data = { users: [] }
@@ -174,7 +174,7 @@ describe('CoachPanel', () => {
 
   it('erro de seção do coach mostra "Tentar novamente" e recarrega', async () => {
     let byRangeCalls = 0
-    vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
       const url = String(input)
       if (url.includes('/admin/users')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ users: [] }) } as unknown as Response)
       if (url.includes('view=by-range')) {

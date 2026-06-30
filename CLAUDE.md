@@ -1,12 +1,12 @@
 # Pre-Flop Pro — Guia do Projeto
 
 ## Stack
-- **Vite + React + TypeScript + Tailwind CSS + Zustand**
+- **Vite + React 19 + TypeScript + Tailwind CSS 3 + Zustand**
 - Sem backend. Dados persistidos via `localStorage` manualmente (exceto `darkMode` que usa `zustand/persist`).
 - Deploy: GitHub Pages via GitHub Actions ao fazer push para `main` (`https://github.com/danielluizdl/pre-flop-pro`)
 - **POLÍTICA DE PRODUÇÃO (CONGELADA):** o link em uso pelos jogadores é **`https://danielluizdl.github.io/pre-flop-pro/`** (GitHub Pages, deploy do `main`). Ele deve ficar **INTACTO** até o site novo estar completo. Portanto: **NÃO mergear nada no `main`** e **NÃO mexer no que afeta o GitHub Pages** até liberação explícita do Daniel. Todo o desenvolvimento do "site completo" acontece na branch dedicada **`feature/auth-telemetry`** (e branches derivadas, ex.: `auto/daily-improvements` do agente), validadas no preview do Cloudflare Pages. Obs.: `public/_headers` (CSP/headers) só vale no Cloudflare Pages — o GitHub Pages o ignora, então mexer nele nunca afeta o link de produção.
-- Testes: **Vitest** (`npm test` → `vitest run`), ambiente jsdom. Specs em `src/**/*.test.ts`, **`src/**/*.test.tsx`** (componentes), `worker/**/*.test.js`, `functions/**/*.test.js` (ver `vitest.config.ts`). Testes de componente com **React Testing Library** + `@testing-library/jest-dom` + **`jest-axe`** (a11y); setup em `src/test/setup.ts`; exemplo-padrão `src/components/ui/ComboCounter.test.tsx`. **Epic ativo do agente diário: suíte de testes + acessibilidade — ver `.agent/epic.md`** (o agente avança uma fatia substancial por execução).
-- Bundle: `adminRanges.json` (1.4MB) é separado em chunk próprio via `manualChunks` (`vite.config.ts`), que também separa vendors (`vendor-react` = react/react-dom/scheduler/react-router; `vendor-sentry`; `vendor` = restante). Chunk principal do app ~303KB (gzip ~47KB); o único chunk acima de 500KB é o JSON `admin-ranges` (dados, separado de propósito).
+- Testes: **Vitest** (`npm test` → `vitest run`), ambiente jsdom. Specs em `src/**/*.test.ts`, **`src/**/*.test.tsx`** (componentes), `worker/**/*.test.js`, `functions/**/*.test.js` (ver `vitest.config.ts`). Testes de componente com **React Testing Library** + `@testing-library/jest-dom` + **`jest-axe`** (a11y); setup em `src/test/setup.ts`; exemplo-padrão `src/components/ui/ComboCounter.test.tsx`. **560 testes verdes (63 arquivos)** — suíte de testes + a11y já coberta. Ver `.agent/handoff.md` para o estado atual do agente diário e próximas fatias.
+- Bundle: `adminRanges.json` (1.4MB) é separado em chunk próprio via `manualChunks` (`vite.config.ts`), que também separa vendors (`vendor-react` = react/react-dom/scheduler **apenas** — react-router fica em `vendor` pois incluí-lo aqui cria ciclo vendor↔vendor-react → tela branca; `vendor-sentry`; `vendor` = restante). Chunk principal do app ~265KB (gzip ~38KB); o único chunk acima de 500KB é o JSON `admin-ranges` (dados, separado de propósito).
 
 ## Estrutura de Pastas
 ```
@@ -24,6 +24,7 @@ src/
                   MultiPlayerSelect, RangeSelect e PeriodFilter são inline no CoachPanel.tsx)
     ui/           PokerTableEditor.tsx, HandQuickSelect.tsx, RangePreviewModal.tsx,
                   ComboCounter.tsx, PrereqRangePicker.tsx, RangeMark.tsx, tableGeometry.ts, PokerTable.module.css
+  i18n/           index.ts (Proxy reativo `t`; dicionários pt.ts/en.ts/es.ts — 507 chaves; `setLangDict`+`LANGS`; `LanguageSelect` em TopNav/Sidebar/LoginPage)
   store/          useStore.ts  (toda a lógica de estado)
   types/          index.ts     (tipos, constantes de posições/slots)
   utils/          hands.ts     (ALL_HANDS, makeEmptyGrid, getRngCorrectAction, getRngBands, formatRngBands, getTopFrequencyActions, stackMatchesRange, generateSuits, focusWeight, weightedPick)
@@ -68,7 +69,7 @@ SLOTS_6MAX / SLOTS_8MAX: Slot[]              // {t:%, l:%} posição visual dos 
 'fbr-ranges-v1'           → Range[]          (ranges salvos — gravados em FORMATO ESPARSO)
 'fbr-training-history-v1' → TrainingSession[] (histórico de sessões)
 'pfp-hand-perf-v1'        → HandPerfMap       (Record<rangeId, Record<hand, {c,t}>>) — acumulativo
-'fbr-ui-state'            → {darkMode}        (zustand persist)
+'fbr-ui-state'            → {darkMode, lang}   (zustand persist)
 'pfp-last-published-hash' → string           (hash djb2 do último publish — antes guardava o JSON inteiro)
 'admin-ranges-version' / 'fbr-deleted-admin-ids' / 'admin-worker-url'
 ```
@@ -104,7 +105,8 @@ Cloudflare **Pages Functions** (serverless, cada arquivo exporta `onRequest(cont
 
 ### Frontend de nuvem
 - **Store**: `currentUser`, `authToken` (sessionStorage `pfp-auth-token`), `justSignedUp`, ações `authLogin`/`authSignup`/`authLogout`/`changePassword`/`restoreSession` (em `main.tsx` antes do render), `syncTeamRanges`/`publishTeamRanges` (ranges D1). Telemetria via `fireEvent()` → `src/utils/eventQueue.ts` (fila localStorage `pfp-event-queue`, cap 500, retry/flush). `startDrillSession` gera `session_uuid`; cada `hand` envia `client_event_id`.
-- **Rotas** (`react-router-dom` + `src/components/Layout/RouterSync.tsx`): espelha URL↔`page` do store (`/dashboard`, `/ranges`, `/drill`, `/historico`, `/coach`); `public/_redirects` (`/* /index.html 200`). Lazy/Suspense em CoachPanel/TrainerPage/StatsPage + fluxo de edição (RangeSetup/RangeEditor/TableEditor/CategoryDetail).
+- **i18n** (`src/i18n/`): `t` é um **Proxy** que lê o dicionário do idioma vigente (`pt`/`en`/`es`, 507 chaves). Trocar idioma via `setLang` re-renderiza via `key={lang}` no `AppLayout`. `lang` persistido em `fbr-ui-state`. **Não capturar `t.x.y` em constantes de módulo** — congela o idioma do boot. Tokens de domínio não traduzidos (FOLD/CALL/RAISE/ALL-IN, BB, RNG, posições). Para adicionar chave: editar `pt.ts`, `en.ts` e `es.ts` (tsc força completude).
+- **Rotas** (`react-router-dom` v6 + `src/components/Layout/RouterSync.tsx`): espelha URL↔`page` do store (`/dashboard`, `/ranges`, `/drill`, `/historico`, `/coach`); `public/_redirects` (`/* /index.html 200`). Lazy/Suspense em CoachPanel/TrainerPage/StatsPage + fluxo de edição (RangeSetup/RangeEditor/TableEditor/CategoryDetail). **GOTCHA React 19:** RouterSync usa ref `lastSynced` p/ evitar loop infinito ping-pong URL↔store — não simplificar.
 - **Observabilidade (`src/utils/sentry.ts`)**: init só com `VITE_SENTRY_DSN` (fail-open: tudo vira no-op sem o DSN). API: `captureError(err, {extra})`, `captureMessage(msg, level)`, `addBreadcrumb(category, message, data?)`. **Privacidade**: `beforeSend` faz `scrubEvent` (redige e-mail/token via `redactString`, dropa headers `Authorization`/`Cookie`); `captureError`/`addBreadcrumb`/`captureMessage` também redigem antes de enviar — **nunca** logam senha/token/e-mail crus. **O que é capturado**: crashes de render (`ErrorBoundary`, raiz e por área), erros silenciosos de rede (`MyAccountStats` + hooks do `CoachPanel`, publish), e estados degradados via `captureMessage('warning')` (cota de localStorage estourada, `validateRanges` achando problemas no load). **Breadcrumbs**: navegação (`setPage`), início de drill, login/logout, publish — reconstroem o caminho até um erro. `sendDefaultPii:false`, `tracesSampleRate:0`.
 - **LoginPage** (login/signup/forgot + widget `Turnstile.tsx` se `VITE_TURNSTILE_KEY`), **WelcomeModal**, **ChangePasswordModal**.
 - **CoachPanel** (`src/components/Admin/CoachPanel.tsx`, rota `/coach`): abas "Visão do time" e "Por jogador". Filtros: `MultiPlayerSelect` (multi, checkboxes alfabéticos, **com input de busca** no topo do dropdown), `RangeSelect` (combobox custom agrupado por posição: clicar abre dropdown com input "Buscar range…" embutido que restringe a lista em tempo real — substitui o `<select>` nativo), e `PeriodFilter` (período). **`PeriodFilter`**: Tudo/7/30/90 dias **+ opção "Custom"** que revela dois `<input type="date">` (início → fim, `[color-scheme:dark]`); ao preencher ambos envia `from`/`to` (unix s) em vez de `days`. **Seção "Matriz do range"** em **duas zonas** (`flex items-start gap-6`): esquerda `flex-1 min-w-0 flex flex-wrap` com **Range real** (gabarito, do `range.grid` via `RangeActionGrid`) + **Range jogado** (reconstruído de `played` via `RangeActionGrid`); direita `shrink-0` coesa com **Precisão/erros** (`RangeHeatGrid`), **`TopHandsPanel`** (abas Top 20 erros / Top 20 consultas, linhas clicáveis — **logo ao lado da Precisão/erros**) e um **slot fixo `w-[270px] shrink-0`** que reserva o espaço do **`HandDetailCard`** (abre ao clicar uma mão **sem deslocar/reflowar os demais painéis**, pois a largura da zona direita é constante). O `HandDetailCard` abre **à direita do Top 20 e no mesmo topo** (assumido pelo `scripts/verifyLayout.cjs`). `ComboCounter` abaixo das matrizes real/jogado. Caixas **colapsáveis** (default minimizadas), nesta ordem: **Por range** (PRIMEIRA — a visão mais importante; tabela ORDENÁVEL por Mãos/Precisão/Blunder/Consultas/Jogadores via `brSortKey`/`brSortDir`+`handleBrSort`, default Mãos desc; largura natural ao conteúdo; coluna **"Tipo de erro"** com label colorido + subtexto `N blunders · M imprecisos` e `title` explicativo (`SEVERITY_HELP`); legenda no topo explicando Conceitual/Estratégia mista/Misto), **Resumo do time** (ORDENÁVEL clicando no cabeçalho ▲/▼ + linha clicável abre `PlayerQuickSummary` = ranges mais treinados / onde mais erra / mais consultados), Maiores leaks (impacto+Wilson), Segmentos, Lacunas de conhecimento, Evolução (regressão), Leaks relativos (z-score). **"Hotspots de consulta" foi REMOVIDO do front** (endpoint `consult-hotspots` segue no `analytics.js`, sem uso). **"Foco da semana" foi REMOVIDO.** **Vocabulário:** erro `grave` (interno, no D1/store/tipos) é exibido como **"Blunder"** em toda a UI (painel coach + app do jogador: feedback do drill, DrillSummary, MyAccountStats, RangeHeatGrid); `severity:'grave'` NÃO muda no banco/código.
@@ -350,26 +352,24 @@ Container: `w-full h-[calc(100vh-90px)] overflow-auto`
 - Não precisa confirmar cada passo antes de executar
 - Prefere commits separados por feature
 
-## Histórico do Agente Diário + pendências (Daniel)
-Consolidado das 3 rotinas do agente (21–23/06/2026). **PR #5 MERGEADO em 24/06** em `feature/auth-telemetry` (commit de merge `c727e15`). Memória em `.agent/handoff.md`.
+## Histórico do Agente Diário + estado atual (30/06/2026)
+Estado completo em `.agent/handoff.md`. Resumo consolidado:
 
-### O que cada rotina entregou
-- **21/06 (grooming/docs):** estabeleceu `.agent/handoff.md`; teste de `download.ts`.
-- **22/06 (segunda — testes/qualidade):** teste de `sentry.ts`; auditoria de segurança; `npm audit fix` (2 CVEs high → 0) + `.github/dependabot.yml`; **hardening N1–N4** (Daniel autorizou quebrar o gate de auth nesta sessão): N1 PBKDF2+constant-time+re-hash legado no login; N2 Turnstile fail-closed; N3 `public/_headers` (HSTS/CSP/etc.) + CORS por allowlist (`functions/_middleware.js`); N4 scrub de PII no Sentry + gestão de sessões ativas (`functions/api/me/devices.js` + UI em `MyAccountStats`).
-- **23/06 (terça — UI):** indicador de preset ativo no `BrushControls` (puramente visual).
+### PRs mergeados em `feature/auth-telemetry` (cronológico)
+- **PR #5 (24/06):** hardening de segurança — PBKDF2, Turnstile fail-closed, CSP/CORS (`_headers`+`_middleware.js`), rate-limit KV, gestão de sessões ativas, Sentry PII scrub.
+- **PR #10 (25–26/06):** suíte de testes completa (RTL+axe todos os componentes), a11y (modais, aria, focus-trap `useModalA11y`), code-split vendors (chunk principal ~265KB), CLAUDE.md docs.
+- **PR #12 (26/06):** perf de render (HandMatrix/RangeHeatGrid/RangeActionGrid/HandHistorySidebar/OverviewTableRow memoizados; `renderCount.ts`; lazy-load de 4 páginas), robustez UX (retry/error/empty/Skeleton), ErrorBoundary por área, alerts → inline + DrillSummary.
+- **PR #16 (27/06):** observabilidade de erros — `addBreadcrumb`/`captureMessage`, `captureError` em todos os catches silenciosos, Skeleton, eventQueue degradada reportada.
+- **PR #22 (29/06):** i18n completo (PT/EN/ES, 507 chaves, `src/i18n/`), responsividade mobile (`sm:`/`md:`/`lg:`/`xl:` aditivos), mesa de poker responsiva (ResizeObserver+scale), tsconfig `noUnusedLocals`/`noUnusedParameters`.
+- **PR #23 (29/06):** seletor de idiomas PT-BR/EN/ES (TopNav/Sidebar/LoginPage), `en.ts`/`es.ts` completos, `store.lang` persistido.
+- **PR #24 (30/06):** **React 18 → 19** (verificado no browser via Playwright; fix `RouterSync` loop infinito com ref `lastSynced`; fix ciclo `manualChunks` → `vendor-react` só react/react-dom/scheduler) + 13 fatias de cobertura → **560 testes verdes (63 arquivos)**.
 
-### Validações feitas (24/06 — Daniel validou; review de segurança confirmou)
-- [x] **PR #5 mergeado** em `feature/auth-telemetry`.
-- [x] **CSP / PBKDF2 / login legado (re-hash) / sessões ativas** — validados no preview.
-- [x] **GitHub:** Secret Scanning + Push Protection + Dependabot alerts/security-updates **habilitados** (via API).
+### Estado atual (30/06/2026)
+- **560 testes verdes (63 arquivos)**, build verde, preview OK (Playwright: app monta, 0 pageerror).
+- **React 19** em uso na branch. react-router 6, lucide-react 0.47, Tailwind 3, Vite 6, TS 5 — versões estáveis.
+- **NÃO mergear Dependabot #20** (Tailwind 4/Vite 8/TS 6) **e #21** (router 7/lucide 1) — migrações maiores adiadas, precisam de sessão dedicada com validação no browser.
 
-### Pendências de segurança
-- [x] **Rate limit real (N2, issue #6) — FEITO via KV (24/06).** `checkRateLimitKV(env, ip)` em `_utils.js` (janela fixa 8/min por IP no KV `RATE_LIMIT`, binding no `wrangler.toml`, namespace `7c75ee2e...`). Fail-open: sem binding cai no in-memory; se o KV falhar, libera (nunca trava login por infra). Usado em `login.js`/`signup.js`. Persiste entre isolates (ao contrário do Map em memória).
-- [ ] **MFA** em GitHub e Cloudflare (segurança de conta, manual — só o Daniel).
-
-### AdminPanel legado vs CSP — RESOLVIDO (opção A, 24/06)
-- [x] O **CSP** (`public/_headers`, `connect-src`) agora inclui `https://preflop-admin.loureirodlg.workers.dev`, então o **AdminPanel legado** (`adminSaveRanges` em `useStore.ts`, montado em Sidebar/TopNav) volta a publicar no worker mesmo dentro do app Cloudflare. O **coach publish (D1)** já funcionava (mesma origem). Nenhum efeito no GitHub Pages (ignora `_headers`).
-
-### Issues abertas (não bloqueiam; temas de outros dias do agente)
-- [ ] **#4** — code-split do chunk principal (~553KB > 500KB) — performance.
-- [ ] **#2** — atualizar a Estrutura de Pastas/módulos deste CLAUDE.md (Auth/, CoachPanel, TopNav/RouterSync, MyAccountStats, utils novos) — docs.
+### Pendências
+- [ ] **MFA** em GitHub e Cloudflare (manual — só o Daniel).
+- [ ] **Dependabot #20/#21** — migrações Tailwind 4 / react-router 7 (alto risco visual/navegação; NÃO delegar ao agente sem smoke test automatizado no cloud).
+- [x] Todas as issues do agente (#2 docs, #4 chunk, #6 rate-limit, #10–#24) fechadas ou mergeadas.
