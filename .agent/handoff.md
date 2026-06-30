@@ -1,5 +1,12 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-06-30 (sessão interativa — migração base para React 19)
+- **React 18 → 19** (react/react-dom/@types). Feito interativamente e **VERIFICADO NO NAVEGADOR** (build+preview+Playwright: app monta, 0 pageerror). Mergeado JUNTO com as 13 fatias de cobertura do agente de hoje.
+- **Fix obrigatório:** `RouterSync` entrava em **loop infinito** no React 19 (ping-pong URL↔store entre os dois efeitos com react-router 6). Resolvido com um ref `lastSynced` que ignora a navegação recíproca que nós mesmos disparamos. Resto da suíte do agente passou no 19 sem mudança.
+- **560 testes verdes (63 arquivos), build verde, render OK no browser.**
+- **LIÇÃO CRÍTICA p/ o agente (repetiu 2x):** `npm test` + `npm run build` VERDES **não garantem** que o app renderiza. Tanto a divisão de chunks (`forwardRef undefined`) quanto o loop do RouterSync passaram em teste/build mas davam **tela branca**. Para mudanças de **dependência (major), `vite.config` chunks, ou react-router/RouterSync**: ser conservador e SINALIZAR pra validação humana no navegador — não assumir que verde = funcionando.
+- **NÃO mergear** os PRs Dependabot **#20** (Tailwind 4/Vite 8/TS 6) e **#21** (router 7/lucide 1) — são migrações maiores separadas, adiadas de propósito. React 19 foi feito SOZINHO (sem router 7/lucide 1), e funciona.
+
 ## 2026-06-30 (cobertura incremental segura — sem epic novo aberto pelo Daniel)
 
 ### Estado (PONTO DE PARTIDA do próximo run)
