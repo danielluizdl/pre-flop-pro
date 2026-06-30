@@ -78,6 +78,63 @@ describe('MyAccountStats', () => {
     expect(screen.queryByText('Nenhuma sessão ativa.')).not.toBeInTheDocument()
   })
 
+  it('renderiza linhas das tabelas Por range e Piores mãos', async () => {
+    vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      let data: unknown = { rows: [] }
+      if (url.includes('view=overview')) data = { overview: OVERVIEW }
+      else if (url.includes('view=by-range')) data = { rows: [{ rangeId: 1, rangeName: 'BTN RFI', hands: 50, correct: 40, graves: 2, consults: 3, lastTrained: 0, accuracy: 80 }] }
+      else if (url.includes('view=by-hand')) data = { rows: [{ hand: 'A5s', total: 12, correct: 4, accuracy: 33 }] }
+      return Promise.resolve({ json: () => Promise.resolve(data) } as unknown as Response)
+    })
+    useStore.setState({ authToken: 'tok', listDevices: async () => ({ ok: true, devices: [] }) })
+    render(<MyAccountStats />)
+    expect(await screen.findByText('BTN RFI')).toBeInTheDocument()
+    expect(screen.getByText('A5s')).toBeInTheDocument()
+    expect(screen.getByText('33%')).toBeInTheDocument()
+  })
+
+  function mockDevices(over: { revokeDevice?: () => Promise<{ ok: boolean }>; revokeOtherDevices?: () => Promise<{ ok: boolean }> } = {}) {
+    vi.spyOn(global, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      const data = url.includes('view=overview') ? { overview: OVERVIEW } : { rows: [] }
+      return Promise.resolve({ json: () => Promise.resolve(data) } as unknown as Response)
+    })
+    useStore.setState({
+      authToken: 'tok',
+      listDevices: async () => ({ ok: true, devices: [
+        { id: 1, current: true, createdAt: 1700000000, expiresAt: 1800000000 },
+        { id: 2, current: false, createdAt: 1700000000, expiresAt: 1800000000 },
+      ] }),
+      ...over,
+    })
+  }
+
+  it('lista sessões e marca a sessão atual', async () => {
+    mockDevices()
+    render(<MyAccountStats />)
+    expect(await screen.findByText('Sessão #1')).toBeInTheDocument()
+    expect(screen.getByText('Esta sessão')).toBeInTheDocument()
+  })
+
+  it('encerra outra sessão chamando revokeDevice com o id', async () => {
+    const revokeDevice = vi.fn(async () => ({ ok: true }))
+    mockDevices({ revokeDevice })
+    render(<MyAccountStats />)
+    await screen.findByText('Sessão #1')
+    fireEvent.click(screen.getByRole('button', { name: 'Encerrar' }))
+    expect(revokeDevice).toHaveBeenCalledWith(2)
+  })
+
+  it('"Encerrar as outras" chama revokeOtherDevices', async () => {
+    const revokeOtherDevices = vi.fn(async () => ({ ok: true }))
+    mockDevices({ revokeOtherDevices })
+    render(<MyAccountStats />)
+    await screen.findByText('Sessão #1')
+    fireEvent.click(screen.getByRole('button', { name: /Encerrar as outras/ }))
+    expect(revokeOtherDevices).toHaveBeenCalled()
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     mockApi()
     const { container } = render(<MyAccountStats />)
