@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { useStore } from './useStore'
 import { ALL_HANDS, makeEmptyGrid, focusWeight } from '../utils/hands'
 import type { HandData, Range, PositionConfig } from '../types'
