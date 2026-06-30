@@ -199,4 +199,189 @@ describe('CoachPanel', () => {
     await screen.findByRole('button', { name: 'Visão do time' })
     expect((await axe(container)).violations).toEqual([])
   })
+
+  // --- Fatia: ordenação da tabela "Por range" ---
+
+  function mockApiWithByRange() {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/admin/users')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ users: [] }) } as unknown as Response)
+      }
+      if (url.includes('view=by-range')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            rows: [
+              { rangeId: 1, rangeName: 'BTN RFI', hands: 50, accuracy: 70, graves: 3, imprecisos: 1, consults: 2, players: 1 },
+              { rangeId: 2, rangeName: 'CO RFI', hands: 100, accuracy: 80, graves: 1, imprecisos: 0, consults: 5, players: 2 },
+            ],
+          }),
+        } as unknown as Response)
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }) } as unknown as Response)
+    })
+    useStore.setState({ authToken: 'tok' })
+  }
+
+  it('tabela Por range ordena por Mãos desc por padrão', async () => {
+    mockApiWithByRange()
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Por range/ }))
+    const rows = await screen.findAllByRole('row')
+    // header + 2 linhas de dados; CO RFI (100 mãos) deve vir antes de BTN RFI (50)
+    const texts = rows.map(r => r.textContent ?? '')
+    const coIdx = texts.findIndex(t => t.includes('CO RFI'))
+    const btnIdx = texts.findIndex(t => t.includes('BTN RFI'))
+    expect(coIdx).toBeLessThan(btnIdx)
+  })
+
+  it('clicar coluna Mãos inverte para asc (BTN RFI antes de CO RFI)', async () => {
+    mockApiWithByRange()
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Por range/ }))
+    await screen.findByText('CO RFI')
+    fireEvent.click(screen.getByRole('button', { name: /^Mãos/ }))
+    const rows = screen.getAllByRole('row')
+    const texts = rows.map(r => r.textContent ?? '')
+    const btnIdx = texts.findIndex(t => t.includes('BTN RFI'))
+    const coIdx = texts.findIndex(t => t.includes('CO RFI'))
+    expect(btnIdx).toBeLessThan(coIdx)
+  })
+
+  it('clicar coluna Precisão muda a ordenação para accuracy desc', async () => {
+    mockApiWithByRange()
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Por range/ }))
+    await screen.findByText('CO RFI')
+    fireEvent.click(screen.getByRole('button', { name: /^Precisão/ }))
+    const rows = screen.getAllByRole('row')
+    const texts = rows.map(r => r.textContent ?? '')
+    // CO RFI (80%) deve vir antes de BTN RFI (70%)
+    const coIdx = texts.findIndex(t => t.includes('CO RFI'))
+    const btnIdx = texts.findIndex(t => t.includes('BTN RFI'))
+    expect(coIdx).toBeLessThan(btnIdx)
+  })
+
+  // --- Fatia: seções — erro e vazio ---
+
+  function mockApiWithViewError(errorView: string) {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/admin/users')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ users: [] }) } as unknown as Response)
+      }
+      if (url.includes(`view=${errorView}`)) {
+        return Promise.resolve({ ok: false, json: () => Promise.resolve({}) } as unknown as Response)
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }) } as unknown as Response)
+    })
+    useStore.setState({ authToken: 'tok' })
+  }
+
+  it('seção Evolução mostra "Erro ao carregar" quando a API falha', async () => {
+    mockApiWithViewError('trend')
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Evolução/ }))
+    expect(await screen.findByText('Erro ao carregar')).toBeInTheDocument()
+  })
+
+  it('seção Segmentos mostra "Erro ao carregar" quando a API falha', async () => {
+    mockApiWithViewError('segments')
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Segmentos/ }))
+    expect(await screen.findByText('Erro ao carregar')).toBeInTheDocument()
+  })
+
+  it('seção Lacunas mostra "Erro ao carregar" quando a API falha', async () => {
+    mockApiWithViewError('knowledge-gaps')
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Lacunas/ }))
+    expect(await screen.findByText('Erro ao carregar')).toBeInTheDocument()
+  })
+
+  it('seção Leaks relativos mostra "Erro ao carregar" quando a API falha', async () => {
+    mockApiWithViewError('player-ranges')
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Leaks relativos/ }))
+    expect(await screen.findByText('Erro ao carregar')).toBeInTheDocument()
+  })
+
+  it('seção Maiores leaks mostra "Sem dados." quando retorna vazio', async () => {
+    mockApi()
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Maiores leaks/ }))
+    expect(await screen.findByText('Sem dados.')).toBeInTheDocument()
+  })
+
+  it('seção Segmentos mostra "Sem dados." quando retorna vazio', async () => {
+    mockApi()
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Segmentos/ }))
+    expect(await screen.findByText('Sem dados.')).toBeInTheDocument()
+  })
+
+  // --- Fatia: clicar linha Por range → carrega range-grid ---
+
+  it('clicar numa linha da tabela Por range carrega a matriz 13×13', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/admin/users')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ users: [] }) } as unknown as Response)
+      }
+      if (url.includes('view=range-grid')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            cells: [
+              { hand: 'AA', total: 20, correct: 16, graves: 2, consults: 1, correctAction: 'raise', topWrong: 'fold', played: { fold: 0, call: 0, raise: 20, allin: 0, extra: 0 } },
+            ],
+          }),
+        } as unknown as Response)
+      }
+      if (url.includes('view=by-range')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            rows: [{ rangeId: 1, rangeName: 'BTN RFI', hands: 50, accuracy: 70, graves: 3, imprecisos: 1, consults: 2, players: 1 }],
+          }),
+        } as unknown as Response)
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }) } as unknown as Response)
+    })
+    useStore.setState({ authToken: 'tok' })
+
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Por range/ }))
+    fireEvent.click(await screen.findByText('BTN RFI'))
+    // Matriz carregada: título e TopHandsPanel (instrução de clique visível)
+    expect(await screen.findByText(/Matriz do range/)).toBeInTheDocument()
+    expect(await screen.findByText(/Top 20 erros/)).toBeInTheDocument()
+  })
+
+  // --- Fatia: Maiores leaks com dados ---
+
+  it('seção Maiores leaks exibe linha de mão quando há dados', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/admin/users')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ users: [] }) } as unknown as Response)
+      }
+      if (url.includes('view=leaks')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            rows: [{ hand: 'AKo', rangeName: 'BTN RFI', total: 30, accuracy: 55, accuracyLower: 48, graves: 5, imprecisos: 3, consults: 2, confidence: 'high', impact: 4.5 }],
+          }),
+        } as unknown as Response)
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }) } as unknown as Response)
+    })
+    useStore.setState({ authToken: 'tok' })
+
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Maiores leaks/ }))
+    expect(await screen.findByText('AKo')).toBeInTheDocument()
+    expect(screen.getByText('BTN RFI')).toBeInTheDocument()
+  })
 })
