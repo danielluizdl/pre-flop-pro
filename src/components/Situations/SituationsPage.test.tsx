@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { axe } from 'jest-axe'
 import { SituationsPage } from './SituationsPage'
@@ -28,6 +28,62 @@ describe('SituationsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /BTN/ }))
     expect(screen.getByText('BTN RFI')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Treinar/ })).toBeInTheDocument()
+  })
+
+  it('Editar chama loadRangeForEdit do range', () => {
+    const loadRangeForEdit = vi.fn()
+    useStore.setState({ ranges: [RANGE], loadRangeForEdit })
+    render(<SituationsPage />)
+    fireEvent.click(screen.getByRole('button', { name: /BTN/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Editar/ }))
+    expect(loadRangeForEdit).toHaveBeenCalledWith(1)
+  })
+
+  it('Apagar pede confirmação e só deleta se confirmado', () => {
+    const deleteRange = vi.fn()
+    useStore.setState({ ranges: [RANGE], deleteRange })
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true)
+    render(<SituationsPage />)
+    fireEvent.click(screen.getByRole('button', { name: /BTN/ }))
+    const del = screen.getByRole('button', { name: 'Apagar range' })
+    fireEvent.click(del)
+    expect(deleteRange).not.toHaveBeenCalled()
+    fireEvent.click(del)
+    expect(deleteRange).toHaveBeenCalledWith(1)
+    confirmSpy.mockRestore()
+  })
+
+  it('mostra a precisão acumulada do range quando há dados', () => {
+    useStore.setState({
+      ranges: [RANGE],
+      handPerformance: { 1: { AA: { c: 8, t: 10 } } },
+    })
+    render(<SituationsPage />)
+    fireEvent.click(screen.getByRole('button', { name: /BTN/ }))
+    expect(screen.getByText('80%')).toBeInTheDocument()
+  })
+
+  it('abre o heatmap sem dados de treino', () => {
+    useStore.setState({ ranges: [RANGE], handPerformance: {} })
+    render(<SituationsPage />)
+    fireEvent.click(screen.getByRole('button', { name: /BTN/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Ver heatmap' }))
+    expect(screen.getByRole('dialog', { name: 'BTN RFI' })).toBeInTheDocument()
+    expect(screen.getByText('Nenhum dado de treino ainda.')).toBeInTheDocument()
+  })
+
+  it('heatmap com dados mostra botão de resetar e fecha pelo ✕', () => {
+    const clearHandPerformance = vi.fn()
+    useStore.setState({
+      ranges: [RANGE],
+      handPerformance: { 1: { AA: { c: 5, t: 10 } } },
+      clearHandPerformance,
+    })
+    render(<SituationsPage />)
+    fireEvent.click(screen.getByRole('button', { name: /BTN/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Ver heatmap' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Resetar dados' }))
+    expect(clearHandPerformance).toHaveBeenCalledWith(1)
   })
 
   it('não tem violações de acessibilidade (axe)', async () => {

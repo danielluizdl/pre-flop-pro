@@ -1,5 +1,57 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-06-30 (sessão interativa — migração base para React 19)
+- **React 18 → 19** (react/react-dom/@types). Feito interativamente e **VERIFICADO NO NAVEGADOR** (build+preview+Playwright: app monta, 0 pageerror). Mergeado JUNTO com as 13 fatias de cobertura do agente de hoje.
+- **Fix obrigatório:** `RouterSync` entrava em **loop infinito** no React 19 (ping-pong URL↔store entre os dois efeitos com react-router 6). Resolvido com um ref `lastSynced` que ignora a navegação recíproca que nós mesmos disparamos. Resto da suíte do agente passou no 19 sem mudança.
+- **560 testes verdes (63 arquivos), build verde, render OK no browser.**
+- **LIÇÃO CRÍTICA p/ o agente (repetiu 2x):** `npm test` + `npm run build` VERDES **não garantem** que o app renderiza. Tanto a divisão de chunks (`forwardRef undefined`) quanto o loop do RouterSync passaram em teste/build mas davam **tela branca**. Para mudanças de **dependência (major), `vite.config` chunks, ou react-router/RouterSync**: ser conservador e SINALIZAR pra validação humana no navegador — não assumir que verde = funcionando.
+- **NÃO mergear** os PRs Dependabot **#20** (Tailwind 4/Vite 8/TS 6) e **#21** (router 7/lucide 1) — são migrações maiores separadas, adiadas de propósito. React 19 foi feito SOZINHO (sem router 7/lucide 1), e funciona.
+
+## 2026-06-30 (cobertura incremental segura — sem epic novo aberto pelo Daniel)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- **Epic #15 (observabilidade) e #17 (3 opções) já fechados/entregues.** Daniel ainda NÃO abriu/escolheu um epic novo.
+  Sem decisão, esta run seguiu o protocolo do handoff: **cobertura incremental segura** (testes + a11y), nada de backend,
+  nada de novo epic. Foco: derrubar as maiores lacunas de cobertura (medidas com `@vitest/coverage-v8`, dep instalada só
+  para análise e NÃO commitada).
+- **PR #23 (seletor de idiomas) já estava MERGEADA** em `feature/auth-telemetry`. A branch `auto/daily-improvements` foi
+  recriada a partir de `feature/auth-telemetry` (mergeada a base, que tinha 5 commits novos: bump de actions + fix de ciclo de chunk).
+- **560 testes verdes (63 arquivos)** (era 482), build verde. **PR NOVA aberta** auto/daily-improvements → feature/auth-telemetry. `main`/produção intactos.
+
+### Feito nesta run (13 fatias, cada uma commit+push+verde)
+1. **test(error-boundary):** fluxo "Exportar backup e resetar dados" (download, dupla confirmação, reset+reload, catch de backup).
+2. **test(brush):** condição custom do BrushControls (nome/pct/cor/remover devolve extra ao fold) + raiseSize.
+3. **test(ranges):** ações do RangeCard (editar/apagar com confirm/precisão acumulada) + modal de heatmap (sem dados / resetar).
+4. **test(my-account):** linhas das tabelas Por range / Piores mãos + gestão de sessões ativas (encerrar / encerrar as outras).
+5. **test(editor):** RangeEditorPage — nome, presets de stack, limpar, prereq picker, limpar grid, edição de grids da sessão.
+6. **test(table-editor):** cenários (add/editar/remover/finalizar com confirm), botões de stack, troca de ação (updateRole), voltar.
+7. **test(hand-quick-select):** aplicar/limpar pincel por grupo, desabilitado com pincel zerado, toggle do filtro.
+8. **test(store) scenarioActions:** initTableConfig/setupNewRange + updateHero/Role/Bet/Stack/setAllStacks + buffer de cenários.
+9. **test(store) gridActions:** pincel sobre grid, grids da sessão (push/update/remove), seleção do drill, setTableFormat/prereq/toggleEditorPosition.
+10. **test(coach):** RangeHeatGrid — métricas consultas/volume (cor), topWrong no tooltip, mouseLeave esconde.
+11. **test(ui):** seletor de stackGrids do RangePreviewModal + colapso de grupos do PrereqRangePicker.
+12. **test(category):** CategoryDetailPage — treinar (inicia sessão/navega; sem mãos alerta), editar, precisão, "Início".
+13. **test(drill):** seleção de ranges (expand + "Selecionar todos"), CONTINUAR → filtro, INICIAR TREINO sem mãos (aviso inline).
+- **fix(test) (importante):** uma fatia do TableEditor quebrou o **build tsc** (usei `Array.at`, lib < es2022). Corrigido com
+  indexação. **LIÇÃO: rodar `npm run build` (tsc), não só vitest, antes de cada commit** — vitest passa mas o tsc do build não.
+
+### Notas técnicas úteis (replicáveis)
+- Cobertura: `npm i -D @vitest/coverage-v8@<versão exata do vitest> --no-save` e
+  `npx vitest run --coverage.enabled --coverage.provider=v8 --coverage.reporter=text`. NÃO commitar a dep.
+- Substituir ações do store por `vi.fn()` via `useStore.setState({ acao: vi.fn() })` para asserir chamadas (sem reset entre
+  testes do mesmo arquivo — cada teste re-seta o que precisa).
+- jsdom normaliza `rgba(a,b,c,d)` com espaços → casar `'239, 68, 68'` (com espaço), não `'239,68,68'`.
+- `getByPlaceholderText(/Ex:/)` colide (nome E stack começam com "Ex:") — usar o placeholder completo.
+- Strings i18n: SEMPRE conferir o valor exato em `src/i18n/pt.ts` antes de casar por texto (ex.: `remove: 'remover'` minúsculo, `viewHeatmap: 'Ver heatmap'`).
+
+### Maiores lacunas de cobertura restantes (alvos do próximo run)
+- **CoachPanel.tsx** (65% — ainda o maior; muitas seções com ramos error/empty/loading via `Section`: Segmentos/Lacunas/Leaks/Evolução; matriz, ordenações de tabela).
+- **TrainerPage.tsx** (DrillActive: navegação prev/próxima já parcial; DrillSummary por range; HandFilterGrid quick-select).
+- **useStore.ts** (nextDrillHand com prereq/multi-stack; checkDrillAnswer com RNG ligado; logConsult/incrementConsults).
+- Sem nova decisão do Daniel, manter cobertura incremental segura. Auth/functions/api/worker/D1 seguem gate humano.
+
+---
+
 ## 2026-06-29 (sessão interativa — seletor de idiomas PT/EN/ES)
 
 ### Estado

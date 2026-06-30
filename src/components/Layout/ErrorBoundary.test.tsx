@@ -1,10 +1,13 @@
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { axe } from 'jest-axe'
 import { captureError } from '../../utils/sentry'
+import { downloadText } from '../../utils/download'
+import { useStore } from '../../store/useStore'
 import { ErrorBoundary } from './ErrorBoundary'
 
 vi.mock('../../utils/sentry', () => ({ captureError: vi.fn() }))
+vi.mock('../../utils/download', () => ({ downloadText: vi.fn(), backupFilename: () => 'backup.json' }))
 
 function Boom(): never {
   throw new Error('explodiu')
@@ -67,6 +70,62 @@ describe('ErrorBoundary', () => {
       expect.objectContaining({ variant: 'section' }),
     )
     spy.mockRestore()
+  })
+
+  describe('exportar backup e resetar', () => {
+    const reloadMock = vi.fn()
+
+    beforeEach(() => {
+      vi.mocked(downloadText).mockClear()
+      reloadMock.mockClear()
+      Object.defineProperty(window, 'location', {
+        value: { reload: reloadMock },
+        writable: true,
+      })
+      useStore.setState({
+        exportData: () => '{"backup":true}',
+        resetLocalData: vi.fn(),
+      })
+    })
+
+    it('baixa o backup e, com dupla confirmação, reseta e recarrega', () => {
+      const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+      const reset = useStore.getState().resetLocalData
+      render(<ErrorBoundary><Boom /></ErrorBoundary>)
+      fireEvent.click(screen.getByRole('button', { name: /Exportar backup/ }))
+      expect(downloadText).toHaveBeenCalledWith('backup.json', '{"backup":true}')
+      expect(confirmSpy).toHaveBeenCalledTimes(2)
+      expect(reset).toHaveBeenCalled()
+      expect(reloadMock).toHaveBeenCalled()
+      confirmSpy.mockRestore()
+      spy.mockRestore()
+    })
+
+    it('não reseta se a primeira confirmação for negada', () => {
+      const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+      const reset = useStore.getState().resetLocalData
+      render(<ErrorBoundary><Boom /></ErrorBoundary>)
+      fireEvent.click(screen.getByRole('button', { name: /Exportar backup/ }))
+      expect(downloadText).toHaveBeenCalled()
+      expect(confirmSpy).toHaveBeenCalledTimes(1)
+      expect(reset).not.toHaveBeenCalled()
+      expect(reloadMock).not.toHaveBeenCalled()
+      confirmSpy.mockRestore()
+      spy.mockRestore()
+    })
+
+    it('se o backup falhar, ainda segue para a confirmação (catch)', () => {
+      const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      vi.mocked(downloadText).mockImplementation(() => { throw new Error('sem disco') })
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+      render(<ErrorBoundary><Boom /></ErrorBoundary>)
+      fireEvent.click(screen.getByRole('button', { name: /Exportar backup/ }))
+      expect(confirmSpy).toHaveBeenCalled()
+      confirmSpy.mockRestore()
+      spy.mockRestore()
+    })
   })
 
   it('não tem violações de acessibilidade no fallback (axe)', async () => {

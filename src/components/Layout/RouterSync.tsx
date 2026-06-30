@@ -31,26 +31,34 @@ export function RouterSync() {
   const location = useLocation()
   const navigate = useNavigate()
   const page = useStore(s => s.page)
-  const firstRun = useRef(true)
+  // Ultima rota que NOS sincronizamos (qualquer direcao). Ignora a navegacao
+  // reciproca que disparamos, quebrando o ping-pong URL<->store que o React 19
+  // expoe (efeitos de sync que se re-disparam em loop com react-router 6).
+  const lastSynced = useRef('')
 
   // URL -> store (back/forward, F5, deep-link)
   useEffect(() => {
+    if (location.pathname === lastSynced.current) return
+    lastSynced.current = location.pathname
     const target = pageForPath(location.pathname)
-    if (firstRun.current) {
-      firstRun.current = false
-      if (TRANSIENT_PAGES.has(target)) {
-        useStore.setState({ page: 'ranges' })
-        navigate('/ranges', { replace: true })
-        return
-      }
+    const current = useStore.getState().page
+    // Pagina transiente acessada direto (store nao esta nela: deep-link/F5) cai em /ranges.
+    if (TRANSIENT_PAGES.has(target) && target !== current) {
+      if (current !== 'ranges') useStore.setState({ page: 'ranges' })
+      lastSynced.current = '/ranges'
+      navigate('/ranges', { replace: true })
+      return
     }
-    if (target !== useStore.getState().page) useStore.setState({ page: target })
+    if (target !== current) useStore.setState({ page: target })
   }, [location.pathname])
 
   // store -> URL (navegacao via setPage)
   useEffect(() => {
     const path = PAGE_TO_PATH[page]
-    if (path && path !== location.pathname) navigate(path)
+    if (path && path !== location.pathname && path !== lastSynced.current) {
+      lastSynced.current = path
+      navigate(path)
+    }
   }, [page])
 
   return null
