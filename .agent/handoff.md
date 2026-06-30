@@ -1,5 +1,21 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-06-30 (retomada — push da migração de dependências confirmado)
+- A run automática abaixo ("migração de dependências") tinha ficado com 3 commits locais
+  válidos (560 testes + build verdes) mas **sem conseguir fazer push** por falta de
+  autorização de escrita no proxy git daquela sessão (Claude Code on the web). O
+  container daquela sessão foi reciclado antes do Daniel conseguir intervir.
+- Recuperação: a sessão anterior havia salvo os 3 commits + o commit de handoff como
+  4 arquivos `.patch` (`git format-patch`) no scratchpad do próprio container. O Daniel
+  colou o conteúdo desses patches nesta conversa (sessão local, com push autorizado).
+- Esta sessão: recriou `auto/daily-improvements` a partir de `feature/auth-telemetry`
+  (que já tinha a PR #24 mergeada), aplicou os 4 patches com `git am` (sem conflitos,
+  autoria/mensagens originais preservadas), rodou `npm install` + `npm test` (560
+  testes verdes) + `npm run build` (verde) de novo do zero para confirmar, e então fez
+  o push.
+- **router 7 + RouterSync continua SEM validação humana no browser** — ver GOTCHA
+  abaixo. Isso não mudou; só o push foi destravado.
+
 ## 2026-06-30 (run automático — migração de dependências: lucide-react, TypeScript, react-router-dom)
 
 ### Estado (PONTO DE PARTIDA do próximo run)
