@@ -53,8 +53,12 @@ export function RouterSync() {
   }, [location.pathname])
 
   // store -> URL (navegacao via setPage)
+  // Le o page atual do store (nao o valor fechado no render) para evitar que o
+  // estado inicial 'dashboard' sobrescreva a URL no F5 antes que o effect de
+  // URL->store termine de sincronizar.
   useEffect(() => {
-    const path = PAGE_TO_PATH[page]
+    const currentPage = useStore.getState().page
+    const path = PAGE_TO_PATH[currentPage]
     if (path && path !== location.pathname && path !== lastSynced.current) {
       lastSynced.current = path
       navigate(path)
