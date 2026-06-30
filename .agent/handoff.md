@@ -1,5 +1,32 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-06-30 (sessão interativa — validação router v7 + cobertura incremental)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- **PR #26 MERGEADA** em `feature/auth-telemetry` — lucide-react 1, TypeScript 6, react-router-dom 7.
+- **Fix obrigatório incluso:** RouterSync dessincronizava URL no F5 (effect store→URL lia página stale do render anterior). Corrigido lendo `useStore.getState().page` em vez do valor fechado na closure. Validado manualmente no browser (Cloudflare preview): navegação, back/forward, F5, deep-link OK.
+- **PR #29 ABERTA** (auto/daily-improvements → feature/auth-telemetry) — cobertura incremental +22 testes. **NÃO mergeada** (gate humano).
+- **582 testes verdes (63 arquivos)**, build verde. `main`/produção intactos.
+
+### Feito nesta sessão (3 commits, cada um testado + build verde)
+1. **fix(router):** RouterSync F5 — `useStore.getState().page` no effect store→URL.
+2. **test(coach):** ordenação Por range (desc/asc/trocar coluna), 4 seções erro, 2 seções vazio, clicar linha → range-grid, leaks com dados.
+3. **test(trainer):** HandFilterGrid Tudo/Nada, DrillSummary accuracy por range, expansão heatmap.
+4. **test(store):** nextDrillHand prereq/multi-stack, checkDrillAnswer RNG, incrementConsults, logConsult.
+
+### Maiores lacunas de cobertura restantes
+- **CoachPanel.tsx** — seções Segmentos/Lacunas com dados reais (tabelas preenchidas); `PlayerQuickSummary` integrado no Resumo do time (clicar jogador → abre resumo inline com fetch de by-range).
+- **TrainerPage.tsx** — HistoryModal: SessionDetail acordeão por range + heatmap dentro do detalhe.
+- **useStore.ts** — `checkDrillAnswer` com `acceptAnyFreq=true` ("Válido — ação principal: ..."); `stopDrill` salva sessão; `startDrillSession` inicializa `sessionUuid`.
+- Auth/functions/api/worker/D1: seguem gate humano.
+
+### Pendências
+- [ ] **Mergear PR #29** após revisão.
+- [ ] **Tailwind 4 / Vite 8** — validação visual humana necessária (PRs Dependabot #20/#25); não delegar ao agente sem smoke test no browser.
+- [ ] **MFA** GitHub e Cloudflare — manual, só Daniel.
+
+---
+
 ## 2026-06-30 (retomada — push da migração de dependências confirmado)
 - A run automática abaixo ("migração de dependências") tinha ficado com 3 commits locais
   válidos (560 testes + build verdes) mas **sem conseguir fazer push** por falta de
