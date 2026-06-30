@@ -1,5 +1,24 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-06-30 (sessão interativa — Vite 8 + cobertura)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- **PR #29 MERGEADA** — cobertura +22 testes (582 total).
+- **PR #30 ABERTA** — Vite 6→8 + plugin-react 4→6. **NÃO mergeada** (requer validação visual no browser pelo Daniel).
+- **582 testes verdes (63 arquivos)**, build verde. `main`/produção intactos.
+
+### Feito nesta sessão
+- Vite 6→8, @vitejs/plugin-react 4→6. `vite.config.ts` e `manualChunks` sem mudança.
+- `babel-plugin-react-compiler` e `@rolldown/plugin-babel` são peerDeps opcionais — não instalados.
+- **REQUER VALIDAÇÃO VISUAL:** abrir preview do Cloudflare (`auto-daily-improvements.pre-flop-pro.pages.dev`), confirmar que app carrega sem tela branca. Risco: Rolldown (novo bundler do Vite 8) pode alterar chunking e quebrar `forwardRef` como aconteceu antes.
+
+### Pendências
+- [ ] **Validar PR #30 no browser** e mergear se OK.
+- [ ] **Tailwind 4** — próxima migração após PR #30 mergeada; precisa de sessão dedicada com validação visual.
+- [ ] **MFA** GitHub e Cloudflare — manual, só Daniel.
+
+---
+
 ## 2026-06-30 (sessão interativa — validação router v7 + cobertura incremental)
 
 ### Estado (PONTO DE PARTIDA do próximo run)
