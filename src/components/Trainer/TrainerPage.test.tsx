@@ -285,4 +285,73 @@ describe('TrainerPage', () => {
     const { container } = render(<TrainerPage />)
     expect((await axe(container)).violations).toEqual([])
   })
+
+  // --- Fatia: HandFilterGrid — botões Tudo / Nada ---
+
+  it('botão "Tudo ✓" limpa todas as mãos excluídas', () => {
+    useStore.setState({
+      ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [1],
+      drillExcludedHands: ['AA', 'KK', 'QQ'],
+    })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Tudo ✓' }))
+    expect(useStore.getState().drillExcludedHands).toEqual([])
+  })
+
+  it('botão "Nada ✗" exclui todas as mãos disponíveis', () => {
+    useStore.setState({
+      ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [1],
+      drillExcludedHands: [],
+    })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Nada ✗' }))
+    expect(useStore.getState().drillExcludedHands.length).toBeGreaterThan(0)
+  })
+
+  // --- Fatia: DrillSummary — accuracy por range e expansão do acordeão ---
+
+  it('DrillSummary mostra accuracy por range a partir do sessionHandPerf', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
+      handHistory: [],
+      sessionHandPerf: { 1: { KK: { c: 9, t: 10 } } },
+      handPerformance: {},
+      selectedDrillRangeIds: [1],
+      sessionStats: { hands: 10, correct: 9, errors: 1, consults: 0 },
+      sessionSeverity: { grave: 1, impreciso: 0 },
+    })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Encerrar e ver resumo' }))
+    // Nome do range aparece no acordeão por range
+    expect(screen.getByText('BTN RFI')).toBeInTheDocument()
+    // Accuracy 90% (9/10) — aparece na linha do range (pode haver mais de um)
+    expect(screen.getAllByText(/90%/).length).toBeGreaterThan(0)
+  })
+
+  it('DrillSummary — clicar no range expande o heatmap acumulativo', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
+      handHistory: [],
+      sessionHandPerf: { 1: { KK: { c: 8, t: 10 } } },
+      handPerformance: { 1: { KK: { c: 8, t: 10 } } },
+      selectedDrillRangeIds: [1],
+      sessionStats: { hands: 10, correct: 8, errors: 2, consults: 0 },
+      sessionSeverity: { grave: 0, impreciso: 2 },
+    })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Encerrar e ver resumo' }))
+    fireEvent.click(screen.getByRole('button', { name: /BTN RFI/ }))
+    // HandMatrix renderiza 169 células (data-hand)
+    expect(document.querySelectorAll('[data-hand]').length).toBe(169)
+  })
 })
