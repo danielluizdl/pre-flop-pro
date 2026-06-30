@@ -57,6 +57,45 @@ describe('BrushControls', () => {
     expect(useStore.getState().brush.extraLabel).toBe('Custom')
   })
 
+  it('edita o tamanho do raise (campo de texto)', () => {
+    render(<BrushControls />)
+    fireEvent.change(screen.getByLabelText('Tamanho do raise em bb'), { target: { value: '2.5' } })
+    expect(useStore.getState().brush.raiseSize).toBe('2.5')
+  })
+
+  describe('condição custom (extra)', () => {
+    beforeEach(() => setBrushState({ extraLabel: 'Iso', extraColor: '#a855f7', extra: 10 }))
+
+    it('edita o nome e a porcentagem da condição custom', () => {
+      render(<BrushControls />)
+      fireEvent.change(screen.getByLabelText('Nome da condição custom'), { target: { value: 'Squeeze' } })
+      expect(useStore.getState().brush.extraLabel).toBe('Squeeze')
+      fireEvent.change(screen.getByLabelText('Condição custom porcentagem'), { target: { value: '40' } })
+      expect(useStore.getState().brush.extra).toBe(40)
+    })
+
+    it('troca a cor da condição custom', () => {
+      render(<BrushControls />)
+      fireEvent.click(screen.getByLabelText(/cor #f97316/i))
+      expect(useStore.getState().brush.extraColor).toBe('#f97316')
+    })
+
+    it('remover devolve a frequência extra ao fold e zera o label', () => {
+      useStore.setState({
+        rangeData: {
+          ...useStore.getState().rangeData,
+          grid: { AA: { fold: 70, call: 0, raise: 20, allin: 0, extra: 10 } },
+        },
+      })
+      render(<BrushControls />)
+      fireEvent.click(screen.getByRole('button', { name: /remover/i }))
+      const grid = useStore.getState().rangeData.grid
+      expect(grid.AA.extra).toBe(0)
+      expect(grid.AA.fold).toBe(80)
+      expect(useStore.getState().brush.extraLabel).toBe('')
+    })
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     const { container } = render(<BrushControls />)
     const results = await axe(container)
