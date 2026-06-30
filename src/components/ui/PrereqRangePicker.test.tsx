@@ -105,6 +105,40 @@ describe('PrereqRangePicker', () => {
     expect(onSelect).toHaveBeenCalledWith(null)
   })
 
+  it('colapsa e reabre um grupo de posição ao clicar no cabeçalho', async () => {
+    render(
+      <PrereqRangePicker
+        ranges={RANGES}
+        excludeId={null}
+        filterPositions={[]}
+        currentPrereqId={undefined}
+        onSelect={() => {}}
+        onClose={() => {}}
+      />
+    )
+    expect(screen.getByText('BTN Open')).toBeInTheDocument()
+    const header = screen.getByText('BTN').closest('button')!
+    await userEvent.click(header)
+    expect(screen.queryByText('BTN Open')).not.toBeInTheDocument()
+    await userEvent.click(header)
+    expect(screen.getByText('BTN Open')).toBeInTheDocument()
+  })
+
+  it('marca o range atualmente selecionado como pré-requisito', () => {
+    render(
+      <PrereqRangePicker
+        ranges={RANGES}
+        excludeId={null}
+        filterPositions={[]}
+        currentPrereqId={2}
+        onSelect={() => {}}
+        onClose={() => {}}
+      />
+    )
+    const selected = screen.getByText('CO Open').closest('button')!
+    expect(selected.className).toContain('border-brand-600/60')
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     const { container } = render(
       <PrereqRangePicker
