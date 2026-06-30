@@ -52,6 +52,34 @@ describe('RangeHeatGrid', () => {
     expect(getRenderCount('heatCell')).toBe(0)
   })
 
+  it('métricas consultas e volume colorem as células com dados', () => {
+    const cells = [cell({ hand: 'AA', total: 20, consults: 9, graves: 4, accuracy: 30 })]
+    render(<RangeHeatGrid cells={cells} />)
+    const aaCell = screen.getByText('AA').closest('.aspect-square')!
+    const layer = () => aaCell.querySelector('.absolute.inset-0') as HTMLElement
+    expect(layer().style.background).toContain('239, 68, 68')
+    fireEvent.click(screen.getByRole('button', { name: 'Consultas' }))
+    expect(layer().style.background).toContain('139, 92, 246')
+    fireEvent.click(screen.getByRole('button', { name: 'Volume' }))
+    expect(layer().style.background).toContain('148, 163, 184')
+  })
+
+  it('tooltip mostra a ação mais errada (topWrong)', () => {
+    const cells = [cell({ hand: 'AA', topWrong: { action: 'call', n: 3 }, correctAction: 'raise' })]
+    render(<RangeHeatGrid cells={cells} />)
+    fireEvent.mouseEnter(screen.getByText('AA'))
+    expect(screen.getByText(/erram mais/)).toBeInTheDocument()
+    expect(screen.getByText('call')).toBeInTheDocument()
+  })
+
+  it('sair do grid com o mouse esconde o tooltip', () => {
+    const { container } = render(<RangeHeatGrid cells={[cell({ hand: 'AA' })]} />)
+    fireEvent.mouseEnter(screen.getByText('AA'))
+    expect(screen.getByText(/8\/10/)).toBeInTheDocument()
+    fireEvent.mouseLeave(container.querySelector('.grid')!)
+    expect(screen.queryByText(/8\/10/)).not.toBeInTheDocument()
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     const cells = [cell({ hand: 'AA' })]
     const { container } = render(<RangeHeatGrid cells={cells} />)
