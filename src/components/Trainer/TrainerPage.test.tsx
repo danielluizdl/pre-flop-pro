@@ -254,6 +254,32 @@ describe('TrainerPage', () => {
     expect(getRenderCount('historySidebar')).toBe(0)
   })
 
+  it('expande o grupo e "Selecionar todos" seleciona os ranges da posição', () => {
+    useStore.setState({ ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [] })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /BTN/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Selecionar todos' }))
+    expect(useStore.getState().selectedDrillRangeIds).toEqual([1])
+  })
+
+  it('selecionar um range e CONTINUAR avança para o filtro de mãos', () => {
+    useStore.setState({ ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [1] })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
+    expect(screen.getByRole('button', { name: 'INICIAR TREINO' })).toBeInTheDocument()
+  })
+
+  it('INICIAR TREINO sem mãos disponíveis mostra aviso inline', () => {
+    useStore.setState({
+      ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [1],
+      startDrillSession: vi.fn(), nextDrillHand: vi.fn(() => false),
+    })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'INICIAR TREINO' }))
+    expect(screen.getByRole('alert')).toHaveTextContent(/Nenhuma mão selecionada/)
+  })
+
   it('não tem violações de acessibilidade na seleção de ranges (axe)', async () => {
     useStore.setState({ ranges: [RANGE], activeDrillRange: null })
     const { container } = render(<TrainerPage />)
