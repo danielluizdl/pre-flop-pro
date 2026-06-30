@@ -1,5 +1,24 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-06-30 (sessão interativa — Tailwind 4)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- **PR #30 MERGEADA** — Vite 6→8 + @vitejs/plugin-react 4→6. Validado no browser pelo Daniel.
+- **PR #32 MERGEADA** — Tailwind 3→4. Validado no browser pelo Daniel.
+- **582 testes verdes (63 arquivos)**, build verde. `main`/produção intactos.
+
+### Feito nesta sessão
+- Migração Tailwind 3→4: instalou `tailwindcss@4` + `@tailwindcss/vite`; vite plugin substitui PostCSS plugin.
+- `tailwind.config.js` removido; config migrada para bloco `@theme` em `src/index.css`.
+- `postcss.config.js` reduzido a `autoprefixer` apenas.
+- Ajuste necessário: em TW4, `@apply` só aceita utilitários nativos — classes de componente (`.eyebrow`, `.btn-commit`, `.stat-num`) foram inlineadas onde eram reutilizadas via `@apply`.
+- Validação visual no preview Cloudflare: Daniel confirmou sem erros.
+
+### Pendências
+- [ ] **MFA** GitHub e Cloudflare — manual, só Daniel.
+
+---
+
 ## 2026-06-30 (sessão interativa — Vite 8 + cobertura)
 
 ### Estado (PONTO DE PARTIDA do próximo run)
