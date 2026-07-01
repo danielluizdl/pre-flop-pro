@@ -86,6 +86,58 @@ describe('RangeEditorPage', () => {
     expect(screen.getByRole('button', { name: 'Cancelar' })).toBeInTheDocument()
   })
 
+  it('"PRÓXIMO" com nome e posição vai para o table-editor', () => {
+    const initTableConfig = vi.fn()
+    const setPage = vi.fn()
+    setup({
+      selectedEditorPositions: ['BTN'],
+      rangeData: { id: null, name: 'BTN RFI', grid: makeEmptyGrid(), positions: [], tableSize: 8, stackRange: '' },
+      initTableConfig, setPage,
+    })
+    render(<RangeEditorPage />)
+    fireEvent.click(screen.getByRole('button', { name: /PRÓXIMO/ }))
+    expect(initTableConfig).toHaveBeenCalled()
+    expect(setPage).toHaveBeenCalledWith('table-editor')
+    expect(useStore.getState().rangeData.positions).toEqual(['BTN'])
+  })
+
+  it('"PRÓXIMO" sem nome dispara alerta e não navega', () => {
+    const setPage = vi.fn()
+    setup({ selectedEditorPositions: ['BTN'], setPage })
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
+    render(<RangeEditorPage />)
+    fireEvent.click(screen.getByRole('button', { name: /PRÓXIMO/ }))
+    expect(alertSpy).toHaveBeenCalled()
+    expect(setPage).not.toHaveBeenCalled()
+  })
+
+  it('"Salvar e criar" válido empurra o grid para a sessão', () => {
+    const pushGridToSession = vi.fn()
+    setup({
+      selectedEditorPositions: ['BTN'],
+      rangeData: { id: null, name: 'BTN RFI', grid: makeEmptyGrid(), positions: [], tableSize: 8, stackRange: '' },
+      pushGridToSession,
+    })
+    render(<RangeEditorPage />)
+    fireEvent.click(screen.getByRole('button', { name: /Salvar e criar/ }))
+    expect(pushGridToSession).toHaveBeenCalled()
+  })
+
+  it('modo de edição: salvar alterações chama updateSessionGrid quando há mudança', () => {
+    const updateSessionGrid = vi.fn()
+    setup({
+      selectedEditorPositions: ['BTN'],
+      sessionGrids: [{ name: 'Grid A', stackRange: '', grid: makeEmptyGrid(), positions: ['BTN'] }],
+      updateSessionGrid,
+    })
+    render(<RangeEditorPage />)
+    fireEvent.click(screen.getByText('Grid A'))
+    // altera o nome → habilita "Salvar alterações"
+    fireEvent.change(screen.getByPlaceholderText('Ex: Defesa BB vs UTG'), { target: { value: 'Grid A editado' } })
+    fireEvent.click(screen.getByRole('button', { name: /Salvar alterações no #1/ }))
+    expect(updateSessionGrid).toHaveBeenCalledWith(0, expect.objectContaining({ name: 'Grid A editado' }))
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     setup()
     const { container } = render(<RangeEditorPage />)
