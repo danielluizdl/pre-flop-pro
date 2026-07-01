@@ -103,6 +103,38 @@ describe('TableEditorPage', () => {
     expect(setPage).toHaveBeenCalledWith('editor')
   })
 
+  it('editar um cenário e salvar chama updateScenarioInBuffer', () => {
+    const updateScenarioInBuffer = vi.fn()
+    setup({
+      updateScenarioInBuffer,
+      tempScenarios: [{ id: 1, data: fullScenario(), pot: '5.0', ante: 0.5, summary: 'BTN Open (2bb)' }],
+    })
+    render(<TableEditorPage />)
+    const matches = screen.getAllByText(/BTN Open/)
+    fireEvent.click(matches[matches.length - 1])
+    fireEvent.click(screen.getByRole('button', { name: /Salvar alterações/ }))
+    expect(updateScenarioInBuffer).toHaveBeenCalledWith(0, expect.any(String), expect.any(String))
+  })
+
+  it('finalizar com grids de mesma posição na sessão abre o modal de nome', () => {
+    const finalizeRange = vi.fn()
+    setup({
+      finalizeRange,
+      tempScenarios: [{ id: 1, data: fullScenario(), pot: '5.0', ante: 0.5, summary: 'BTN Open (2bb)' }],
+      sessionGrids: [{ name: 'BTN 100bb', stackRange: '<=100bb', grid: makeEmptyGrid(), positions: ['BTN'] }],
+    })
+    render(<TableEditorPage />)
+    fireEvent.click(screen.getByRole('button', { name: /Finalizar/ }))
+    // modal de nome aberto em vez de finalizar direto
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(finalizeRange).not.toHaveBeenCalled()
+    // confirmar com nome → finalizeRange(nome)
+    const input = screen.getByDisplayValue('BTN 100bb')
+    fireEvent.change(input, { target: { value: 'BTN combinado' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar' }))
+    expect(finalizeRange).toHaveBeenCalledWith('BTN combinado')
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     setup()
     const { container } = render(<TableEditorPage />)
