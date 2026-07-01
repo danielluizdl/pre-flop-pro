@@ -1,5 +1,39 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-01 (run automático — P1/P2 técnicos + cobertura incremental)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- **PR NOVA aberta** auto/daily-improvements → feature/auth-telemetry (NÃO mergeada, gate humano).
+- **626 testes verdes (66 arquivos)** (era 582), build verde. `main`/produção intactos.
+- Cobertura subiu: linhas 77% → **83%** (StatsPage 50%→92%, useStore 61%→74%, CoachPanel 70%→75%).
+- Stack: React 19, Vite 8, TypeScript 6, Tailwind 4, react-router 7, lucide-react 1.
+
+### Feito nesta run (9 commits, cada um test+build verde + push)
+1. **test(store):** caminho feliz das ações de auth (login/signup/logout/changePassword/devices/restoreSession) — `authActions.test.ts`.
+2. **fix(i18n) [P2.5]:** datas seguem o idioma vigente via novo helper `dateLocale()` (pt-BR/en-US/es-ES). Corrigido `'pt-BR'` fixo em MyAccountStats/StatsPage/TrainerPage/AccuracySparkline.
+3. **perf(coach) [P1.3]:** `src/utils/analyticsCache.ts` — `fetchAnalyticsCached` (cache por URL, TTL 15s) usado por todos os hooks do CoachPanel; `reload()` invalida via `invalidateAnalyticsCache`. Testes próprios + guard no CoachPanel.test (limpar cache no afterEach).
+4. **test(store):** drill `acceptAnyFreq`/customAction, `startDrillSession` (novo sessionUuid), `stopDrill` (grava sessão), `clearHandPerformance`/`setRangePrereq` — `drillSession.test.ts`.
+5. **test(stats):** SessionDetailView (acordeão de range, multi-stack, toggle visão) + Desempenho Global por posição.
+6. **test(coach):** seções Segmentos/Lacunas/Evolução com dados (expande + popula fetch por view).
+7. **test(editor):** handleNext (navegação), handlePushToSession, handleSaveSessionEdit.
+8. **test(layout):** roteamento do AppLayout (ranges/admin fallback) + WelcomeModal/ChangePasswordModal.
+9. **test(table-editor):** handleSaveEdit + fluxo de modal de nome (willBeCombined → finalizeRange(nome)).
+
+### Sobre o backlog P1/P2/P3 do handoff anterior
+- **P1.2 (gráfico de tendência):** JÁ ESTAVA IMPLEMENTADO no CoachPanel (seção Evolução renderiza `Sparkline` + `TrendBadge` + tabela por jogador). A varredura anterior estava desatualizada. Só faltava cobertura de teste — feita (fatia 6).
+- **P1.3 (cache):** FEITO (fatia 3).
+- **P2.5 (locale de data):** FEITO (fatia 2).
+- **P1.1 (badge "Range do Time"):** NÃO feito. Bloqueio: não há forma robusta de distinguir range do coach (D1) de range nativo/usuário — todos usam IDs de timestamp; o range não persiste flag de origem. Precisaria persistir o set de `teamRangeIds` no `syncTeamRanges` (localStorage) — mudança de store com migração. Valor atual baixo (D1 ranges não ativos: front usa `adminRanges.json`). Recomendo decidir antes de investir.
+- **P2.4 (memoizar CoachPanel/TrainerPage):** NÃO feito. Baixo valor: são componentes sem props, `memo` só evita re-render de pai (raro no AppLayout); risco de teste alto em arquivos de 1700 linhas. Deixado de fora.
+- **P2.6 / P3.7 (extrair/testar helpers de `functions/api/analytics.js`, remover endpoints mortos):** GATE HUMANO — mexe em `functions/api`. NÃO implementado pelo agente. Registrar como proposta se desejado.
+- **P3.8 (exportar sessão CSV):** nice-to-have, não feito (sem decisão do Daniel).
+
+### Próximas fatias sugeridas (todas sem gate humano)
+- Cobertura restante: **TrainerPage** (DrillActive navegação/auto-advance/atalhos ainda parciais), **CoachPanel** (Resumo do time ordenável + PlayerQuickSummary inline; relative leaks), **useStore** (finalizeRange multi-grupo/edição; nextDrillHand focusErrors), **AppLayout** (páginas lazy: drill/history/category-detail/coach).
+- Decidir P1.1 (badge) e P3.8 (CSV) com o Daniel.
+
+---
+
 ## 2026-06-30 (sessão interativa — Tailwind 4 + varredura geral)
 
 ### Estado (PONTO DE PARTIDA do próximo run)
