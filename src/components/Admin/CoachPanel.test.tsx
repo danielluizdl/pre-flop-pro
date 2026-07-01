@@ -385,4 +385,63 @@ describe('CoachPanel', () => {
     expect(await screen.findByText('AKo')).toBeInTheDocument()
     expect(screen.getByText('BTN RFI')).toBeInTheDocument()
   })
+
+  // --- Fatia: Segmentos / Lacunas / Evolução com dados ---
+
+  function mockViews(byView: Record<string, unknown>) {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/admin/users')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ users: [] }) } as unknown as Response)
+      }
+      const m = url.match(/view=([a-z-]+)/)
+      const view = m?.[1] ?? ''
+      const base = { rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }
+      const data = byView[view] ? { ...base, ...(byView[view] as object) } : base
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(data) } as unknown as Response)
+    })
+    useStore.setState({ authToken: 'tok' })
+  }
+
+  it('seção Segmentos exibe categorias e ações quando há dados', async () => {
+    mockViews({
+      segments: {
+        byHand: [{ hand: 'AA', total: 40, correct: 30, graves: 6, imprecisos: 4 }],
+        byAction: [{ action: 'Raise', total: 50, correct: 40, graves: 5, imprecisos: 5, accuracy: 80 }],
+      },
+    })
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Segmentos/ }))
+    expect(await screen.findByText('Raise')).toBeInTheDocument()
+  })
+
+  it('seção Lacunas de conhecimento lista mãos consultadas com erro', async () => {
+    mockViews({
+      'knowledge-gaps': {
+        rows: [{ rangeId: 1, rangeName: 'CO RFI', hand: 'QJs', consults: 7, total: 20, correct: 10, graves: 6, imprecisos: 4 }],
+      },
+    })
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Lacunas de conhecimento/ }))
+    expect(await screen.findByText('QJs')).toBeInTheDocument()
+    expect(screen.getByText('CO RFI')).toBeInTheDocument()
+  })
+
+  it('seção Evolução renderiza sparkline e badge de tendência com dados semanais', async () => {
+    mockViews({
+      trend: {
+        rows: [
+          { userId: 1, week: 1, hands: 40, correct: 20 },
+          { userId: 1, week: 2, hands: 40, correct: 28 },
+          { userId: 1, week: 3, hands: 40, correct: 36 },
+        ],
+        users: [{ id: 1, username: 'ana', name: 'Ana' }],
+      },
+    })
+    const { container } = render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Evolução/ }))
+    expect(await screen.findByText('Ana')).toBeInTheDocument()
+    // sparkline SVG renderizado
+    expect(container.querySelector('svg polyline, svg path, svg line')).toBeTruthy()
+  })
 })
