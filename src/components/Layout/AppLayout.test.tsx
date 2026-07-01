@@ -37,4 +37,38 @@ describe('AppLayout', () => {
     renderLayout()
     expect(screen.queryByText(/Armazenamento cheio/)).not.toBeInTheDocument()
   })
+
+  it('page "ranges" renderiza a página de situações', () => {
+    useStore.setState({ userMode: 'visitor', page: 'ranges', currentUser: null, justSignedUp: false, storageBlocked: false, ranges: [] })
+    renderLayout()
+    expect(screen.getByRole('button', { name: /Novo Range/ })).toBeInTheDocument()
+  })
+
+  it('page "admin" sem coach cai no dashboard (fallback)', () => {
+    useStore.setState({
+      userMode: 'visitor', page: 'admin', justSignedUp: false, storageBlocked: false,
+      currentUser: { id: 1, username: 'p', name: 'P', email: '', role: 'player', firstLogin: false },
+    })
+    renderLayout()
+    expect(screen.getByRole('button', { name: 'Drill' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Visão do time' })).not.toBeInTheDocument()
+  })
+
+  it('justSignedUp mostra o WelcomeModal', () => {
+    useStore.setState({
+      userMode: 'visitor', page: 'dashboard', storageBlocked: false, justSignedUp: true,
+      currentUser: { id: 1, username: 'novo', name: 'Novo', email: '', role: 'player', firstLogin: false },
+    })
+    renderLayout()
+    expect(screen.getByText(/Bem-vindo/)).toBeInTheDocument()
+  })
+
+  it('firstLogin força o ChangePasswordModal', () => {
+    useStore.setState({
+      userMode: 'visitor', page: 'dashboard', storageBlocked: false, justSignedUp: false,
+      currentUser: { id: 1, username: 'reset', name: 'Reset', email: '', role: 'player', firstLogin: true },
+    })
+    renderLayout()
+    expect(screen.getByText('Defina sua senha')).toBeInTheDocument()
+  })
 })
