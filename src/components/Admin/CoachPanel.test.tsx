@@ -5,6 +5,7 @@ import CoachPanel from './CoachPanel'
 import { useStore } from '../../store/useStore'
 import { makeEmptyGrid } from '../../utils/hands'
 import { getRenderCount, resetRenderCount } from '../../test/renderCount'
+import { invalidateAnalyticsCache } from '../../utils/analyticsCache'
 import type { Range } from '../../types'
 
 function mockApi() {
@@ -18,7 +19,7 @@ function mockApi() {
   useStore.setState({ authToken: 'tok' })
 }
 
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => { vi.restoreAllMocks(); invalidateAnalyticsCache() })
 
 describe('CoachPanel', () => {
   it('renderiza as abas, o botão de publicar e os filtros do time', async () => {
