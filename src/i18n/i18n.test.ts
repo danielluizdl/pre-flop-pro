@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { pt } from './pt'
 import { en } from './en'
 import { es } from './es'
-import { t, setLangDict, getLang, LANGS, isLang, type Lang } from './index'
+import { t, setLangDict, getLang, dateLocale, LANGS, isLang, type Lang } from './index'
 import type { Messages } from './pt'
 
 afterEach(() => setLangDict('pt'))
@@ -95,5 +95,14 @@ describe('i18n — troca de idioma', () => {
     expect(LANGS.map(l => l.code)).toEqual(['pt', 'en', 'es'])
     expect(isLang('en')).toBe(true)
     expect(isLang('xx')).toBe(false)
+  })
+
+  it('dateLocale acompanha o idioma vigente', () => {
+    setLangDict('pt')
+    expect(dateLocale()).toBe('pt-BR')
+    setLangDict('en')
+    expect(dateLocale()).toBe('en-US')
+    setLangDict('es')
+    expect(dateLocale()).toBe('es-ES')
   })
 })
