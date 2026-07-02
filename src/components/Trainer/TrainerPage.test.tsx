@@ -96,6 +96,83 @@ describe('TrainerPage', () => {
     expect(screen.getByText(/Blunder/)).toBeInTheDocument()
   })
 
+  it('atalho de teclado V abre o "Ver Range" e registra consulta', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
+      handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
+    })
+    render(<TrainerPage />)
+    fireEvent.keyDown(window, { key: 'v' })
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(useStore.getState().sessionStats.consults).toBe(1)
+    fireEvent.keyDown(window, { key: 'v' })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('atalho de teclado R responde Raise (acerto)', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 2.5, currentScenario: {},
+      useRngForFrequency: false, acceptAnyFreq: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
+    })
+    render(<TrainerPage />)
+    fireEvent.keyDown(window, { key: 'r' })
+    expect(screen.getByText(/Raise!/)).toBeInTheDocument()
+  })
+
+  it('RNG ligado: responder a ação da faixa correta é acerto', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 2.5, currentScenario: {},
+      useRngForFrequency: true, acceptAnyFreq: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
+    })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /RAISE/ }))
+    expect(screen.getByText(/Raise!/)).toBeInTheDocument()
+  })
+
+  it('acceptAnyFreq: responder ação secundária com frequência > 0 é "Válido"', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 40, raise: 60, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 2.5, currentScenario: {},
+      useRngForFrequency: false, acceptAnyFreq: true, handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
+    })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /CALL/ }))
+    expect(screen.getByText(/Válido/)).toBeInTheDocument()
+  })
+
+  it('range com customAction mostra o botão da ação extra', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 0, allin: 0, extra: 100 }
+    const range: Range = { ...RANGE, grid: g, customAction: { label: 'ISO', color: '#a855f7' } }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
+      useRngForFrequency: false, acceptAnyFreq: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
+    })
+    render(<TrainerPage />)
+    expect(screen.getByRole('button', { name: /ISO/ })).toBeInTheDocument()
+  })
+
   it('"Ver Range" abre o diálogo e registra a consulta', () => {
     const g = makeEmptyGrid()
     g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
