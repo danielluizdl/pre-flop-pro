@@ -1,12 +1,15 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { AppLayout } from './AppLayout'
 import { useStore } from '../../store/useStore'
+import { invalidateAnalyticsCache } from '../../utils/analyticsCache'
 
-function renderLayout() {
+afterEach(() => { vi.restoreAllMocks(); invalidateAnalyticsCache() })
+
+function renderLayout(path = '/dashboard') {
   return render(
-    <MemoryRouter initialEntries={['/dashboard']}>
+    <MemoryRouter initialEntries={[path]}>
       <AppLayout />
     </MemoryRouter>,
   )
@@ -70,5 +73,57 @@ describe('AppLayout', () => {
     })
     renderLayout()
     expect(screen.getByText('Defina sua senha')).toBeInTheDocument()
+  })
+
+  it('page "drill" carrega o TrainerPage (lazy)', async () => {
+    useStore.setState({
+      userMode: 'visitor', page: 'drill', currentUser: null, justSignedUp: false, storageBlocked: false,
+      ranges: [], selectedDrillRangeIds: [],
+    })
+    renderLayout('/drill')
+    expect(await screen.findByText(/Selecione os ranges para o treino/)).toBeInTheDocument()
+  })
+
+  it('page "history" carrega o StatsPage (lazy)', async () => {
+    useStore.setState({
+      userMode: 'visitor', page: 'history', currentUser: null, justSignedUp: false, storageBlocked: false,
+      trainingHistory: [],
+    })
+    renderLayout('/historico')
+    expect(await screen.findByText('Histórico de Treinos')).toBeInTheDocument()
+  })
+
+  it('page "range-setup" carrega o RangeSetupPage (lazy)', async () => {
+    useStore.setState({
+      userMode: 'visitor', page: 'range-setup', currentUser: null, justSignedUp: false, storageBlocked: false,
+    })
+    renderLayout('/range-setup')
+    expect(await screen.findByText('Configure o formato do jogo antes de criar o range.')).toBeInTheDocument()
+  })
+
+  it('page "category-detail" carrega o CategoryDetailPage (lazy)', async () => {
+    useStore.setState({
+      userMode: 'visitor', page: 'category-detail', currentUser: null, justSignedUp: false, storageBlocked: false,
+      activeCategory: 'early', ranges: [],
+    })
+    renderLayout('/categoria')
+    expect(await screen.findByRole('heading', { name: 'EARLY' })).toBeInTheDocument()
+  })
+
+  it('page "admin" como coach carrega o CoachPanel (lazy)', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      const data = url.includes('/admin/users')
+        ? { users: [] }
+        : { rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(data) } as unknown as Response)
+    })
+    useStore.setState({
+      userMode: 'admin', page: 'admin', justSignedUp: false, storageBlocked: false, authToken: 'tok',
+      currentUser: { id: 1, username: 'coach', name: 'Coach', email: '', role: 'coach', firstLogin: false },
+    })
+    renderLayout('/coach')
+    expect(await screen.findByRole('button', { name: 'Visão do time' })).toBeInTheDocument()
+    fetchSpy.mockRestore()
   })
 })
