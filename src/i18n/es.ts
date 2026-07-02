@@ -348,6 +348,7 @@ export const es: Messages = {
     perHandUnavailable: 'Datos por mano no disponibles para sesiones anteriores.',
     noName: 'Sin nombre',
     viewDetails: 'Ver detalles',
+    exportCsv: 'Exportar CSV',
     viewRange: 'Ver Range',
     noTrainingData: 'Aún no hay datos de entrenamiento.',
     completeToSeePerf: 'Completa un entrenamiento para ver el rendimiento aquí.',

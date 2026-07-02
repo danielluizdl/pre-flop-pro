@@ -346,6 +346,7 @@ export const pt = {
     perHandUnavailable: 'Dados por mão não disponíveis para sessões anteriores.',
     noName: 'Sem nome',
     viewDetails: 'Ver detalhes',
+    exportCsv: 'Exportar CSV',
     viewRange: 'Ver Range',
     noTrainingData: 'Nenhum dado de treino ainda.',
     completeToSeePerf: 'Complete um treino para ver o desempenho aqui.',

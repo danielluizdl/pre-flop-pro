@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { axe } from 'jest-axe'
 import { StatsPage } from './StatsPage'
@@ -124,6 +124,20 @@ describe('StatsPage', () => {
     // toggle da visão de ações
     fireEvent.click(screen.getByRole('button', { name: 'Ver Range' }))
     expect(screen.getByRole('button', { name: 'Ver Range' })).toBeInTheDocument()
+  })
+
+  it('botão Exportar CSV baixa o arquivo da sessão', () => {
+    const range = rangeNamed('BTN RFI', 42)
+    const withPerf: TrainingSession = { ...SESSION, id: 4, handPerf: { 42: { AA: { c: 8, t: 10 } } } }
+    useStore.setState({ trainingHistory: [withPerf], ranges: [range], currentUser: null })
+    const createSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:x')
+    const revokeSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    render(<StatsPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Exportar CSV' }))
+    expect(createSpy).toHaveBeenCalled()
+    expect(clickSpy).toHaveBeenCalled()
+    createSpy.mockRestore(); revokeSpy.mockRestore(); clickSpy.mockRestore()
   })
 
   it('só mostra a aba de nuvem quando há usuário logado', () => {

@@ -5,6 +5,8 @@ import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import { MyAccountStats } from './MyAccountStats'
 import { AccuracySparkline } from './AccuracySparkline'
 import { t, dateLocale } from '../../i18n'
+import { downloadText } from '../../utils/download'
+import { buildSessionCsv, sessionCsvFilename } from '../../utils/sessionCsv'
 
 const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'EP', 'LJ', 'UTG']
 
@@ -204,6 +206,20 @@ function SessionCard({ session, onView }: { session: TrainingSession; onView: ()
           )}
         </div>
       </div>
+      <button
+        onClick={() => {
+          const csv = buildSessionCsv(session, useStore.getState().ranges)
+          downloadText(sessionCsvFilename(session), csv, 'text/csv')
+        }}
+        title={t.stats.exportCsv}
+        className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border border-warm-600 bg-warm-900/60 text-warm-400 hover:text-white hover:border-warm-400 transition-colors"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </button>
       <button
         onClick={onView}
         title={t.stats.viewDetails}

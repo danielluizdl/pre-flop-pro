@@ -348,6 +348,7 @@ export const en: Messages = {
     perHandUnavailable: 'Per-hand data not available for older sessions.',
     noName: 'No name',
     viewDetails: 'View details',
+    exportCsv: 'Export CSV',
     viewRange: 'View Range',
     noTrainingData: 'No training data yet.',
     completeToSeePerf: 'Complete a training to see performance here.',
