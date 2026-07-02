@@ -1,5 +1,52 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-02 madrugada (mapeamento completo dos objetivos + execução em sequência)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- **739 testes verdes (71 arquivos)**, build verde, **SMOKE OK** (render verificado em browser real).
+- **PR #35 ABERTA e acumulando** — agora inclui: 6 fatias de teste pós-#34, P1.1 (badge Coach),
+  P3.8 (CSV), cobertura fina do drill e o **smoke test**. NÃO mergeada (gate humano; tem
+  mudança visual — validar badge/CSV no preview).
+- **Issue #36 (label `proposta`)**: P2.6/P3.7 — testes de `functions/api/analytics.js` +
+  remoção de endpoints mortos. Aguardando decisão do Daniel (gate humano).
+- **Issue #37 (label `agente`)**: novo epic "smoke de render no browser" — JÁ INICIADO
+  e núcleo entregue no mesmo run.
+
+### Mapa de objetivos (levantado a pedido do Daniel — fontes: rotina, epic, handoffs, CLAUDE.md)
+| Objetivo | Status |
+|---|---|
+| Epic P1.1 badge "Range do Time" | FEITO (02/07) |
+| Epic P3.8 exportar sessão CSV | FEITO (02/07) |
+| Extras do epic (cobertura fina drill/coach) | FEITO — ROI de cobertura esgotado (~89% linhas) |
+| P2.6/P3.7 `functions/api` (gate humano) | Issue #36 `proposta` criada — decide o Daniel |
+| Propor próximo epic (regra da rotina ao fechar epic) | Issue #37 `agente` criada |
+| Começar o próximo epic se houver orçamento | FEITO — `npm run smoke` entregue e verificado |
+| Validar preview + mergear PR #35 | SÓ DANIEL |
+| MFA GitHub/Cloudflare | FEITO (30/06) |
+| Dependabot #20/#25 (Tailwind/Vite) | OBSOLETO — migrações já feitas e mergeadas |
+
+### Feito nesta continuação (3 entregas)
+1. **test(trainer):** botão "Erro / Acerto" do topo do drill abre o diálogo SEM registrar
+   consulta; feedback com RNG ligado mostra a linha de faixas ("RNG 50: 1–70 Raise ..."). +2 testes.
+2. **Issues:** #36 (`proposta`, functions/api) e #37 (`agente`, novo epic smoke).
+3. **feat(tooling): `npm run smoke`** (`smoke/smoke.mjs`, committado — `scripts/` é gitignored):
+   - `vite build` + `vite preview` + Chromium headless via **playwright-core** (devDep NOVA;
+     sem postinstall de download — acha o browser por `SMOKE_CHROMIUM`, `/opt/pw-browsers/chromium`
+     do ambiente cloud, ou `chromium.executablePath()`).
+   - Backend stubado com `page.route` (`/api/auth/me` etc. → jogador fake logado); rede externa
+     BLOQUEADA (Google Fonts falha pelo proxy do container — erros externos são ignorados de propósito).
+   - Checa: #root monta, nav visível, clique Drill → `/drill`, back → `/dashboard`, F5 em
+     `/historico` mantém a rota, zero pageerror/console.error locais. **Pega os dois modos
+     históricos de tela branca** (ciclo de chunks e loop do RouterSync).
+   - Rodado neste ambiente: **SMOKE OK**.
+
+### Próximas fatias sugeridas
+- [ ] Estender o smoke: fluxo coach (`/coach` com analytics stubado) e drill ativo real.
+- [ ] Processo: rodar `npm run smoke` antes de merges de risco (deps/chunks/router) — documentar no CLAUDE.md quando o Daniel aprovar o epic #37.
+- [ ] Aguardar decisões: PR #35 (preview), issue #36 (functions/api).
+
+---
+
 ## 2026-07-02 noite (NOVO EPIC de produto — P1.1 e P3.8 ENTREGUES)
 
 ### Estado (PONTO DE PARTIDA do próximo run)

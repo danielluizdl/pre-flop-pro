@@ -27,7 +27,16 @@ Daniel autorizou em 02/07 ("pode prosseguir com a sua sugestão").
 - [x] Teste do botão (createObjectURL + click do anchor).
 
 ### Extras (se sobrar orçamento)
-- [ ] Polimentos apontados nos handoffs (baixo risco, validáveis por teste).
+- [x] Cobertura fina extra: botão Erro/Acerto do drill (sem consulta) + linha de faixas do RNG. (02/07)
+
+## EPIC P1/P3 CONCLUÍDO — próximo epic JÁ INICIADO: issue #37 (smoke de render)
+- [x] `npm run smoke` (smoke/smoke.mjs): builda, serve o dist, abre em Chromium
+      headless (playwright-core, sem download no install), falha em pageerror/
+      console.error local, #root vazio, RouterSync quebrado (clique→URL, back,
+      F5 em rota profunda). Backend stubado via page.route; rede externa
+      bloqueada. VERIFICADO neste ambiente: SMOKE OK. (02/07)
+- [ ] Rodar o smoke antes de merges de risco (deps/chunks/router) — processo.
+- [ ] Possível extensão: smoke do fluxo coach (rota /coach com analytics stubado).
 
 ## Definição de pronto por fatia
 Sem PII nova; caminho feliz intacto; testes+build verdes; commit PT-BR por área;
