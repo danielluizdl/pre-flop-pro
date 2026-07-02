@@ -97,6 +97,48 @@ describe('HandMatrix', () => {
     expect(container.querySelector('[data-hand="AA"]')).toBeInTheDocument()
   })
 
+  it('arrastar pinta várias mãos (mouseDown + mouseEnter)', () => {
+    const applyBrush = vi.fn()
+    useStore.setState({
+      applyBrush,
+      brush: { call: 0, raise: 100, allin: 0, extra: 0, raiseSize: '', extraLabel: '', extraColor: '#d97757' },
+    })
+    const { container } = render(<HandMatrix grid={makeEmptyGrid()} />)
+    fireEvent.mouseDown(container.querySelector('[data-hand="AA"]')!)
+    fireEvent.mouseEnter(container.querySelector('[data-hand="KK"]')!)
+    fireEvent.mouseEnter(container.querySelector('[data-hand="QQ"]')!)
+    expect(applyBrush).toHaveBeenCalledTimes(3)
+    // soltar o mouse encerra o arrasto — enter depois não pinta
+    fireEvent.mouseUp(container.querySelector('[data-hand="QQ"]')!)
+    fireEvent.mouseEnter(container.querySelector('[data-hand="JJ"]')!)
+    expect(applyBrush).toHaveBeenCalledTimes(3)
+  })
+
+  it('arrastar a partir de célula preenchida limpa as mãos por onde passa', () => {
+    const clearHand = vi.fn()
+    useStore.setState({ clearHand })
+    const g = makeEmptyGrid()
+    g['AA'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const { container } = render(<HandMatrix grid={g} />)
+    fireEvent.mouseDown(container.querySelector('[data-hand="AA"]')!)
+    fireEvent.mouseEnter(container.querySelector('[data-hand="KK"]')!)
+    expect(clearHand).toHaveBeenCalledWith('AA')
+    expect(clearHand).toHaveBeenCalledWith('KK')
+  })
+
+  it('mão já pintada no mesmo arrasto não é repintada', () => {
+    const applyBrush = vi.fn()
+    useStore.setState({
+      applyBrush,
+      brush: { call: 0, raise: 100, allin: 0, extra: 0, raiseSize: '', extraLabel: '', extraColor: '#d97757' },
+    })
+    const { container } = render(<HandMatrix grid={makeEmptyGrid()} />)
+    fireEvent.mouseDown(container.querySelector('[data-hand="AA"]')!)
+    fireEvent.mouseEnter(container.querySelector('[data-hand="AA"]')!)
+    expect(applyBrush).toHaveBeenCalledTimes(1)
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     const { container } = render(<HandMatrix grid={makeEmptyGrid()} readOnly />)
     expect((await axe(container)).violations).toEqual([])
