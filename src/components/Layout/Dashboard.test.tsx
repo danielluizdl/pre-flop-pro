@@ -34,6 +34,35 @@ describe('Dashboard', () => {
     expect(screen.getByText('EARLY')).toBeInTheDocument()
   })
 
+  it('clicar numa categoria seta a categoria ativa e navega', () => {
+    useStore.setState({ ranges: [RANGE], trainingHistory: [], currentUser: null, page: 'dashboard', activeCategory: null })
+    render(<Dashboard />)
+    fireEvent.click(screen.getByText('EARLY'))
+    expect(useStore.getState().activeCategory).toBe('early')
+    expect(useStore.getState().page).toBe('category-detail')
+  })
+
+  it('"Ver todos" navega para a página de ranges', () => {
+    useStore.setState({ ranges: [1, 2].map(mkRange), trainingHistory: [], currentUser: null, page: 'dashboard' })
+    render(<Dashboard />)
+    fireEvent.click(screen.getByRole('button', { name: /Ver todos/ }))
+    expect(useStore.getState().page).toBe('ranges')
+  })
+
+  it('clicar num range recente vai para o drill', () => {
+    useStore.setState({ ranges: [mkRange(1)], trainingHistory: [], currentUser: null, page: 'dashboard' })
+    render(<Dashboard />)
+    fireEvent.click(screen.getByRole('button', { name: /Range 1/ }))
+    expect(useStore.getState().page).toBe('drill')
+  })
+
+  it('clicar num range da seção secundária vai para o drill', () => {
+    useStore.setState({ ranges: [1, 2, 3, 4, 5].map(mkRange), trainingHistory: [], currentUser: null, page: 'dashboard' })
+    render(<Dashboard />)
+    fireEvent.click(screen.getByRole('button', { name: /Range 5/ }))
+    expect(useStore.getState().page).toBe('drill')
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     useStore.setState({ ranges: [RANGE], trainingHistory: [], currentUser: null })
     const { container } = render(<Dashboard />)
