@@ -1,5 +1,36 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-02 tarde (continuação do run — +13 fatias de cobertura)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- **PR #34 ABERTA e atualizada** (auto/daily-improvements → feature/auth-telemetry). NÃO mergeada (gate humano).
+- **714 testes verdes (70 arquivos)** (manhã fechou em 675; ontem 626), build verde. `main`/produção intactos.
+- Cobertura global de linhas ~**89%** (useStore 91%, TrainerPage 86%, Turnstile 94%, AdminPanel 89%, CoachPanel 82%).
+- As duas runs de 02/07 são SÓ testes — zero mudança de código de produção, zero risco visual.
+
+### Feito nesta continuação (13 commits, cada um test+build verde + push)
+1. **test(store):** `loadRangeForEdit` (simples/multi-stack→sessionGrids/customAction/prereq/inexistente) + `logConsult` (assert no `enqueue` — o store importa `enqueue` do eventQueue e embrulha em `fireEvent` local, mockar `enqueue`/`flush`) e `incrementConsults` — `loadRangeForEdit.test.ts`.
+2. **test(coach):** Leaks relativos com dados (z-score; `buildRelativeLeaks` exige `total>=15` e `>=3` peers no mesmo range).
+3. **test(coach):** matriz do range — Range real/jogado renderizados + clicar mão no Top 20 abre `HandDetailCard` (célula precisa de `accuracy` e `topWrong:{action,n}`; range no store com o mesmo `rangeId` para o gabarito).
+4. **test(table-editor):** nome vazio alerta, confirm recusado, label `* 120bb` (stack destoante), updateBet/updateStack (aria `Stack de X` — cuidado com colisão com "Stack para todos").
+5. **test(ranges):** Treinar (fluxo completo e sem mãos), badges multi-stack, prereq, heatmap multi-stack (variantes rotuladas pelo stackRange — usar getAllByRole e pegar a última).
+6. **test(stats):** Desempenho Global multi-stack (chaves `id|||stack` no handPerformance).
+7. **test(auth):** Turnstile HABILITADO — `vi.stubEnv('VITE_TURNSTILE_KEY')` + `vi.resetModules()` + import dinâmico; onload do script disparado via spy no `document.head.appendChild` — `TurnstileEnabled.test.tsx`.
+8. **test(admin):** publish ok grava hash, invalid/missing_token, modal interno, Enter.
+9. **test(nav):** mousedown fora fecha perfil; publicar do admin abre modal.
+10. **test(trainer):** SessionDetail do HistoryModal (acordeão+stacks+toggle; o botão da sessão e o do range casam o mesmo regex — usar getAllByRole e pegar o último) e sessão antiga sem handPerf ("Dados por mão não disponíveis...").
+11. **test(editor):** remover grid da sessão (confirm sim/não), stack textual (placeholder exato 'Ex: <= 250, ou 250-300'), prereq via picker.
+12. **test(matrix):** arrasto pinta/limpa (mouseDown+mouseEnter), mouseUp encerra, dedupe.
+13. **test(trainer):** HandFilterGrid — arrasto de exclusão/inclusão (mouseDown/mouseOver/mouseUp), toggles RNG e Focar erros.
+
+### Maiores lacunas restantes (alvos do próximo run)
+- **CoachPanel.tsx** (82% linhas, 53% branch): aba "Por jogador" com jogadores (PlayersView, tendência por jogador), reset de senha do coach, publicar D1 com sucesso/erro.
+- **TrainerPage.tsx** (86%): DrillSummary vazio, replay de entrada do histórico (clicar item da sidebar), barra de progresso do auto-advance.
+- **LoginPage** (86%): Enter nos campos de cadastro; **Dashboard** (91%): hero start-training; **useStore** (91%): ramos raros de erro.
+- Decidir com o Daniel: P1.1 (badge Range do Time), P3.8 (CSV), migração dos testes de `functions/api` (gate humano).
+
+---
+
 ## 2026-07-02 (run automático — cobertura incremental, 10 fatias)
 
 ### Estado (PONTO DE PARTIDA do próximo run)
