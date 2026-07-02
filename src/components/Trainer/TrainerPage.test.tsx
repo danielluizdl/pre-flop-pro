@@ -426,6 +426,44 @@ describe('TrainerPage', () => {
     expect((await axe(container)).violations).toEqual([])
   })
 
+  it('HandFilterGrid: clicar numa mão a exclui e arrastar exclui as seguintes', () => {
+    useStore.setState({ ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [1], drillExcludedHands: [] })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
+    fireEvent.mouseDown(screen.getByText('AA'))
+    expect(useStore.getState().drillExcludedHands).toContain('AA')
+    // arrastar sobre KK também exclui
+    fireEvent.mouseOver(screen.getByText('KK'))
+    expect(useStore.getState().drillExcludedHands).toContain('KK')
+    // soltar encerra o arrasto
+    fireEvent.mouseUp(screen.getByText('KK'))
+    fireEvent.mouseOver(screen.getByText('QQ'))
+    expect(useStore.getState().drillExcludedHands).not.toContain('QQ')
+  })
+
+  it('HandFilterGrid: clicar numa mão excluída a inclui de volta', () => {
+    useStore.setState({ ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [1], drillExcludedHands: ['AA'] })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
+    fireEvent.mouseDown(screen.getByText('AA'))
+    expect(useStore.getState().drillExcludedHands).not.toContain('AA')
+  })
+
+  it('HandFilterGrid: alterna RNG e "Focar erros"', () => {
+    useStore.setState({
+      ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [1],
+      useRngForFrequency: false, focusErrors: false, acceptAnyFreq: false,
+    })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sim' }))
+    expect(useStore.getState().useRngForFrequency).toBe(true)
+    fireEvent.click(screen.getByRole('button', { name: 'Não' }))
+    expect(useStore.getState().useRngForFrequency).toBe(false)
+    fireEvent.click(screen.getByRole('button', { name: /Focar erros/ }))
+    expect(useStore.getState().focusErrors).toBe(true)
+  })
+
   // --- Fatia: HandFilterGrid — botões Tudo / Nada ---
 
   it('botão "Tudo ✓" limpa todas as mãos excluídas', () => {
