@@ -71,6 +71,7 @@ SLOTS_6MAX / SLOTS_8MAX: Slot[]              // {t:%, l:%} posição visual dos 
 'pfp-hand-perf-v1'        → HandPerfMap       (Record<rangeId, Record<hand, {c,t}>>) — acumulativo
 'fbr-ui-state'            → {darkMode, lang}   (zustand persist)
 'pfp-last-published-hash' → string           (hash djb2 do último publish — antes guardava o JSON inteiro)
+'pfp-team-range-ids'      → number[]         (IDs dos ranges publicados pelo coach — badge "Coach" + edição bloqueada p/ jogador)
 'admin-ranges-version' / 'fbr-deleted-admin-ids' / 'admin-worker-url'
 ```
 

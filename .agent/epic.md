@@ -15,20 +15,16 @@ Daniel autorizou em 02/07 ("pode prosseguir com a sua sugestão").
 - Mudança visual nova → sinalizar validação no preview Cloudflare na PR.
 
 ## Backlog
-### P1.1 — Badge "Range do Time" + proteção de edição
-- [ ] `syncTeamRanges` persiste os IDs dos ranges do time em
-      `localStorage['pfp-team-range-ids']` e no estado `teamRangeIds: number[]`.
-- [ ] `RangeCard` (SituationsPage): badge "Coach" quando o range veio do D1;
-      botão Editar desabilitado com tooltip explicativo. Gate: só para
-      `role !== 'coach'` (o coach edita os próprios ranges normalmente).
-- [ ] Testes: sync grava os ids; card com badge + editar bloqueado; coach não é afetado.
+### P1.1 — Badge "Range do Time" + proteção de edição — FEITO (02/07)
+- [x] `syncTeamRanges` persiste os IDs em `pfp-team-range-ids` + estado `teamRangeIds`.
+- [x] `RangeCard`: badge "Coach" + Editar desabilitado com tooltip (gate `role !== 'coach'`).
+- [x] Testes (sync grava ids; badge+bloqueio p/ jogador; coach não afetado; range fora do time editável).
 
-### P3.8 — Exportar sessão de treino como CSV
-- [ ] Helper puro `buildSessionCsv(session, ranges)` em `src/utils/sessionCsv.ts`
-      (colunas: range, stack, mão, tentativas, acertos, precisão — a partir do
-      `session.handPerf`; fallback por nome p/ sessões antigas).
-- [ ] Botão "Exportar CSV" no `SessionCard` do StatsPage usando `downloadText`.
-- [ ] Testes do helper (id, `id|||stack`, legacy por nome, escaping) + do botão.
+### P3.8 — Exportar sessão de treino como CSV — FEITO (02/07)
+- [x] `buildSessionCsv`/`sessionCsvFilename` em `src/utils/sessionCsv.ts` (stack tem
+      precedência sobre agregado; fallback por nome; escaping CSV). 7 testes.
+- [x] Botão "Exportar CSV" no `SessionCard` (ícone download, `downloadText` text/csv).
+- [x] Teste do botão (createObjectURL + click do anchor).
 
 ### Extras (se sobrar orçamento)
 - [ ] Polimentos apontados nos handoffs (baixo risco, validáveis por teste).

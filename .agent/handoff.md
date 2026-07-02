@@ -1,5 +1,44 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-02 noite (NOVO EPIC de produto — P1.1 e P3.8 ENTREGUES)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- Daniel autorizou o novo epic ("pode prosseguir com a sua sugestão"). Epic registrado
+  em `.agent/epic.md` e **as duas pendências de produto foram entregues no mesmo run**.
+- **PR #35 ABERTA e acumulando** (auto/daily-improvements → feature/auth-telemetry):
+  6 fatias de teste pós-merge + P1.1 + P3.8. NÃO mergeada (gate humano).
+- **737 testes verdes (71 arquivos)**, build verde. `main`/produção intactos.
+- **MUDANÇA VISUAL NOVA — validar no preview Cloudflare antes de mergear:**
+  badge "Coach" no RangeCard e botão "Exportar CSV" no SessionCard.
+
+### Feito nesta continuação (2 fatias de produto + docs)
+1. **P1.1 — Badge "Range do Time" (feat):**
+   - `syncTeamRanges` agora persiste os IDs dos ranges do time em
+     `localStorage['pfp-team-range-ids']` e no estado `teamRangeIds: number[]`
+     (carregado no boot por `loadTeamRangeIds`).
+   - `RangeCard` (SituationsPage): badge "Coach" (sky) ao lado do nome + botão
+     Editar desabilitado com tooltip `t.ranges.coachLocked`. **Gate:
+     `currentUser?.role !== 'coach'`** — o coach continua editando os próprios ranges.
+   - i18n: `ranges.coachBadge`/`ranges.coachLocked` em pt/en/es.
+   - Obs.: feature fica dormente até o front usar os ranges D1 (hoje a fonte é
+     `adminRanges.json`); os IDs só populam quando `syncTeamRanges` aplica versão nova.
+2. **P3.8 — Exportar sessão CSV (feat):**
+   - `src/utils/sessionCsv.ts`: `buildSessionCsv(session, ranges)` — colunas
+     range,stack,mao,tentativas,acertos,precisao a partir do `session.handPerf`;
+     chaves `id|||stack` têm precedência sobre a agregada; fallback por nome
+     (sessões antigas); escaping CSV correto. `sessionCsvFilename` = `sessao-AAAA-MM-DD.csv`.
+   - Botão "Exportar CSV" (ícone download) no `SessionCard` do StatsPage via `downloadText`.
+   - i18n: `stats.exportCsv` em pt/en/es. 8 testes novos.
+- **docs:** CLAUDE.md ganhou a chave `pfp-team-range-ids` na tabela de localStorage.
+
+### Próximos passos
+- [ ] **Daniel validar no preview** (badge Coach + botão CSV) e mergear a PR #35.
+- [ ] Extras do epic: polimentos de baixo risco; ou propor próximo epic (UX/polish
+      com verificação Playwright, na linha dos scripts `scripts/verify*.cjs`).
+- [ ] Gate humano (inalterado): testes de `functions/api`, endpoints mortos (P2.6/P3.7).
+
+---
+
 ## 2026-07-02 fim do dia (pós-merge da PR #34 — +6 fatias)
 
 ### Estado (PONTO DE PARTIDA do próximo run)
