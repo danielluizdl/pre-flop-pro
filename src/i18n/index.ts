@@ -29,6 +29,12 @@ export function getLang(): Lang {
   return currentLang
 }
 
+const LOCALES: Record<Lang, string> = { pt: 'pt-BR', en: 'en-US', es: 'es-ES' }
+
+export function dateLocale(): string {
+  return LOCALES[currentLang]
+}
+
 // `t` é um Proxy que sempre resolve o dicionário do idioma vigente, então
 // os componentes seguem importando `t` estaticamente e o texto acompanha a
 // troca de idioma ao re-renderizar. Constantes de módulo NÃO devem capturar

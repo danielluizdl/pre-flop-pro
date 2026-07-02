@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useRef, useState, useCallback, memo } fro
 import { countRender } from '../../test/renderCount'
 import { Skeleton } from '../ui/Skeleton'
 import { captureError } from '../../utils/sentry'
+import { fetchAnalyticsCached, invalidateAnalyticsCache } from '../../utils/analyticsCache'
 import { useStore } from '../../store/useStore'
 import { RangeHeatGrid, type GridCell } from './RangeHeatGrid'
 import { RangeActionGrid, type ActionFreq } from './RangeActionGrid'
@@ -495,8 +496,7 @@ function useAnalytics<T>(view: string, filters: Filters, token: string | null) {
     if (idsKey) qs.set('playerIds', idsKey)
     if (filters.rangeId !== null) qs.set('rangeId', String(filters.rangeId))
     setDateParams(qs, filters)
-    fetch(`/api/admin/analytics?${qs.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
+    fetchAnalyticsCached(`/api/admin/analytics?${qs.toString()}`, token)
       .then(d => {
         if (cancelled) return
         setRows(d.rows ?? [])
@@ -512,7 +512,7 @@ function useAnalytics<T>(view: string, filters: Filters, token: string | null) {
     return () => { cancelled = true }
   }, [view, token, idsKey, filters.rangeId, filters.days, filters.from, filters.to, tick])
 
-  return { rows, team, loading, error, reload: () => setTick(t => t + 1) }
+  return { rows, team, loading, error, reload: () => { invalidateAnalyticsCache(); setTick(t => t + 1) } }
 }
 
 function useRangeGrid(rangeId: number | null, days: number | null, from: number | null, to: number | null, playerIds: number[], stackIdx: number | null, token: string | null) {
@@ -530,8 +530,7 @@ function useRangeGrid(rangeId: number | null, days: number | null, from: number 
     if (idsKey) qs.set('playerIds', idsKey)
     if (stackIdx !== null) qs.set('stackGridIdx', String(stackIdx))
     setDateParams(qs, { days, from, to })
-    fetch(`/api/admin/analytics?${qs.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
+    fetchAnalyticsCached(`/api/admin/analytics?${qs.toString()}`, token)
       .then(d => { if (!cancelled) { setCells(d.cells ?? []); setLoading(false) } })
       .catch(e => { if (!cancelled) { captureError(e, { area: 'coach-range-grid', view: 'range-grid' }); setError(t.coach.loadError); setLoading(false) } })
     return () => { cancelled = true }
@@ -560,8 +559,7 @@ function useTrend(filters: Filters, token: string | null) {
     if (idsKey) qs.set('playerIds', idsKey)
     if (filters.rangeId !== null) qs.set('rangeId', String(filters.rangeId))
     setDateParams(qs, filters)
-    fetch(`/api/admin/analytics?${qs.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
+    fetchAnalyticsCached(`/api/admin/analytics?${qs.toString()}`, token)
       .then(d => {
         if (cancelled) return
         setRows(d.rows ?? [])
@@ -572,7 +570,7 @@ function useTrend(filters: Filters, token: string | null) {
     return () => { cancelled = true }
   }, [token, idsKey, filters.rangeId, filters.days, filters.from, filters.to, tick])
 
-  return { rows, users, loading, error, reload: () => setTick(t => t + 1) }
+  return { rows, users, loading, error, reload: () => { invalidateAnalyticsCache(); setTick(t => t + 1) } }
 }
 
 interface ActionRow { action: string; total: number; correct: number; graves: number; imprecisos: number; accuracy: number }
@@ -594,8 +592,7 @@ function useSegments(filters: Filters, token: string | null) {
     if (idsKey) qs.set('playerIds', idsKey)
     if (filters.rangeId !== null) qs.set('rangeId', String(filters.rangeId))
     setDateParams(qs, filters)
-    fetch(`/api/admin/analytics?${qs.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
+    fetchAnalyticsCached(`/api/admin/analytics?${qs.toString()}`, token)
       .then(d => {
         if (cancelled) return
         setByHand(d.byHand ?? [])
@@ -606,7 +603,7 @@ function useSegments(filters: Filters, token: string | null) {
     return () => { cancelled = true }
   }, [token, idsKey, filters.rangeId, filters.days, filters.from, filters.to, tick])
 
-  return { byHand, byAction, loading, error, reload: () => setTick(t => t + 1) }
+  return { byHand, byAction, loading, error, reload: () => { invalidateAnalyticsCache(); setTick(t => t + 1) } }
 }
 
 interface PlayerRangeApiRow { userId: number; rangeId: number; rangeName: string; total: number; correct: number }
@@ -628,14 +625,13 @@ function usePlayerRanges(filters: Filters, token: string | null) {
     if (idsKey) qs.set('playerIds', idsKey)
     if (filters.rangeId !== null) qs.set('rangeId', String(filters.rangeId))
     setDateParams(qs, filters)
-    fetch(`/api/admin/analytics?${qs.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
+    fetchAnalyticsCached(`/api/admin/analytics?${qs.toString()}`, token)
       .then(d => { if (!cancelled) { setRows(d.rows ?? []); setUsers(d.users ?? []); setLoading(false) } })
       .catch(e => { if (!cancelled) { captureError(e, { area: 'coach-analytics', view: 'player-ranges' }); setError(t.coach.loadError); setLoading(false) } })
     return () => { cancelled = true }
   }, [token, idsKey, filters.rangeId, filters.days, filters.from, filters.to, tick])
 
-  return { rows, users, loading, error, reload: () => setTick(t => t + 1) }
+  return { rows, users, loading, error, reload: () => { invalidateAnalyticsCache(); setTick(t => t + 1) } }
 }
 
 const TREND_META: Record<TrendDir, { arrow: string; cls: string }> = {
@@ -786,8 +782,7 @@ export function PlayerQuickSummary({ userId, days, from, to, token }: { userId: 
     setLoading(true)
     const qs = new URLSearchParams({ view: 'by-range', playerIds: String(userId) })
     setDateParams(qs, { days, from, to })
-    fetch(`/api/admin/analytics?${qs.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
+    fetchAnalyticsCached(`/api/admin/analytics?${qs.toString()}`, token)
       .then(d => { if (!cancelled) { setRows(d.rows ?? []); setLoading(false) } })
       .catch(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }

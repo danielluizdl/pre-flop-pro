@@ -4,12 +4,12 @@ import type { Range, TrainingSession } from '../../types'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import { MyAccountStats } from './MyAccountStats'
 import { AccuracySparkline } from './AccuracySparkline'
-import { t } from '../../i18n'
+import { t, dateLocale } from '../../i18n'
 
 const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'EP', 'LJ', 'UTG']
 
 function formatDate(ts: number): string {
-  return new Date(ts).toLocaleDateString('pt-BR', {
+  return new Date(ts).toLocaleDateString(dateLocale(), {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   })

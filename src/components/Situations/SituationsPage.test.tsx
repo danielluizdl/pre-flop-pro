@@ -86,6 +86,79 @@ describe('SituationsPage', () => {
     expect(clearHandPerformance).toHaveBeenCalledWith(1)
   })
 
+  it('Treinar inicia a sessão e navega para o drill', () => {
+    const g = makeEmptyGrid()
+    g['AA'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const startDrillSession = vi.fn()
+    const nextDrillHand = vi.fn(() => true)
+    const setPage = vi.fn()
+    useStore.setState({
+      ranges: [{ ...RANGE, grid: g }],
+      startDrillSession, nextDrillHand, setPage,
+      selectedDrillRangeIds: [], drillExcludedHands: ['AKs'],
+    })
+    render(<SituationsPage />)
+    fireEvent.click(screen.getByRole('button', { name: /BTN/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Treinar/ }))
+    expect(startDrillSession).toHaveBeenCalled()
+    expect(setPage).toHaveBeenCalledWith('drill')
+    expect(useStore.getState().selectedDrillRangeIds).toEqual([1])
+    expect(useStore.getState().drillExcludedHands).toEqual([])
+  })
+
+  it('Treinar sem mãos disponíveis alerta e não navega', () => {
+    const nextDrillHand = vi.fn(() => false)
+    const setPage = vi.fn()
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
+    useStore.setState({ ranges: [RANGE], startDrillSession: vi.fn(), nextDrillHand, setPage })
+    render(<SituationsPage />)
+    fireEvent.click(screen.getByRole('button', { name: /BTN/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Treinar/ }))
+    expect(alertSpy).toHaveBeenCalled()
+    expect(setPage).not.toHaveBeenCalled()
+    alertSpy.mockRestore()
+  })
+
+  it('mostra badges de stack das variantes multi-stack e o nome do pré-requisito', () => {
+    const prereq: Range = { ...RANGE, id: 2, name: 'Range base', positions: ['CO'] }
+    const multi: Range = {
+      ...RANGE, id: 3, name: 'BTN multi', prereqRangeId: 2,
+      stackGrids: [
+        { stackRange: '<=40', grid: makeEmptyGrid() },
+        { stackRange: '>40', grid: makeEmptyGrid() },
+      ],
+    }
+    useStore.setState({ ranges: [prereq, multi] })
+    render(<SituationsPage />)
+    fireEvent.click(screen.getByRole('button', { name: /BTN/ }))
+    expect(screen.getByText('<=40')).toBeInTheDocument()
+    expect(screen.getByText('>40')).toBeInTheDocument()
+    expect(screen.getByText('Range base')).toBeInTheDocument()
+  })
+
+  it('heatmap de range multi-stack alterna entre as variantes', () => {
+    const gLow = makeEmptyGrid()
+    gLow['AA'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const multi: Range = {
+      ...RANGE, id: 4, name: 'BTN multi',
+      stackGrids: [
+        { stackRange: '<=40', grid: gLow, name: 'baixo' },
+        { stackRange: '>40', grid: makeEmptyGrid(), name: 'alto' },
+      ],
+    }
+    useStore.setState({ ranges: [multi], handPerformance: { 4: { AA: { c: 5, t: 10 } } } })
+    render(<SituationsPage />)
+    fireEvent.click(screen.getByRole('button', { name: /BTN/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Ver heatmap' }))
+    const dialog = screen.getByRole('dialog', { name: 'BTN multi' })
+    expect(dialog).toBeInTheDocument()
+    // botões das variantes (rotulados pelo stackRange) dentro do modal
+    const altoBtns = screen.getAllByRole('button', { name: '>40' })
+    fireEvent.click(altoBtns[altoBtns.length - 1])
+    const baixoBtns = screen.getAllByRole('button', { name: '<=40' })
+    fireEvent.click(baixoBtns[baixoBtns.length - 1])
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     useStore.setState({ ranges: [RANGE] })
     const { container } = render(<SituationsPage />)

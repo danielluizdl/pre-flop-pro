@@ -96,6 +96,83 @@ describe('TrainerPage', () => {
     expect(screen.getByText(/Blunder/)).toBeInTheDocument()
   })
 
+  it('atalho de teclado V abre o "Ver Range" e registra consulta', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
+      handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
+    })
+    render(<TrainerPage />)
+    fireEvent.keyDown(window, { key: 'v' })
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(useStore.getState().sessionStats.consults).toBe(1)
+    fireEvent.keyDown(window, { key: 'v' })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('atalho de teclado R responde Raise (acerto)', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 2.5, currentScenario: {},
+      useRngForFrequency: false, acceptAnyFreq: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
+    })
+    render(<TrainerPage />)
+    fireEvent.keyDown(window, { key: 'r' })
+    expect(screen.getByText(/Raise!/)).toBeInTheDocument()
+  })
+
+  it('RNG ligado: responder a ação da faixa correta é acerto', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 2.5, currentScenario: {},
+      useRngForFrequency: true, acceptAnyFreq: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
+    })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /RAISE/ }))
+    expect(screen.getByText(/Raise!/)).toBeInTheDocument()
+  })
+
+  it('acceptAnyFreq: responder ação secundária com frequência > 0 é "Válido"', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 40, raise: 60, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 2.5, currentScenario: {},
+      useRngForFrequency: false, acceptAnyFreq: true, handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
+    })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /CALL/ }))
+    expect(screen.getByText(/Válido/)).toBeInTheDocument()
+  })
+
+  it('range com customAction mostra o botão da ação extra', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 0, allin: 0, extra: 100 }
+    const range: Range = { ...RANGE, grid: g, customAction: { label: 'ISO', color: '#a855f7' } }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
+      useRngForFrequency: false, acceptAnyFreq: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
+    })
+    render(<TrainerPage />)
+    expect(screen.getByRole('button', { name: /ISO/ })).toBeInTheDocument()
+  })
+
   it('"Ver Range" abre o diálogo e registra a consulta', () => {
     const g = makeEmptyGrid()
     g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
@@ -237,6 +314,69 @@ describe('TrainerPage', () => {
     expect(screen.getByText('Histórico de Treino')).toBeInTheDocument()
   })
 
+  it('HistoryModal: expandir sessão mostra o SessionDetail com range, stacks e toggle de visão', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const multi: Range = {
+      ...RANGE, id: 30, name: 'STR multi', positions: ['STR'], grid: g,
+      stackGrids: [
+        { stackRange: '<=40', grid: g },
+        { stackRange: '>40', grid: g },
+      ],
+    }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range, multi], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
+      handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 },
+      trainingHistory: [{
+        id: 99, timestamp: 1700000000000, rangeNames: ['STR multi'], tableSize: 8,
+        hands: 10, correct: 8, errors: 2, consults: 1, durationSeconds: 120,
+        handPerf: {
+          30: { KK: { c: 8, t: 10 } },
+          '30|||<=40': { KK: { c: 4, t: 5 } },
+          '30|||>40': { KK: { c: 4, t: 5 } },
+        },
+      }],
+    })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /HISTÓRICO/ }))
+    // expande a sessão
+    fireEvent.click(screen.getByText('STR multi', { exact: false }))
+    // range da sessão com precisão 80%
+    expect(screen.getAllByText('80%').length).toBeGreaterThan(0)
+    // expande o acordeão do range dentro do detalhe (2º botão que casa: o 1º é a linha da sessão)
+    const accordions = screen.getAllByRole('button', { name: /STR multi.*80%/ })
+    fireEvent.click(accordions[accordions.length - 1])
+    // seletor de stack + alterna variante
+    fireEvent.click(screen.getByRole('button', { name: '>40' }))
+    // toggle da visão de ações
+    fireEvent.click(screen.getByRole('button', { name: 'Ver Range' }))
+    expect(screen.getByRole('button', { name: 'Ver Range' })).toBeInTheDocument()
+  })
+
+  it('HistoryModal: sessão antiga sem handPerf mostra aviso de indisponível', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
+      handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 },
+      trainingHistory: [{
+        id: 98, timestamp: 1700000000000, rangeNames: ['BTN RFI'], tableSize: 8,
+        hands: 5, correct: 3, errors: 2, consults: 0, durationSeconds: 60,
+      }],
+    })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /HISTÓRICO/ }))
+    fireEvent.click(screen.getByText('BTN RFI', { exact: false }))
+    fireEvent.click(screen.getByRole('button', { name: /BTN RFI.*sem dados/ }))
+    expect(screen.getByText('Dados por mão não disponíveis para sessões anteriores.')).toBeInTheDocument()
+  })
+
   it('alternar auto-advance ("2s") não re-renderiza a sidebar de histórico (memo)', () => {
     const g = makeEmptyGrid()
     g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
@@ -284,6 +424,44 @@ describe('TrainerPage', () => {
     useStore.setState({ ranges: [RANGE], activeDrillRange: null })
     const { container } = render(<TrainerPage />)
     expect((await axe(container)).violations).toEqual([])
+  })
+
+  it('HandFilterGrid: clicar numa mão a exclui e arrastar exclui as seguintes', () => {
+    useStore.setState({ ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [1], drillExcludedHands: [] })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
+    fireEvent.mouseDown(screen.getByText('AA'))
+    expect(useStore.getState().drillExcludedHands).toContain('AA')
+    // arrastar sobre KK também exclui
+    fireEvent.mouseOver(screen.getByText('KK'))
+    expect(useStore.getState().drillExcludedHands).toContain('KK')
+    // soltar encerra o arrasto
+    fireEvent.mouseUp(screen.getByText('KK'))
+    fireEvent.mouseOver(screen.getByText('QQ'))
+    expect(useStore.getState().drillExcludedHands).not.toContain('QQ')
+  })
+
+  it('HandFilterGrid: clicar numa mão excluída a inclui de volta', () => {
+    useStore.setState({ ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [1], drillExcludedHands: ['AA'] })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
+    fireEvent.mouseDown(screen.getByText('AA'))
+    expect(useStore.getState().drillExcludedHands).not.toContain('AA')
+  })
+
+  it('HandFilterGrid: alterna RNG e "Focar erros"', () => {
+    useStore.setState({
+      ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [1],
+      useRngForFrequency: false, focusErrors: false, acceptAnyFreq: false,
+    })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sim' }))
+    expect(useStore.getState().useRngForFrequency).toBe(true)
+    fireEvent.click(screen.getByRole('button', { name: 'Não' }))
+    expect(useStore.getState().useRngForFrequency).toBe(false)
+    fireEvent.click(screen.getByRole('button', { name: /Focar erros/ }))
+    expect(useStore.getState().focusErrors).toBe(true)
   })
 
   // --- Fatia: HandFilterGrid — botões Tudo / Nada ---

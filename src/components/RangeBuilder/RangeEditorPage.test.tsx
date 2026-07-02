@@ -86,6 +86,149 @@ describe('RangeEditorPage', () => {
     expect(screen.getByRole('button', { name: 'Cancelar' })).toBeInTheDocument()
   })
 
+  it('"PRÓXIMO" com nome e posição vai para o table-editor', () => {
+    const initTableConfig = vi.fn()
+    const setPage = vi.fn()
+    setup({
+      selectedEditorPositions: ['BTN'],
+      rangeData: { id: null, name: 'BTN RFI', grid: makeEmptyGrid(), positions: [], tableSize: 8, stackRange: '' },
+      initTableConfig, setPage,
+    })
+    render(<RangeEditorPage />)
+    fireEvent.click(screen.getByRole('button', { name: /PRÓXIMO/ }))
+    expect(initTableConfig).toHaveBeenCalled()
+    expect(setPage).toHaveBeenCalledWith('table-editor')
+    expect(useStore.getState().rangeData.positions).toEqual(['BTN'])
+  })
+
+  it('"PRÓXIMO" sem nome dispara alerta e não navega', () => {
+    const setPage = vi.fn()
+    setup({ selectedEditorPositions: ['BTN'], setPage })
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
+    render(<RangeEditorPage />)
+    fireEvent.click(screen.getByRole('button', { name: /PRÓXIMO/ }))
+    expect(alertSpy).toHaveBeenCalled()
+    expect(setPage).not.toHaveBeenCalled()
+  })
+
+  it('"Salvar e criar" válido empurra o grid para a sessão', () => {
+    const pushGridToSession = vi.fn()
+    setup({
+      selectedEditorPositions: ['BTN'],
+      rangeData: { id: null, name: 'BTN RFI', grid: makeEmptyGrid(), positions: [], tableSize: 8, stackRange: '' },
+      pushGridToSession,
+    })
+    render(<RangeEditorPage />)
+    fireEvent.click(screen.getByRole('button', { name: /Salvar e criar/ }))
+    expect(pushGridToSession).toHaveBeenCalled()
+  })
+
+  it('modo de edição: salvar alterações chama updateSessionGrid quando há mudança', () => {
+    const updateSessionGrid = vi.fn()
+    setup({
+      selectedEditorPositions: ['BTN'],
+      sessionGrids: [{ name: 'Grid A', stackRange: '', grid: makeEmptyGrid(), positions: ['BTN'] }],
+      updateSessionGrid,
+    })
+    render(<RangeEditorPage />)
+    fireEvent.click(screen.getByText('Grid A'))
+    // altera o nome → habilita "Salvar alterações"
+    fireEvent.change(screen.getByPlaceholderText('Ex: Defesa BB vs UTG'), { target: { value: 'Grid A editado' } })
+    fireEvent.click(screen.getByRole('button', { name: /Salvar alterações no #1/ }))
+    expect(updateSessionGrid).toHaveBeenCalledWith(0, expect.objectContaining({ name: 'Grid A editado' }))
+  })
+
+  it('"Salvar e criar" com stack sobreposto ao da sessão dispara alerta e não empurra', () => {
+    const pushGridToSession = vi.fn()
+    setup({
+      selectedEditorPositions: ['BTN'],
+      rangeData: { id: null, name: 'BTN 20-40', grid: makeEmptyGrid(), positions: [], tableSize: 8, stackRange: '20-40' },
+      sessionGrids: [{ name: 'BTN antigo', stackRange: '20-40', grid: makeEmptyGrid(), positions: ['BTN'] }],
+      pushGridToSession,
+    })
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
+    render(<RangeEditorPage />)
+    fireEvent.click(screen.getByRole('button', { name: /Salvar e criar/ }))
+    expect(alertSpy).toHaveBeenCalled()
+    expect(pushGridToSession).not.toHaveBeenCalled()
+  })
+
+  it('"PRÓXIMO" com editor vazio mas grids na sessão vai direto ao table-editor', () => {
+    const initTableConfig = vi.fn()
+    const setPage = vi.fn()
+    setup({
+      selectedEditorPositions: [],
+      rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: [], tableSize: 8, stackRange: '' },
+      sessionGrids: [{ name: 'Grid A', stackRange: '', grid: makeEmptyGrid(), positions: ['BTN'] }],
+      initTableConfig, setPage,
+    })
+    render(<RangeEditorPage />)
+    fireEvent.click(screen.getByRole('button', { name: /PRÓXIMO/ }))
+    expect(initTableConfig).toHaveBeenCalled()
+    expect(setPage).toHaveBeenCalledWith('table-editor')
+  })
+
+  it('modo de edição: "Cancelar" sai do modo sem salvar', () => {
+    setup({
+      selectedEditorPositions: [],
+      sessionGrids: [{ name: 'Grid A', stackRange: '', grid: makeEmptyGrid(), positions: ['BTN'] }],
+    })
+    render(<RangeEditorPage />)
+    fireEvent.click(screen.getByText('Grid A'))
+    expect(screen.getByText('editando')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(screen.queryByText('editando')).not.toBeInTheDocument()
+  })
+
+  it('remover um grid da sessão pede confirmação e chama removeSessionGrid', () => {
+    const removeSessionGrid = vi.fn()
+    setup({
+      sessionGrids: [
+        { name: 'Grid A', stackRange: '<=40', grid: makeEmptyGrid(), positions: ['BTN'] },
+        { name: 'Grid B', stackRange: '>40', grid: makeEmptyGrid(), positions: ['BTN'] },
+      ],
+      removeSessionGrid,
+    })
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const { container } = render(<RangeEditorPage />)
+    // o botão de remover é o X dentro do badge do grid
+    const badges = container.querySelectorAll('.card-surface .relative')
+    const removeBtn = badges[0].querySelector('button')!
+    fireEvent.click(removeBtn)
+    expect(confirmSpy).toHaveBeenCalledWith('Remover "Grid A (<=40)"?')
+    expect(removeSessionGrid).toHaveBeenCalledWith(0)
+  })
+
+  it('recusar a confirmação não remove o grid da sessão', () => {
+    const removeSessionGrid = vi.fn()
+    setup({
+      sessionGrids: [{ name: 'Grid A', stackRange: '', grid: makeEmptyGrid(), positions: ['BTN'] }],
+      removeSessionGrid,
+    })
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const { container } = render(<RangeEditorPage />)
+    const removeBtn = container.querySelector('.card-surface .relative button')!
+    fireEvent.click(removeBtn)
+    expect(removeSessionGrid).not.toHaveBeenCalled()
+  })
+
+  it('digitar um stack range textual atualiza o rangeData', () => {
+    setup()
+    render(<RangeEditorPage />)
+    fireEvent.change(screen.getByPlaceholderText('Ex: <= 250, ou 250-300'), { target: { value: '30-60bb' } })
+    expect(useStore.getState().rangeData.stackRange).toBe('30-60bb')
+  })
+
+  it('selecionar pré-requisito no picker grava o prereqRangeId', () => {
+    setup({
+      ranges: [{ id: 9, name: 'BB defesa', positions: ['BB'], grid: makeEmptyGrid(), scenarios: [], tableSize: 8 }],
+    })
+    render(<RangeEditorPage />)
+    fireEvent.click(screen.getByRole('button', { name: /sem pré-requisito/ }))
+    fireEvent.click(screen.getByText('BB defesa'))
+    expect(useStore.getState().rangeData.prereqRangeId).toBe(9)
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     setup()
     const { container } = render(<RangeEditorPage />)

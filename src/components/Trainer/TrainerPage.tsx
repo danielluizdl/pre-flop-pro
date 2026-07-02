@@ -9,7 +9,7 @@ import { Eye } from 'lucide-react'
 import { RANKS, SUIT_ICONS } from '../../types'
 import { ALL_HANDS, getRngBands, formatRngBands } from '../../utils/hands'
 import { useModalA11y } from '../../utils/useModalA11y'
-import { t } from '../../i18n'
+import { t, dateLocale } from '../../i18n'
 import type { CSSProperties } from 'react'
 import type { HandHistoryEntry, Range, TrainingSession } from '../../types'
 
@@ -262,7 +262,7 @@ function HistoryModal({ onClose }: { onClose: () => void }) {
   const [openId, setOpenId] = useState<number | null>(null)
 
   function formatDate(ts: number) {
-    return new Date(ts).toLocaleDateString('pt-BR', {
+    return new Date(ts).toLocaleDateString(dateLocale(), {
       day: '2-digit', month: '2-digit', year: 'numeric',
       hour: '2-digit', minute: '2-digit',
     })

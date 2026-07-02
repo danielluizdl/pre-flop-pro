@@ -52,6 +52,60 @@ describe('LoginPage', () => {
     expect(screen.getByRole('button', { name: 'Entrar' })).toBeInTheDocument()
   })
 
+  it('login com falha exibe a mensagem de erro retornada', async () => {
+    const authLogin = vi.fn().mockResolvedValue({ ok: false, error: 'credenciais inválidas' })
+    useStore.setState({ authLogin })
+    render(<LoginPage />)
+    fireEvent.change(screen.getByLabelText('Usuário:'), { target: { value: 'admin001' } })
+    fireEvent.change(screen.getByLabelText('Senha:'), { target: { value: 'segredo123' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar' }))
+    expect(await screen.findByText('credenciais inválidas')).toBeInTheDocument()
+  })
+
+  it('valida usuário curto no cadastro', () => {
+    render(<LoginPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Criar conta' }))
+    fireEvent.change(screen.getByLabelText('Nome Completo:'), { target: { value: 'Daniel' } })
+    fireEvent.change(screen.getByLabelText('E-mail:'), { target: { value: 'd@x.com' } })
+    fireEvent.change(screen.getByLabelText('Usuário:'), { target: { value: 'curto' } })
+    fireEvent.change(screen.getByLabelText('Senha:'), { target: { value: 'senhaforte1' } })
+    fireEvent.change(screen.getByLabelText('Código do time:'), { target: { value: 'TIME' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Criar conta' }))
+    expect(screen.getByText('Usuário deve ter ao menos 6 caracteres')).toBeInTheDocument()
+  })
+
+  it('valida e-mail inválido no cadastro', () => {
+    render(<LoginPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Criar conta' }))
+    fireEvent.change(screen.getByLabelText('Nome Completo:'), { target: { value: 'Daniel' } })
+    fireEvent.change(screen.getByLabelText('E-mail:'), { target: { value: 'sem-arroba' } })
+    fireEvent.change(screen.getByLabelText('Usuário:'), { target: { value: 'daniel1' } })
+    fireEvent.change(screen.getByLabelText('Senha:'), { target: { value: 'senhaforte1' } })
+    fireEvent.change(screen.getByLabelText('Código do time:'), { target: { value: 'TIME' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Criar conta' }))
+    expect(screen.getByText('Informe um e-mail válido')).toBeInTheDocument()
+  })
+
+  it('Enter no campo de senha dispara o login', () => {
+    const authLogin = vi.fn().mockResolvedValue({ ok: true })
+    useStore.setState({ authLogin })
+    render(<LoginPage />)
+    fireEvent.change(screen.getByLabelText('Usuário:'), { target: { value: 'admin001' } })
+    const pass = screen.getByLabelText('Senha:')
+    fireEvent.change(pass, { target: { value: 'segredo123' } })
+    fireEvent.keyDown(pass, { key: 'Enter' })
+    expect(authLogin).toHaveBeenCalledWith('admin001', 'segredo123', null)
+  })
+
+  it('no cadastro, "Já tenho conta" volta ao login', () => {
+    render(<LoginPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Criar conta' }))
+    expect(screen.getByLabelText('Nome Completo:')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /Já tenho conta/ }))
+    expect(screen.queryByLabelText('Nome Completo:')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Entrar' })).toBeInTheDocument()
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     const { container } = render(<LoginPage />)
     expect((await axe(container)).violations).toEqual([])

@@ -1,5 +1,176 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-02 tarde (continuação do run — +13 fatias de cobertura)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- **PR #34 ABERTA e atualizada** (auto/daily-improvements → feature/auth-telemetry). NÃO mergeada (gate humano).
+- **714 testes verdes (70 arquivos)** (manhã fechou em 675; ontem 626), build verde. `main`/produção intactos.
+- Cobertura global de linhas ~**89%** (useStore 91%, TrainerPage 86%, Turnstile 94%, AdminPanel 89%, CoachPanel 82%).
+- As duas runs de 02/07 são SÓ testes — zero mudança de código de produção, zero risco visual.
+
+### Feito nesta continuação (13 commits, cada um test+build verde + push)
+1. **test(store):** `loadRangeForEdit` (simples/multi-stack→sessionGrids/customAction/prereq/inexistente) + `logConsult` (assert no `enqueue` — o store importa `enqueue` do eventQueue e embrulha em `fireEvent` local, mockar `enqueue`/`flush`) e `incrementConsults` — `loadRangeForEdit.test.ts`.
+2. **test(coach):** Leaks relativos com dados (z-score; `buildRelativeLeaks` exige `total>=15` e `>=3` peers no mesmo range).
+3. **test(coach):** matriz do range — Range real/jogado renderizados + clicar mão no Top 20 abre `HandDetailCard` (célula precisa de `accuracy` e `topWrong:{action,n}`; range no store com o mesmo `rangeId` para o gabarito).
+4. **test(table-editor):** nome vazio alerta, confirm recusado, label `* 120bb` (stack destoante), updateBet/updateStack (aria `Stack de X` — cuidado com colisão com "Stack para todos").
+5. **test(ranges):** Treinar (fluxo completo e sem mãos), badges multi-stack, prereq, heatmap multi-stack (variantes rotuladas pelo stackRange — usar getAllByRole e pegar a última).
+6. **test(stats):** Desempenho Global multi-stack (chaves `id|||stack` no handPerformance).
+7. **test(auth):** Turnstile HABILITADO — `vi.stubEnv('VITE_TURNSTILE_KEY')` + `vi.resetModules()` + import dinâmico; onload do script disparado via spy no `document.head.appendChild` — `TurnstileEnabled.test.tsx`.
+8. **test(admin):** publish ok grava hash, invalid/missing_token, modal interno, Enter.
+9. **test(nav):** mousedown fora fecha perfil; publicar do admin abre modal.
+10. **test(trainer):** SessionDetail do HistoryModal (acordeão+stacks+toggle; o botão da sessão e o do range casam o mesmo regex — usar getAllByRole e pegar o último) e sessão antiga sem handPerf ("Dados por mão não disponíveis...").
+11. **test(editor):** remover grid da sessão (confirm sim/não), stack textual (placeholder exato 'Ex: <= 250, ou 250-300'), prereq via picker.
+12. **test(matrix):** arrasto pinta/limpa (mouseDown+mouseEnter), mouseUp encerra, dedupe.
+13. **test(trainer):** HandFilterGrid — arrasto de exclusão/inclusão (mouseDown/mouseOver/mouseUp), toggles RNG e Focar erros.
+
+### Maiores lacunas restantes (alvos do próximo run)
+- **CoachPanel.tsx** (82% linhas, 53% branch): aba "Por jogador" com jogadores (PlayersView, tendência por jogador), reset de senha do coach, publicar D1 com sucesso/erro.
+- **TrainerPage.tsx** (86%): DrillSummary vazio, replay de entrada do histórico (clicar item da sidebar), barra de progresso do auto-advance.
+- **LoginPage** (86%): Enter nos campos de cadastro; **Dashboard** (91%): hero start-training; **useStore** (91%): ramos raros de erro.
+- Decidir com o Daniel: P1.1 (badge Range do Time), P3.8 (CSV), migração dos testes de `functions/api` (gate humano).
+
+---
+
+## 2026-07-02 (run automático — cobertura incremental, 10 fatias)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- **PR #34 ABERTA e atualizada** (auto/daily-improvements → feature/auth-telemetry). NÃO mergeada (gate humano).
+- **675 testes verdes (68 arquivos)** (era 626), build verde. `main`/produção intactos.
+- Só testes nesta run — nenhuma mudança de código de produção, zero risco visual.
+- Stack: React 19, Vite 8, TypeScript 6, Tailwind 4, react-router 7, lucide-react 1.
+
+### Feito nesta run (10 commits, cada um test+build verde + push)
+1. **test(store):** `syncTeamRanges` (versão nova/vista/vazia/não-ok), `publishTeamRanges` (ok+erro), `adminSaveRanges` (ok/senha errada/token_expired/invalid_token/erro sem JSON) — `teamRanges.test.ts`.
+2. **test(store):** `finalizeRange` — simples, customAction, agrupamento por posição, multi-stack (`stackGrids`), dedupe de slot, edição preservando id — `finalizeRange.test.ts`.
+3. **test(layout):** `AppLayout` carrega páginas lazy (drill/history/range-setup/category-detail/coach). **GOTCHA:** RouterSync reseta a page se a rota do MemoryRouter discordar do store — passar `initialEntries` casando a rota (`/drill`, `/historico`, `/range-setup`, `/categoria`, `/coach`).
+4. **test(trainer):** atalhos V (Ver Range) e R (Raise), RNG ligado, `acceptAnyFreq` ("Válido"), botão de ação customizada.
+5. **test(coach):** ordenação do "Resumo do time" (Mãos/Precisão) e linha agregada TIME.
+6. **test(range-setup):** ante desligado (0) e valor de ante customizado (`fireEvent.change`, não `userEvent.type` — input number no jsdom não limpa direito).
+7. **test(auth):** `WelcomeModal` fecha (CTA + auto após 6s) e zera `firstLogin` (fake timers + `act`).
+8. **test(auth):** `LoginPage` erro de login, validações de cadastro (usuário curto/e-mail inválido), Enter dispara login, "Já tenho conta" volta.
+9. **test(dashboard):** navegação por categoria, "Ver todos", cards recentes (principal e secundária >3 ranges).
+10. **test(editor):** stack sobreposto bloqueia push (alert), PRÓXIMO com editor vazio + grids na sessão → table-editor, Cancelar sai do modo de edição.
+
+### Notas técnicas úteis (replicáveis)
+- Cobertura: `npm i -D @vitest/coverage-v8@<versão do vitest> --no-save` + `npx vitest run --coverage.enabled --coverage.provider=v8 --coverage.reporter=json --coverage.reportsDirectory=<dir>` e extrair `coverage-final.json` (statementMap/s) para os ranges exatos. NÃO commitar a dep.
+- Mock de rede no store: `globalThis.fetch = vi.fn(async () => ({ ok, status, json }))` (ver `authActions.test.ts`/`teamRanges.test.ts`).
+- CoachPanel: sempre `invalidateAnalyticsCache()` no afterEach (cache TTL 15s vaza entre testes).
+- `vi.mock('../utils/sentry', ...)` para silenciar `captureError` nos testes de store.
+
+### Maiores lacunas de cobertura restantes (alvos do próximo run)
+- **useStore.ts** (~80% linhas): `nextDrillHand` com `focusErrors=true` (peso por desempenho, linha do `weightedPick`); ramos de `checkDrillAnswer` com RNG por faixa; `logConsult`/`incrementConsults` acumulativos.
+- **CoachPanel.tsx** (~81%): "Leaks relativos" (z-score), Segmentos/Lacunas com linhas clicáveis populadas, matriz do range (`useRangeGrid`) real/jogado.
+- **TrainerPage.tsx** (~74%): DrillActive navegação "← Anterior"/"Mão atual" com snapshot completo, auto-advance com barra de progresso.
+- **RangeEditorPage/TableEditorPage/RangeSetupPage**: ramos de overlap e edição de cenários restantes.
+- Decidir com o Daniel: **P1.1 (badge Range do Time)** e **P3.8 (exportar sessão CSV)** — precisam de decisão de produto.
+
+---
+
+## 2026-07-01 (run automático — P1/P2 técnicos + cobertura incremental)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- **PR NOVA aberta** auto/daily-improvements → feature/auth-telemetry (NÃO mergeada, gate humano).
+- **626 testes verdes (66 arquivos)** (era 582), build verde. `main`/produção intactos.
+- Cobertura subiu: linhas 77% → **83%** (StatsPage 50%→92%, useStore 61%→74%, CoachPanel 70%→75%).
+- Stack: React 19, Vite 8, TypeScript 6, Tailwind 4, react-router 7, lucide-react 1.
+
+### Feito nesta run (9 commits, cada um test+build verde + push)
+1. **test(store):** caminho feliz das ações de auth (login/signup/logout/changePassword/devices/restoreSession) — `authActions.test.ts`.
+2. **fix(i18n) [P2.5]:** datas seguem o idioma vigente via novo helper `dateLocale()` (pt-BR/en-US/es-ES). Corrigido `'pt-BR'` fixo em MyAccountStats/StatsPage/TrainerPage/AccuracySparkline.
+3. **perf(coach) [P1.3]:** `src/utils/analyticsCache.ts` — `fetchAnalyticsCached` (cache por URL, TTL 15s) usado por todos os hooks do CoachPanel; `reload()` invalida via `invalidateAnalyticsCache`. Testes próprios + guard no CoachPanel.test (limpar cache no afterEach).
+4. **test(store):** drill `acceptAnyFreq`/customAction, `startDrillSession` (novo sessionUuid), `stopDrill` (grava sessão), `clearHandPerformance`/`setRangePrereq` — `drillSession.test.ts`.
+5. **test(stats):** SessionDetailView (acordeão de range, multi-stack, toggle visão) + Desempenho Global por posição.
+6. **test(coach):** seções Segmentos/Lacunas/Evolução com dados (expande + popula fetch por view).
+7. **test(editor):** handleNext (navegação), handlePushToSession, handleSaveSessionEdit.
+8. **test(layout):** roteamento do AppLayout (ranges/admin fallback) + WelcomeModal/ChangePasswordModal.
+9. **test(table-editor):** handleSaveEdit + fluxo de modal de nome (willBeCombined → finalizeRange(nome)).
+
+### Sobre o backlog P1/P2/P3 do handoff anterior
+- **P1.2 (gráfico de tendência):** JÁ ESTAVA IMPLEMENTADO no CoachPanel (seção Evolução renderiza `Sparkline` + `TrendBadge` + tabela por jogador). A varredura anterior estava desatualizada. Só faltava cobertura de teste — feita (fatia 6).
+- **P1.3 (cache):** FEITO (fatia 3).
+- **P2.5 (locale de data):** FEITO (fatia 2).
+- **P1.1 (badge "Range do Time"):** NÃO feito. Bloqueio: não há forma robusta de distinguir range do coach (D1) de range nativo/usuário — todos usam IDs de timestamp; o range não persiste flag de origem. Precisaria persistir o set de `teamRangeIds` no `syncTeamRanges` (localStorage) — mudança de store com migração. Valor atual baixo (D1 ranges não ativos: front usa `adminRanges.json`). Recomendo decidir antes de investir.
+- **P2.4 (memoizar CoachPanel/TrainerPage):** NÃO feito. Baixo valor: são componentes sem props, `memo` só evita re-render de pai (raro no AppLayout); risco de teste alto em arquivos de 1700 linhas. Deixado de fora.
+- **P2.6 / P3.7 (extrair/testar helpers de `functions/api/analytics.js`, remover endpoints mortos):** GATE HUMANO — mexe em `functions/api`. NÃO implementado pelo agente. Registrar como proposta se desejado.
+- **P3.8 (exportar sessão CSV):** nice-to-have, não feito (sem decisão do Daniel).
+
+### Próximas fatias sugeridas (todas sem gate humano)
+- Cobertura restante: **TrainerPage** (DrillActive navegação/auto-advance/atalhos ainda parciais), **CoachPanel** (Resumo do time ordenável + PlayerQuickSummary inline; relative leaks), **useStore** (finalizeRange multi-grupo/edição; nextDrillHand focusErrors), **AppLayout** (páginas lazy: drill/history/category-detail/coach).
+- Decidir P1.1 (badge) e P3.8 (CSV) com o Daniel.
+
+---
+
+## 2026-06-30 (sessão interativa — Tailwind 4 + varredura geral)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- **PR #30 MERGEADA** — Vite 6→8 + @vitejs/plugin-react 4→6. Validado no browser.
+- **PR #32 MERGEADA** — Tailwind 3→4. Validado no browser.
+- **MFA GitHub e Cloudflare** — concluídos em 30/06/2026.
+- **582 testes verdes (63 arquivos)**, build verde. `main`/produção intactos.
+- Stack atual: React 19, Vite 8, TypeScript 6, Tailwind 4, react-router 7, lucide-react 1.
+
+### Varredura geral — conclusões (30/06/2026)
+- Zero TODOs/FIXMEs no código. Cobertura de testes excelente, i18n completo (507 chaves PT/EN/ES), a11y boa.
+- **Principais gaps encontrados:**
+  1. `coachTrend.ts` (`buildTrend`, `classifyTrend`) calcula regressão linear de precisão semanal mas **o resultado nunca é renderizado** no CoachPanel (seção "Evolução" existe mas está colapsada sem gráfico real).
+  2. Ranges publicados pelo coach (D1) chegam ao localStorage do jogador sem **nenhum badge/indicador visual** — jogador não sabe qual range é do coach e pode sobrescrevê-lo acidentalmente.
+  3. `CoachPanel` (1728 linhas) e `TrainerPage` (1391 linhas) **não são `React.memo`** — re-render completo ao trocar abas/seções. Padrão de memoização já aplicado em HandMatrix/RangeHeatGrid/HandHistorySidebar.
+  4. Fetches de analytics do CoachPanel **sem cache** — cada troca de filtro/aba dispara novo fetch; resultado anterior descartado.
+  5. Endpoints `?view=foco` e `?view=consult-hotspots` existem no backend mas **UI foi removida** (código morto no analytics.js).
+  6. Datas hardcoded `'pt-BR'` em `MyAccountStats.tsx:48` — deveria usar locale do i18n.
+
+### Próximas fatias para o agente (priorizadas)
+
+#### P1 — Alto impacto, sem gate humano
+1. **Badge "Range do Time"** (`src/components/Situations/SituationsPage.tsx` + `src/store/useStore.ts`)
+   - Ranges que vieram do D1 (`syncTeamRanges`) têm `id` dentro da faixa dos admin ranges.
+   - Exibir badge visual "Coach" no `RangeCard` e bloquear edição (botão Editar desabilitado com tooltip "Range publicado pelo coach — não editável").
+   - Baixo risco: só visual + proteção de UX. Testes: RangeCard com range do time.
+
+2. **Renderizar gráfico de tendência no CoachPanel** (`src/components/Admin/CoachPanel.tsx` + `src/utils/coachTrend.ts`)
+   - A seção "Evolução" já existe e chama `useTrend` (fetch `?view=trend`). Retorna dados de regressão linear por semana.
+   - Renderizar SVG inline (mesmo padrão do `AccuracySparkline`) com accuracy % por semana + linha de tendência + classificação textual (`classifyTrend`: "melhorando", "estável", "piorando").
+   - `coachTrend.ts` já tem `buildTrend(weeks)` → `{slope, r2, label}`. Só falta o componente visual.
+   - Testes: dados mockados → SVG renderizado com pontos + label de tendência.
+
+3. **Cache de API analytics no CoachPanel** (`src/components/Admin/CoachPanel.tsx`)
+   - Padrão simples: guardar último resultado + timestamp por `cacheKey = view + JSON.stringify(params)`.
+   - Se mesmo key chamado em menos de 15s, retorna cache sem fetch.
+   - Sem biblioteca externa — apenas `useRef` com `{data, ts, key}`.
+   - Testes: segundo fetch com mesmos params retorna cache; params diferentes disparam fetch.
+
+#### P2 — Médio impacto, baixo risco
+4. **Memoizar CoachPanel e TrainerPage**
+   - Exportar como `const CoachPanel = memo(function CoachPanel(...) {...})`.
+   - Todos os handlers internos já usam `useCallback`/`useMemo` (varredura confirmou). Risco baixo.
+   - Prova com `countRender` (padrão do `src/test/renderCount.ts` já existe): trocar aba não re-renderiza o painel inteiro.
+
+5. **Corrigir locale de data** (`src/components/Stats/MyAccountStats.tsx:48`)
+   - Trocar `'pt-BR'` hardcoded por `store.lang === 'en' ? 'en-US' : store.lang === 'es' ? 'es-ES' : 'pt-BR'`.
+   - Ou criar helper `formatDate(ts, lang)` em `src/utils/` para reusar em StatsPage/CoachPanel.
+
+6. **Cobertura de testes: `functions/api/`**
+   - `analytics.js` (415 linhas) tem zero testes unitários. Extrair helpers puros (ex: `dateCond`, `buildLeaks`, `buildSegments`) para arquivo separado e testá-los com Vitest (mesmo padrão do `worker/index.test.js`).
+   - Não requer D1 real — mockar o binding `DB` com objeto `{ prepare: () => ({ bind: () => ({ all: () => ({results:[]}) }) }) }`.
+
+#### P3 — Nice-to-have (só se P1+P2 concluídos)
+7. **Remover endpoints mortos do backend** (`functions/api/admin/analytics.js`)
+   - `?view=foco` e `?view=consult-hotspots` — remover os blocos de código (sem UI, sem testes) para reduzir complexidade de manutenção.
+   - Confirmar que nenhum componente chama esses views antes de remover.
+
+8. **Exportar sessão de treino como CSV** (`src/store/useStore.ts` + `src/utils/download.ts`)
+   - `downloadText` já existe. Adicionar `exportSessionCsv(session: TrainingSession)` que gera CSV com colunas: mão, ação tomada, ação correta, acerto, RNG, range, timestamp.
+   - Botão no `SessionCard` do StatsPage.
+
+### Regras operacionais do agente (não mudar)
+- Nunca mergear em `main`. PRs sempre para `feature/auth-telemetry`.
+- Testar `npm run build` (tsc) E `npm test` antes de cada commit — build tsc e vitest podem divergir.
+- Mudanças visuais novas (novas seções, gráficos, badges) → sinalizar para validação humana no preview Cloudflare antes de mergear.
+- Fatias de cobertura e correções técnicas → pode abrir e mergear sem gate humano se testes passarem.
+- Auth/functions/api/worker/D1 com mudanças de schema → gate humano obrigatório.
+
+---
+
 ## 2026-06-30 (sessão interativa — Vite 8 + cobertura)
 
 ### Estado (PONTO DE PARTIDA do próximo run)

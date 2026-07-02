@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import type { TrainingSession } from '../../types'
-import { t } from '../../i18n'
+import { t, dateLocale } from '../../i18n'
 
 function formatDate(ts: number): string {
-  return new Date(ts).toLocaleDateString('pt-BR', {
+  return new Date(ts).toLocaleDateString(dateLocale(), {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   })

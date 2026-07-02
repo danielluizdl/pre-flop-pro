@@ -66,6 +66,24 @@ describe('TopNav', () => {
     expect(setPage).toHaveBeenCalledWith('admin')
   })
 
+  it('clicar fora fecha o menu de perfil', () => {
+    setup()
+    useStore.setState({ currentUser: { id: 1, username: 'daniel', name: 'Daniel', email: '', role: 'player', firstLogin: false } })
+    render(<TopNav />)
+    fireEvent.click(screen.getByText('daniel'))
+    expect(screen.getByRole('button', { name: /Sair/ })).toBeInTheDocument()
+    fireEvent.mouseDown(document.body)
+    expect(screen.queryByRole('button', { name: /Sair/ })).not.toBeInTheDocument()
+  })
+
+  it('admin: botão "Publicar ranges" abre o modal de publicação', () => {
+    setup()
+    useStore.setState({ userMode: 'admin', ranges: [] })
+    render(<TopNav />)
+    fireEvent.click(screen.getByRole('button', { name: 'Publicar ranges' }))
+    expect(screen.getByRole('dialog', { name: 'Publicar Ranges' })).toBeInTheDocument()
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     setup()
     const { container } = render(<TopNav />)
