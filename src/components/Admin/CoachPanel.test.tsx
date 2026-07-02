@@ -201,6 +201,51 @@ describe('CoachPanel', () => {
     expect((await axe(container)).violations).toEqual([])
   })
 
+  // --- Fatia: filtros — período custom e seleção de jogadores ---
+
+  it('período Custom com as duas datas dispara fetch com from/to em vez de days', async () => {
+    const urls: string[] = []
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      urls.push(String(input))
+      const data = String(input).includes('/admin/users')
+        ? { users: [] }
+        : { rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(data) } as unknown as Response)
+    })
+    useStore.setState({ authToken: 'tok' })
+    const { container } = render(<CoachPanel />)
+    await screen.findByRole('button', { name: 'Visão do time' })
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'custom' } })
+    const dates = container.querySelectorAll('input[type="date"]')
+    urls.length = 0
+    fireEvent.change(dates[0], { target: { value: '2026-06-01' } })
+    fireEvent.change(dates[1], { target: { value: '2026-06-30' } })
+    await screen.findByRole('button', { name: 'Visão do time' })
+    const analytics = urls.filter(u => u.includes('/admin/analytics'))
+    expect(analytics.length).toBeGreaterThan(0)
+    expect(analytics.every(u => u.includes('from=') && u.includes('to=') && !u.includes('days='))).toBe(true)
+  })
+
+  it('marcar um jogador no MultiPlayerSelect refaz o fetch com playerIds', async () => {
+    const urls: string[] = []
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      urls.push(String(input))
+      const data = String(input).includes('/admin/users')
+        ? { users: [{ id: 7, username: 'ana01', name: 'Ana' }] }
+        : { rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(data) } as unknown as Response)
+    })
+    useStore.setState({ authToken: 'tok' })
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Filtrar jogadores' }))
+    urls.length = 0
+    fireEvent.click(await screen.findByText('Ana'))
+    await screen.findByRole('button', { name: 'Visão do time' })
+    const analytics = urls.filter(u => u.includes('/admin/analytics'))
+    expect(analytics.length).toBeGreaterThan(0)
+    expect(analytics.every(u => u.includes('playerIds=7'))).toBe(true)
+  })
+
   // --- Fatia: publicar ranges para o time (D1) ---
 
   it('publicar para o time: confirma, chama publishTeamRanges e mostra sucesso', async () => {
