@@ -515,6 +515,40 @@ describe('TrainerPage', () => {
 
   // --- Fatia: DrillSummary — accuracy por range e expansão do acordeão ---
 
+  it('DrillSummary com range multi-stack alterna as variantes de stack e a visão', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const multi: Range = {
+      ...RANGE, id: 5, name: 'BTN multi', grid: g,
+      stackGrids: [
+        { stackRange: '<=40', grid: g },
+        { stackRange: '>40', grid: g },
+      ],
+    }
+    useStore.setState({
+      ranges: [multi], activeDrillRange: multi, activeDrillStackGridIdx: 0, activeDrillStackRange: '<=40',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
+      handHistory: [],
+      sessionHandPerf: { 5: { KK: { c: 4, t: 5 } }, '5|||<=40': { KK: { c: 4, t: 5 } } },
+      handPerformance: { 5: { KK: { c: 4, t: 5 } }, '5|||<=40': { KK: { c: 4, t: 5 } }, '5|||>40': { KK: { c: 1, t: 1 } } },
+      selectedDrillRangeIds: [5],
+      sessionStats: { hands: 5, correct: 4, errors: 1, consults: 0 },
+      sessionSeverity: { grave: 0, impreciso: 1 },
+    })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Encerrar e ver resumo' }))
+    // linha extra de severidade (1 impreciso)
+    expect(screen.getByText(/Imprecisos/)).toBeInTheDocument()
+    // expande o range multi-stack
+    fireEvent.click(screen.getByRole('button', { name: /BTN multi/ }))
+    // seletor de variantes de stack + alternância
+    fireEvent.click(screen.getByRole('button', { name: '>40' }))
+    fireEvent.click(screen.getByRole('button', { name: '<=40' }))
+    // toggle da visão de ações
+    fireEvent.click(screen.getByRole('button', { name: 'Ver Range' }))
+    expect(screen.getByRole('button', { name: 'Ver Range' })).toBeInTheDocument()
+  })
+
   it('DrillSummary mostra accuracy por range a partir do sessionHandPerf', () => {
     const g = makeEmptyGrid()
     g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
