@@ -173,6 +173,39 @@ describe('TrainerPage', () => {
     expect(screen.getByRole('button', { name: /ISO/ })).toBeInTheDocument()
   })
 
+  it('botão "Erro / Acerto" do topo abre o diálogo SEM registrar consulta', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
+      handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
+    })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Erro / Acerto' }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(useStore.getState().sessionStats.consults).toBe(0)
+  })
+
+  it('RNG ligado: feedback mostra a linha das faixas do RNG', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 30, raise: 70, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 2.5, currentScenario: {},
+      useRngForFrequency: true, acceptAnyFreq: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
+    })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /RAISE/ }))
+    // linha das faixas: "RNG 50: 1–70 Raise · 71–100 Call"
+    expect(screen.getByText(/RNG 50:/)).toBeInTheDocument()
+    expect(screen.getByText(/1–70 Raise/)).toBeInTheDocument()
+  })
+
   it('"Ver Range" abre o diálogo e registra a consulta', () => {
     const g = makeEmptyGrid()
     g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
