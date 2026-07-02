@@ -201,6 +201,92 @@ describe('CoachPanel', () => {
     expect((await axe(container)).violations).toEqual([])
   })
 
+  // --- Fatia: aba "Por jogador" (PlayersView) ---
+
+  function mockPlayersApi(detailByTab: Record<string, unknown[]> = {}) {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/admin/users')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            users: [
+              { id: 1, username: 'ana01', name: 'Ana', email: 'ana@x.com', total_hands: 120, correct_hands: 96 },
+              { id: 2, username: 'beto02', name: 'Beto', email: '', total_hands: 0, correct_hands: 0 },
+            ],
+          }),
+        } as unknown as Response)
+      }
+      const m = url.match(/\/admin\/user\/\d+\?tab=(\w+)/)
+      if (m) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: detailByTab[m[1]] ?? [] }) } as unknown as Response)
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }) } as unknown as Response)
+    })
+    useStore.setState({ authToken: 'tok' })
+  }
+
+  it('Por jogador: lista jogadores com mãos/precisão e pede seleção', async () => {
+    mockPlayersApi()
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Por jogador' }))
+    expect(await screen.findByText('Ana')).toBeInTheDocument()
+    expect(screen.getByText('120 mãos · 80%')).toBeInTheDocument()
+    expect(screen.getByText('0 mãos · -')).toBeInTheDocument()
+    expect(screen.getByText('Selecione um jogador.')).toBeInTheDocument()
+  })
+
+  it('Por jogador: selecionar jogador carrega a tabela de mãos e troca de aba busca consultas', async () => {
+    mockPlayersApi({
+      hands: [{ hand: 'AKo', range_name: 'BTN RFI', action_taken: 'Fold', correct_action: 'Raise', is_correct: 0, severity: 'grave', created_at: 1700000000 }],
+      consults: [{ range_name: 'BTN RFI', hand: 'AKo', count: 4 }],
+    })
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Por jogador' }))
+    fireEvent.click(await screen.findByText('Ana'))
+    // aba Mãos (default)
+    expect(await screen.findByText('AKo')).toBeInTheDocument()
+    expect(screen.getByText('grave')).toBeInTheDocument()
+    // troca para Consultas
+    fireEvent.click(screen.getByRole('button', { name: 'Consultas' }))
+    expect(await screen.findByText('4x')).toBeInTheDocument()
+  })
+
+  it('Por jogador: resetar senha confirma, mostra a senha temporária e copia', async () => {
+    mockPlayersApi({ hands: [] })
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url.includes('/admin/users')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ users: [{ id: 1, username: 'ana01', name: 'Ana', email: '', total_hands: 10, correct_hands: 8 }] }),
+        } as unknown as Response)
+      }
+      if (url.includes('/admin/reset-password')) {
+        expect(init?.method).toBe('POST')
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true, tempPassword: 'temp1234' }) } as unknown as Response)
+      }
+      if (url.includes('/admin/user/')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: [] }) } as unknown as Response)
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }) } as unknown as Response)
+    })
+    useStore.setState({ authToken: 'tok' })
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const writeText = vi.fn()
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Por jogador' }))
+    fireEvent.click(await screen.findByText('Ana'))
+    fireEvent.click(await screen.findByRole('button', { name: 'Resetar senha' }))
+    expect(confirmSpy).toHaveBeenCalled()
+    expect(await screen.findByText('temp1234')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Copiar' }))
+    expect(writeText).toHaveBeenCalledWith('temp1234')
+    expect(screen.getByRole('button', { name: 'Copiado' })).toBeInTheDocument()
+  })
+
   // --- Fatia: ordenação da tabela "Por range" ---
 
   function mockApiWithByRange() {
