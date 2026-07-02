@@ -377,6 +377,31 @@ describe('TrainerPage', () => {
     expect(screen.getByText('Dados por mão não disponíveis para sessões anteriores.')).toBeInTheDocument()
   })
 
+  it('clicar numa mão da sidebar reabre o replay dela e "← Mão atual" volta', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    g['AA'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
+      sessionHandPerf: {}, handPerformance: {},
+      handHistory: [{
+        id: 1, hand: 'AA', suits: ['s', 'd'], actionTaken: 'Fold', correctAction: 'Raise',
+        rng: 33, correct: false, rangeName: 'BTN RFI', rangeId: 1, stackGridIdx: -1, severity: 'grave',
+      }],
+      sessionStats: { hands: 1, correct: 0, errors: 1, consults: 0 },
+    })
+    render(<TrainerPage />)
+    // item da sidebar mostra a jogada errada (Fold → Raise)
+    fireEvent.click(screen.getByText('Fold'))
+    // replay aberto: feedback com a ação correta e botão de voltar à mão atual
+    expect(screen.getByText('✗ Correto: Raise')).toBeInTheDocument()
+    const backBtn = screen.getByRole('button', { name: '← Mão atual' })
+    fireEvent.click(backBtn)
+    expect(screen.queryByText('✗ Correto: Raise')).not.toBeInTheDocument()
+  })
+
   it('alternar auto-advance ("2s") não re-renderiza a sidebar de histórico (memo)', () => {
     const g = makeEmptyGrid()
     g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
