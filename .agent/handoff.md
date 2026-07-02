@@ -1,5 +1,40 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-02 (run automático — cobertura incremental, 10 fatias)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- **PR #34 ABERTA e atualizada** (auto/daily-improvements → feature/auth-telemetry). NÃO mergeada (gate humano).
+- **675 testes verdes (68 arquivos)** (era 626), build verde. `main`/produção intactos.
+- Só testes nesta run — nenhuma mudança de código de produção, zero risco visual.
+- Stack: React 19, Vite 8, TypeScript 6, Tailwind 4, react-router 7, lucide-react 1.
+
+### Feito nesta run (10 commits, cada um test+build verde + push)
+1. **test(store):** `syncTeamRanges` (versão nova/vista/vazia/não-ok), `publishTeamRanges` (ok+erro), `adminSaveRanges` (ok/senha errada/token_expired/invalid_token/erro sem JSON) — `teamRanges.test.ts`.
+2. **test(store):** `finalizeRange` — simples, customAction, agrupamento por posição, multi-stack (`stackGrids`), dedupe de slot, edição preservando id — `finalizeRange.test.ts`.
+3. **test(layout):** `AppLayout` carrega páginas lazy (drill/history/range-setup/category-detail/coach). **GOTCHA:** RouterSync reseta a page se a rota do MemoryRouter discordar do store — passar `initialEntries` casando a rota (`/drill`, `/historico`, `/range-setup`, `/categoria`, `/coach`).
+4. **test(trainer):** atalhos V (Ver Range) e R (Raise), RNG ligado, `acceptAnyFreq` ("Válido"), botão de ação customizada.
+5. **test(coach):** ordenação do "Resumo do time" (Mãos/Precisão) e linha agregada TIME.
+6. **test(range-setup):** ante desligado (0) e valor de ante customizado (`fireEvent.change`, não `userEvent.type` — input number no jsdom não limpa direito).
+7. **test(auth):** `WelcomeModal` fecha (CTA + auto após 6s) e zera `firstLogin` (fake timers + `act`).
+8. **test(auth):** `LoginPage` erro de login, validações de cadastro (usuário curto/e-mail inválido), Enter dispara login, "Já tenho conta" volta.
+9. **test(dashboard):** navegação por categoria, "Ver todos", cards recentes (principal e secundária >3 ranges).
+10. **test(editor):** stack sobreposto bloqueia push (alert), PRÓXIMO com editor vazio + grids na sessão → table-editor, Cancelar sai do modo de edição.
+
+### Notas técnicas úteis (replicáveis)
+- Cobertura: `npm i -D @vitest/coverage-v8@<versão do vitest> --no-save` + `npx vitest run --coverage.enabled --coverage.provider=v8 --coverage.reporter=json --coverage.reportsDirectory=<dir>` e extrair `coverage-final.json` (statementMap/s) para os ranges exatos. NÃO commitar a dep.
+- Mock de rede no store: `globalThis.fetch = vi.fn(async () => ({ ok, status, json }))` (ver `authActions.test.ts`/`teamRanges.test.ts`).
+- CoachPanel: sempre `invalidateAnalyticsCache()` no afterEach (cache TTL 15s vaza entre testes).
+- `vi.mock('../utils/sentry', ...)` para silenciar `captureError` nos testes de store.
+
+### Maiores lacunas de cobertura restantes (alvos do próximo run)
+- **useStore.ts** (~80% linhas): `nextDrillHand` com `focusErrors=true` (peso por desempenho, linha do `weightedPick`); ramos de `checkDrillAnswer` com RNG por faixa; `logConsult`/`incrementConsults` acumulativos.
+- **CoachPanel.tsx** (~81%): "Leaks relativos" (z-score), Segmentos/Lacunas com linhas clicáveis populadas, matriz do range (`useRangeGrid`) real/jogado.
+- **TrainerPage.tsx** (~74%): DrillActive navegação "← Anterior"/"Mão atual" com snapshot completo, auto-advance com barra de progresso.
+- **RangeEditorPage/TableEditorPage/RangeSetupPage**: ramos de overlap e edição de cenários restantes.
+- Decidir com o Daniel: **P1.1 (badge Range do Time)** e **P3.8 (exportar sessão CSV)** — precisam de decisão de produto.
+
+---
+
 ## 2026-07-01 (run automático — P1/P2 técnicos + cobertura incremental)
 
 ### Estado (PONTO DE PARTIDA do próximo run)
