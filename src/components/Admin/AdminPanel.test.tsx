@@ -89,6 +89,46 @@ describe('AdminPanel', () => {
     expect(localStorage.getItem('pfp-last-published-hash')).toBeNull()
   })
 
+  it('publish com sucesso guarda o hash e o botao vira "Ja publicado"', async () => {
+    const adminSaveRanges = vi.fn().mockResolvedValue('ok')
+    useStore.setState({ adminSaveRanges })
+    render(<AdminPanel open onClose={() => {}} />)
+    fireEvent.change(screen.getByPlaceholderText('••••••••'), { target: { value: 'segredo' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Publicar' }))
+    expect(await screen.findByText(/Publicado\./)).toBeInTheDocument()
+    expect(localStorage.getItem('pfp-last-published-hash')).not.toBeNull()
+  })
+
+  it('invalid_token e missing_token exibem as mensagens do Worker', async () => {
+    const adminSaveRanges = vi.fn().mockResolvedValue('invalid_token')
+    useStore.setState({ adminSaveRanges })
+    render(<AdminPanel open onClose={() => {}} />)
+    fireEvent.change(screen.getByPlaceholderText('••••••••'), { target: { value: 'x' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Publicar' }))
+    expect(await screen.findByText(/GITHUB_TOKEN expirado/)).toBeInTheDocument()
+
+    adminSaveRanges.mockResolvedValue('missing_token')
+    fireEvent.change(screen.getByPlaceholderText('••••••••'), { target: { value: 'y' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Publicar' }))
+    expect(await screen.findByText(/GITHUB_TOKEN não configurado/)).toBeInTheDocument()
+  })
+
+  it('modo nao-controlado: clicar Publicar abre o modal interno', () => {
+    render(<AdminPanel />)
+    fireEvent.click(screen.getByRole('button', { name: 'Publicar' }))
+    expect(screen.getByRole('dialog', { name: 'Publicar Ranges' })).toBeInTheDocument()
+  })
+
+  it('Enter no campo de senha dispara o publish', async () => {
+    const adminSaveRanges = vi.fn().mockResolvedValue('ok')
+    useStore.setState({ adminSaveRanges })
+    render(<AdminPanel open onClose={() => {}} />)
+    const input = screen.getByPlaceholderText('••••••••')
+    fireEvent.change(input, { target: { value: 'segredo' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(adminSaveRanges).toHaveBeenCalledWith('segredo')
+  })
+
   it('nao tem violacoes de acessibilidade no modal (axe)', async () => {
     const { container } = render(<AdminPanel open onClose={() => {}} />)
     expect((await axe(container)).violations).toEqual([])
