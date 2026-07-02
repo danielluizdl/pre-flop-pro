@@ -97,6 +97,35 @@ describe('StatsPage', () => {
     expect(screen.getByText('BTN RFI')).toBeInTheDocument()
   })
 
+  it('Desempenho Global: abrir range multi-stack mostra seletor de stack e toggle de visão', () => {
+    const g = makeEmptyGrid()
+    g['AA'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const range = rangeNamed('BTN multi', 9, {
+      stackGrids: [
+        { stackRange: '<=40', grid: g },
+        { stackRange: '>40', grid: g },
+      ],
+    })
+    useStore.setState({
+      trainingHistory: [SESSION], ranges: [range], currentUser: null,
+      handPerformance: {
+        9: { AA: { c: 8, t: 10 } },
+        '9|||<=40': { AA: { c: 4, t: 5 } },
+        '9|||>40': { AA: { c: 4, t: 5 } },
+      },
+    })
+    render(<StatsPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Desempenho Global' }))
+    fireEvent.click(screen.getByRole('button', { name: /^BTN/ }))
+    // abre o acordeão do range
+    fireEvent.click(screen.getByRole('button', { name: /BTN multi/ }))
+    // seletor de stack presente e alterna
+    fireEvent.click(screen.getByRole('button', { name: '>40' }))
+    // toggle da visão de ações
+    fireEvent.click(screen.getByRole('button', { name: 'Ver Range' }))
+    expect(screen.getByRole('button', { name: 'Ver Range' })).toBeInTheDocument()
+  })
+
   it('só mostra a aba de nuvem quando há usuário logado', () => {
     useStore.setState({ trainingHistory: [SESSION], currentUser: null })
     const { rerender } = render(<StatsPage />)
