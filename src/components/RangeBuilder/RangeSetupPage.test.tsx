@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, within, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { axe } from 'jest-axe'
 import { RangeSetupPage } from './RangeSetupPage'
@@ -55,6 +55,26 @@ describe('RangeSetupPage', () => {
     render(<RangeSetupPage />)
     await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
     expect(setPage).toHaveBeenCalledWith('dashboard')
+  })
+
+  it('ante "Não" chama setupNewRange com ante 0', async () => {
+    const setupNewRange = vi.fn()
+    useStore.setState({ setupNewRange })
+    render(<RangeSetupPage />)
+    const anteBox = screen.getByText('Terá ante?').closest('div') as HTMLElement
+    await userEvent.click(within(anteBox).getByRole('button', { name: 'Não' }))
+    await userEvent.click(screen.getByRole('button', { name: /Continuar/ }))
+    expect(setupNewRange).toHaveBeenCalledWith(8, true, 0)
+  })
+
+  it('mudar o valor do ante reflete no setupNewRange', async () => {
+    const setupNewRange = vi.fn()
+    useStore.setState({ setupNewRange })
+    render(<RangeSetupPage />)
+    const input = screen.getByLabelText('Quanto o ante?') as HTMLInputElement
+    fireEvent.change(input, { target: { value: '1.5' } })
+    await userEvent.click(screen.getByRole('button', { name: /Continuar/ }))
+    expect(setupNewRange).toHaveBeenCalledWith(8, true, 1.5)
   })
 
   it('não tem violações de acessibilidade (axe)', async () => {
