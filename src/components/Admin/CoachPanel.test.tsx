@@ -201,6 +201,40 @@ describe('CoachPanel', () => {
     expect((await axe(container)).violations).toEqual([])
   })
 
+  // --- Fatia: publicar ranges para o time (D1) ---
+
+  it('publicar para o time: confirma, chama publishTeamRanges e mostra sucesso', async () => {
+    mockApi()
+    const publishTeamRanges = vi.fn().mockResolvedValue({ ok: true, count: 12, version: 7 })
+    useStore.setState({ publishTeamRanges, ranges: [] })
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Publicar ranges para o time/ }))
+    expect(confirmSpy).toHaveBeenCalled()
+    expect(publishTeamRanges).toHaveBeenCalled()
+    expect(await screen.findByText('Publicado: 12 range(s) · versão 7')).toBeInTheDocument()
+  })
+
+  it('publicar para o time: recusar a confirmação não chama a ação', async () => {
+    mockApi()
+    const publishTeamRanges = vi.fn()
+    useStore.setState({ publishTeamRanges, ranges: [] })
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Publicar ranges para o time/ }))
+    expect(publishTeamRanges).not.toHaveBeenCalled()
+  })
+
+  it('publicar para o time: erro mostra a mensagem retornada', async () => {
+    mockApi()
+    const publishTeamRanges = vi.fn().mockResolvedValue({ ok: false, error: 'sem permissão' })
+    useStore.setState({ publishTeamRanges, ranges: [] })
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Publicar ranges para o time/ }))
+    expect(await screen.findByText('sem permissão')).toBeInTheDocument()
+  })
+
   // --- Fatia: aba "Por jogador" (PlayersView) ---
 
   function mockPlayersApi(detailByTab: Record<string, unknown[]> = {}) {
