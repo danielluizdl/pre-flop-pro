@@ -373,6 +373,41 @@ describe('CoachPanel', () => {
     expect(await screen.findByText('Sem dados.')).toBeInTheDocument()
   })
 
+  // --- Fatia: Leaks relativos com dados (z-score) ---
+
+  it('Leaks relativos lista o jogador abaixo da média dos colegas com Δ e z', async () => {
+    const pr = (userId: number, correct: number) => ({ userId, rangeId: 1, rangeName: 'BTN RFI', total: 100, correct })
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/admin/users')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ users: [] }) } as unknown as Response)
+      }
+      if (url.includes('view=player-ranges')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            rows: [pr(1, 50), pr(2, 90), pr(3, 88)],
+            users: [
+              { id: 1, name: 'Carlos', username: 'carlos' },
+              { id: 2, name: 'Alice', username: 'alice' },
+              { id: 3, name: 'Bob', username: 'bob' },
+            ],
+          }),
+        } as unknown as Response)
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }) } as unknown as Response)
+    })
+    useStore.setState({ authToken: 'tok' })
+
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Leaks relativos/ }))
+    // Carlos (50%) está bem abaixo da média (76%) → aparece na tabela
+    expect(await screen.findByText('Carlos')).toBeInTheDocument()
+    expect(screen.getByText('50%')).toBeInTheDocument()
+    // Alice (90%) está acima da média → não aparece como leak relativo
+    expect(screen.queryByText('Alice')).not.toBeInTheDocument()
+  })
+
   // --- Fatia: clicar linha Por range → carrega range-grid ---
 
   it('clicar numa linha da tabela Por range carrega a matriz 13×13', async () => {
