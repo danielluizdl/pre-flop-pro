@@ -180,6 +180,55 @@ describe('RangeEditorPage', () => {
     expect(screen.queryByText('editando')).not.toBeInTheDocument()
   })
 
+  it('remover um grid da sessão pede confirmação e chama removeSessionGrid', () => {
+    const removeSessionGrid = vi.fn()
+    setup({
+      sessionGrids: [
+        { name: 'Grid A', stackRange: '<=40', grid: makeEmptyGrid(), positions: ['BTN'] },
+        { name: 'Grid B', stackRange: '>40', grid: makeEmptyGrid(), positions: ['BTN'] },
+      ],
+      removeSessionGrid,
+    })
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const { container } = render(<RangeEditorPage />)
+    // o botão de remover é o X dentro do badge do grid
+    const badges = container.querySelectorAll('.card-surface .relative')
+    const removeBtn = badges[0].querySelector('button')!
+    fireEvent.click(removeBtn)
+    expect(confirmSpy).toHaveBeenCalledWith('Remover "Grid A (<=40)"?')
+    expect(removeSessionGrid).toHaveBeenCalledWith(0)
+  })
+
+  it('recusar a confirmação não remove o grid da sessão', () => {
+    const removeSessionGrid = vi.fn()
+    setup({
+      sessionGrids: [{ name: 'Grid A', stackRange: '', grid: makeEmptyGrid(), positions: ['BTN'] }],
+      removeSessionGrid,
+    })
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const { container } = render(<RangeEditorPage />)
+    const removeBtn = container.querySelector('.card-surface .relative button')!
+    fireEvent.click(removeBtn)
+    expect(removeSessionGrid).not.toHaveBeenCalled()
+  })
+
+  it('digitar um stack range textual atualiza o rangeData', () => {
+    setup()
+    render(<RangeEditorPage />)
+    fireEvent.change(screen.getByPlaceholderText('Ex: <= 250, ou 250-300'), { target: { value: '30-60bb' } })
+    expect(useStore.getState().rangeData.stackRange).toBe('30-60bb')
+  })
+
+  it('selecionar pré-requisito no picker grava o prereqRangeId', () => {
+    setup({
+      ranges: [{ id: 9, name: 'BB defesa', positions: ['BB'], grid: makeEmptyGrid(), scenarios: [], tableSize: 8 }],
+    })
+    render(<RangeEditorPage />)
+    fireEvent.click(screen.getByRole('button', { name: /sem pré-requisito/ }))
+    fireEvent.click(screen.getByText('BB defesa'))
+    expect(useStore.getState().rangeData.prereqRangeId).toBe(9)
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     setup()
     const { container } = render(<RangeEditorPage />)
