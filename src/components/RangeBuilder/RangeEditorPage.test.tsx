@@ -138,6 +138,48 @@ describe('RangeEditorPage', () => {
     expect(updateSessionGrid).toHaveBeenCalledWith(0, expect.objectContaining({ name: 'Grid A editado' }))
   })
 
+  it('"Salvar e criar" com stack sobreposto ao da sessão dispara alerta e não empurra', () => {
+    const pushGridToSession = vi.fn()
+    setup({
+      selectedEditorPositions: ['BTN'],
+      rangeData: { id: null, name: 'BTN 20-40', grid: makeEmptyGrid(), positions: [], tableSize: 8, stackRange: '20-40' },
+      sessionGrids: [{ name: 'BTN antigo', stackRange: '20-40', grid: makeEmptyGrid(), positions: ['BTN'] }],
+      pushGridToSession,
+    })
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
+    render(<RangeEditorPage />)
+    fireEvent.click(screen.getByRole('button', { name: /Salvar e criar/ }))
+    expect(alertSpy).toHaveBeenCalled()
+    expect(pushGridToSession).not.toHaveBeenCalled()
+  })
+
+  it('"PRÓXIMO" com editor vazio mas grids na sessão vai direto ao table-editor', () => {
+    const initTableConfig = vi.fn()
+    const setPage = vi.fn()
+    setup({
+      selectedEditorPositions: [],
+      rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: [], tableSize: 8, stackRange: '' },
+      sessionGrids: [{ name: 'Grid A', stackRange: '', grid: makeEmptyGrid(), positions: ['BTN'] }],
+      initTableConfig, setPage,
+    })
+    render(<RangeEditorPage />)
+    fireEvent.click(screen.getByRole('button', { name: /PRÓXIMO/ }))
+    expect(initTableConfig).toHaveBeenCalled()
+    expect(setPage).toHaveBeenCalledWith('table-editor')
+  })
+
+  it('modo de edição: "Cancelar" sai do modo sem salvar', () => {
+    setup({
+      selectedEditorPositions: [],
+      sessionGrids: [{ name: 'Grid A', stackRange: '', grid: makeEmptyGrid(), positions: ['BTN'] }],
+    })
+    render(<RangeEditorPage />)
+    fireEvent.click(screen.getByText('Grid A'))
+    expect(screen.getByText('editando')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(screen.queryByText('editando')).not.toBeInTheDocument()
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     setup()
     const { container } = render(<RangeEditorPage />)
