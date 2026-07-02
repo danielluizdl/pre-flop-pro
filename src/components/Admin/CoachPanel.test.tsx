@@ -264,6 +264,57 @@ describe('CoachPanel', () => {
     expect(coIdx).toBeLessThan(btnIdx)
   })
 
+  // --- Fatia: ordenação e agregado do "Resumo do time" ---
+
+  const orow = (userId: number, name: string, hands: number, accuracy: number) => ({
+    userId, username: name.toLowerCase(), name, hands, accuracy,
+    graves: 2, imprecisos: 1, consults: 1, sessions: 3, durationSeconds: 1800, lastActivity: 0,
+  })
+
+  function mockApiWithOverview(team: Record<string, number> | null = null) {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/admin/users')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ users: [] }) } as unknown as Response)
+      }
+      if (url.includes('view=team-overview')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ rows: [orow(1, 'Alice', 50, 60), orow(2, 'Bob', 100, 90)], team }),
+        } as unknown as Response)
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }) } as unknown as Response)
+    })
+    useStore.setState({ authToken: 'tok' })
+  }
+
+  it('Resumo do time ordena por Mãos desc por padrão (Bob antes de Alice)', async () => {
+    mockApiWithOverview()
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Resumo do time/ }))
+    await screen.findByText('Alice')
+    const texts = screen.getAllByRole('row').map(r => r.textContent ?? '')
+    expect(texts.findIndex(t => t.includes('Bob'))).toBeLessThan(texts.findIndex(t => t.includes('Alice')))
+  })
+
+  it('clicar coluna Precisão do Resumo do time ordena por accuracy desc', async () => {
+    mockApiWithOverview()
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Resumo do time/ }))
+    await screen.findByText('Alice')
+    fireEvent.click(screen.getByRole('button', { name: /^Precisão/ }))
+    const texts = screen.getAllByRole('row').map(r => r.textContent ?? '')
+    // Bob (90%) antes de Alice (60%)
+    expect(texts.findIndex(t => t.includes('Bob'))).toBeLessThan(texts.findIndex(t => t.includes('Alice')))
+  })
+
+  it('linha agregada TIME aparece quando a API devolve o total do time', async () => {
+    mockApiWithOverview({ hands: 150, accuracy: 80, graves: 4, imprecisos: 2, consults: 2, durationSeconds: 3600, lastActivity: 0 })
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Resumo do time/ }))
+    expect(await screen.findByText('TIME')).toBeInTheDocument()
+  })
+
   // --- Fatia: seções — erro e vazio ---
 
   function mockApiWithViewError(errorView: string) {
