@@ -25,6 +25,9 @@ function RangeCard({ r, allRanges, onViewHeatmap, onPreview }: CardProps) {
   const nextDrillHand     = useStore(s => s.nextDrillHand)
   const setPage           = useStore(s => s.setPage)
   const handPerformance   = useStore(s => s.handPerformance)
+  const teamRangeIds      = useStore(s => s.teamRangeIds)
+  const currentUser       = useStore(s => s.currentUser)
+  const isTeamRange       = currentUser?.role !== 'coach' && teamRangeIds.includes(r.id)
 
   function handleQuickDrill() {
     useStore.setState({ selectedDrillRangeIds: [r.id], drillExcludedHands: [] })
@@ -47,6 +50,14 @@ function RangeCard({ r, allRanges, onViewHeatmap, onPreview }: CardProps) {
       <div>
         <div className="flex items-start gap-1.5 flex-wrap">
           <h2 className="font-bold text-white text-sm leading-tight">{r.name}</h2>
+          {isTeamRange && (
+            <span
+              title={t.ranges.coachLocked}
+              className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-sky-500/10 border border-sky-500/40 text-sky-400 flex-shrink-0 leading-tight"
+            >
+              {t.ranges.coachBadge}
+            </span>
+          )}
           {r.stackGrids && r.stackGrids.length > 0 ? (
             r.stackGrids.map((sg, i) => sg.stackRange && (
               <span key={i} className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-500/10 border border-brand-500/40 text-brand-400 flex-shrink-0 leading-tight">
@@ -88,7 +99,9 @@ function RangeCard({ r, allRanges, onViewHeatmap, onPreview }: CardProps) {
         </button>
         <button
           onClick={() => loadRangeForEdit(r.id)}
-          className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md bg-warm-700 hover:bg-warm-600 text-xs text-warm-200 transition-colors"
+          disabled={isTeamRange}
+          title={isTeamRange ? t.ranges.coachLocked : undefined}
+          className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md bg-warm-700 hover:bg-warm-600 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-warm-700 text-xs text-warm-200 transition-colors"
         >
           <Edit3 size={11} /> {t.ranges.edit}
         </button>

@@ -159,8 +159,46 @@ describe('SituationsPage', () => {
     fireEvent.click(baixoBtns[baixoBtns.length - 1])
   })
 
+  it('range do time: mostra badge Coach e bloqueia o botão Editar para jogador', () => {
+    useStore.setState({
+      ranges: [RANGE],
+      teamRangeIds: [1],
+      currentUser: { id: 5, username: 'p1', name: 'P', email: '', role: 'player', firstLogin: false },
+    })
+    render(<SituationsPage />)
+    fireEvent.click(screen.getByRole('button', { name: /BTN/ }))
+    expect(screen.getByText('Coach')).toBeInTheDocument()
+    const edit = screen.getByRole('button', { name: /Editar/ })
+    expect(edit).toBeDisabled()
+    expect(edit).toHaveAttribute('title', 'Range publicado pelo coach — não editável')
+  })
+
+  it('range do time: coach NÃO vê badge nem bloqueio (edita os próprios ranges)', () => {
+    useStore.setState({
+      ranges: [RANGE],
+      teamRangeIds: [1],
+      currentUser: { id: 1, username: 'coach1', name: 'C', email: '', role: 'coach', firstLogin: false },
+    })
+    render(<SituationsPage />)
+    fireEvent.click(screen.getByRole('button', { name: /BTN/ }))
+    expect(screen.queryByText('Coach')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Editar/ })).toBeEnabled()
+  })
+
+  it('range fora do time segue editável normalmente', () => {
+    useStore.setState({
+      ranges: [RANGE],
+      teamRangeIds: [999],
+      currentUser: { id: 5, username: 'p1', name: 'P', email: '', role: 'player', firstLogin: false },
+    })
+    render(<SituationsPage />)
+    fireEvent.click(screen.getByRole('button', { name: /BTN/ }))
+    expect(screen.queryByText('Coach')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Editar/ })).toBeEnabled()
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
-    useStore.setState({ ranges: [RANGE] })
+    useStore.setState({ ranges: [RANGE], teamRangeIds: [], currentUser: null })
     const { container } = render(<SituationsPage />)
     fireEvent.click(screen.getByRole('button', { name: /BTN/ }))
     expect((await axe(container)).violations).toEqual([])

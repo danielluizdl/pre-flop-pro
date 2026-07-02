@@ -25,6 +25,14 @@ const HAND_PERF_KEY     = 'pfp-hand-perf-v1'
 const ADMIN_VERSION_KEY = 'admin-ranges-version'
 const DELETED_ADMIN_KEY = 'fbr-deleted-admin-ids'
 const TEAM_VERSION_KEY  = 'team-ranges-version'
+const TEAM_IDS_KEY      = 'pfp-team-range-ids'
+
+function loadTeamRangeIds(): number[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(TEAM_IDS_KEY) ?? '[]')
+    return Array.isArray(parsed) ? parsed.filter((x): x is number => typeof x === 'number') : []
+  } catch { return [] }
+}
 
 function loadDeletedAdminIds(): Set<number> {
   try { return new Set(JSON.parse(localStorage.getItem(DELETED_ADMIN_KEY) ?? '[]')) }
@@ -260,6 +268,7 @@ interface AppState {
   revokeDevice: (id: number) => Promise<{ ok: boolean; error?: string }>
   revokeOtherDevices: () => Promise<{ ok: boolean; error?: string }>
   restoreSession: () => Promise<void>
+  teamRangeIds: number[]
   syncTeamRanges: () => Promise<void>
   publishTeamRanges: () => Promise<{ ok: boolean; error?: string; version?: number; count?: number }>
   logConsult: (rangeId: number, rangeName: string, hand?: string) => void
@@ -1329,6 +1338,7 @@ export const useStore = create<AppState>()(
           void get().syncTeamRanges()
         } catch (e) { captureError(e, { area: 'restore-session' }); sessionStorage.removeItem('pfp-auth-token') }
       },
+      teamRangeIds: loadTeamRangeIds(),
       syncTeamRanges: async () => {
         const { authToken } = get()
         if (!authToken) return
@@ -1345,7 +1355,9 @@ export const useStore = create<AppState>()(
           const merged = [...teamRanges, ...userRanges]
           saveRanges(merged)
           localStorage.setItem(TEAM_VERSION_KEY, String(data.version))
-          set({ ranges: merged })
+          const idList = [...teamIds]
+          try { localStorage.setItem(TEAM_IDS_KEY, JSON.stringify(idList)) } catch { /* cota: badge fica sem persistir */ }
+          set({ ranges: merged, teamRangeIds: idList })
         } catch (e) { captureError(e, { area: 'sync-team-ranges' }); /* fallback: segue com o seed local */ }
       },
       publishTeamRanges: async () => {

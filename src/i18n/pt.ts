@@ -420,6 +420,8 @@ export const pt = {
     createFirst: 'Criar primeiro range',
     train: 'Treinar',
     edit: 'Editar',
+    coachBadge: 'Coach',
+    coachLocked: 'Range publicado pelo coach — não editável',
     viewRange: 'Visualizar range',
     viewHeatmap: 'Ver heatmap',
     deleteRange: 'Apagar range',

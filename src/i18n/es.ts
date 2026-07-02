@@ -422,6 +422,8 @@ export const es: Messages = {
     createFirst: 'Crear primer range',
     train: 'Entrenar',
     edit: 'Editar',
+    coachBadge: 'Coach',
+    coachLocked: 'Range publicado por el coach — no editable',
     viewRange: 'Visualizar range',
     viewHeatmap: 'Ver heatmap',
     deleteRange: 'Eliminar range',
