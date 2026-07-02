@@ -1,5 +1,29 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-02 fim do dia (pós-merge da PR #34 — +6 fatias)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- **PR #34 MERGEADA** em `feature/auth-telemetry` (merge `0b63a03`) — Daniel revisou e aprovou. Continha as 23 fatias do dia + cache/locale do dia 01/07.
+- **PR #35 ABERTA** (auto/daily-improvements → feature/auth-telemetry) com as 6 fatias pós-merge. NÃO mergeada (gate humano).
+- **725 testes verdes (70 arquivos)**, build verde. `main`/produção intactos.
+- Branch `auto/daily-improvements` foi RECRIADA a partir de `feature/auth-telemetry` pós-merge (force-with-lease, só histórico mergeado).
+
+### Feito nesta continuação (6 commits, cada um test+build verde + push)
+1. **test(coach):** aba Por jogador (PlayersView) — lista com `handsAccSuffix`, tabela de mãos, aba Consultas, reset de senha (confirm → tempPassword → Copiar; clipboard via `Object.defineProperty(navigator,'clipboard',...)`).
+2. **test(trainer):** replay da sidebar — clicar entrada errada abre snapshot ("✗ Correto: X"), "← Mão atual" volta.
+3. **test(trainer):** DrillSummary multi-stack — severidade, variantes de stack, visão de ações.
+4. **test(dashboard):** hero (Iniciar treino / Ver ranges).
+5. **test(coach):** PublishTeamRanges — sucesso/recusa/erro.
+6. **test(coach):** período Custom envia `from`/`to` sem `days`; MultiPlayerSelect envia `playerIds` (padrão: capturar URLs no mock de fetch e filtrar `/admin/analytics`).
+
+### Próximos alvos (cobertura restante é fina — priorizar por valor)
+- **CoachPanel** (~83%): RangeHeatGrid métricas alternáveis dentro da matriz, HandDetailCard fluxos secundários, TrendBadge/Sparkline por jogador na aba Evolução.
+- **TrainerPage** (~87%): barra de progresso do auto-advance, botão "Erro/Acerto" do topo do drill, straddle/ante renderizados na mesa.
+- **useStore** (~91%): ramos raros de erro (catch de rede em ações menores).
+- **Decisões pendentes do Daniel:** P1.1 (badge "Range do Time"), P3.8 (exportar sessão CSV), testes de `functions/api` (gate humano). Cobertura já está alta — talvez valha propor um epic novo (ex.: UX/polish visual validado por Playwright, ou os P1/P3 pendentes) em vez de continuar só cobertura.
+
+---
+
 ## 2026-07-02 tarde (continuação do run — +13 fatias de cobertura)
 
 ### Estado (PONTO DE PARTIDA do próximo run)
