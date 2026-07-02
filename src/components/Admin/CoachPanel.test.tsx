@@ -446,6 +446,45 @@ describe('CoachPanel', () => {
     expect(await screen.findByText(/Top 20 erros/)).toBeInTheDocument()
   })
 
+  it('matriz do range: renderiza Range real/jogado e clicar mão no Top 20 abre o detalhe', async () => {
+    const cell = (hand: string, accuracy: number) => ({
+      hand, total: 20, correct: 5, accuracy, graves: 8, consults: 2, correctAction: 'raise',
+      topWrong: { action: 'Fold', n: 8 },
+      played: { fold: 10, call: 0, raise: 10, allin: 0, extra: 0 },
+    })
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/admin/users')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ users: [] }) } as unknown as Response)
+      }
+      if (url.includes('view=range-grid')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ cells: [cell('AA', 25), cell('KK', 60)] }) } as unknown as Response)
+      }
+      if (url.includes('view=by-range')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ rows: [{ rangeId: 1, rangeName: 'BTN RFI', hands: 50, accuracy: 70, graves: 3, imprecisos: 1, consults: 2, players: 1 }] }),
+        } as unknown as Response)
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }) } as unknown as Response)
+    })
+    const grid = makeEmptyGrid()
+    grid['AA'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    useStore.setState({
+      authToken: 'tok',
+      ranges: [{ id: 1, name: 'BTN RFI', positions: ['BTN'], grid, scenarios: [], tableSize: 6 } as Range],
+    })
+
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Por range/ }))
+    fireEvent.click(await screen.findByText('BTN RFI'))
+    expect(await screen.findByText('Range real (gabarito)')).toBeInTheDocument()
+    expect(screen.getByText('Range jogado (time)')).toBeInTheDocument()
+    // clicar a mão AA no Top 20 (botão com precisão 25%) abre o HandDetailCard no slot fixo
+    fireEvent.click(await screen.findByRole('button', { name: /AA.*25%/ }))
+    expect(await screen.findByText('Como o time jogou esta mão')).toBeInTheDocument()
+  })
+
   // --- Fatia: Maiores leaks com dados ---
 
   it('seção Maiores leaks exibe linha de mão quando há dados', async () => {
