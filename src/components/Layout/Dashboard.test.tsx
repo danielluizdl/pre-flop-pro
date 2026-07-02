@@ -34,6 +34,16 @@ describe('Dashboard', () => {
     expect(screen.getByText('EARLY')).toBeInTheDocument()
   })
 
+  it('hero: "Iniciar treino" vai para o drill e "Ver ranges" para a lista', () => {
+    useStore.setState({ ranges: [RANGE], trainingHistory: [], currentUser: null, page: 'dashboard' })
+    render(<Dashboard />)
+    fireEvent.click(screen.getByRole('button', { name: /Iniciar treino/ }))
+    expect(useStore.getState().page).toBe('drill')
+    useStore.setState({ page: 'dashboard' })
+    fireEvent.click(screen.getByRole('button', { name: /Ver ranges/ }))
+    expect(useStore.getState().page).toBe('ranges')
+  })
+
   it('clicar numa categoria seta a categoria ativa e navega', () => {
     useStore.setState({ ranges: [RANGE], trainingHistory: [], currentUser: null, page: 'dashboard', activeCategory: null })
     render(<Dashboard />)
