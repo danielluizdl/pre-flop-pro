@@ -49,6 +49,7 @@ function resetState(ranges: Range[] = [btnRfi, sbMulti]) {
     buildRoundIdx: 0,
     buildResults: [],
     buildLastResult: null,
+    buildConfirmed: false,
     buildHistory: [],
     rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: [], tableSize: 6, stackRange: '' },
     authToken: null,
@@ -75,22 +76,37 @@ describe('ExercisePage — seleção', () => {
     expect(useStore.getState().page).toBe('ranges')
   })
 
-  it('selecionar um range e iniciar cria os rounds e abre o round 1', () => {
+  it('selecionar um range e iniciar mostra a confirmação e depois abre o round 1', () => {
     render(<ExercisePage />)
     fireEvent.click(screen.getByText('BTN'))
     fireEvent.click(screen.getByText('BTN RFI'))
     fireEvent.click(screen.getByText('INICIAR EXERCÍCIO'))
-    expect(screen.getByText('Round 1/1')).toBeInTheDocument()
+    expect(screen.getByText('Confirme os rounds')).toBeInTheDocument()
     expect(screen.getByText('BTN RFI')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Confirmar e começar'))
+    expect(screen.getByText('Round 1/1')).toBeInTheDocument()
   })
 
-  it('range multi-stack gera um round por faixa de stack', () => {
+  it('range multi-stack lista um round por faixa de stack na confirmação', () => {
     render(<ExercisePage />)
     fireEvent.click(screen.getByText('SB'))
     fireEvent.click(screen.getByText('SB Push'))
     fireEvent.click(screen.getByText('INICIAR EXERCÍCIO'))
+    expect(screen.getByText('SB Push — <=100')).toBeInTheDocument()
+    expect(screen.getByText('SB Push — 100-250')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Confirmar e começar'))
     expect(screen.getByText('Round 1/2')).toBeInTheDocument()
     expect(screen.getByText('SB Push — <=100')).toBeInTheDocument()
+  })
+
+  it('Voltar na confirmação retorna à seleção mantendo os ranges marcados', () => {
+    render(<ExercisePage />)
+    fireEvent.click(screen.getByText('BTN'))
+    fireEvent.click(screen.getByText('BTN RFI'))
+    fireEvent.click(screen.getByText('INICIAR EXERCÍCIO'))
+    fireEvent.click(screen.getByText('Voltar'))
+    expect(screen.getByText(/Selecione os ranges que você quer reproduzir/)).toBeInTheDocument()
+    expect(useStore.getState().buildSelectedRangeIds).toEqual([1])
   })
 
   it('não tem violações de acessibilidade (axe)', async () => {
@@ -105,6 +121,7 @@ describe('ExercisePage — round ativo', () => {
     resetState()
     useStore.setState({ buildSelectedRangeIds: [1] })
     useStore.getState().startBuildSession()
+    useStore.getState().confirmBuildSession()
   })
 
   it('mostra a matriz de pintura e o pincel antes de enviar', () => {
@@ -152,6 +169,7 @@ describe('ExercisePage — resumo', () => {
     resetState()
     useStore.setState({ buildSelectedRangeIds: [1] })
     useStore.getState().startBuildSession()
+    useStore.getState().confirmBuildSession()
     const { rangeData } = useStore.getState()
     useStore.setState({ rangeData: { ...rangeData, grid: gridWith({ AA: { raise: 100 } }) } })
     useStore.getState().submitBuildRound()

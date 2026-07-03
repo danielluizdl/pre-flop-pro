@@ -270,9 +270,11 @@ interface AppState {
   buildResults: BuildRoundResult[]
   buildLastResult: { score: number; perHand: Record<string, number>; userGrid: Record<string, HandData> } | null
   buildSessionUuid: string
+  buildConfirmed: boolean
   buildHistory: BuildSession[]
   toggleBuildRange: (id: number) => void
   startBuildSession: () => boolean
+  confirmBuildSession: () => void
   submitBuildRound: () => void
   nextBuildRound: () => void
   stopBuildSession: () => void
@@ -1232,6 +1234,7 @@ export const useStore = create<AppState>()(
       buildResults: [],
       buildLastResult: null,
       buildSessionUuid: '',
+      buildConfirmed: false,
       buildHistory: loadBuildHistory(),
 
       toggleBuildRange: (id) => {
@@ -1277,6 +1280,7 @@ export const useStore = create<AppState>()(
           buildResults: [],
           buildLastResult: null,
           buildSessionUuid: crypto.randomUUID(),
+          buildConfirmed: false,
           rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: [], tableSize: currentTableSize, stackRange: '' },
           brush: {
             ...brush, call: 0, raise: 0, allin: 0, extra: 0,
@@ -1286,6 +1290,8 @@ export const useStore = create<AppState>()(
         })
         return true
       },
+
+      confirmBuildSession: () => set({ buildConfirmed: true }),
 
       submitBuildRound: () => {
         const { buildRounds, buildRoundIdx, buildResults, buildLastResult, rangeData } = get()
@@ -1348,6 +1354,7 @@ export const useStore = create<AppState>()(
           buildResults: [],
           buildLastResult: null,
           buildSessionUuid: '',
+          buildConfirmed: false,
           buildHistory: newHistory,
           rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: [], tableSize: currentTableSize, stackRange: '' },
         })

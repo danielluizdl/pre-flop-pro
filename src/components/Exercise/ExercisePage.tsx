@@ -161,6 +161,43 @@ function BuildRangeSelect() {
   )
 }
 
+/* ── Confirmação pré-rounds ─────────────────────────────────────────────────── */
+function BuildConfirm() {
+  const rounds       = useStore(s => s.buildRounds)
+  const confirmBuild = useStore(s => s.confirmBuildSession)
+  const stopBuild    = useStore(s => s.stopBuildSession)
+
+  return (
+    <div className="space-y-4 max-w-2xl mx-auto">
+      <div>
+        <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">{t.exercise.confirmTitle}</h2>
+        <p className="text-warm-400 text-sm">{t.exercise.confirmIntro}</p>
+      </div>
+
+      <div className="space-y-2">
+        {rounds.map((r, i) => (
+          <div key={i} className="flex items-center gap-3 px-4 py-3 bg-warm-800 border border-warm-700 rounded-xl">
+            <span className="text-warm-500 text-xs font-bold tabular-nums w-14">{t.exercise.roundOf(i + 1, rounds.length)}</span>
+            <span className="font-bold text-white text-sm">{r.label}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between pt-2">
+        <button
+          onClick={() => stopBuild()}
+          className="px-4 py-2 border border-warm-600 bg-warm-800 text-warm-300 rounded-lg text-sm font-semibold hover:bg-warm-700 transition-colors"
+        >
+          {t.exercise.confirmBack}
+        </button>
+        <button onClick={() => confirmBuild()} className="btn-commit">
+          {t.exercise.confirmStart}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 /* ── Heatmap de diferença por mão ───────────────────────────────────────────── */
 function diffColor(f: number): string {
   if (f <= 0.001) return 'rgba(34,197,94,0.4)'
@@ -341,10 +378,12 @@ function BuildSummary() {
 }
 
 export function ExercisePage() {
-  const rounds   = useStore(s => s.buildRounds)
-  const roundIdx = useStore(s => s.buildRoundIdx)
+  const rounds    = useStore(s => s.buildRounds)
+  const roundIdx  = useStore(s => s.buildRoundIdx)
+  const confirmed = useStore(s => s.buildConfirmed)
 
   if (rounds.length === 0) return <BuildRangeSelect />
+  if (!confirmed) return <BuildConfirm />
   if (roundIdx >= rounds.length) return <BuildSummary />
   return <BuildRound />
 }

@@ -49,6 +49,7 @@ function resetBuildState() {
     buildResults: [],
     buildLastResult: null,
     buildSessionUuid: '',
+    buildConfirmed: false,
     buildHistory: [],
     authToken: 'tok',
   })
@@ -68,6 +69,16 @@ describe('startBuildSession', () => {
     expect(rounds[1].label).toBe('SB Push — <=100')
     expect(rounds[2].label).toBe('SB Push Deep — 100-250')
     expect(rounds[2].grid['QQ'].raise).toBe(100)
+  })
+
+  it('começa aguardando confirmação; confirmar libera e encerrar reseta', () => {
+    useStore.setState({ buildSelectedRangeIds: [11], buildConfirmed: true })
+    useStore.getState().startBuildSession()
+    expect(useStore.getState().buildConfirmed).toBe(false)
+    useStore.getState().confirmBuildSession()
+    expect(useStore.getState().buildConfirmed).toBe(true)
+    useStore.getState().stopBuildSession()
+    expect(useStore.getState().buildConfirmed).toBe(false)
   })
 
   it('sem seleção não inicia', () => {
