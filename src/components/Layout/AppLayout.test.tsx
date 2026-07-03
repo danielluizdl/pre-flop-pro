@@ -101,6 +101,30 @@ describe('AppLayout', () => {
     expect(await screen.findByText('Configure o formato do jogo antes de criar o range.')).toBeInTheDocument()
   })
 
+  it('page "editor" carrega o RangeEditorPage (lazy)', async () => {
+    useStore.setState({
+      userMode: 'visitor', page: 'editor', currentUser: null, justSignedUp: false, storageBlocked: false,
+    })
+    renderLayout('/editor')
+    expect(await screen.findByText('Posição do HERO')).toBeInTheDocument()
+  })
+
+  it('page "table-editor" carrega o TableEditorPage (lazy)', async () => {
+    useStore.setState({
+      userMode: 'visitor', page: 'table-editor', currentUser: null, justSignedUp: false, storageBlocked: false,
+    })
+    renderLayout('/table-editor')
+    expect(await screen.findByText('Configurar Cenários')).toBeInTheDocument()
+  })
+
+  it('page desconhecida cai no dashboard (fallback)', async () => {
+    useStore.setState({
+      userMode: 'visitor', page: 'dashboard', currentUser: null, justSignedUp: false, storageBlocked: false, ranges: [],
+    })
+    renderLayout('/rota-inexistente')
+    expect(await screen.findByText('Comece agora')).toBeInTheDocument()
+  })
+
   it('page "category-detail" carrega o CategoryDetailPage (lazy)', async () => {
     useStore.setState({
       userMode: 'visitor', page: 'category-detail', currentUser: null, justSignedUp: false, storageBlocked: false,

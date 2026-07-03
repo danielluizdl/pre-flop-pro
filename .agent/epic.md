@@ -1,55 +1,45 @@
-# EPIC ATIVO — Observabilidade de erros no front (Sentry já plugado)
+# EPIC ATIVO — Pendências de produto P1/P3 (autorizadas pelo Daniel em 02/07)
 
-> Epics anteriores CONCLUÍDOS e mergeados em `feature/auth-telemetry`: testes+a11y (#5/#10),
-> performance de render (#11) e robustez de estados de UX (#13) — tudo na PR #12 (merge `36f0b03`).
-> Histórico no `.agent/handoff.md`. Issue do epic: **#15** (label `agente`).
+> Epics anteriores CONCLUÍDOS: testes+a11y (#5/#10), perf (#11), robustez UX (#13),
+> observabilidade (#15), i18n+responsividade (#17/#22/#23), migrações de stack
+> (React 19/Vite 8/TS 6/Tailwind 4/router 7) e cobertura incremental massiva
+> (PRs #29/#34/#35 — 725 testes, ~89% linhas). Histórico no `.agent/handoff.md`.
 
-Objetivo: capturar os erros "silenciosos" do front (catches que só setam estado) e dar contexto
-(breadcrumbs), sem tocar backend. Sentry já tem init condicional (`VITE_SENTRY_DSN`), `captureError`
-e scrub de PII no `beforeSend`. UMA FATIA SUBSTANCIAL por execução.
+Objetivo: entregar as pendências de produto que estavam aguardando decisão.
+Daniel autorizou em 02/07 ("pode prosseguir com a sua sugestão").
 
 ## Princípios (invioláveis)
-- `captureError`/`addBreadcrumb`/`captureMessage` são **no-op sem `VITE_SENTRY_DSN`** (caso dos testes).
-- Não spammar: capturar erro real (rede/lógica), NÃO validação esperada do usuário.
-- Sem PII nova: redigir strings (e-mail/token) e dropar Authorization/Cookie (helpers já existem).
-- Caminho feliz intacto. Cada fatia com teste dos helpers (no-op sem DSN, scrub) — sem rede.
-- NÃO tocar auth/`functions/api`/worker/D1/seed.
+- Front-only: NÃO tocar auth/`functions/api`/worker/D1/schema.
+- i18n: toda string nova entra em `pt.ts`, `en.ts` E `es.ts` (tsc força).
+- Cada fatia com testes; `npm test` + `npm run build` verdes antes do commit.
+- Mudança visual nova → sinalizar validação no preview Cloudflare na PR.
 
-## Backlog (pegue a próxima fatia do topo)
-### FASE 1 — Helpers de observabilidade
-- [x] `sentry.ts`: `addBreadcrumb` e `captureMessage` (no-op sem DSN, redação de PII); `captureError`
-      passa a dar scrub no `extra`. Testes (no-op sem DSN, redação, níveis). (27/06)
+## Backlog
+### P1.1 — Badge "Range do Time" + proteção de edição — FEITO (02/07)
+- [x] `syncTeamRanges` persiste os IDs em `pfp-team-range-ids` + estado `teamRangeIds`.
+- [x] `RangeCard`: badge "Coach" + Editar desabilitado com tooltip (gate `role !== 'coach'`).
+- [x] Testes (sync grava ids; badge+bloqueio p/ jogador; coach não afetado; range fora do time editável).
 
-### FASE 2 — Capturar erros silenciosos de rede / render
-- [x] `ErrorBoundary`: `captureError` agora inclui `variant` (page/section) p/ distinguir crash de
-      app inteiro vs área isolada. Testes mockam `sentry` e checam o `variant`. (27/06)
-- [x] `CoachPanel` reset de senha (coach): catch de rede ganha `captureError(e,{area:'admin-reset-password'})`. (27/06)
-- [x] `MyAccountStats` + hooks do CoachPanel (`useAnalytics`/`useRangeGrid`/`useTrend`/`useSegments`/
-      `usePlayerRanges`) + `publishTeamRanges`: `captureError(e, { area, view })` no catch. (27/06)
-- [x] demais catches silenciosos do store: `authLogin`/`authSignup`/`changePassword`/`restoreSession`/
-      `syncTeamRanges`/`listDevices`/`revokeDevice`/`revokeOtherDevices`/`adminSaveRanges` ganham
-      `captureError(e, { area })` sem mudar o retorno. (Sem PII; no-op sem DSN.) (27/06)
+### P3.8 — Exportar sessão de treino como CSV — FEITO (02/07)
+- [x] `buildSessionCsv`/`sessionCsvFilename` em `src/utils/sessionCsv.ts` (stack tem
+      precedência sobre agregado; fallback por nome; escaping CSV). 7 testes.
+- [x] Botão "Exportar CSV" no `SessionCard` (ícone download, `downloadText` text/csv).
+- [x] Teste do botão (createObjectURL + click do anchor).
 
-### FASE 3 — Breadcrumbs de ações-chave
-- [x] nav (`setPage`), drill start, login ok (role), logout, publish de team ranges. (27/06)
-- [x] ações de dados: `finalizeRange` (criar/editar), `deleteRange`, `exportData`, `resetLocalData`.
-      Teste novo `src/store/breadcrumbs.test.ts` (mocka `sentry`, cobre nav + as 4 novas). (27/06)
+### Extras (se sobrar orçamento)
+- [x] Cobertura fina extra: botão Erro/Acerto do drill (sem consulta) + linha de faixas do RNG. (02/07)
 
-### FASE 4 — Sinais de estado degradado
-- [x] `captureMessage('warning')`: cota de localStorage (`storageBlocked`) e `validateRanges` no load. (27/06)
-- [x] `eventQueue`: telemetria degradada reporta UMA vez por sessão (flags deduplicadoras) —
-      fila cheia (cap 500, descarte de antigos) e falha de gravação por cota. Testes mockam `sentry`. (27/06)
-
-### FASE 5 — Documentação
-- [x] Seção de observabilidade no CLAUDE.md (API, privacidade, o que é/não é capturado). (27/06)
-
-## EPIC #15 — CONCLUÍDO (27/06, run das 5h)
-Todas as fases + continuações entregues: helpers (FASE 1), todos os catches silenciosos de rede do front
-capturam erro (FASE 2: store completo, ErrorBoundary com `variant`, reset de senha do coach), breadcrumbs
-de nav/drill/auth/publish + ações de dados (FASE 3), sinais de estado degradado em storage/validateRanges/
-eventQueue (FASE 4) e doc no CLAUDE.md (FASE 5). **402 testes verdes.** PR #16 atualizada.
-**Próximo epic à espera de decisão do Daniel: issue #17.**
+## EPIC P1/P3 CONCLUÍDO — próximo epic JÁ INICIADO: issue #37 (smoke de render)
+- [x] `npm run smoke` (smoke/smoke.mjs): builda, serve o dist, abre em Chromium
+      headless (playwright-core, sem download no install), falha em pageerror/
+      console.error local, #root vazio, RouterSync quebrado (clique→URL, back,
+      F5 em rota profunda). Backend stubado via page.route; rede externa
+      bloqueada. VERIFICADO neste ambiente: SMOKE OK. (02/07)
+- [x] Processo documentado no CLAUDE.md: rodar o smoke antes de merges de risco. (02/07)
+- [x] Extensão: fluxo do drill COMPLETO (selecionar ranges seedados → iniciar →
+      responder FOLD → feedback) e painel do coach (/coach, aba Visão do time,
+      analytics stubado). SMOKE OK verificado. EPIC #37 NÚCLEO CONCLUÍDO. (02/07)
 
 ## Definição de pronto por fatia
-- Helpers no-op sem DSN; sem PII nova; caminho feliz intacto; `npm test`/`npm run build` verdes;
-  commit PT-BR por área; PR do dia + handoff atualizados.
+Sem PII nova; caminho feliz intacto; testes+build verdes; commit PT-BR por área;
+PR do dia + handoff atualizados.

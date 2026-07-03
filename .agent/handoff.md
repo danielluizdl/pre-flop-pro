@@ -1,5 +1,160 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-03 (run automático — cobertura incremental segura, 10 fatias)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- **PR #35 ABERTA e atualizada** (auto/daily-improvements → feature/auth-telemetry). NÃO mergeada
+  (gate humano; contém a mudança visual do dia 02/07 — badge Coach + CSV — a validar no preview).
+- **774 testes verdes (71 arquivos)** (era 739), build verde. `main`/produção intactos.
+- **Run 100% testes** — zero mudança de código de produção, zero risco visual.
+- Stack: React 19, Vite 8, TypeScript 6, Tailwind 4, react-router 7, lucide-react 1, vitest 4.1.8.
+
+### Feito nesta run (10 commits, cada um test+build verde + push)
+1. **test(auth):** LoginPage — cadastro válido/erro chama `authSignup(user,pass,teamCode,name,email,ts)`; Enter nos campos do cadastro; guarda `canSubmit` (não submete sem campos).
+2. **test(i18n):** LanguageSelect — clique fora (`mouseDown` no body) e Escape fecham o dropdown.
+3. **test(stats):** MyAccountStats — `formatDuration` min/seg (durationSeconds 125→"2m", 45→"45s"), sessão sem expiração ("Iniciada em — · expira em —") e retry do erro de sessões.
+4. **test(ranges):** SituationsPage — backdrop do heatmap fecha (clicar no `dialog.parentElement`), olho abre o preview (`Visualizar range`), Novo Range / Criar primeiro navegam.
+5. **test(dashboard):** precisão global e por range com `trainingHistory` + `handPerformance` (cobre os reduces).
+6. **test(store):** `resetLocalData` (só chaves fbr-/pfp-), `toggleDarkMode`, clamp do `setBrush` (aumentar call reduz o maior=raise; valor 100 zera os demais) e guarda `applyBrushToHands` >100%.
+7. **test(matrix):** HandMatrix — ações dominantes por cor de texto (call=rgb(6,43,19)/all-in=rgb(253,230,138)/mista=rgb(255,255,255)), heat vermelho <50% (overlay `.z-\[1\]` com `239, 68, 68`), guarda `readOnly` no mouseDown.
+8. **test(trainer):** DrillRangeSelect — sem ranges "Ir para Meus Ranges" navega, "Desfazer seleção" limpa grupo, olho abre preview sem selecionar, badge multi-stack, "Voltar" do filtro volta à seleção.
+9. **test(coach):** RangeSelect — busca filtra (`option` some), seleção por clique (label vira o nome), reset "Todos os ranges", ArrowDown×2+ArrowUp; MultiPlayerSelect — "Todos os jogadores" desmarca o selecionado.
+10. **test(layout):** AppLayout carrega páginas lazy `editor` (/editor → "Posição do HERO") e `table-editor` (/table-editor → "Configurar Cenários") + fallback de rota desconhecida no dashboard.
+
+### Notas técnicas úteis (replicáveis)
+- Cobertura: `npm i -D @vitest/coverage-v8@4.1.8 --no-save` + `npx vitest run --coverage.enabled --coverage.provider=v8 --coverage.reporter=json --coverage.reportsDirectory=<dir>`; parsear `coverage-final.json` (`s`/`statementMap`) por arquivo → linhas exatas não cobertas. NÃO commitar a dep (é `--no-save`; confira `grep coverage-v8 package.json` = 0).
+- HandMatrix: cor de texto por ação vem de `ACTION_TEXT[cellAction(data)]`; jsdom converte hex do inline style para `rgb(...)`. O overlay de heat é o segundo `div` interno com classe `z-[1]` (querySelector `'.z-\\[1\\]'`).
+- CoachPanel: RangeSelect usa `role="option"`; o botão externo tem `aria-label="Filtrar por range"` fixo e o texto (`toHaveTextContent`) reflete a seleção. Sempre `invalidateAnalyticsCache()` no afterEach (cache TTL 15s vaza).
+- AppLayout lazy: passar `initialEntries` casando a rota (RouterSync reseta a page se a URL discordar do store). Mapa em RouterSync `PAGE_TO_PATH` (editor→/editor, table-editor→/table-editor).
+
+### Maiores lacunas restantes (alvos do próximo run — baixo ROI daqui pra frente)
+- **CoachPanel.tsx**: guardas de token/cancel dos hooks (`useAnalytics`/`useRangeGrid`/`useTrend`…) e TopHandsPanel aba "consultas"/"errors" com dados — precisam de fetch por-view populado.
+- **TrainerPage.tsx** (DrillActive): sidebar colapsável, modal "Ver range" backdrop, barra de progresso do auto-advance — exigem sessão de drill montada (setup pesado).
+- **useStore.ts**: helpers de boot (`loadRanges` merge por ADMIN_VERSION, `loadTeamRangeIds` filtro) — rodam no import do módulo singleton, difíceis de cobrir sem manipular localStorage antes do import.
+- **Turnstile.tsx** / **functions/api** / **worker**: auth-adjacente / gate humano — NÃO cobrir sem decisão.
+- Decisões pendentes do Daniel: **PR #35** (validar preview do badge Coach + CSV e mergear), **issue #36** (`proposta` functions/api), **issue #37** (epic smoke — núcleo concluído).
+
+---
+
+## 2026-07-02 madrugada (mapeamento completo dos objetivos + execução em sequência)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- **739 testes verdes (71 arquivos)**, build verde, **SMOKE OK** (render verificado em browser real).
+- **PR #35 ABERTA e acumulando** — agora inclui: 6 fatias de teste pós-#34, P1.1 (badge Coach),
+  P3.8 (CSV), cobertura fina do drill e o **smoke test**. NÃO mergeada (gate humano; tem
+  mudança visual — validar badge/CSV no preview).
+- **Issue #36 (label `proposta`)**: P2.6/P3.7 — testes de `functions/api/analytics.js` +
+  remoção de endpoints mortos. Aguardando decisão do Daniel (gate humano).
+- **Issue #37 (label `agente`)**: novo epic "smoke de render no browser" — JÁ INICIADO
+  e núcleo entregue no mesmo run.
+
+### Mapa de objetivos (levantado a pedido do Daniel — fontes: rotina, epic, handoffs, CLAUDE.md)
+| Objetivo | Status |
+|---|---|
+| Epic P1.1 badge "Range do Time" | FEITO (02/07) |
+| Epic P3.8 exportar sessão CSV | FEITO (02/07) |
+| Extras do epic (cobertura fina drill/coach) | FEITO — ROI de cobertura esgotado (~89% linhas) |
+| P2.6/P3.7 `functions/api` (gate humano) | Issue #36 `proposta` criada — decide o Daniel |
+| Propor próximo epic (regra da rotina ao fechar epic) | Issue #37 `agente` criada |
+| Começar o próximo epic se houver orçamento | FEITO — `npm run smoke` entregue e verificado |
+| Validar preview + mergear PR #35 | SÓ DANIEL |
+| MFA GitHub/Cloudflare | FEITO (30/06) |
+| Dependabot #20/#25 (Tailwind/Vite) | OBSOLETO — migrações já feitas e mergeadas |
+
+### Feito nesta continuação (3 entregas)
+1. **test(trainer):** botão "Erro / Acerto" do topo do drill abre o diálogo SEM registrar
+   consulta; feedback com RNG ligado mostra a linha de faixas ("RNG 50: 1–70 Raise ..."). +2 testes.
+2. **Issues:** #36 (`proposta`, functions/api) e #37 (`agente`, novo epic smoke).
+3. **feat(tooling): `npm run smoke`** (`smoke/smoke.mjs`, committado — `scripts/` é gitignored):
+   - `vite build` + `vite preview` + Chromium headless via **playwright-core** (devDep NOVA;
+     sem postinstall de download — acha o browser por `SMOKE_CHROMIUM`, `/opt/pw-browsers/chromium`
+     do ambiente cloud, ou `chromium.executablePath()`).
+   - Backend stubado com `page.route` (`/api/auth/me` etc. → jogador fake logado); rede externa
+     BLOQUEADA (Google Fonts falha pelo proxy do container — erros externos são ignorados de propósito).
+   - Checa: #root monta, nav visível, clique Drill → `/drill`, back → `/dashboard`, F5 em
+     `/historico` mantém a rota, zero pageerror/console.error locais. **Pega os dois modos
+     históricos de tela branca** (ciclo de chunks e loop do RouterSync).
+   - Rodado neste ambiente: **SMOKE OK**.
+
+### Continuação (mesma madrugada — "prossiga com o planejamento")
+- **Smoke ESTENDIDO e verde:** agora cobre também o **drill completo** (expande grupo STR
+  seedado → Selecionar todos → CONTINUAR → INICIAR TREINO → responde FOLD → feedback ✓/✗)
+  e o **painel do coach** (`/coach` como role coach, analytics stubado, aba "Visão do time").
+- **Processo documentado no CLAUDE.md** (seção de testes): rodar `npm run smoke` antes de
+  merges de dependência/chunks/router.
+- 739 testes verdes, build verde, SMOKE OK re-verificado após a extensão.
+- **EPIC #37 (núcleo) CONCLUÍDO.** Restam só decisões do Daniel: PR #35 (preview), issue #36.
+
+### Próximas fatias sugeridas
+- [ ] Estender o smoke: fluxo coach (`/coach` com analytics stubado) e drill ativo real.
+- [ ] Processo: rodar `npm run smoke` antes de merges de risco (deps/chunks/router) — documentar no CLAUDE.md quando o Daniel aprovar o epic #37.
+- [ ] Aguardar decisões: PR #35 (preview), issue #36 (functions/api).
+
+---
+
+## 2026-07-02 noite (NOVO EPIC de produto — P1.1 e P3.8 ENTREGUES)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- Daniel autorizou o novo epic ("pode prosseguir com a sua sugestão"). Epic registrado
+  em `.agent/epic.md` e **as duas pendências de produto foram entregues no mesmo run**.
+- **PR #35 ABERTA e acumulando** (auto/daily-improvements → feature/auth-telemetry):
+  6 fatias de teste pós-merge + P1.1 + P3.8. NÃO mergeada (gate humano).
+- **737 testes verdes (71 arquivos)**, build verde. `main`/produção intactos.
+- **MUDANÇA VISUAL NOVA — validar no preview Cloudflare antes de mergear:**
+  badge "Coach" no RangeCard e botão "Exportar CSV" no SessionCard.
+
+### Feito nesta continuação (2 fatias de produto + docs)
+1. **P1.1 — Badge "Range do Time" (feat):**
+   - `syncTeamRanges` agora persiste os IDs dos ranges do time em
+     `localStorage['pfp-team-range-ids']` e no estado `teamRangeIds: number[]`
+     (carregado no boot por `loadTeamRangeIds`).
+   - `RangeCard` (SituationsPage): badge "Coach" (sky) ao lado do nome + botão
+     Editar desabilitado com tooltip `t.ranges.coachLocked`. **Gate:
+     `currentUser?.role !== 'coach'`** — o coach continua editando os próprios ranges.
+   - i18n: `ranges.coachBadge`/`ranges.coachLocked` em pt/en/es.
+   - Obs.: feature fica dormente até o front usar os ranges D1 (hoje a fonte é
+     `adminRanges.json`); os IDs só populam quando `syncTeamRanges` aplica versão nova.
+2. **P3.8 — Exportar sessão CSV (feat):**
+   - `src/utils/sessionCsv.ts`: `buildSessionCsv(session, ranges)` — colunas
+     range,stack,mao,tentativas,acertos,precisao a partir do `session.handPerf`;
+     chaves `id|||stack` têm precedência sobre a agregada; fallback por nome
+     (sessões antigas); escaping CSV correto. `sessionCsvFilename` = `sessao-AAAA-MM-DD.csv`.
+   - Botão "Exportar CSV" (ícone download) no `SessionCard` do StatsPage via `downloadText`.
+   - i18n: `stats.exportCsv` em pt/en/es. 8 testes novos.
+- **docs:** CLAUDE.md ganhou a chave `pfp-team-range-ids` na tabela de localStorage.
+
+### Próximos passos
+- [ ] **Daniel validar no preview** (badge Coach + botão CSV) e mergear a PR #35.
+- [ ] Extras do epic: polimentos de baixo risco; ou propor próximo epic (UX/polish
+      com verificação Playwright, na linha dos scripts `scripts/verify*.cjs`).
+- [ ] Gate humano (inalterado): testes de `functions/api`, endpoints mortos (P2.6/P3.7).
+
+---
+
+## 2026-07-02 fim do dia (pós-merge da PR #34 — +6 fatias)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- **PR #34 MERGEADA** em `feature/auth-telemetry` (merge `0b63a03`) — Daniel revisou e aprovou. Continha as 23 fatias do dia + cache/locale do dia 01/07.
+- **PR #35 ABERTA** (auto/daily-improvements → feature/auth-telemetry) com as 6 fatias pós-merge. NÃO mergeada (gate humano).
+- **725 testes verdes (70 arquivos)**, build verde. `main`/produção intactos.
+- Branch `auto/daily-improvements` foi RECRIADA a partir de `feature/auth-telemetry` pós-merge (force-with-lease, só histórico mergeado).
+
+### Feito nesta continuação (6 commits, cada um test+build verde + push)
+1. **test(coach):** aba Por jogador (PlayersView) — lista com `handsAccSuffix`, tabela de mãos, aba Consultas, reset de senha (confirm → tempPassword → Copiar; clipboard via `Object.defineProperty(navigator,'clipboard',...)`).
+2. **test(trainer):** replay da sidebar — clicar entrada errada abre snapshot ("✗ Correto: X"), "← Mão atual" volta.
+3. **test(trainer):** DrillSummary multi-stack — severidade, variantes de stack, visão de ações.
+4. **test(dashboard):** hero (Iniciar treino / Ver ranges).
+5. **test(coach):** PublishTeamRanges — sucesso/recusa/erro.
+6. **test(coach):** período Custom envia `from`/`to` sem `days`; MultiPlayerSelect envia `playerIds` (padrão: capturar URLs no mock de fetch e filtrar `/admin/analytics`).
+
+### Próximos alvos (cobertura restante é fina — priorizar por valor)
+- **CoachPanel** (~83%): RangeHeatGrid métricas alternáveis dentro da matriz, HandDetailCard fluxos secundários, TrendBadge/Sparkline por jogador na aba Evolução.
+- **TrainerPage** (~87%): barra de progresso do auto-advance, botão "Erro/Acerto" do topo do drill, straddle/ante renderizados na mesa.
+- **useStore** (~91%): ramos raros de erro (catch de rede em ações menores).
+- **Decisões pendentes do Daniel:** P1.1 (badge "Range do Time"), P3.8 (exportar sessão CSV), testes de `functions/api` (gate humano). Cobertura já está alta — talvez valha propor um epic novo (ex.: UX/polish visual validado por Playwright, ou os P1/P3 pendentes) em vez de continuar só cobertura.
+
+---
+
 ## 2026-07-02 tarde (continuação do run — +13 fatias de cobertura)
 
 ### Estado (PONTO DE PARTIDA do próximo run)

@@ -94,6 +94,62 @@ describe('MyAccountStats', () => {
     expect(screen.getByText('33%')).toBeInTheDocument()
   })
 
+  function mockApiWith(overrideOverview: Partial<typeof OVERVIEW>) {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      const data = url.includes('view=overview') ? { overview: { ...OVERVIEW, ...overrideOverview } } : { rows: [] }
+      return Promise.resolve({ json: () => Promise.resolve(data) } as unknown as Response)
+    })
+    useStore.setState({ authToken: 'tok', listDevices: async () => ({ ok: true, devices: [] }) })
+  }
+
+  it('formata a duração em minutos quando abaixo de uma hora', async () => {
+    mockApiWith({ durationSeconds: 125 })
+    render(<MyAccountStats />)
+    expect(await screen.findByText('2m')).toBeInTheDocument()
+  })
+
+  it('formata a duração em segundos quando abaixo de um minuto', async () => {
+    mockApiWith({ durationSeconds: 45 })
+    render(<MyAccountStats />)
+    expect(await screen.findByText('45s')).toBeInTheDocument()
+  })
+
+  it('exibe travessão para sessão sem data de expiração', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      const data = url.includes('view=overview') ? { overview: OVERVIEW } : { rows: [] }
+      return Promise.resolve({ json: () => Promise.resolve(data) } as unknown as Response)
+    })
+    useStore.setState({
+      authToken: 'tok',
+      listDevices: async () => ({ ok: true, devices: [
+        { id: 9, current: false, createdAt: 0, expiresAt: 0 },
+      ] }),
+    })
+    render(<MyAccountStats />)
+    await screen.findByText('702')
+    expect(await screen.findByText('Iniciada em — · expira em —')).toBeInTheDocument()
+  })
+
+  it('erro nas sessões recarrega ao tentar novamente', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      const data = url.includes('view=overview') ? { overview: OVERVIEW } : { rows: [] }
+      return Promise.resolve({ json: () => Promise.resolve(data) } as unknown as Response)
+    })
+    let ok = false
+    useStore.setState({
+      authToken: 'tok',
+      listDevices: async () => (ok ? { ok: true, devices: [] } : { ok: false }),
+    })
+    render(<MyAccountStats />)
+    const retry = await screen.findByRole('button', { name: 'Tentar novamente' })
+    ok = true
+    fireEvent.click(retry)
+    expect(await screen.findByText('Nenhuma sessão ativa.')).toBeInTheDocument()
+  })
+
   function mockDevices(over: { revokeDevice?: () => Promise<{ ok: boolean }>; revokeOtherDevices?: () => Promise<{ ok: boolean }> } = {}) {
     vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
       const url = String(input)

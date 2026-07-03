@@ -106,6 +106,58 @@ describe('LoginPage', () => {
     expect(screen.getByRole('button', { name: 'Entrar' })).toBeInTheDocument()
   })
 
+  it('cadastro válido chama authSignup com todos os campos', async () => {
+    const authSignup = vi.fn().mockResolvedValue({ ok: true })
+    useStore.setState({ authSignup })
+    render(<LoginPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Criar conta' }))
+    fireEvent.change(screen.getByLabelText('Nome Completo:'), { target: { value: 'Daniel' } })
+    fireEvent.change(screen.getByLabelText('E-mail:'), { target: { value: 'd@x.com' } })
+    fireEvent.change(screen.getByLabelText('Usuário:'), { target: { value: 'daniel1' } })
+    fireEvent.change(screen.getByLabelText('Senha:'), { target: { value: 'senhaforte1' } })
+    fireEvent.change(screen.getByLabelText('Código do time:'), { target: { value: 'TIME' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Criar conta' }))
+    expect(authSignup).toHaveBeenCalledWith('daniel1', 'senhaforte1', 'TIME', 'Daniel', 'd@x.com', null)
+  })
+
+  it('cadastro com falha exibe a mensagem de erro retornada', async () => {
+    const authSignup = vi.fn().mockResolvedValue({ ok: false, error: 'código do time inválido' })
+    useStore.setState({ authSignup })
+    render(<LoginPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Criar conta' }))
+    fireEvent.change(screen.getByLabelText('Nome Completo:'), { target: { value: 'Daniel' } })
+    fireEvent.change(screen.getByLabelText('E-mail:'), { target: { value: 'd@x.com' } })
+    fireEvent.change(screen.getByLabelText('Usuário:'), { target: { value: 'daniel1' } })
+    fireEvent.change(screen.getByLabelText('Senha:'), { target: { value: 'senhaforte1' } })
+    fireEvent.change(screen.getByLabelText('Código do time:'), { target: { value: 'ERRADO' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Criar conta' }))
+    expect(await screen.findByText('código do time inválido')).toBeInTheDocument()
+  })
+
+  it('Enter nos campos do cadastro dispara authSignup', () => {
+    const authSignup = vi.fn().mockResolvedValue({ ok: true })
+    useStore.setState({ authSignup })
+    render(<LoginPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Criar conta' }))
+    fireEvent.change(screen.getByLabelText('Nome Completo:'), { target: { value: 'Daniel' } })
+    fireEvent.change(screen.getByLabelText('E-mail:'), { target: { value: 'd@x.com' } })
+    fireEvent.change(screen.getByLabelText('Usuário:'), { target: { value: 'daniel1' } })
+    fireEvent.change(screen.getByLabelText('Senha:'), { target: { value: 'senhaforte1' } })
+    const team = screen.getByLabelText('Código do time:')
+    fireEvent.change(team, { target: { value: 'TIME' } })
+    fireEvent.keyDown(team, { key: 'Enter' })
+    expect(authSignup).toHaveBeenCalledWith('daniel1', 'senhaforte1', 'TIME', 'Daniel', 'd@x.com', null)
+  })
+
+  it('não submete sem os campos obrigatórios (guarda canSubmit)', () => {
+    const authLogin = vi.fn().mockResolvedValue({ ok: true })
+    useStore.setState({ authLogin })
+    render(<LoginPage />)
+    const pass = screen.getByLabelText('Senha:')
+    fireEvent.keyDown(pass, { key: 'Enter' })
+    expect(authLogin).not.toHaveBeenCalled()
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     const { container } = render(<LoginPage />)
     expect((await axe(container)).violations).toEqual([])

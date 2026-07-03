@@ -173,6 +173,39 @@ describe('TrainerPage', () => {
     expect(screen.getByRole('button', { name: /ISO/ })).toBeInTheDocument()
   })
 
+  it('botão "Erro / Acerto" do topo abre o diálogo SEM registrar consulta', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
+      handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
+    })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Erro / Acerto' }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(useStore.getState().sessionStats.consults).toBe(0)
+  })
+
+  it('RNG ligado: feedback mostra a linha das faixas do RNG', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 30, raise: 70, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 2.5, currentScenario: {},
+      useRngForFrequency: true, acceptAnyFreq: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
+    })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /RAISE/ }))
+    // linha das faixas: "RNG 50: 1–70 Raise · 71–100 Call"
+    expect(screen.getByText(/RNG 50:/)).toBeInTheDocument()
+    expect(screen.getByText(/1–70 Raise/)).toBeInTheDocument()
+  })
+
   it('"Ver Range" abre o diálogo e registra a consulta', () => {
     const g = makeEmptyGrid()
     g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
@@ -377,6 +410,31 @@ describe('TrainerPage', () => {
     expect(screen.getByText('Dados por mão não disponíveis para sessões anteriores.')).toBeInTheDocument()
   })
 
+  it('clicar numa mão da sidebar reabre o replay dela e "← Mão atual" volta', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    g['AA'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    useStore.setState({
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
+      sessionHandPerf: {}, handPerformance: {},
+      handHistory: [{
+        id: 1, hand: 'AA', suits: ['s', 'd'], actionTaken: 'Fold', correctAction: 'Raise',
+        rng: 33, correct: false, rangeName: 'BTN RFI', rangeId: 1, stackGridIdx: -1, severity: 'grave',
+      }],
+      sessionStats: { hands: 1, correct: 0, errors: 1, consults: 0 },
+    })
+    render(<TrainerPage />)
+    // item da sidebar mostra a jogada errada (Fold → Raise)
+    fireEvent.click(screen.getByText('Fold'))
+    // replay aberto: feedback com a ação correta e botão de voltar à mão atual
+    expect(screen.getByText('✗ Correto: Raise')).toBeInTheDocument()
+    const backBtn = screen.getByRole('button', { name: '← Mão atual' })
+    fireEvent.click(backBtn)
+    expect(screen.queryByText('✗ Correto: Raise')).not.toBeInTheDocument()
+  })
+
   it('alternar auto-advance ("2s") não re-renderiza a sidebar de histórico (memo)', () => {
     const g = makeEmptyGrid()
     g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
@@ -424,6 +482,48 @@ describe('TrainerPage', () => {
     useStore.setState({ ranges: [RANGE], activeDrillRange: null })
     const { container } = render(<TrainerPage />)
     expect((await axe(container)).violations).toEqual([])
+  })
+
+  it('estado vazio: "Ir para Meus Ranges" navega para a lista', () => {
+    const setPage = vi.fn()
+    useStore.setState({ ranges: [], activeDrillRange: null, setPage })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Ir para Meus Ranges' }))
+    expect(setPage).toHaveBeenCalledWith('ranges')
+  })
+
+  it('"Selecionar todos" e depois "Desfazer seleção" limpa o grupo', () => {
+    useStore.setState({ ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [1] })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /BTN/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Desfazer seleção' }))
+    expect(useStore.getState().selectedDrillRangeIds).toEqual([])
+  })
+
+  it('olho no card de seleção abre o preview sem selecionar o range', () => {
+    useStore.setState({ ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [] })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /BTN/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Visualizar range' }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(useStore.getState().selectedDrillRangeIds).toEqual([])
+  })
+
+  it('mostra badge de variante multi-stack no card de seleção', () => {
+    const multi: Range = { ...RANGE, id: 2, name: 'BTN vs 3bet', stackGrids: [{ stackRange: '40-60', grid: makeEmptyGrid() }] }
+    useStore.setState({ ranges: [multi], activeDrillRange: null, selectedDrillRangeIds: [] })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /BTN/ }))
+    expect(screen.getByText('40-60')).toBeInTheDocument()
+  })
+
+  it('no filtro de mãos, "Voltar" retorna à seleção de ranges', () => {
+    useStore.setState({ ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [1] })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
+    expect(screen.getByRole('button', { name: 'INICIAR TREINO' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Voltar' }))
+    expect(screen.getByRole('button', { name: /CONTINUAR/ })).toBeInTheDocument()
   })
 
   it('HandFilterGrid: clicar numa mão a exclui e arrastar exclui as seguintes', () => {
@@ -489,6 +589,40 @@ describe('TrainerPage', () => {
   })
 
   // --- Fatia: DrillSummary — accuracy por range e expansão do acordeão ---
+
+  it('DrillSummary com range multi-stack alterna as variantes de stack e a visão', () => {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const multi: Range = {
+      ...RANGE, id: 5, name: 'BTN multi', grid: g,
+      stackGrids: [
+        { stackRange: '<=40', grid: g },
+        { stackRange: '>40', grid: g },
+      ],
+    }
+    useStore.setState({
+      ranges: [multi], activeDrillRange: multi, activeDrillStackGridIdx: 0, activeDrillStackRange: '<=40',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
+      handHistory: [],
+      sessionHandPerf: { 5: { KK: { c: 4, t: 5 } }, '5|||<=40': { KK: { c: 4, t: 5 } } },
+      handPerformance: { 5: { KK: { c: 4, t: 5 } }, '5|||<=40': { KK: { c: 4, t: 5 } }, '5|||>40': { KK: { c: 1, t: 1 } } },
+      selectedDrillRangeIds: [5],
+      sessionStats: { hands: 5, correct: 4, errors: 1, consults: 0 },
+      sessionSeverity: { grave: 0, impreciso: 1 },
+    })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Encerrar e ver resumo' }))
+    // linha extra de severidade (1 impreciso)
+    expect(screen.getByText(/Imprecisos/)).toBeInTheDocument()
+    // expande o range multi-stack
+    fireEvent.click(screen.getByRole('button', { name: /BTN multi/ }))
+    // seletor de variantes de stack + alternância
+    fireEvent.click(screen.getByRole('button', { name: '>40' }))
+    fireEvent.click(screen.getByRole('button', { name: '<=40' }))
+    // toggle da visão de ações
+    fireEvent.click(screen.getByRole('button', { name: 'Ver Range' }))
+    expect(screen.getByRole('button', { name: 'Ver Range' })).toBeInTheDocument()
+  })
 
   it('DrillSummary mostra accuracy por range a partir do sessionHandPerf', () => {
     const g = makeEmptyGrid()

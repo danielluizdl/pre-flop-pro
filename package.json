@@ -8,7 +8,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "e2e": "npm run build && playwright test"
+    "e2e": "npm run build && playwright test",
+    "smoke": "vite build && node smoke/smoke.mjs"
   },
   "dependencies": {
     "@sentry/react": "^10.57.0",
@@ -32,6 +33,7 @@
     "autoprefixer": "^10.4.20",
     "jest-axe": "^10.0.0",
     "jsdom": "^29.1.1",
+    "playwright-core": "^1.61.1",
     "postcss": "^8.5.1",
     "tailwindcss": "^4.3.2",
     "typescript": "^6.0.3",

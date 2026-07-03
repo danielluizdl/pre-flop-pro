@@ -54,6 +54,17 @@ describe('store: syncTeamRanges', () => {
     expect(localStorage.getItem('team-ranges-version')).toBe('5')
   })
 
+  it('versão nova: persiste os IDs do time em pfp-team-range-ids e no estado', async () => {
+    const team = [rng(100, 'Coach A'), rng(200, 'Coach B')]
+    mockFetch((url) => {
+      if (url.includes('/api/ranges/list')) return { body: { ranges: encodeRanges(team), version: 6 } }
+      return { body: {} }
+    })
+    await useStore.getState().syncTeamRanges()
+    expect(useStore.getState().teamRangeIds.sort((a, b) => a - b)).toEqual([100, 200])
+    expect(JSON.parse(localStorage.getItem('pfp-team-range-ids')!).sort((a: number, b: number) => a - b)).toEqual([100, 200])
+  })
+
   it('versão já vista: não sobrescreve os ranges', async () => {
     localStorage.setItem('team-ranges-version', '5')
     mockFetch((url) => {
