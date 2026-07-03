@@ -35,8 +35,10 @@ Daniel autorizou em 02/07 ("pode prosseguir com a sua sugestão").
       console.error local, #root vazio, RouterSync quebrado (clique→URL, back,
       F5 em rota profunda). Backend stubado via page.route; rede externa
       bloqueada. VERIFICADO neste ambiente: SMOKE OK. (02/07)
-- [ ] Rodar o smoke antes de merges de risco (deps/chunks/router) — processo.
-- [ ] Possível extensão: smoke do fluxo coach (rota /coach com analytics stubado).
+- [x] Processo documentado no CLAUDE.md: rodar o smoke antes de merges de risco. (02/07)
+- [x] Extensão: fluxo do drill COMPLETO (selecionar ranges seedados → iniciar →
+      responder FOLD → feedback) e painel do coach (/coach, aba Visão do time,
+      analytics stubado). SMOKE OK verificado. EPIC #37 NÚCLEO CONCLUÍDO. (02/07)
 
 ## Definição de pronto por fatia
 Sem PII nova; caminho feliz intacto; testes+build verdes; commit PT-BR por área;

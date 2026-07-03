@@ -82,6 +82,33 @@ try {
   await page.waitForFunction(() => (document.getElementById('root')?.children.length ?? 0) > 0, undefined, { timeout: 10000 })
   if (!page.url().includes('/historico')) problems.push(`F5 em /historico terminou em ${page.url()} (RouterSync dessincronizou)`)
 
+  // 4. Drill de verdade: seleciona ranges seedados, inicia e responde uma mão.
+  await page.goto(`${BASE}/drill`, { waitUntil: 'networkidle' })
+  try {
+    await page.getByRole('button', { name: /^STR/ }).first().click()
+    await page.getByRole('button', { name: 'Selecionar todos' }).first().click()
+    await page.getByRole('button', { name: /CONTINUAR/ }).click()
+    await page.getByRole('button', { name: 'INICIAR TREINO' }).click()
+    await page.getByRole('button', { name: /FOLD/ }).first().click({ timeout: 8000 })
+    await page.waitForFunction(() => /✓|✗|~/.test(document.body.innerText), undefined, { timeout: 5000 })
+  } catch (e) {
+    problems.push(`fluxo do drill quebrou: ${e.message.split('\n')[0]}`)
+  }
+
+  // 5. Painel do coach com analytics stubado.
+  const coach = await page.context().browser().newPage()
+  coach.on('pageerror', e => problems.push(`coach pageerror: ${e.message}`))
+  await coach.route(u => !u.href.startsWith(BASE), r => r.abort())
+  await coach.route('**/api/auth/me', r => r.fulfill({ json: { user: { id: 2, username: 'coach', name: 'Coach', email: '', role: 'coach', first_login: 0 } } }))
+  await coach.route('**/api/ranges/list', r => r.fulfill({ json: { ranges: [], version: 0 } }))
+  await coach.route('**/api/admin/users', r => r.fulfill({ json: { users: [] } }))
+  await coach.route('**/api/admin/analytics*', r => r.fulfill({ json: { rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] } }))
+  await coach.addInitScript(() => sessionStorage.setItem('pfp-auth-token', 'smoke-coach'))
+  await coach.goto(`${BASE}/coach`, { waitUntil: 'networkidle' })
+  const gotCoach = await coach.getByRole('button', { name: 'Visão do time' }).first().isVisible().catch(() => false)
+  if (!gotCoach) problems.push('painel do coach não renderizou a aba Visão do time')
+  await coach.close()
+
   // Fôlego para um eventual loop de render estourar como pageerror/console.
   await page.waitForTimeout(1500)
   await browser.close()
@@ -96,4 +123,4 @@ if (problems.length > 0) {
   for (const p of problems) console.error(` - ${p}`)
   process.exit(1)
 }
-console.log('SMOKE OK — app renderiza, navegação e F5 íntegros, zero erros de página.')
+console.log('SMOKE OK — render, navegação/F5, drill completo e painel do coach íntegros no browser.')

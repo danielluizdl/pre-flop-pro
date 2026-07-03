@@ -40,6 +40,15 @@
      históricos de tela branca** (ciclo de chunks e loop do RouterSync).
    - Rodado neste ambiente: **SMOKE OK**.
 
+### Continuação (mesma madrugada — "prossiga com o planejamento")
+- **Smoke ESTENDIDO e verde:** agora cobre também o **drill completo** (expande grupo STR
+  seedado → Selecionar todos → CONTINUAR → INICIAR TREINO → responde FOLD → feedback ✓/✗)
+  e o **painel do coach** (`/coach` como role coach, analytics stubado, aba "Visão do time").
+- **Processo documentado no CLAUDE.md** (seção de testes): rodar `npm run smoke` antes de
+  merges de dependência/chunks/router.
+- 739 testes verdes, build verde, SMOKE OK re-verificado após a extensão.
+- **EPIC #37 (núcleo) CONCLUÍDO.** Restam só decisões do Daniel: PR #35 (preview), issue #36.
+
 ### Próximas fatias sugeridas
 - [ ] Estender o smoke: fluxo coach (`/coach` com analytics stubado) e drill ativo real.
 - [ ] Processo: rodar `npm run smoke` antes de merges de risco (deps/chunks/router) — documentar no CLAUDE.md quando o Daniel aprovar o epic #37.
