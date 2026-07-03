@@ -57,6 +57,31 @@ describe('pincel sobre o grid', () => {
     s().resetGrid()
     expect(Object.values(s().rangeData.grid).every(c => c.fold === 100)).toBe(true)
   })
+
+  it('applyBrushToHands não pinta quando o total do pincel passa de 100', () => {
+    useStore.setState({ brush: { ...s().brush, call: 60, raise: 60 } })
+    s().applyBrushToHands(['AA', 'KK'])
+    expect(s().rangeData.grid.AA.fold).toBe(100)
+    expect(s().rangeData.grid.KK.fold).toBe(100)
+  })
+})
+
+describe('setBrush clampeia o total em 100', () => {
+  it('aumentar call reduz o maior dos demais (raise)', () => {
+    useStore.setState({ brush: { call: 0, raise: 100, allin: 0, extra: 0, raiseSize: '2.5', extraLabel: '', extraColor: '#a855f7' } })
+    s().setBrush('call', 60)
+    expect(s().brush.call).toBe(60)
+    expect(s().brush.raise).toBe(40)
+    expect(s().brush.call + s().brush.raise + s().brush.allin + s().brush.extra).toBe(100)
+  })
+
+  it('valor 100 zera as demais ações', () => {
+    useStore.setState({ brush: { call: 30, raise: 30, allin: 0, extra: 0, raiseSize: '2.5', extraLabel: '', extraColor: '#a855f7' } })
+    s().setBrush('allin', 100)
+    expect(s().brush.allin).toBe(100)
+    expect(s().brush.call).toBe(0)
+    expect(s().brush.raise).toBe(0)
+  })
 })
 
 describe('grids da sessão', () => {

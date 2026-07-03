@@ -35,6 +35,29 @@ describe('backup export', () => {
   })
 })
 
+describe('resetLocalData', () => {
+  it('remove apenas as chaves fbr-/pfp- do localStorage', () => {
+    localStorage.clear()
+    localStorage.setItem('fbr-ranges-v1', '[]')
+    localStorage.setItem('pfp-hand-perf-v1', '{}')
+    localStorage.setItem('outra-chave', 'manter')
+    useStore.getState().resetLocalData()
+    expect(localStorage.getItem('fbr-ranges-v1')).toBeNull()
+    expect(localStorage.getItem('pfp-hand-perf-v1')).toBeNull()
+    expect(localStorage.getItem('outra-chave')).toBe('manter')
+  })
+})
+
+describe('toggleDarkMode', () => {
+  it('inverte o darkMode', () => {
+    useStore.setState({ darkMode: false })
+    useStore.getState().toggleDarkMode()
+    expect(useStore.getState().darkMode).toBe(true)
+    useStore.getState().toggleDarkMode()
+    expect(useStore.getState().darkMode).toBe(false)
+  })
+})
+
 describe('cota de localStorage estourada', () => {
   beforeEach(() => {
     localStorage.clear()
