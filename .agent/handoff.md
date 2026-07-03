@@ -1,5 +1,61 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## PENDENTE — Rodada 2 do modo "Montar Range" (PR #40 ainda NÃO mergeada)
+
+**Contexto:** PR #40 (`feature/build-range-exercise` → `feature/auth-telemetry`) entregou a v1 completa
+do modo (fórmula de nota, ExercisePage, endpoint D1 fail-open). 815 testes verdes, build verde, smoke OK.
+Daniel ainda não validou no preview nem mergeou — antes disso, pediu 7 ajustes. **NÃO lançar o agente
+ainda** (aguardando o Daniel liberar/ter orçamento) — isto é só o registro das decisões pra não perder.
+
+### Decisões dos 7 ajustes pedidos pelo Daniel (2026-07-03)
+1. **Nome do modo:** "Montar Range" não convenceu — precisa de nome mais marcante. Daniel ainda NÃO
+   escolheu o nome final. O agente deve propor 3-4 opções curtas (estilo "Blind Spot", "Replay", "Memória
+   de Range" etc.) e usar a melhor, mas isso é decisão que idealmente o Daniel confirma antes do merge —
+   deixar fácil de trocar (não hardcodear em vários lugares, string central no i18n).
+2. **Tela de confirmação pré-rounds:** antes de entrar nos rounds, mostrar a lista de TODOS os ranges/
+   stacks selecionados (nome de cada um) com botão "Confirmar e começar" — hoje o fluxo vai direto da
+   seleção pro primeiro round.
+3. **Botões de preenchimento automático por grupo:** incluir atalhos tipo "Pares" / "Suited" / "Offsuit"
+   que preenchem essas mãos de uma vez com a ação/frequência do pincel atual (mesmo padrão do
+   `HandQuickSelect.tsx` já usado no editor — reusar, não duplicar).
+4. **Múltiplas tentativas por round:** depois de ver a nota de um round, oferecer botão "Tentar novamente"
+   (refaz o mesmo round do zero) ALÉM de avançar. TODAS as tentativas devem ser salvas no histórico (local
+   + D1), cada uma com um marcador de qual tentativa é (ex: "2ª tentativa") pra aparecer tanto no histórico
+   do jogador quanto no painel do coach.
+5. **Resumo com detalhe por round:** na tela de resumo final, cada round deve ser clicável e reabrir a
+   visualização completa daquele round (Seu range / Gabarito / heatmap de diferença), não só mostrar a nota.
+6. **Aba Histórico (StatsPage) precisa separar os dois modos:** hoje só mostra sessões de Drill. Adicionar
+   as sessões de Montar Range como uma seção/aba separada (não misturar sessão de Drill com tentativa de
+   Montar Range na mesma lista).
+7. **Painel Coach — reestruturar abas:** REMOVER a aba "Por jogador" inteira. Renomear "Visão do time" para
+   "Drill" (mantém tudo que já mostra hoje, sem mudança de conteúdo). Criar aba nova "Montar Range" com
+   analytics equivalente ao que "Drill" tem hoje (por jogador, por range, tentativas, notas) mas para os
+   dados desse modo novo.
+
+### Próximo prompt para o agente Fable 5 (continuação da PR #40)
+Quando o Daniel autorizar, lançar um agente `general-purpose` com model `fable`, isolation `worktree`,
+`run_in_background: true`, continuando a partir da branch `feature/build-range-exercise` (PR #40 ainda
+aberta, NÃO mergeada — não abrir PR novo, seguir commitando na mesma branch/PR). Prompt deve conter:
+- Reler CLAUDE.md + `.agent/handoff.md` (esta seção) antes de começar.
+- Implementar os 7 itens acima, cada um em commit separado, testado (`npm test` + `npm run build` verdes
+  antes de cada commit).
+- Ponto 1 (nome): propor 3-4 opções no PR description antes de decidir, mas pode seguir implementando com
+  a melhor escolha — só não deve ficar bloqueado esperando resposta.
+- Ponto 3: reusar `HandQuickSelect.tsx` (já existe grupos Pares/Suited/Offsuit no editor) em vez de recriar.
+- Ponto 4: cuidado com o histórico local (`pfp-build-history-v1`) e o endpoint `range-build` — adicionar
+  campo de número da tentativa (ex: `attempt: number`) na entrada salva, tanto localStorage quanto payload
+  D1 (schema_v4.sql ainda não migrado — se precisar mudar coluna, ajustar o schema_v4.sql antes da migração
+  manual, que segue gate humano/Daniel).
+- Ponto 6/7: seguir os padrões existentes de StatsPage (SessionCard/SessionDetailView) e CoachPanel
+  (abas via estado local, `Section` component com loading/error/empty) — não recriar do zero.
+- Atualizar i18n (PT/EN/ES) para todas as strings novas.
+- Ao final: atualizar CLAUDE.md + `.agent/handoff.md`, rodar `npm run smoke`, e reportar no mesmo PR #40
+  (push na branch existente atualiza a PR automaticamente).
+- Lembrar: PR sempre para `feature/auth-telemetry`; nunca main; D1/schema = gate humano.
+
+---
+
+
 ## 2026-07-03 (run automático — cobertura incremental segura, 10 fatias)
 
 ### Estado (PONTO DE PARTIDA do próximo run)
