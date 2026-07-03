@@ -139,6 +139,38 @@ describe('HandMatrix', () => {
     expect(applyBrush).toHaveBeenCalledTimes(1)
   })
 
+  it('renderiza ações dominantes call, all-in e mista sem erro', () => {
+    const grid = makeEmptyGrid()
+    grid['AA'] = { fold: 0, call: 100, raise: 0, allin: 0 }
+    grid['KK'] = { fold: 0, call: 0, raise: 0, allin: 100 }
+    grid['QQ'] = { fold: 0, call: 50, raise: 50, allin: 0 }
+    const { container } = render(<HandMatrix grid={grid} readOnly />)
+    const aa = container.querySelector('[data-hand="AA"] span') as HTMLElement
+    const kk = container.querySelector('[data-hand="KK"] span') as HTMLElement
+    const qq = container.querySelector('[data-hand="QQ"] span') as HTMLElement
+    // cores de texto distintas por ação (call=escuro, all-in=amarelo, mista=branco)
+    expect(aa.style.color).toBe('rgb(6, 43, 19)')
+    expect(kk.style.color).toBe('rgb(253, 230, 138)')
+    expect(qq.style.color).toBe('rgb(255, 255, 255)')
+  })
+
+  it('heatmap pinta a célula de vermelho quando a precisão é baixa', () => {
+    const { container } = render(
+      <HandMatrix grid={makeEmptyGrid()} heatmap={{ AA: { c: 1, t: 4 } }} forceViewMode="heatmap" />,
+    )
+    const overlay = container.querySelector('[data-hand="AA"] .z-\\[1\\]') as HTMLElement
+    expect(overlay).toBeTruthy()
+    expect(overlay.style.background).toContain('239, 68, 68')
+  })
+
+  it('readOnly não pinta ao clicar na célula', () => {
+    const applyBrush = vi.fn()
+    useStore.setState({ applyBrush })
+    const { container } = render(<HandMatrix grid={makeEmptyGrid()} readOnly />)
+    fireEvent.mouseDown(container.querySelector('[data-hand="AA"]') as HTMLElement)
+    expect(applyBrush).not.toHaveBeenCalled()
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     const { container } = render(<HandMatrix grid={makeEmptyGrid()} readOnly />)
     expect((await axe(container)).violations).toEqual([])
