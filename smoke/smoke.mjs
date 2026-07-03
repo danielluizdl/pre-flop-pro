@@ -38,7 +38,8 @@ if (!executablePath) {
   process.exit(1)
 }
 
-const preview = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort'], { stdio: 'ignore' })
+// shell:true no Windows: spawn('npx') puro só resolve npx.cmd via shell
+const preview = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort'], { stdio: 'ignore', shell: process.platform === 'win32' })
 const problems = []
 
 try {
