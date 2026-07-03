@@ -484,6 +484,48 @@ describe('TrainerPage', () => {
     expect((await axe(container)).violations).toEqual([])
   })
 
+  it('estado vazio: "Ir para Meus Ranges" navega para a lista', () => {
+    const setPage = vi.fn()
+    useStore.setState({ ranges: [], activeDrillRange: null, setPage })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Ir para Meus Ranges' }))
+    expect(setPage).toHaveBeenCalledWith('ranges')
+  })
+
+  it('"Selecionar todos" e depois "Desfazer seleção" limpa o grupo', () => {
+    useStore.setState({ ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [1] })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /BTN/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Desfazer seleção' }))
+    expect(useStore.getState().selectedDrillRangeIds).toEqual([])
+  })
+
+  it('olho no card de seleção abre o preview sem selecionar o range', () => {
+    useStore.setState({ ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [] })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /BTN/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Visualizar range' }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(useStore.getState().selectedDrillRangeIds).toEqual([])
+  })
+
+  it('mostra badge de variante multi-stack no card de seleção', () => {
+    const multi: Range = { ...RANGE, id: 2, name: 'BTN vs 3bet', stackGrids: [{ stackRange: '40-60', grid: makeEmptyGrid() }] }
+    useStore.setState({ ranges: [multi], activeDrillRange: null, selectedDrillRangeIds: [] })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /BTN/ }))
+    expect(screen.getByText('40-60')).toBeInTheDocument()
+  })
+
+  it('no filtro de mãos, "Voltar" retorna à seleção de ranges', () => {
+    useStore.setState({ ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [1] })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
+    expect(screen.getByRole('button', { name: 'INICIAR TREINO' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Voltar' }))
+    expect(screen.getByRole('button', { name: /CONTINUAR/ })).toBeInTheDocument()
+  })
+
   it('HandFilterGrid: clicar numa mão a exclui e arrastar exclui as seguintes', () => {
     useStore.setState({ ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [1], drillExcludedHands: [] })
     render(<TrainerPage />)
