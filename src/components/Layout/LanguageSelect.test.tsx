@@ -42,6 +42,21 @@ describe('LanguageSelect', () => {
     expect(screen.queryByRole('button', { name: 'Meus Ranges' })).not.toBeInTheDocument()
   })
 
+  it('clique fora fecha o menu', () => {
+    render(<LanguageSelect />)
+    fireEvent.click(screen.getByRole('button', { name: /Idioma \/ Language/ }))
+    expect(screen.getByRole('listbox')).toBeInTheDocument()
+    fireEvent.mouseDown(document.body)
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+  })
+
+  it('Escape fecha o menu', () => {
+    render(<LanguageSelect />)
+    fireEvent.click(screen.getByRole('button', { name: /Idioma \/ Language/ }))
+    fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' })
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     const { container } = render(<LanguageSelect />)
     fireEvent.click(screen.getByRole('button', { name: /Idioma \/ Language/ }))
