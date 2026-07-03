@@ -73,6 +73,20 @@ describe('Dashboard', () => {
     expect(useStore.getState().page).toBe('drill')
   })
 
+  it('com histórico e desempenho, mostra a precisão global e por range', () => {
+    useStore.setState({
+      ranges: [mkRange(1)],
+      trainingHistory: [
+        { id: 1, timestamp: 1, rangeNames: ['Range 1'], tableSize: 8, hands: 10, correct: 8, errors: 2, consults: 0, durationSeconds: 60 },
+        { id: 2, timestamp: 2, rangeNames: ['Range 1'], tableSize: 8, hands: 10, correct: 8, errors: 2, consults: 0, durationSeconds: 60 },
+      ],
+      handPerformance: { 1: { AA: { c: 8, t: 10 } } },
+      currentUser: null, page: 'dashboard',
+    })
+    render(<Dashboard />)
+    expect(screen.getAllByText('80%').length).toBeGreaterThan(0)
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     useStore.setState({ ranges: [RANGE], trainingHistory: [], currentUser: null })
     const { container } = render(<Dashboard />)
