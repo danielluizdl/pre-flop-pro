@@ -86,6 +86,40 @@ describe('SituationsPage', () => {
     expect(clearHandPerformance).toHaveBeenCalledWith(1)
   })
 
+  it('backdrop do heatmap fecha ao clicar fora', () => {
+    useStore.setState({ ranges: [RANGE], handPerformance: {} })
+    render(<SituationsPage />)
+    fireEvent.click(screen.getByRole('button', { name: /BTN/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Ver heatmap' }))
+    const dialog = screen.getByRole('dialog', { name: 'BTN RFI' })
+    fireEvent.click(dialog.parentElement as HTMLElement)
+    expect(screen.queryByRole('dialog', { name: 'BTN RFI' })).not.toBeInTheDocument()
+  })
+
+  it('olho abre o preview do range e fecha', () => {
+    useStore.setState({ ranges: [RANGE] })
+    render(<SituationsPage />)
+    fireEvent.click(screen.getByRole('button', { name: /BTN/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Visualizar range' }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+
+  it('Novo Range navega para a configuração', () => {
+    const setPage = vi.fn()
+    useStore.setState({ ranges: [RANGE], setPage })
+    render(<SituationsPage />)
+    fireEvent.click(screen.getByRole('button', { name: '+ Novo Range' }))
+    expect(setPage).toHaveBeenCalledWith('range-setup')
+  })
+
+  it('estado vazio: criar primeiro range navega para a configuração', () => {
+    const setPage = vi.fn()
+    useStore.setState({ ranges: [], setPage })
+    render(<SituationsPage />)
+    fireEvent.click(screen.getByRole('button', { name: /Criar/ }))
+    expect(setPage).toHaveBeenCalledWith('range-setup')
+  })
+
   it('Treinar inicia a sessão e navega para o drill', () => {
     const g = makeEmptyGrid()
     g['AA'] = { fold: 0, call: 0, raise: 100, allin: 0 }
