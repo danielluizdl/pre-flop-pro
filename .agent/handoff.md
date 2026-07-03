@@ -1,5 +1,38 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-03 (tarde — feature nova: modo "Montar Range")
+
+### Estado
+- **Branch `feature/build-range-exercise`** (a partir de `feature/auth-telemetry`), PR aberta para
+  `feature/auth-telemetry`. `main`/produção intactos.
+- Feature completa: novo modo de exercício **"Montar Range"** (reproduzir range de memória),
+  ao lado do Drill na navegação (page `'exercise'`, rota `/montar-range`).
+- Testes: 774 → **815 verdes (75 arquivos)** (9 buildScore + 11 store + 13 página + 8 endpoint).
+  Build verde. Smoke OK.
+
+### O que foi feito (fatias/commits)
+1. `src/utils/buildScore.ts` — nota por combos fora do lugar (fórmula travada da tarefa;
+   fold implícito; clamp [0,100]; `perHand` p/ heatmap de diferença) + 9 testes de borda.
+2. Store: `buildRounds` (1 round por stackGrid; snapshot do grid gabarito + customAction),
+   `startBuildSession`/`submitBuildRound`/`nextBuildRound`/`stopBuildSession`,
+   histórico local `pfp-build-history-v1` (trySave), telemetria `fireEvent('range-build', ...)`.
+   **Pintura reusa `rangeData.grid`** — HandMatrix/BrushControls sem mudança.
+3. `src/components/Exercise/ExercisePage.tsx` (lazy): seleção (acordeão igual ao drill) →
+   round (pintar às cegas + ComboCounter) → nota + "Seu range"/"Gabarito" (RangeActionGrid)
+   + DiffGrid → resumo (média + por round). i18n completo PT/EN/ES (namespace `exercise`).
+   Nav: TopNav/Sidebar (ícone Grid3x3) + RouterSync.
+4. `functions/api/events/range-build.js` + `schema_v4.sql`. **GOTCHA importante:** o INSERT
+   está em try/catch devolvendo 200 `{ok:false}` — sem isso, antes da migração o 500
+   travaria a fila FIFO de telemetria do cliente (flush para em erro != 400).
+
+### PENDENTE (gate humano — Daniel)
+- [ ] **Migração D1 manual**: `npx wrangler d1 execute preflop-db --file=schema_v4.sql --remote`
+      (sem ela a telemetria do modo é descartada no servidor; app funciona normal).
+- [ ] Validar visual no preview do Cloudflare (mudança visual nova: item de nav + página).
+- [ ] Revisar/mergear a PR para `feature/auth-telemetry`.
+
+---
+
 ## 2026-07-03 (run automático — cobertura incremental segura, 10 fatias)
 
 ### Estado (PONTO DE PARTIDA do próximo run)

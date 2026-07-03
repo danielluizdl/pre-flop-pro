@@ -72,6 +72,7 @@ SLOTS_6MAX / SLOTS_8MAX: Slot[]              // {t:%, l:%} posição visual dos 
 'fbr-ui-state'            → {darkMode, lang}   (zustand persist)
 'pfp-last-published-hash' → string           (hash djb2 do último publish — antes guardava o JSON inteiro)
 'pfp-team-range-ids'      → number[]         (IDs dos ranges publicados pelo coach — badge "Coach" + edição bloqueada p/ jogador)
+'pfp-build-history-v1'    → BuildSession[]   (histórico do modo Montar Range: rounds {label,score} + avgScore)
 'admin-ranges-version' / 'fbr-deleted-admin-ids' / 'admin-worker-url'
 ```
 
@@ -173,6 +174,7 @@ dashboard
               → ranges     (após finalizeRange())
   → ranges        (SituationsPage: acordeão por posição com RangeCards)
   → drill         (TrainerPage: DrillRangeSelect → HandFilterGrid → DrillActive)
+  → exercise      (ExercisePage "Montar Range": BuildRangeSelect → BuildRound → BuildSummary)
   → history       (StatsPage)
 ```
 
@@ -320,6 +322,15 @@ Container: `w-full h-[calc(100vh-90px)] overflow-auto`
 - `BLIND_BET` fallback: SB/BB/STR fold mostram fichas dos blinds mesmo com `bet=0`
 - Assentos em `l:0%`/`l:100%` vazam lateralmente — container precisa de `px-10` mínimo
 - Stack badge vaza 28px abaixo — wrapper precisa de `pb-8` mínimo (ou `pb-[60px]` no drill)
+
+## ExercisePage — modo "Montar Range" (`src/components/Exercise/ExercisePage.tsx`, rota `/montar-range`, page `'exercise'`)
+- Exercício de reproduzir ranges de memória, ao lado do Drill na navegação (TopNav/Sidebar, ícone Grid3x3, lazy no AppLayout).
+- Fluxo: `BuildRangeSelect` (acordeão por posição, espelho do DrillRangeSelect) → `BuildRound` (pinta grade 13×13 vazia com HandMatrix+BrushControls+ComboCounter reusados; gabarito escondido) → enviar → nota + feedback (`RangeActionGrid` "Seu range"/"Gabarito" lado a lado + `DiffGrid` de diferença por mão) → próximo round → `BuildSummary` (nota média + por round).
+- **Rounds**: cada range selecionado vira 1 round; range multi-stack vira **1 round por stackGrid** (label `nome — stackRange`). Round guarda snapshot do grid gabarito e `customAction` (pincel extra configurado ao iniciar o round).
+- **Pintura reusa `rangeData.grid` do store** (HandMatrix/BrushControls funcionam sem mudança); `startBuildSession`/`nextBuildRound`/`stopBuildSession` resetam a grade.
+- **Nota** (`src/utils/buildScore.ts`, pura+testada): por combos — `combosForaDoLugar = 0.5 × Σ_h Σ_a |real−user|/100 × combosOf(h)` (ações fold/call/raise/allin/extra; fold implícito = 100 − soma), `nota = 100 × (1 − fora/1326)` clamp [0,100]. `perHand` = fração de combos errados por mão (alimenta o DiffGrid). v1 ignora raise size.
+- **Store**: `buildSelectedRangeIds`/`buildRounds`/`buildRoundIdx`/`buildResults`/`buildLastResult`/`buildSessionUuid`/`buildHistory` + ações `toggleBuildRange`/`startBuildSession`/`submitBuildRound`/`nextBuildRound`/`stopBuildSession`. `buildRoundIdx >= buildRounds.length` sinaliza o resumo; `stopBuildSession` salva em `pfp-build-history-v1` (via trySave) e limpa tudo.
+- **Telemetria**: `submitBuildRound` → `fireEvent('range-build', {rangeId, rangeName, stackRange, score, roundsTotal, session_uuid, client_event_id})` (fail-open, mesma fila). Endpoint `functions/api/events/range-build.js` (INSERT OR IGNORE, dedupe por client_event_id) + tabela `range_build_events` em **`schema_v4.sql` — migração D1 manual PENDENTE** (`npx wrangler d1 execute preflop-db --file=schema_v4.sql --remote`); sem a migração o INSERT falha mas o endpoint responde **200 `{ok:false, code:'db_error'}`** (try/catch) para não travar a fila FIFO do cliente — app segue 100% funcional.
 
 ## StatsPage (`src/components/Stats/StatsPage.tsx`)
 - Lista sessões em ordem reversa com `SessionCard`

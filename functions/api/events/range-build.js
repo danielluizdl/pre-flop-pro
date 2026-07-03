@@ -29,12 +29,18 @@ export async function onRequest(context) {
 
   const { rangeId, rangeName, stackRange, score, roundsTotal } = body
 
-  await env.DB.prepare(
-    'INSERT OR IGNORE INTO range_build_events (user_id, range_id, range_name, stack_range, score, rounds_total, session_uuid, client_event_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-  ).bind(
-    user.id, rangeId, String(rangeName ?? ''), stackRange ?? null, score, roundsTotal ?? null,
-    body.session_uuid ?? null, body.client_event_id ?? null
-  ).run()
+  // Fail-open enquanto a migração schema_v4 não for aplicada: um 500 aqui
+  // travaria a fila FIFO de telemetria do cliente (flush para em erro != 400).
+  try {
+    await env.DB.prepare(
+      'INSERT OR IGNORE INTO range_build_events (user_id, range_id, range_name, stack_range, score, rounds_total, session_uuid, client_event_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    ).bind(
+      user.id, rangeId, String(rangeName ?? ''), stackRange ?? null, score, roundsTotal ?? null,
+      body.session_uuid ?? null, body.client_event_id ?? null
+    ).run()
+  } catch {
+    return json({ ok: false, code: 'db_error' })
+  }
 
   return json({ ok: true })
 }
