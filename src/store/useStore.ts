@@ -5,7 +5,7 @@ import {
   focusWeight, weightedPick,
 } from '../utils/hands'
 import type {
-  BrushState, HandData, HandHistoryEntry, PokerPosition, PositionConfig,
+  BrushState, BuildRound, BuildRoundResult, BuildSession, HandData, HandHistoryEntry, PokerPosition, PositionConfig,
   Range, Scenario, SessionGrid, SessionStats, Slot, StackGrid, TableSize, TrainingSession, Page, CurrentUser, DeviceSession,
 } from '../types'
 import {
@@ -15,6 +15,7 @@ import { validateRanges } from '../utils/validateRanges'
 import { addBreadcrumb, captureMessage, captureError } from '../utils/sentry'
 import { enqueue, flush } from '../utils/eventQueue'
 import { decodeRanges, encodeRanges } from '../utils/sparseGrid'
+import { scoreBuild } from '../utils/buildScore'
 import { DEFAULT_RANGES } from '../data/defaultRanges'
 import { t, setLangDict, type Lang } from '../i18n'
 import adminRangesRaw from '../data/adminRanges.json'
@@ -125,6 +126,17 @@ function loadHistory(): TrainingSession[] {
 
 function saveHistory(sessions: TrainingSession[]) {
   trySave(() => localStorage.setItem(HISTORY_KEY, JSON.stringify(sessions)))
+}
+
+const BUILD_HISTORY_KEY = 'pfp-build-history-v1'
+
+function loadBuildHistory(): BuildSession[] {
+  try { return JSON.parse(localStorage.getItem(BUILD_HISTORY_KEY) ?? '[]') ?? [] }
+  catch { return [] }
+}
+
+function saveBuildHistory(sessions: BuildSession[]) {
+  trySave(() => localStorage.setItem(BUILD_HISTORY_KEY, JSON.stringify(sessions)))
 }
 
 function loadHandPerf(): HandPerfMap {
@@ -250,6 +262,20 @@ interface AppState {
   checkDrillAnswer: (action: string) => { correct: boolean; message: string; severity?: 'grave' | 'impreciso' }
   stopDrill: () => void
   incrementConsults: () => void
+
+  // ── Montar Range (exercício) ─────────────────────────────────────────────────
+  buildSelectedRangeIds: number[]
+  buildRounds: BuildRound[]
+  buildRoundIdx: number
+  buildResults: BuildRoundResult[]
+  buildLastResult: { score: number; perHand: Record<string, number>; userGrid: Record<string, HandData> } | null
+  buildSessionUuid: string
+  buildHistory: BuildSession[]
+  toggleBuildRange: (id: number) => void
+  startBuildSession: () => boolean
+  submitBuildRound: () => void
+  nextBuildRound: () => void
+  stopBuildSession: () => void
 
   // ── Auth ──────────────────────────────────────────────────────────────────────
   userMode: 'visitor' | 'admin' | null
@@ -1197,6 +1223,134 @@ export const useStore = create<AppState>()(
       incrementConsults: () => {
         const { sessionStats } = get()
         set({ sessionStats: { ...sessionStats, consults: sessionStats.consults + 1 } })
+      },
+
+      // ── Montar Range (exercício) ─────────────────────────────────────────────
+      buildSelectedRangeIds: [],
+      buildRounds: [],
+      buildRoundIdx: 0,
+      buildResults: [],
+      buildLastResult: null,
+      buildSessionUuid: '',
+      buildHistory: loadBuildHistory(),
+
+      toggleBuildRange: (id) => {
+        const { buildSelectedRangeIds } = get()
+        const next = buildSelectedRangeIds.includes(id)
+          ? buildSelectedRangeIds.filter(x => x !== id)
+          : [...buildSelectedRangeIds, id]
+        set({ buildSelectedRangeIds: next })
+      },
+
+      startBuildSession: () => {
+        const { ranges, buildSelectedRangeIds, brush, currentTableSize } = get()
+        const rounds: BuildRound[] = []
+        buildSelectedRangeIds.forEach(id => {
+          const r = ranges.find(x => x.id === id)
+          if (!r) return
+          if (r.stackGrids && r.stackGrids.length > 0) {
+            r.stackGrids.forEach(sg => rounds.push({
+              rangeId: r.id,
+              rangeName: r.name,
+              stackRange: sg.stackRange,
+              label: sg.stackRange ? `${sg.name ?? r.name} — ${sg.stackRange}` : (sg.name ?? r.name),
+              grid: JSON.parse(JSON.stringify(sg.grid)),
+              ...(r.customAction ? { customAction: r.customAction } : {}),
+            }))
+          } else {
+            rounds.push({
+              rangeId: r.id,
+              rangeName: r.name,
+              stackRange: r.stackRange ?? '',
+              label: r.stackRange ? `${r.name} — ${r.stackRange}` : r.name,
+              grid: JSON.parse(JSON.stringify(r.grid)),
+              ...(r.customAction ? { customAction: r.customAction } : {}),
+            })
+          }
+        })
+        if (rounds.length === 0) return false
+        addBreadcrumb('build', 'start', { rounds: rounds.length })
+        const first = rounds[0]
+        set({
+          buildRounds: rounds,
+          buildRoundIdx: 0,
+          buildResults: [],
+          buildLastResult: null,
+          buildSessionUuid: crypto.randomUUID(),
+          rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: [], tableSize: currentTableSize, stackRange: '' },
+          brush: {
+            ...brush, call: 0, raise: 0, allin: 0, extra: 0,
+            extraLabel: first.customAction?.label ?? '',
+            extraColor: first.customAction?.color ?? '#a855f7',
+          },
+        })
+        return true
+      },
+
+      submitBuildRound: () => {
+        const { buildRounds, buildRoundIdx, buildResults, buildLastResult, rangeData } = get()
+        const round = buildRounds[buildRoundIdx]
+        if (!round || buildLastResult) return
+        const userGrid: Record<string, HandData> = JSON.parse(JSON.stringify(rangeData.grid))
+        const { score, perHand } = scoreBuild(round.grid, userGrid)
+        set({
+          buildResults: [...buildResults, { label: round.label, score }],
+          buildLastResult: { score, perHand, userGrid },
+        })
+        fireEvent('range-build', {
+          rangeId: round.rangeId,
+          rangeName: round.rangeName,
+          stackRange: round.stackRange || null,
+          score: Math.round(score * 10) / 10,
+          roundsTotal: buildRounds.length,
+          session_uuid: get().buildSessionUuid || null,
+          client_event_id: crypto.randomUUID(),
+        }, get().authToken)
+      },
+
+      nextBuildRound: () => {
+        const { buildRounds, buildRoundIdx, brush, currentTableSize } = get()
+        const nextIdx = buildRoundIdx + 1
+        const next = buildRounds[nextIdx]
+        set({
+          buildRoundIdx: nextIdx,
+          buildLastResult: null,
+          ...(next ? {
+            rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: [], tableSize: currentTableSize, stackRange: '' },
+            brush: {
+              ...brush, call: 0, raise: 0, allin: 0, extra: 0,
+              extraLabel: next.customAction?.label ?? '',
+              extraColor: next.customAction?.color ?? '#a855f7',
+            },
+          } : {}),
+        })
+      },
+
+      stopBuildSession: () => {
+        const { buildRounds, buildResults, buildHistory, currentTableSize } = get()
+        let newHistory = buildHistory
+        if (buildResults.length > 0) {
+          const avg = buildResults.reduce((s, r) => s + r.score, 0) / buildResults.length
+          const session: BuildSession = {
+            id: Date.now(),
+            timestamp: Date.now(),
+            rangeNames: [...new Set(buildRounds.map(r => r.rangeName))],
+            rounds: buildResults.map(r => ({ label: r.label, score: Math.round(r.score * 10) / 10 })),
+            avgScore: Math.round(avg * 10) / 10,
+          }
+          newHistory = [...buildHistory, session]
+          saveBuildHistory(newHistory)
+          addBreadcrumb('build', 'stop', { rounds: buildResults.length, avg: session.avgScore })
+        }
+        set({
+          buildRounds: [],
+          buildRoundIdx: 0,
+          buildResults: [],
+          buildLastResult: null,
+          buildSessionUuid: '',
+          buildHistory: newHistory,
+          rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: [], tableSize: currentTableSize, stackRange: '' },
+        })
       },
 
       // ── Auth ────────────────────────────────────────────────────────────────────
