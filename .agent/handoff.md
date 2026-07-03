@@ -1,5 +1,41 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-03 (run automático — cobertura incremental segura, 10 fatias)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- **PR #35 ABERTA e atualizada** (auto/daily-improvements → feature/auth-telemetry). NÃO mergeada
+  (gate humano; contém a mudança visual do dia 02/07 — badge Coach + CSV — a validar no preview).
+- **774 testes verdes (71 arquivos)** (era 739), build verde. `main`/produção intactos.
+- **Run 100% testes** — zero mudança de código de produção, zero risco visual.
+- Stack: React 19, Vite 8, TypeScript 6, Tailwind 4, react-router 7, lucide-react 1, vitest 4.1.8.
+
+### Feito nesta run (10 commits, cada um test+build verde + push)
+1. **test(auth):** LoginPage — cadastro válido/erro chama `authSignup(user,pass,teamCode,name,email,ts)`; Enter nos campos do cadastro; guarda `canSubmit` (não submete sem campos).
+2. **test(i18n):** LanguageSelect — clique fora (`mouseDown` no body) e Escape fecham o dropdown.
+3. **test(stats):** MyAccountStats — `formatDuration` min/seg (durationSeconds 125→"2m", 45→"45s"), sessão sem expiração ("Iniciada em — · expira em —") e retry do erro de sessões.
+4. **test(ranges):** SituationsPage — backdrop do heatmap fecha (clicar no `dialog.parentElement`), olho abre o preview (`Visualizar range`), Novo Range / Criar primeiro navegam.
+5. **test(dashboard):** precisão global e por range com `trainingHistory` + `handPerformance` (cobre os reduces).
+6. **test(store):** `resetLocalData` (só chaves fbr-/pfp-), `toggleDarkMode`, clamp do `setBrush` (aumentar call reduz o maior=raise; valor 100 zera os demais) e guarda `applyBrushToHands` >100%.
+7. **test(matrix):** HandMatrix — ações dominantes por cor de texto (call=rgb(6,43,19)/all-in=rgb(253,230,138)/mista=rgb(255,255,255)), heat vermelho <50% (overlay `.z-\[1\]` com `239, 68, 68`), guarda `readOnly` no mouseDown.
+8. **test(trainer):** DrillRangeSelect — sem ranges "Ir para Meus Ranges" navega, "Desfazer seleção" limpa grupo, olho abre preview sem selecionar, badge multi-stack, "Voltar" do filtro volta à seleção.
+9. **test(coach):** RangeSelect — busca filtra (`option` some), seleção por clique (label vira o nome), reset "Todos os ranges", ArrowDown×2+ArrowUp; MultiPlayerSelect — "Todos os jogadores" desmarca o selecionado.
+10. **test(layout):** AppLayout carrega páginas lazy `editor` (/editor → "Posição do HERO") e `table-editor` (/table-editor → "Configurar Cenários") + fallback de rota desconhecida no dashboard.
+
+### Notas técnicas úteis (replicáveis)
+- Cobertura: `npm i -D @vitest/coverage-v8@4.1.8 --no-save` + `npx vitest run --coverage.enabled --coverage.provider=v8 --coverage.reporter=json --coverage.reportsDirectory=<dir>`; parsear `coverage-final.json` (`s`/`statementMap`) por arquivo → linhas exatas não cobertas. NÃO commitar a dep (é `--no-save`; confira `grep coverage-v8 package.json` = 0).
+- HandMatrix: cor de texto por ação vem de `ACTION_TEXT[cellAction(data)]`; jsdom converte hex do inline style para `rgb(...)`. O overlay de heat é o segundo `div` interno com classe `z-[1]` (querySelector `'.z-\\[1\\]'`).
+- CoachPanel: RangeSelect usa `role="option"`; o botão externo tem `aria-label="Filtrar por range"` fixo e o texto (`toHaveTextContent`) reflete a seleção. Sempre `invalidateAnalyticsCache()` no afterEach (cache TTL 15s vaza).
+- AppLayout lazy: passar `initialEntries` casando a rota (RouterSync reseta a page se a URL discordar do store). Mapa em RouterSync `PAGE_TO_PATH` (editor→/editor, table-editor→/table-editor).
+
+### Maiores lacunas restantes (alvos do próximo run — baixo ROI daqui pra frente)
+- **CoachPanel.tsx**: guardas de token/cancel dos hooks (`useAnalytics`/`useRangeGrid`/`useTrend`…) e TopHandsPanel aba "consultas"/"errors" com dados — precisam de fetch por-view populado.
+- **TrainerPage.tsx** (DrillActive): sidebar colapsável, modal "Ver range" backdrop, barra de progresso do auto-advance — exigem sessão de drill montada (setup pesado).
+- **useStore.ts**: helpers de boot (`loadRanges` merge por ADMIN_VERSION, `loadTeamRangeIds` filtro) — rodam no import do módulo singleton, difíceis de cobrir sem manipular localStorage antes do import.
+- **Turnstile.tsx** / **functions/api** / **worker**: auth-adjacente / gate humano — NÃO cobrir sem decisão.
+- Decisões pendentes do Daniel: **PR #35** (validar preview do badge Coach + CSV e mergear), **issue #36** (`proposta` functions/api), **issue #37** (epic smoke — núcleo concluído).
+
+---
+
 ## 2026-07-02 madrugada (mapeamento completo dos objetivos + execução em sequência)
 
 ### Estado (PONTO DE PARTIDA do próximo run)
