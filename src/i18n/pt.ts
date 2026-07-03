@@ -293,8 +293,8 @@ export const pt = {
     replayCorrect: (correctAction: string) => `✗ Correto: ${correctAction}`,
   },
   exercise: {
-    navLabel: 'Montar Range',
-    title: 'Montar Range',
+    navLabel: 'Range Recall',
+    title: 'Range Recall',
     selectIntro: 'Selecione os ranges que você quer reproduzir de memória. Cada faixa de stack vira um round separado.',
     noRanges: 'Nenhum range criado.',
     goToRanges: 'Ir para Meus Ranges',

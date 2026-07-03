@@ -61,7 +61,7 @@ describe('ExercisePage — seleção', () => {
 
   it('mostra o acordeão por posição e exige seleção antes de iniciar', () => {
     render(<ExercisePage />)
-    expect(screen.getByText('Montar Range')).toBeInTheDocument()
+    expect(screen.getByText('Range Recall')).toBeInTheDocument()
     expect(screen.getByText('BTN')).toBeInTheDocument()
     fireEvent.click(screen.getByText('INICIAR EXERCÍCIO'))
     expect(screen.getByRole('alert')).toHaveTextContent('Selecione pelo menos um range.')

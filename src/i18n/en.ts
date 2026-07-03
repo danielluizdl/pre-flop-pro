@@ -295,8 +295,8 @@ export const en: Messages = {
     replayCorrect: (correctAction: string) => `✗ Correct: ${correctAction}`,
   },
   exercise: {
-    navLabel: 'Build Range',
-    title: 'Build Range',
+    navLabel: 'Range Recall',
+    title: 'Range Recall',
     selectIntro: 'Select the ranges you want to reproduce from memory. Each stack band becomes a separate round.',
     noRanges: 'No ranges created.',
     goToRanges: 'Go to My Ranges',
