@@ -150,6 +150,69 @@ describe('CoachPanel', () => {
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
   })
 
+  it('o filtro de range busca por nome e restringe a lista', async () => {
+    mockApi()
+    const ranges: Range[] = [
+      { id: 1, name: 'BTN RFI', positions: ['BTN'], grid: makeEmptyGrid(), scenarios: [], tableSize: 8 },
+      { id: 2, name: 'CO RFI', positions: ['CO'], grid: makeEmptyGrid(), scenarios: [], tableSize: 8 },
+    ]
+    useStore.setState({ authToken: 'tok', ranges })
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Filtrar por range' }))
+    expect(screen.getByRole('option', { name: 'BTN RFI' })).toBeInTheDocument()
+    fireEvent.change(screen.getByRole('combobox', { name: 'Buscar range' }), { target: { value: 'CO' } })
+    expect(screen.queryByRole('option', { name: 'BTN RFI' })).not.toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'CO RFI' })).toBeInTheDocument()
+  })
+
+  it('o filtro de range seleciona por clique e "Todos os ranges" reseta', async () => {
+    mockApi()
+    const range: Range = { id: 1, name: 'BTN RFI', positions: ['BTN'], grid: makeEmptyGrid(), scenarios: [], tableSize: 8 }
+    useStore.setState({ authToken: 'tok', ranges: [range] })
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Filtrar por range' }))
+    fireEvent.click(screen.getByRole('option', { name: 'BTN RFI' }))
+    expect(screen.getByRole('button', { name: 'Filtrar por range' })).toHaveTextContent('BTN RFI')
+    fireEvent.click(screen.getByRole('button', { name: 'Filtrar por range' }))
+    fireEvent.click(screen.getByRole('option', { name: 'Todos os ranges' }))
+    expect(screen.getByRole('button', { name: 'Filtrar por range' })).toHaveTextContent('Todos os ranges')
+  })
+
+  it('o filtro de range navega para baixo e volta com ArrowUp', async () => {
+    mockApi()
+    const ranges: Range[] = [
+      { id: 1, name: 'BTN RFI', positions: ['BTN'], grid: makeEmptyGrid(), scenarios: [], tableSize: 8 },
+      { id: 2, name: 'CO RFI', positions: ['CO'], grid: makeEmptyGrid(), scenarios: [], tableSize: 8 },
+    ]
+    useStore.setState({ authToken: 'tok', ranges })
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Filtrar por range' }))
+    const search = screen.getByRole('combobox', { name: 'Buscar range' })
+    fireEvent.keyDown(search, { key: 'ArrowDown' })
+    fireEvent.keyDown(search, { key: 'ArrowDown' })
+    fireEvent.keyDown(search, { key: 'ArrowUp' })
+    fireEvent.keyDown(search, { key: 'Enter' })
+    expect(screen.getByRole('button', { name: 'Filtrar por range' })).toHaveTextContent('BTN RFI')
+  })
+
+  it('o filtro de jogadores volta a "Todos os jogadores" e desmarca o selecionado', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      const data = url.includes('/admin/users')
+        ? { users: [{ id: 1, username: 'alice', name: 'Alice', email: '', created_at: 0, total_hands: 0, correct_hands: 0 }] }
+        : { rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(data) } as unknown as Response)
+    })
+    useStore.setState({ authToken: 'tok' })
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Filtrar jogadores' }))
+    const alice = await screen.findByRole('checkbox')
+    fireEvent.click(alice)
+    expect(alice).toBeChecked()
+    fireEvent.click(screen.getByRole('button', { name: 'Todos os jogadores' }))
+    expect(alice).not.toBeChecked()
+  })
+
   it('abrir o resumo de um jogador re-renderiza só a linha afetada (memo)', async () => {
     const orow = (userId: number, name: string) => ({
       userId, username: name.toLowerCase(), name, hands: 100, accuracy: 70,
