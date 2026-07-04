@@ -1,5 +1,44 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-04 (agente — TEMA CLARO implementado, PR aberta)
+
+### O que foi feito
+- **Tema claro completo** na branch `feature/light-mode` (a partir de `feature/auth-telemetry`),
+  PR aberta para `feature/auth-telemetry`. **776 testes verdes (71 arquivos)**, build verde,
+  `npm run smoke` OK.
+- **Diagnóstico:** o `toggleDarkMode` existia mas não fazia nada — a classe `dark` era posta num
+  div interno sem nenhum utilitário `dark:` e toda a paleta `warm-*` era fixa escura.
+- **Estratégia (menor diff): tokens CSS por escopo** em `src/index.css`. `@theme` mantém os valores
+  dark; `:root:not(.dark)` injeta a rampa `warm-*` invertida (fundo creme, texto escuro) + versões
+  escuras dos tons frios usados como texto (`red-400`→vermelho escuro, `emerald-400`, `yellow-400`,
+  `blue-400`, `sky/purple/violet/amber-*`, `gold`, `result-good/mid/bad`); `.dark` restaura os
+  valores EXATOS (warm + oklch da paleta padrão do Tailwind 4) em qualquer subtree → dark mode fica
+  pixel-idêntico E permite superfície permanentemente escura via `class="dark"` no container.
+- Classe `dark` movida para o `<html>`: `main.tsx` aplica antes do 1º paint; effect no `AppLayout`
+  sincroniza com `store.darkMode`. `@custom-variant dark` (class-based) declarado.
+- **Store:** `darkMode` default `true`; persist `fbr-ui-state` ganhou `version: 1` + `migrate` que
+  força `darkMode=true` em estado v0 (usuários existentes continuam vendo dark; claro é opt-in
+  pelo toggle Sun/Moon do TopNav, que já existia e agora funciona nos dois sentidos).
+- **Superfícies sempre escuras (decisão de design):** caixa do drill (TrainerPage), mesa do
+  TableEditor (`class="dark"` nos containers) e as matrizes 13×13 (HandMatrix/RangeActionGrid/
+  RangeHeatGrid mantêm células escuras nos dois temas — cores de ação idênticas e legíveis).
+- **Sweeps:** `text-white`/`hover:text-white` sobre superfícies warm → `text-warm-100` (~85 pontos,
+  23 arquivos; branco mantido sobre brand/emerald/red/chips de heat/cartas); hex inline de página →
+  `var(--color-warm-*)` (chips de stack do editor, AccuracySparkline, sparkline do coach);
+  Turnstile segue o tema; inputs de data do PeriodFilter herdam `color-scheme` do root; scrollbar
+  via tokens.
+- **i18n:** nenhuma string nova necessária (`nav.lightMode`/`darkMode` já existiam nos 3 idiomas).
+- **Validação visual real (Playwright/Chromium headless):** screenshots claro+escuro de dashboard,
+  login, Meus Ranges, drill (seleção e ativo), editor, histórico, preview modal e CoachPanel —
+  claro legível/consistente, dark inalterado. Scripts no scratchpad (não commitados).
+
+### Pendências
+- [ ] **Daniel validar o tema claro no preview do Cloudflare Pages** (mudança ampla e visual —
+      teste+build+smoke verdes NÃO garantem estética) e mergear a PR.
+- [ ] Se aprovado, considerar honrar `prefers-color-scheme` no primeiro boot (hoje default é dark).
+
+---
+
 ## PENDENTE — Rodada 2 do modo "Montar Range" (PR #40 ainda NÃO mergeada)
 
 **Contexto:** PR #40 (`feature/build-range-exercise` → `feature/auth-telemetry`) entregou a v1 completa
