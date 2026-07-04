@@ -2,6 +2,8 @@
 
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-warm-50:  #f5f0e6;
   --color-warm-100: #ede8de;
@@ -68,6 +70,84 @@
 }
 
 @layer base {
+  /* Tema claro: quando o root NÃO tem .dark, a rampa warm inverte (fundo claro,
+     texto escuro) e os tons frios usados como texto sobre fundo escuro ganham
+     versões escuras legíveis. As classes existentes (bg-warm-800 etc.) não mudam. */
+  :root:not(.dark) {
+    color-scheme: light;
+
+    --color-warm-50:  #16140f;
+    --color-warm-100: #26221a;
+    --color-warm-200: #3b362b;
+    --color-warm-300: #554e3e;
+    --color-warm-400: #665f50;
+    --color-warm-500: #7d7666;
+    --color-warm-600: #c8bfa9;
+    --color-warm-700: #e0d8c6;
+    --color-warm-750: #f0ead9;
+    --color-warm-800: #fbf8f1;
+    --color-warm-900: #eee8d9;
+    --color-warm-950: #f5f0e4;
+
+    --color-result-untrained: #ccd4e0;
+
+    --color-red-200:     #b91c1c;
+    --color-red-300:     #dc2626;
+    --color-red-400:     #c22a1c;
+    --color-emerald-300: #059669;
+    --color-emerald-400: #047857;
+    --color-green-400:   #15803d;
+    --color-yellow-300:  #a16207;
+    --color-yellow-400:  #a16207;
+    --color-blue-400:    #1d4ed8;
+    --color-sky-300:     #0284c7;
+    --color-sky-400:     #0369a1;
+    --color-purple-300:  #7e22ce;
+    --color-violet-300:  #6d28d9;
+    --color-amber-200:   #b45309;
+    --color-amber-400:   #b45309;
+    --color-amber-500:   #b45309;
+  }
+
+  /* Restaura os tokens dark em qualquer subtree .dark (root inteiro no modo escuro,
+     ou superfícies permanentemente escuras — mesa de poker/caixa do drill — no claro).
+     Valores idênticos ao @theme / paleta padrão do Tailwind: modo escuro fica intacto. */
+  .dark {
+    color-scheme: dark;
+
+    --color-warm-50:  #f5f0e6;
+    --color-warm-100: #ede8de;
+    --color-warm-200: #d4cfc4;
+    --color-warm-300: #a8a193;
+    --color-warm-400: #8a857a;
+    --color-warm-500: #6a655b;
+    --color-warm-600: #4a463e;
+    --color-warm-700: #2f2c25;
+    --color-warm-750: #252220;
+    --color-warm-800: #1f1d1a;
+    --color-warm-900: #16140f;
+    --color-warm-950: #1b1a17;
+
+    --color-result-untrained: #2a3444;
+
+    --color-red-200:     oklch(88.5% 0.062 18.334);
+    --color-red-300:     oklch(80.8% 0.114 19.571);
+    --color-red-400:     oklch(70.4% 0.191 22.216);
+    --color-emerald-300: oklch(84.5% 0.143 164.978);
+    --color-emerald-400: oklch(76.5% 0.177 163.223);
+    --color-green-400:   oklch(79.2% 0.209 151.711);
+    --color-yellow-300:  oklch(90.5% 0.182 98.111);
+    --color-yellow-400:  oklch(85.2% 0.199 91.936);
+    --color-blue-400:    oklch(70.7% 0.165 254.624);
+    --color-sky-300:     oklch(82.8% 0.111 230.318);
+    --color-sky-400:     oklch(74.6% 0.16 232.661);
+    --color-purple-300:  oklch(82.7% 0.119 306.383);
+    --color-violet-300:  oklch(81.1% 0.111 293.571);
+    --color-amber-200:   oklch(92.4% 0.12 95.746);
+    --color-amber-400:   oklch(82.8% 0.189 84.429);
+    --color-amber-500:   oklch(76.9% 0.188 70.08);
+  }
+
   :root {
     --action-fold:      #6b7280;
     --action-call:      #22c55e;
@@ -111,8 +191,8 @@
 
   *::-webkit-scrollbar       { width: 6px; height: 6px; }
   *::-webkit-scrollbar-track { background: transparent; }
-  *::-webkit-scrollbar-thumb { background: #2f2c25; border-radius: 3px; }
-  *::-webkit-scrollbar-thumb:hover { background: #4a463e; }
+  *::-webkit-scrollbar-thumb { background: var(--color-warm-700); border-radius: 3px; }
+  *::-webkit-scrollbar-thumb:hover { background: var(--color-warm-600); }
 
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {

@@ -12,6 +12,8 @@ initSentry()
 // Garante que o dicionário ativo case com o idioma persistido antes do 1º render
 // (complementa o onRehydrateStorage do persist).
 setLangDict(useStore.getState().lang)
+// Aplica o tema antes do 1º paint (o AppLayout mantém sincronizado depois).
+document.documentElement.classList.toggle('dark', useStore.getState().darkMode)
 useStore.getState().restoreSession()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
