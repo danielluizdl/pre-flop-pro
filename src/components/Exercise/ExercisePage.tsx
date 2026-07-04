@@ -4,6 +4,7 @@ import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import { BrushControls } from '../RangeBuilder/BrushControls'
 import { RangeActionGrid } from '../Admin/RangeActionGrid'
 import { ComboCounter } from '../ui/ComboCounter'
+import { HandQuickSelect } from '../ui/HandQuickSelect'
 import { RANKS } from '../../utils/hands'
 import { t } from '../../i18n'
 
@@ -293,6 +294,7 @@ function BuildRound() {
             </div>
             <div className="w-full xl:w-80 flex-shrink-0 flex flex-col gap-3">
               <BrushControls />
+              <HandQuickSelect mode="brush" />
               <ComboCounter grid={userGrid} extraLabel={brush.extraLabel || undefined} extraColor={brush.extraColor} />
             </div>
           </div>

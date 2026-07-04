@@ -131,6 +131,17 @@ describe('ExercisePage — round ativo', () => {
     expect(screen.queryByText('Gabarito')).not.toBeInTheDocument()
   })
 
+  it('botão de grupo Pares aplica o pincel atual a todos os pares', () => {
+    const { brush } = useStore.getState()
+    useStore.setState({ brush: { ...brush, raise: 100, call: 0, allin: 0, extra: 0 } })
+    render(<ExercisePage />)
+    fireEvent.click(screen.getByText('Pares'))
+    const g = useStore.getState().rangeData.grid
+    expect(g['AA'].raise).toBe(100)
+    expect(g['22'].raise).toBe(100)
+    expect(g['AKs'].raise).toBe(0)
+  })
+
   it('enviar com grade idêntica mostra nota 100 e o gabarito lado a lado', () => {
     const { rangeData } = useStore.getState()
     useStore.setState({ rangeData: { ...rangeData, grid: gridWith({ AA: { raise: 100 } }) } })
