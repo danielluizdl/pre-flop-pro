@@ -220,9 +220,9 @@ export function RangeEditorPage() {
                       minWidth: 42, height: 26, padding: '0 10px',
                       borderRadius: 999,
                       fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: '0.06em',
-                      background: active ? '#c95f3a' : '#1f1d1a',
-                      borderColor: active ? '#d97757' : '#4a463e',
-                      color: active ? '#fff' : '#8a857a',
+                      background: active ? '#c95f3a' : 'var(--color-warm-800)',
+                      borderColor: active ? '#d97757' : 'var(--color-warm-600)',
+                      color: active ? '#fff' : 'var(--color-warm-400)',
                     }}
                   >
                     {p.label}
