@@ -411,7 +411,7 @@ export async function onRequest(context) {
     return json({ view, cells })
   }
 
-  // Views do modo Range Recall (range_build_events). Fail-open enquanto a
+  // Views do modo Range Check (range_build_events). Fail-open enquanto a
   // migração schema_v4 não for aplicada: tabela ausente devolve dados vazios.
   if (view === 'build-overview') {
     const hf = handFilters(filters)

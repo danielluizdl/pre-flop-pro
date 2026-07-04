@@ -391,7 +391,7 @@ function GlobalHistoryPanel() {
   )
 }
 
-/* ── Histórico do modo Range Recall ────────────────────────────────────────── */
+/* ── Histórico do modo Range Check ────────────────────────────────────────── */
 function buildScoreColor(s: number): string {
   return s >= 80 ? 'text-brand-500' : s >= 50 ? 'text-gold' : 'text-result-bad'
 }

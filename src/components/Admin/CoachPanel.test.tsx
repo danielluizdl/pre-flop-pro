@@ -26,7 +26,7 @@ describe('CoachPanel', () => {
     mockApi()
     render(<CoachPanel />)
     expect(await screen.findByRole('button', { name: 'Drill' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Range Recall' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Range Check' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Publicar ranges para o time/ })).toBeInTheDocument()
     expect(screen.getByText('Todos os jogadores')).toBeInTheDocument()
     expect(screen.getByText('Todos os ranges')).toBeInTheDocument()
@@ -50,10 +50,10 @@ describe('CoachPanel', () => {
     expect(container.querySelectorAll('input[type="date"]')).toHaveLength(2)
   })
 
-  it('troca para a aba "Range Recall" com as três seções e filtros', async () => {
+  it('troca para a aba "Range Check" com as três seções e filtros', async () => {
     mockApi()
     render(<CoachPanel />)
-    fireEvent.click(await screen.findByRole('button', { name: 'Range Recall' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Range Check' }))
     expect(await screen.findByText('Por jogador')).toBeInTheDocument()
     expect(screen.getByText('Por range')).toBeInTheDocument()
     expect(screen.getByText('Tentativas recentes')).toBeInTheDocument()
@@ -346,7 +346,7 @@ describe('CoachPanel', () => {
     expect(await screen.findByText('sem permissão')).toBeInTheDocument()
   })
 
-  // --- Fatia: aba "Range Recall" (RecallView) ---
+  // --- Fatia: aba "Range Check" (RecallView) ---
 
   function mockRecallApi() {
     vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
@@ -371,30 +371,30 @@ describe('CoachPanel', () => {
     useStore.setState({ authToken: 'tok' })
   }
 
-  it('Range Recall: tabela por jogador oculta quem não tentou e mostra a linha do time', async () => {
+  it('Range Check: tabela por jogador oculta quem não tentou e mostra a linha do time', async () => {
     mockRecallApi()
     render(<CoachPanel />)
-    fireEvent.click(await screen.findByRole('button', { name: 'Range Recall' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Range Check' }))
     expect((await screen.findAllByText('Ana')).length).toBeGreaterThanOrEqual(1)
     expect(screen.queryByText('Beto')).not.toBeInTheDocument()
     expect(screen.getByText('Time')).toBeInTheDocument()
     expect(screen.getAllByText('84.5').length).toBeGreaterThanOrEqual(2)
   })
 
-  it('Range Recall: tentativas recentes mostram stack, nº da tentativa e nota', async () => {
+  it('Range Check: tentativas recentes mostram stack, nº da tentativa e nota', async () => {
     mockRecallApi()
     render(<CoachPanel />)
-    fireEvent.click(await screen.findByRole('button', { name: 'Range Recall' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Range Check' }))
     expect(await screen.findByText('40bb+')).toBeInTheDocument()
     expect(screen.getByText('91.3')).toBeInTheDocument()
     expect(screen.getByText('Tentativa')).toBeInTheDocument()
     expect(screen.getAllByText('BTN RFI').length).toBeGreaterThanOrEqual(2)
   })
 
-  it('Range Recall: fail-open (tabela ausente no D1) mostra "Sem dados." nas seções', async () => {
+  it('Range Check: fail-open (tabela ausente no D1) mostra "Sem dados." nas seções', async () => {
     mockApi()
     render(<CoachPanel />)
-    fireEvent.click(await screen.findByRole('button', { name: 'Range Recall' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Range Check' }))
     expect((await screen.findAllByText('Sem dados.')).length).toBe(3)
   })
 

@@ -140,14 +140,14 @@ describe('StatsPage', () => {
     createSpy.mockRestore(); revokeSpy.mockRestore(); clickSpy.mockRestore()
   })
 
-  it('aba Range Recall: estado vazio sem sessões do modo', () => {
+  it('aba Range Check: estado vazio sem sessões do modo', () => {
     useStore.setState({ trainingHistory: [SESSION], buildHistory: [], currentUser: null })
     render(<StatsPage />)
-    fireEvent.click(screen.getByRole('button', { name: 'Range Recall' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Range Check' }))
     expect(screen.getByText('Nenhuma sessão ainda.')).toBeInTheDocument()
   })
 
-  it('aba Range Recall: lista sessões do modo e expande os rounds com tentativa', () => {
+  it('aba Range Check: lista sessões do modo e expande os rounds com tentativa', () => {
     useStore.setState({
       trainingHistory: [], currentUser: null,
       buildHistory: [{
@@ -159,7 +159,7 @@ describe('StatsPage', () => {
       }],
     })
     render(<StatsPage />)
-    fireEvent.click(screen.getByRole('button', { name: 'Range Recall' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Range Check' }))
     expect(screen.getByText('92')).toBeInTheDocument()
     expect(screen.getByText('2 rounds')).toBeInTheDocument()
     fireEvent.click(screen.getByText('92'))
