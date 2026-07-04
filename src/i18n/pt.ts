@@ -324,6 +324,7 @@ export const pt = {
     viewSummary: 'Ver resumo →',
     summaryTitle: 'Resumo do Exercício',
     summaryIntro: 'Nota por round e média da sessão.',
+    summaryClickHint: 'Clique num round para rever a comparação completa.',
     avgScore: 'Nota média',
     roundsCount: (n: number) => `${n} round${n !== 1 ? 's' : ''}`,
     finish: 'Encerrar',

@@ -326,6 +326,7 @@ export const en: Messages = {
     viewSummary: 'View summary →',
     summaryTitle: 'Exercise Summary',
     summaryIntro: 'Score per round and session average.',
+    summaryClickHint: 'Click a round to review the full comparison.',
     avgScore: 'Average score',
     roundsCount: (n: number) => `${n} round${n !== 1 ? 's' : ''}`,
     finish: 'Finish',

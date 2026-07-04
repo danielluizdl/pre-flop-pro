@@ -350,18 +350,20 @@ function BuildRound() {
 /* ── Resumo da sessão ───────────────────────────────────────────────────────── */
 function BuildSummary() {
   const buildResults = useStore(s => s.buildResults)
+  const buildRounds  = useStore(s => s.buildRounds)
   const stopBuild    = useStore(s => s.stopBuildSession)
+  const [openIdx, setOpenIdx] = useState<number | null>(null)
 
   const avg = buildResults.length > 0
     ? buildResults.reduce((s, r) => s + r.score, 0) / buildResults.length
     : null
 
   return (
-    <div className="space-y-4 max-w-2xl mx-auto">
+    <div className="space-y-4 max-w-5xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">{t.exercise.summaryTitle}</h2>
-          <p className="text-warm-400 text-sm">{t.exercise.summaryIntro}</p>
+          <p className="text-warm-400 text-sm">{t.exercise.summaryIntro} {t.exercise.summaryClickHint}</p>
         </div>
         <button
           onClick={() => stopBuild()}
@@ -379,14 +381,43 @@ function BuildSummary() {
       </div>
 
       <div className="space-y-2">
-        {buildResults.map((r, i) => (
-          <div key={i} className="flex items-center justify-between px-4 py-3 bg-warm-800 border border-warm-700 rounded-xl">
-            <span className="font-bold text-white text-sm">{r.label}</span>
-            <span className={`text-sm font-bold tabular-nums ${scoreColor(r.score)}`}>
-              {t.exercise.scoreOf(fmtScore(r.score))}
-            </span>
-          </div>
-        ))}
+        {buildResults.map((r, i) => {
+          const isOpen = openIdx === i
+          const round = buildRounds[r.roundIdx]
+          return (
+            <div key={i} className="border border-warm-700 rounded-xl overflow-hidden">
+              <button
+                onClick={() => setOpenIdx(isOpen ? null : i)}
+                aria-expanded={isOpen}
+                className="w-full flex items-center justify-between px-4 py-3 bg-warm-800 hover:bg-warm-750 transition-colors text-left"
+              >
+                <span className="flex items-center gap-2">
+                  <span className="font-bold text-white text-sm">{r.label}</span>
+                  {r.attempt > 1 && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-500/10 border border-brand-500/40 text-brand-400">
+                      {t.exercise.attemptN(r.attempt)}
+                    </span>
+                  )}
+                </span>
+                <span className="flex items-center gap-3">
+                  <span className={`text-sm font-bold tabular-nums ${scoreColor(r.score)}`}>
+                    {t.exercise.scoreOf(fmtScore(r.score))}
+                  </span>
+                  <span className={`text-warm-400 text-lg transition-transform duration-200 inline-block ${isOpen ? 'rotate-180' : ''}`}>›</span>
+                </span>
+              </button>
+              {isOpen && round && (
+                <div className="border-t border-warm-700 bg-warm-900/40 p-4">
+                  <div className="flex flex-wrap gap-6 items-start">
+                    <RangeActionGrid title={t.exercise.yourRange} subtitle={t.exercise.yourRangeSub} grid={r.userGrid} />
+                    <RangeActionGrid title={t.exercise.answerKey} subtitle={t.exercise.answerKeySub} grid={round.grid} />
+                    <DiffGrid perHand={r.perHand} />
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
     </div>
   )

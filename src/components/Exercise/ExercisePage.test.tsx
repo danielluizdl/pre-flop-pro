@@ -203,6 +203,17 @@ describe('ExercisePage — resumo', () => {
     expect(screen.getByText('BTN RFI')).toBeInTheDocument()
   })
 
+  it('clicar num round reabre a comparação completa daquele round', () => {
+    render(<ExercisePage />)
+    expect(screen.queryByText('Gabarito')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByText('BTN RFI'))
+    expect(screen.getByText('Seu range')).toBeInTheDocument()
+    expect(screen.getByText('Gabarito')).toBeInTheDocument()
+    expect(screen.getByText('Diferença por mão')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('BTN RFI'))
+    expect(screen.queryByText('Gabarito')).not.toBeInTheDocument()
+  })
+
   it('Encerrar salva a sessão no histórico e volta para a seleção', () => {
     render(<ExercisePage />)
     fireEvent.click(screen.getByText('Encerrar'))

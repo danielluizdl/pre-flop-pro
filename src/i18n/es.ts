@@ -326,6 +326,7 @@ export const es: Messages = {
     viewSummary: 'Ver resumen →',
     summaryTitle: 'Resumen del Ejercicio',
     summaryIntro: 'Nota por round y promedio de la sesión.',
+    summaryClickHint: 'Haz clic en un round para revisar la comparación completa.',
     avgScore: 'Nota media',
     roundsCount: (n: number) => `${n} round${n !== 1 ? 's' : ''}`,
     finish: 'Terminar',
