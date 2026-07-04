@@ -7,7 +7,9 @@ import { RangeActionGrid } from '../Admin/RangeActionGrid'
 import { ComboCounter } from '../ui/ComboCounter'
 import { HandQuickSelect } from '../ui/HandQuickSelect'
 import { RANKS } from '../../utils/hands'
+import { rangeComboStats } from '../../utils/rangeCombos'
 import { t } from '../../i18n'
+import type { HandData } from '../../types'
 
 const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'UTG']
 
@@ -276,6 +278,60 @@ function DiffGrid({ perHand }: { perHand: Record<string, number> }) {
   )
 }
 
+const COMBO_DIFF_COLORS = { raise: '#ef4444', call: '#22c55e', allin: '#6b2d0d', extra: '#d97757', fold: '#3a342c' }
+
+function fmtCombos(c: number): string {
+  return Math.abs(c - Math.round(c)) < 0.01 ? String(Math.round(c)) : c.toFixed(1)
+}
+
+function ComboDiffPanel({ realGrid, userGrid, extraLabel, extraColor }: {
+  realGrid: Record<string, HandData>
+  userGrid: Record<string, HandData>
+  extraLabel?: string
+  extraColor?: string
+}) {
+  const real = rangeComboStats(realGrid)
+  const user = rangeComboStats(userGrid)
+  const rows = (['raise', 'call', 'allin', 'extra', 'fold'] as const)
+    .map(key => ({
+      key,
+      label: key === 'extra' ? (extraLabel || t.common.actions.extra) : t.common.actions[key],
+      color: key === 'extra' ? (extraColor || COMBO_DIFF_COLORS.extra) : COMBO_DIFF_COLORS[key],
+      real: real.byAction[key],
+      user: user.byAction[key],
+    }))
+    .filter(r => r.real > 0.001 || r.user > 0.001)
+
+  return (
+    <div className="rounded-lg border border-warm-700 bg-warm-800/40 p-3 max-w-sm">
+      <span className="text-[0.7rem] font-bold text-warm-400 uppercase tracking-wider block mb-2">{t.exercise.comboDiffTitle}</span>
+      <div className="grid gap-x-3 gap-y-1.5 text-xs items-center" style={{ gridTemplateColumns: '1fr auto auto auto' }}>
+        <span />
+        <span className="text-warm-500 text-right">{t.exercise.comboDiffAnswerKey}</span>
+        <span className="text-warm-500 text-right">{t.exercise.comboDiffYourRange}</span>
+        <span className="text-warm-500 text-right">{t.exercise.comboDiffDelta}</span>
+        {rows.map(r => {
+          const delta = r.user - r.real
+          const deltaClass = Math.abs(delta) < 0.5 ? 'text-warm-500' : 'text-yellow-400'
+          return (
+            <div key={r.key} className="contents">
+              <span className="flex items-center gap-2 text-warm-300 truncate">
+                <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0 border border-warm-600/40" style={{ background: r.color }} />
+                {r.label}
+              </span>
+              <span className="text-warm-100 font-semibold tabular-nums text-right">{fmtCombos(r.real)}</span>
+              <span className="text-warm-100 font-semibold tabular-nums text-right">{fmtCombos(r.user)}</span>
+              <span className={`font-semibold tabular-nums text-right ${deltaClass}`}>
+                {delta > 0 ? '+' : ''}{fmtCombos(delta)}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 /* ── Round ativo: pintar → nota + comparação ────────────────────────────────── */
 function BuildRound() {
   const rounds        = useStore(s => s.buildRounds)
@@ -361,7 +417,12 @@ function BuildRound() {
           </div>
 
           <div className="max-w-sm">
-            <ComboCounter grid={lastResult.userGrid} extraLabel={round.customAction?.label} extraColor={round.customAction?.color} />
+            <ComboDiffPanel
+              realGrid={round.grid}
+              userGrid={lastResult.userGrid}
+              extraLabel={round.customAction?.label}
+              extraColor={round.customAction?.color}
+            />
           </div>
 
           <div className="flex justify-end gap-3">
@@ -441,11 +502,19 @@ function BuildSummary() {
                 </span>
               </button>
               {isOpen && round && (
-                <div className="border-t border-warm-700 bg-warm-900/40 p-4">
+                <div className="border-t border-warm-700 bg-warm-900/40 p-4 space-y-4">
                   <div className="flex flex-wrap gap-6 items-start">
                     <RangeActionGrid title={t.exercise.yourRange} subtitle={t.exercise.yourRangeSub} grid={r.userGrid} />
                     <RangeActionGrid title={t.exercise.answerKey} subtitle={t.exercise.answerKeySub} grid={round.grid} />
                     <DiffGrid perHand={r.perHand} />
+                  </div>
+                  <div className="max-w-sm">
+                    <ComboDiffPanel
+                      realGrid={round.grid}
+                      userGrid={r.userGrid}
+                      extraLabel={round.customAction?.label}
+                      extraColor={round.customAction?.color}
+                    />
                   </div>
                 </div>
               )}
