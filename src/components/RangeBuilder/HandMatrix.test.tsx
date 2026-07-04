@@ -65,6 +65,22 @@ describe('HandMatrix', () => {
     expect(screen.getByText('Não treinado')).toBeInTheDocument()
   })
 
+  it('no modo Erro/Acerto, sair da célula e da grade esconde o tooltip', () => {
+    const { container } = render(
+      <HandMatrix grid={makeEmptyGrid()} heatmap={{ AA: { c: 3, t: 4 } }} forceViewMode="heatmap" />,
+    )
+    const aa = container.querySelector('[data-hand="AA"]')!
+    fireEvent.mouseEnter(aa)
+    expect(screen.getByText(/3\/4/)).toBeInTheDocument()
+    fireEvent.mouseLeave(aa)
+    expect(screen.queryByText(/3\/4/)).not.toBeInTheDocument()
+    // reentra e sai pela grade inteira
+    fireEvent.mouseEnter(aa)
+    expect(screen.getByText(/3\/4/)).toBeInTheDocument()
+    fireEvent.mouseLeave(container.querySelector('.grid')!)
+    expect(screen.queryByText(/3\/4/)).not.toBeInTheDocument()
+  })
+
   it('alternar para "Ações" troca o modo de visualização (aria-pressed)', () => {
     render(<HandMatrix grid={makeEmptyGrid()} heatmap={{ AA: { c: 1, t: 1 } }} readOnly />)
     const acoes = screen.getByRole('button', { name: 'Ações' })
