@@ -139,6 +139,24 @@ function saveBuildHistory(sessions: BuildSession[]) {
   trySave(() => localStorage.setItem(BUILD_HISTORY_KEY, JSON.stringify(sessions)))
 }
 
+// Upsert por id: a sessão em andamento é gravada no histórico a cada resposta
+// (nada se perde se o usuário fechar sem encerrar) e atualizada in-place depois.
+function upsertSession<T extends { id: number }>(list: T[], item: T): T[] {
+  const idx = list.findIndex(s => s.id === item.id)
+  return idx >= 0 ? [...list.slice(0, idx), item, ...list.slice(idx + 1)] : [...list, item]
+}
+
+function makeBuildSession(id: number, rounds: BuildRound[], results: BuildRoundResult[]): BuildSession {
+  const avg = results.reduce((s, r) => s + r.score, 0) / results.length
+  return {
+    id,
+    timestamp: id,
+    rangeNames: [...new Set(rounds.map(r => r.rangeName))],
+    rounds: results.map(r => ({ label: r.label, score: Math.round(r.score * 10) / 10, attempt: r.attempt })),
+    avgScore: Math.round(avg * 10) / 10,
+  }
+}
+
 function loadHandPerf(): HandPerfMap {
   try { return JSON.parse(localStorage.getItem(HAND_PERF_KEY) ?? '{}') ?? {} }
   catch { return {} }
@@ -270,6 +288,7 @@ interface AppState {
   buildResults: BuildRoundResult[]
   buildLastResult: { score: number; perHand: Record<string, number>; userGrid: Record<string, HandData> } | null
   buildSessionUuid: string
+  buildSessionId: number
   buildConfirmed: boolean
   buildAttempt: number
   buildHistory: BuildSession[]
@@ -906,12 +925,15 @@ export const useStore = create<AppState>()(
 
       startDrillSession: () => {
         addBreadcrumb('drill', 'start', { ranges: get().selectedDrillRangeIds.length })
+        const usedIds = new Set(get().trainingHistory.map(s => s.id))
+        let sid = Date.now()
+        while (usedIds.has(sid)) sid++
         set({
           sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 },
           handHistory: [],
           sessionHandPerf: {},
           sessionSeverity: { grave: 0, impreciso: 0 },
-          sessionStartTime: Date.now(),
+          sessionStartTime: sid,
           sessionUuid: crypto.randomUUID(),
         })
       },
@@ -1130,15 +1152,36 @@ export const useStore = create<AppState>()(
           }
           return next
         }
-        const { handPerformance, sessionHandPerf, sessionSeverity } = get()
+        const { handPerformance, sessionHandPerf, sessionSeverity, sessionStartTime, trainingHistory, selectedDrillRangeIds, ranges, currentTableSize } = get()
         const newPerf = accumulate(handPerformance)
         const newSessionPerf = accumulate(sessionHandPerf)
         saveHandPerf(newPerf)
+
+        // Grava a sessão em andamento no histórico a cada mão (upsert pelo id =
+        // sessionStartTime): treinou 1 mão, ela já está salva mesmo sem encerrar.
+        let newTrainingHistory = trainingHistory
+        if (sessionStartTime > 0) {
+          newTrainingHistory = upsertSession(trainingHistory, {
+            id: sessionStartTime,
+            timestamp: sessionStartTime,
+            rangeNames: ranges.filter(r => selectedDrillRangeIds.includes(r.id)).map(r => r.name),
+            tableSize: currentTableSize,
+            hands: stats.hands,
+            correct: stats.correct,
+            errors: stats.errors,
+            consults: stats.consults,
+            durationSeconds: Math.round((Date.now() - sessionStartTime) / 1000),
+            handPerf: JSON.parse(JSON.stringify(newSessionPerf)),
+          })
+          saveHistory(newTrainingHistory)
+        }
+
         set({
           sessionStats: stats,
           handHistory: [...handHistory, entry].slice(-50),
           handPerformance: newPerf,
           sessionHandPerf: newSessionPerf,
+          trainingHistory: newTrainingHistory,
           sessionSeverity: severity
             ? { grave: sessionSeverity.grave + (severity === 'grave' ? 1 : 0), impreciso: sessionSeverity.impreciso + (severity === 'impreciso' ? 1 : 0) }
             : sessionSeverity,
@@ -1184,19 +1227,20 @@ export const useStore = create<AppState>()(
           // sessionHandPerf é o acumulador da sessão inteira (não limitado ao cap de 50 do histórico visual),
           // chaveado por rangeId e rangeId|||stackRange.
           const handPerf: Record<string, Record<string, { c: number; t: number }>> = JSON.parse(JSON.stringify(sessionHandPerf))
+          const sid = sessionStartTime > 0 ? sessionStartTime : Date.now()
           const session: TrainingSession = {
-            id: Date.now(),
-            timestamp: Date.now(),
+            id: sid,
+            timestamp: sid,
             rangeNames: ranges.filter(r => selectedDrillRangeIds.includes(r.id)).map(r => r.name),
             tableSize: currentTableSize,
             hands: sessionStats.hands,
             correct: sessionStats.correct,
             errors: sessionStats.errors,
             consults: sessionStats.consults,
-            durationSeconds: Math.round((Date.now() - sessionStartTime) / 1000),
+            durationSeconds: sessionStartTime > 0 ? Math.round((Date.now() - sessionStartTime) / 1000) : 0,
             handPerf,
           }
-          newHistory = [...trainingHistory, session]
+          newHistory = upsertSession(trainingHistory, session)
           saveHistory(newHistory)
           fireEvent('session-end', {
             rangeNames: session.rangeNames,
@@ -1236,6 +1280,7 @@ export const useStore = create<AppState>()(
       buildResults: [],
       buildLastResult: null,
       buildSessionUuid: '',
+      buildSessionId: 0,
       buildConfirmed: false,
       buildAttempt: 1,
       buildHistory: loadBuildHistory(),
@@ -1277,12 +1322,16 @@ export const useStore = create<AppState>()(
         if (rounds.length === 0) return false
         addBreadcrumb('build', 'start', { rounds: rounds.length })
         const first = rounds[0]
+        const usedIds = new Set(get().buildHistory.map(s => s.id))
+        let sid = Date.now()
+        while (usedIds.has(sid)) sid++
         set({
           buildRounds: rounds,
           buildRoundIdx: 0,
           buildResults: [],
           buildLastResult: null,
           buildSessionUuid: crypto.randomUUID(),
+          buildSessionId: sid,
           buildConfirmed: false,
           buildAttempt: 1,
           rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: [], tableSize: currentTableSize, stackRange: '' },
@@ -1298,14 +1347,20 @@ export const useStore = create<AppState>()(
       confirmBuildSession: () => set({ buildConfirmed: true }),
 
       submitBuildRound: () => {
-        const { buildRounds, buildRoundIdx, buildResults, buildLastResult, buildAttempt, rangeData } = get()
+        const { buildRounds, buildRoundIdx, buildResults, buildLastResult, buildAttempt, rangeData, buildSessionId, buildHistory } = get()
         const round = buildRounds[buildRoundIdx]
         if (!round || buildLastResult) return
         const userGrid: Record<string, HandData> = JSON.parse(JSON.stringify(rangeData.grid))
         const { score, perHand } = scoreBuild(round.grid, userGrid)
+        const newResults = [...buildResults, { roundIdx: buildRoundIdx, label: round.label, score, attempt: buildAttempt, userGrid, perHand }]
+        const sid = buildSessionId || Date.now()
+        const newHistory = upsertSession(buildHistory, makeBuildSession(sid, buildRounds, newResults))
+        saveBuildHistory(newHistory)
         set({
-          buildResults: [...buildResults, { roundIdx: buildRoundIdx, label: round.label, score, attempt: buildAttempt, userGrid, perHand }],
+          buildResults: newResults,
           buildLastResult: { score, perHand, userGrid },
+          buildSessionId: sid,
+          buildHistory: newHistory,
         })
         fireEvent('range-build', {
           rangeId: round.rangeId,
@@ -1355,18 +1410,12 @@ export const useStore = create<AppState>()(
       },
 
       stopBuildSession: () => {
-        const { buildRounds, buildResults, buildHistory, currentTableSize } = get()
+        const { buildRounds, buildResults, buildHistory, buildSessionId, currentTableSize } = get()
         let newHistory = buildHistory
         if (buildResults.length > 0) {
-          const avg = buildResults.reduce((s, r) => s + r.score, 0) / buildResults.length
-          const session: BuildSession = {
-            id: Date.now(),
-            timestamp: Date.now(),
-            rangeNames: [...new Set(buildRounds.map(r => r.rangeName))],
-            rounds: buildResults.map(r => ({ label: r.label, score: Math.round(r.score * 10) / 10, attempt: r.attempt })),
-            avgScore: Math.round(avg * 10) / 10,
-          }
-          newHistory = [...buildHistory, session]
+          const sid = buildSessionId || Date.now()
+          const session = makeBuildSession(sid, buildRounds, buildResults)
+          newHistory = upsertSession(buildHistory, session)
           saveBuildHistory(newHistory)
           addBreadcrumb('build', 'stop', { rounds: buildResults.length, avg: session.avgScore })
         }
@@ -1376,6 +1425,7 @@ export const useStore = create<AppState>()(
           buildResults: [],
           buildLastResult: null,
           buildSessionUuid: '',
+          buildSessionId: 0,
           buildConfirmed: false,
           buildAttempt: 1,
           buildHistory: newHistory,

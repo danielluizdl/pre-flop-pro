@@ -125,6 +125,56 @@ describe('stopDrill', () => {
   })
 })
 
+describe('salvamento imediato do histórico do drill', () => {
+  beforeEach(() => {
+    globalThis.fetch = vi.fn(async () => ({ ok: true, json: async () => ({}) }) as Response) as unknown as typeof fetch
+    const g = makeEmptyGrid()
+    g['AA'] = { fold: 0, call: 0, raise: 100, allin: 0, size: 0 }
+    drillState(g, {
+      activeHand: 'AA',
+      ranges: [rangeWith(g)],
+      selectedDrillRangeIds: [1],
+      currentTableSize: 6,
+      sessionStartTime: Date.now() - 1000,
+      trainingHistory: [],
+    })
+    localStorage.removeItem('fbr-training-history-v1')
+  })
+
+  it('a primeira mão respondida já grava a sessão em andamento no trainingHistory', () => {
+    useStore.getState().checkDrillAnswer('Raise')
+    const s = useStore.getState()
+    expect(s.trainingHistory).toHaveLength(1)
+    expect(s.trainingHistory[0]).toMatchObject({ hands: 1, correct: 1, errors: 0, tableSize: 6 })
+    expect(s.trainingHistory[0].rangeNames).toEqual(['R'])
+    expect(s.trainingHistory[0].handPerf?.[1]?.['AA']).toEqual({ c: 1, t: 1 })
+    const saved = JSON.parse(localStorage.getItem('fbr-training-history-v1') ?? '[]')
+    expect(saved).toHaveLength(1)
+  })
+
+  it('mãos seguintes atualizam a mesma sessão e stopDrill não duplica', () => {
+    useStore.getState().checkDrillAnswer('Raise')
+    useStore.setState({ activeHand: 'AA' })
+    useStore.getState().checkDrillAnswer('Fold')
+    let s = useStore.getState()
+    expect(s.trainingHistory).toHaveLength(1)
+    expect(s.trainingHistory[0]).toMatchObject({ hands: 2, correct: 1, errors: 1 })
+
+    useStore.getState().stopDrill()
+    s = useStore.getState()
+    expect(s.trainingHistory).toHaveLength(1)
+    expect(s.trainingHistory[0]).toMatchObject({ hands: 2, correct: 1, errors: 1 })
+    const saved = JSON.parse(localStorage.getItem('fbr-training-history-v1') ?? '[]')
+    expect(saved).toHaveLength(1)
+  })
+
+  it('sem sessão iniciada (sessionStartTime 0) não grava incremental', () => {
+    useStore.setState({ sessionStartTime: 0 })
+    useStore.getState().checkDrillAnswer('Raise')
+    expect(useStore.getState().trainingHistory).toHaveLength(0)
+  })
+})
+
 describe('gestão de ranges — clearHandPerformance / setRangePrereq', () => {
   it('clearHandPerformance remove o range e suas variações de stack', () => {
     useStore.setState({

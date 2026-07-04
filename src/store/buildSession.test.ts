@@ -223,3 +223,48 @@ describe('nextBuildRound / stopBuildSession', () => {
     expect(localStorage.getItem('pfp-build-history-v1')).toBeNull()
   })
 })
+
+describe('salvamento imediato do histórico', () => {
+  beforeEach(() => {
+    resetBuildState()
+    useStore.setState({ buildSelectedRangeIds: [22] })
+    useStore.getState().startBuildSession()
+    useStore.getState().confirmBuildSession()
+  })
+
+  it('cada round enviado já grava a sessão em andamento no histórico local', () => {
+    useStore.getState().submitBuildRound()
+    const s = useStore.getState()
+    expect(s.buildHistory).toHaveLength(1)
+    expect(s.buildHistory[0].rounds).toHaveLength(1)
+    expect(s.buildHistory[0].rangeNames).toEqual(['SB Push'])
+    const saved = JSON.parse(localStorage.getItem('pfp-build-history-v1') ?? '[]')
+    expect(saved).toHaveLength(1)
+  })
+
+  it('rounds seguintes atualizam a mesma sessão e encerrar não duplica', () => {
+    useStore.getState().submitBuildRound()
+    useStore.getState().nextBuildRound()
+    useStore.getState().submitBuildRound()
+    let s = useStore.getState()
+    expect(s.buildHistory).toHaveLength(1)
+    expect(s.buildHistory[0].rounds).toHaveLength(2)
+
+    useStore.getState().stopBuildSession()
+    s = useStore.getState()
+    expect(s.buildHistory).toHaveLength(1)
+    expect(s.buildHistory[0].rounds).toHaveLength(2)
+    const saved = JSON.parse(localStorage.getItem('pfp-build-history-v1') ?? '[]')
+    expect(saved).toHaveLength(1)
+  })
+
+  it('sessões diferentes geram entradas separadas', () => {
+    useStore.getState().submitBuildRound()
+    useStore.getState().stopBuildSession()
+    useStore.setState({ buildSelectedRangeIds: [11] })
+    useStore.getState().startBuildSession()
+    useStore.getState().confirmBuildSession()
+    useStore.getState().submitBuildRound()
+    expect(useStore.getState().buildHistory).toHaveLength(2)
+  })
+})
