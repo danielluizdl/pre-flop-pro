@@ -40,6 +40,21 @@ Daniel autorizou em 02/07 ("pode prosseguir com a sua sugestão").
       responder FOLD → feedback) e painel do coach (/coach, aba Visão do time,
       analytics stubado). SMOKE OK verificado. EPIC #37 NÚCLEO CONCLUÍDO. (02/07)
 
+## Cobertura incremental segura (04/07) — só testes, sem risco visual
+- [x] store: ramos de bet/role do updateRole, guards de auth (listDevices/revoke*/
+      changePassword/signup), candidatos do nextDrillHand (id inexistente, multi-stack
+      sem faixa, prereq multi-stack) e freqOf com mão fora do grid.
+- [x] table-editor: stack customizado, raise futuro, cancelar edição, modal de nome
+      (Enter/Cancelar/backdrop/remover variação).
+- [x] ui: RangeSetup (alternar 6/8-max, religar straddle/ante), ChangePasswordModal
+      (Enter + erro), ErrorBoundary (recarregar 2 variantes, 2ª confirmação), Brush
+      (sliders + preset custom), cadastro (Enter em Nome/E-mail/Usuário).
+- [x] trainer: mistura de frequências (All-in + custom), sidebar colapsável, modal
+      Ver Range (✕/backdrop, teclas ignoradas), toggle acceptAnyFreq.
+- [x] matrix: tooltip do heatmap some ao sair da célula/grade.
+- [x] coach: dropdowns de jogadores/range fecham por clique fora e Escape.
+- Resultado: 774 → 830 testes verdes; linhas 90.1% → 93.8%.
+
 ## Definição de pronto por fatia
 Sem PII nova; caminho feliz intacto; testes+build verdes; commit PT-BR por área;
 PR do dia + handoff atualizados.

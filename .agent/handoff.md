@@ -1,5 +1,50 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-04 (run automático — cobertura incremental segura, 6 fatias)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- **PR NOVA aberta** auto/daily-improvements → feature/auth-telemetry (NÃO mergeada; gate humano).
+  Só testes — zero mudança de código de produção, zero risco visual.
+- **830 testes verdes (74 arquivos)** (era 774), build verde. Cobertura de linhas 90.1% → **93.8%**
+  (useStore 92.3→96.0, TableEditorPage 87.9→97.0, TrainerPage 96→97.7).
+- `main`/produção intactos. `feature/build-range-exercise` (PR #40, modo Montar Range) NÃO tocada — segue no gate do Daniel.
+- Branch `auto/daily-improvements` recriada a partir de `feature/auth-telemetry` (que já tinha PR #35 mergeada + docs do modo Montar Range).
+
+### Feito nesta run (6 commits, cada um test+build verde + push)
+1. **test(store):** ramos de bet/role do `updateRole` (post/fold/limp/limp-fold/open/iso por posição),
+   `setupNewRange` com straddle e setters; guards de "não autenticado" e ramos de erro do servidor de
+   `listDevices`/`revokeDevice`/`revokeOtherDevices`/`changePassword`/`authSignup`; ramos do `nextDrillHand`
+   (id inexistente, multi-stack sem faixa que case o stack, prereq multi-stack) e `freqOf` com mão fora do grid.
+2. **test(table-editor):** stack customizado (aplicar + guarda de zero), input de raise futuro, botão Cancelar da
+   edição de cenário, modal de nome (Enter confirma, Cancelar/backdrop fecham, remover variação de grid da sessão).
+3. **test(ui):** RangeSetup (alternar 6/8-max e religar straddle/ante), ChangePasswordModal (Enter + erro do
+   servidor), ErrorBoundary (recarregar nas 2 variantes, 2ª confirmação negada), BrushControls (sliders de %
+   e preset da condição custom), LoginPage (Enter em Nome/E-mail/Usuário do cadastro).
+4. **test(trainer):** feedback com mistura de frequências (All-in + condição custom — `freqLabelFor`), sidebar de
+   histórico colapsável, modal Ver Range (fecha por ✕ e backdrop; teclas de ação ignoradas com ele aberto),
+   toggle "Aceitar freq. > 0" no filtro de mãos.
+5. **test(matrix):** tooltip do heatmap some ao sair da célula (`onLeave`) e da grade (`handleMouseUp`).
+6. **test(coach):** dropdowns de jogadores e range fecham por clique fora (mousedown no document) e Escape.
+
+### Notas técnicas úteis (replicáveis)
+- **LIÇÃO (repetida):** rodar `npm run build` (tsc) ANTES de `git commit`, não só vitest. Um helper de teste
+  retornou objeto largo (`currentHandSuits: string[]` em vez do tuple `[string,string]`) — vitest passou, tsc
+  quebrou. Corrigido anotando o retorno como `Partial<ReturnType<typeof useStore.getState>>` (o tuple pega o
+  contexto de tipo). O commit chegou a ir vermelho e foi corrigido com `--amend` + `--force-with-lease` (branch só do agente).
+- Guards `if(!token) return` das ações do store: setar `authToken:null` e mockar `fetch` para lançar → assert `fetch` não chamado.
+- `nextDrillHand` multi-stack: montar `Scenario.data` com um hero `{isHero:true, stack}` para o cálculo de `heroStack`; `stackMatchesRange` aceita "<= 100", "> 100", "0-100" etc.
+- Modais (TableEditor nome, TrainerPage Ver Range): fechar pelo backdrop = clicar `dialog.parentElement`.
+- CoachPanel: `mockApi()` (fetch stub) + `invalidateAnalyticsCache()` no afterEach; botões `Filtrar jogadores`/`Filtrar por range` expõem `aria-expanded`.
+
+### Maiores lacunas restantes (ROI baixo daqui pra frente)
+- **CoachPanel.tsx** (94%): guardas de token/cancel dos hooks (`useAnalytics`/`useRangeGrid`/`useTrend`), comparadores de
+  ordenação por tendência/nome, reset de senha do coach, PlayerQuickSummary — exigem fetch por-view populado (setup pesado).
+- **useStore.ts** (96%): helpers de boot (`loadRanges` merge por ADMIN_VERSION, `loadTeamRangeIds`) rodam no import do singleton — difíceis sem manipular localStorage antes do import.
+- **worker/** e **functions/api** e **schema*.sql**: gate humano — NÃO cobrir sem decisão do Daniel.
+- **Decisões pendentes do Daniel:** PR do dia (validar/mergear), PR #40 (modo Montar Range — 7 ajustes registrados abaixo).
+
+---
+
 ## PENDENTE — Rodada 2 do modo "Montar Range" (PR #40 ainda NÃO mergeada)
 
 **Contexto:** PR #40 (`feature/build-range-exercise` → `feature/auth-telemetry`) entregou a v1 completa
