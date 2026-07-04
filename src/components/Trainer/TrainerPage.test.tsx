@@ -666,4 +666,65 @@ describe('TrainerPage', () => {
     // HandMatrix renderiza 169 células (data-hand)
     expect(document.querySelectorAll('[data-hand]').length).toBe(169)
   })
+
+  function drillActiveState(over: Record<string, unknown> = {}): Partial<ReturnType<typeof useStore.getState>> {
+    const g = makeEmptyGrid()
+    g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    const range: Range = { ...RANGE, grid: g }
+    return {
+      ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
+      activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 2.5, currentScenario: {},
+      useRngForFrequency: false, acceptAnyFreq: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
+      ...over,
+    }
+  }
+
+  it('feedback exibe a mistura de frequências incluindo All-in e condição custom', () => {
+    const g = makeEmptyGrid()
+    g['AA'] = { fold: 10, call: 20, raise: 40, allin: 15, extra: 15 }
+    const range: Range = { ...RANGE, grid: g, customAction: { label: 'Iso', color: '#a855f7' } }
+    useStore.setState(drillActiveState({ ranges: [range], activeDrillRange: range, activeHand: 'AA' }))
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /RAISE/ }))
+    expect(screen.getByText(/15% All-in/)).toBeInTheDocument()
+    expect(screen.getByText(/15% Iso/)).toBeInTheDocument()
+  })
+
+  it('a sidebar de histórico colapsa e volta a expandir', () => {
+    useStore.setState(drillActiveState())
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByTitle('Minimizar histórico'))
+    const expand = screen.getByTitle('Expandir histórico')
+    expect(expand).toBeInTheDocument()
+    fireEvent.click(expand)
+    expect(screen.getByTitle('Minimizar histórico')).toBeInTheDocument()
+  })
+
+  it('modal "Ver Range": fecha pelo ✕ e pelo backdrop; teclas de ação são ignoradas com ele aberto', () => {
+    useStore.setState(drillActiveState())
+    render(<TrainerPage />)
+    // abre pelo atalho V
+    fireEvent.keyDown(window, { key: 'v' })
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    // tecla de ação (F) é ignorada enquanto o modal está aberto
+    fireEvent.keyDown(window, { key: 'f' })
+    expect(screen.queryByText(/Blunder/)).not.toBeInTheDocument()
+    // fecha pelo ✕
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    // reabre e fecha pelo backdrop
+    fireEvent.keyDown(window, { key: 'v' })
+    const dialog = screen.getByRole('dialog')
+    fireEvent.click(dialog.parentElement as HTMLElement)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('toggle "Aceitar freq. > 0" liga o acceptAnyFreq no filtro de mãos', () => {
+    useStore.setState({ ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [1], useRngForFrequency: false, acceptAnyFreq: false })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Aceitar freq. > 0' }))
+    expect(useStore.getState().acceptAnyFreq).toBe(true)
+  })
 })
