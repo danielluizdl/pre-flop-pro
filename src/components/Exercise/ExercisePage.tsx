@@ -6,10 +6,8 @@ import { BrushControls } from '../RangeBuilder/BrushControls'
 import { RangeActionGrid } from '../Admin/RangeActionGrid'
 import { ComboCounter } from '../ui/ComboCounter'
 import { HandQuickSelect } from '../ui/HandQuickSelect'
-import { RangePreviewModal } from '../ui/RangePreviewModal'
 import { RANKS } from '../../utils/hands'
 import { t } from '../../i18n'
-import type { Range } from '../../types'
 
 const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'UTG']
 
@@ -171,24 +169,16 @@ function BuildConfirm() {
   const ranges       = useStore(s => s.ranges)
   const confirmBuild = useStore(s => s.confirmBuildSession)
   const stopBuild    = useStore(s => s.stopBuildSession)
-  const [previewIdx, setPreviewIdx] = useState<number | null>(null)
+  const [expanded, setExpanded] = useState<Set<number>>(new Set())
 
-  const previewRange = ((): Range | null => {
-    if (previewIdx === null) return null
-    const r = rounds[previewIdx]
-    if (!r) return null
-    const base = ranges.find(x => x.id === r.rangeId)
-    return {
-      id: r.rangeId,
-      name: r.label,
-      positions: base?.positions ?? [],
-      scenarios: base?.scenarios ?? [],
-      tableSize: base?.tableSize ?? 8,
-      grid: r.grid,
-      stackRange: r.stackRange || base?.stackRange,
-      customAction: r.customAction ?? base?.customAction,
-    }
-  })()
+  function togglePreview(i: number) {
+    setExpanded(prev => {
+      const next = new Set(prev)
+      if (next.has(i)) next.delete(i)
+      else next.add(i)
+      return next
+    })
+  }
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
@@ -198,23 +188,35 @@ function BuildConfirm() {
       </div>
 
       <div className="space-y-2">
-        {rounds.map((r, i) => (
-          <div key={i} className="flex items-center gap-3 px-4 py-3 bg-warm-800 border border-warm-700 rounded-xl">
-            <span className="text-warm-500 text-xs font-bold tabular-nums w-14">{t.exercise.roundOf(i + 1, rounds.length)}</span>
-            <span className="font-bold text-white text-sm flex-1 min-w-0 truncate">{r.label}</span>
-            <button
-              onClick={() => setPreviewIdx(i)}
-              className="flex-shrink-0 text-warm-500 hover:text-blue-400 transition-colors"
-              title={t.ranges.viewRange}
-              aria-label={t.ranges.viewRange}
-            >
-              <Eye size={15} />
-            </button>
-          </div>
-        ))}
+        {rounds.map((r, i) => {
+          const base = ranges.find(x => x.id === r.rangeId)
+          const customAction = r.customAction ?? base?.customAction
+          const isOpen = expanded.has(i)
+          return (
+            <div key={i} className="bg-warm-800 border border-warm-700 rounded-xl overflow-hidden">
+              <div className="flex items-center gap-3 px-4 py-3">
+                <span className="text-warm-500 text-xs font-bold tabular-nums w-14">{t.exercise.roundOf(i + 1, rounds.length)}</span>
+                <span className="font-bold text-white text-sm flex-1 min-w-0 truncate">{r.label}</span>
+                <button
+                  onClick={() => togglePreview(i)}
+                  className="flex-shrink-0 text-warm-500 hover:text-blue-400 transition-colors"
+                  title={t.ranges.viewRange}
+                  aria-label={t.ranges.viewRange}
+                  aria-expanded={isOpen}
+                >
+                  <Eye size={15} />
+                </button>
+              </div>
+              {isOpen && (
+                <div className="px-4 pb-4 pt-1 border-t border-warm-700/50 flex flex-col items-start gap-3">
+                  <HandMatrix readOnly grid={r.grid} customActionColor={customAction?.color} />
+                  <ComboCounter grid={r.grid} extraLabel={customAction?.label} extraColor={customAction?.color} />
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
-
-      {previewRange && <RangePreviewModal range={previewRange} onClose={() => setPreviewIdx(null)} />}
 
       <div className="flex items-center justify-between pt-2">
         <button
