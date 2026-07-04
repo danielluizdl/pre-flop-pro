@@ -44,7 +44,7 @@ export function AccuracySparkline({ sessions }: { sessions: TrainingSession[] })
         </svg>
         {hover !== null && (
           <div
-            className="absolute bg-warm-950 border border-warm-600 rounded-lg px-2 py-1 text-xs text-white pointer-events-none whitespace-nowrap z-10"
+            className="absolute bg-warm-950 border border-warm-600 rounded-lg px-2 py-1 text-xs text-warm-100 pointer-events-none whitespace-nowrap z-10"
             style={{ left: `${(xOf(hover) / W) * 100}%`, top: `${(yOf(pts[hover].acc) / H) * 100}%`, transform: 'translate(-50%, -130%)' }}
           >
             <div className="font-bold tabular-nums">{pts[hover].acc}%</div>

@@ -7,7 +7,7 @@ import { t } from '../../i18n'
 
 type View = 'login' | 'signup' | 'forgot'
 
-const INPUT_CLASS = 'w-full bg-warm-800 border border-warm-600 rounded-lg px-3 py-2.5 text-sm text-white placeholder-warm-600 focus:outline-none focus:border-brand-500'
+const INPUT_CLASS = 'w-full bg-warm-800 border border-warm-600 rounded-lg px-3 py-2.5 text-sm text-warm-100 placeholder-warm-600 focus:outline-none focus:border-brand-500'
 
 export function LoginPage() {
   const authLogin  = useStore(s => s.authLogin)
@@ -70,13 +70,13 @@ export function LoginPage() {
         <div className="bg-warm-900 border border-warm-700/50 rounded-2xl p-6 space-y-4">
           {view === 'forgot' ? (
             <>
-              <h2 className="text-base font-semibold text-white">{t.auth.forgotTitle}</h2>
+              <h2 className="text-base font-semibold text-warm-100">{t.auth.forgotTitle}</h2>
               <p className="text-sm text-warm-400">
                 {t.auth.forgotBody}
               </p>
               <button
                 onClick={() => switchView('login')}
-                className="w-full py-2.5 rounded-xl border border-warm-700 hover:border-warm-500 hover:bg-warm-800 text-warm-400 hover:text-white text-sm font-semibold transition-colors"
+                className="w-full py-2.5 rounded-xl border border-warm-700 hover:border-warm-500 hover:bg-warm-800 text-warm-400 hover:text-warm-100 text-sm font-semibold transition-colors"
               >
                 {t.common.back}
               </button>

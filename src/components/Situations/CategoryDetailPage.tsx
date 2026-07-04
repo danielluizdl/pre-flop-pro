@@ -78,7 +78,7 @@ export function CategoryDetailPage() {
             return (
               <div key={r.id} className="card-surface rounded-lg p-3 hover:border-warm-500 transition-all flex flex-col gap-2">
                 <div>
-                  <h2 className="font-bold text-white text-sm leading-tight">{r.name}</h2>
+                  <h2 className="font-bold text-warm-100 text-sm leading-tight">{r.name}</h2>
                   <div className="flex items-center gap-3 mt-1">
                     <span className="text-xs text-warm-500">
                       {r.positions.join(', ')} · {countNonFoldHands(r.grid)} {t.common.hands} · {t.common.scenarioCount(r.scenarios.length)}
@@ -96,7 +96,7 @@ export function CategoryDetailPage() {
                 <div className="flex gap-1.5 mt-auto">
                   <button
                     onClick={() => handleQuickDrill(r.id)}
-                    className="flex-1 py-1.5 rounded-md bg-warm-700 hover:bg-warm-600 text-xs text-white font-semibold transition-colors"
+                    className="flex-1 py-1.5 rounded-md bg-warm-700 hover:bg-warm-600 text-xs text-warm-100 font-semibold transition-colors"
                     style={{ background: 'var(--claude-600)' }}
                   >
                     {t.ranges.train}

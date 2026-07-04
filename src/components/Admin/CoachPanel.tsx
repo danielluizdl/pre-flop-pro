@@ -1148,7 +1148,7 @@ function TeamView({ token }: { token: string | null }) {
             ))}
             {overview.team && (
               <tr className="border-t-2 border-warm-600 bg-warm-800/40 font-bold">
-                <td className={`${TD} text-white`}><span className="inline-block w-3" />TIME</td>
+                <td className={`${TD} text-warm-100`}><span className="inline-block w-3" />TIME</td>
                 <td className={`${TDR} text-warm-200`}>{overview.team.hands}</td>
                 <td className={`${TDR} ${accColor(overview.team.accuracy)}`}>{overview.team.accuracy}%</td>
                 <td className={`${TDR} text-red-400`}>{overview.team.graves}</td>
@@ -1534,13 +1534,13 @@ function PlayersView({ token }: { token: string | null }) {
           <>
             <div className="flex items-start justify-between gap-3 flex-wrap">
               <div>
-                <h2 className="text-xl font-semibold text-white">{selectedUser.name || selectedUser.username}</h2>
+                <h2 className="text-xl font-semibold text-warm-100">{selectedUser.name || selectedUser.username}</h2>
                 <p className="text-sm text-warm-400 mb-3">{selectedUser.username}{selectedUser.email ? ` · ${selectedUser.email}` : ''}</p>
               </div>
               <button
                 onClick={() => handleResetPassword(selectedUser.id)}
                 disabled={resetting}
-                className="px-3 py-1.5 text-sm rounded-lg border border-warm-600 text-warm-300 hover:bg-warm-800 hover:text-white disabled:opacity-40 transition-colors"
+                className="px-3 py-1.5 text-sm rounded-lg border border-warm-600 text-warm-300 hover:bg-warm-800 hover:text-warm-100 disabled:opacity-40 transition-colors"
               >
                 {resetting ? t.coach.resetting : t.coach.resetPassword}
               </button>
@@ -1709,7 +1709,7 @@ export default function CoachPanel() {
             onClick={() => setArea(tab.key)}
             className={[
               'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors',
-              area === tab.key ? 'border-brand-500 text-white' : 'border-transparent text-warm-400 hover:text-warm-200',
+              area === tab.key ? 'border-brand-500 text-warm-100' : 'border-transparent text-warm-400 hover:text-warm-200',
             ].join(' ')}
           >
             {tab.label}

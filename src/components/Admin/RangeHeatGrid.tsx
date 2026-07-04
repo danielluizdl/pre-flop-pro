@@ -112,7 +112,7 @@ export function RangeHeatGrid({ cells }: { cells: GridCell[] }) {
 
       {hCell && (
         <div
-          className="fixed z-50 pointer-events-none px-2.5 py-1.5 rounded bg-warm-900 border border-warm-600 text-xs text-white shadow-lg whitespace-nowrap"
+          className="fixed z-50 pointer-events-none px-2.5 py-1.5 rounded bg-warm-900 border border-warm-600 text-xs text-warm-100 shadow-lg whitespace-nowrap"
           style={{ left: mouse.x + 14, top: mouse.y - 38 }}
         >
           <div><span className="font-bold text-warm-200 mr-1">{hCell.hand}</span>{hCell.correct}/{hCell.total} · {hCell.accuracy}%</div>

@@ -270,7 +270,7 @@ export function TableEditorPage() {
           <div className="flex justify-center">
             <div className="w-full" style={{ maxWidth: 575 }}>
               <div
-                className="rounded-2xl border border-warm-800 px-10 pt-8 pb-16"
+                className="dark rounded-2xl border border-warm-800 px-10 pt-8 pb-16"
                 style={{ background: '#1b1a17', boxShadow: 'inset 0 0 50px rgba(0,0,0,0.8)' }}
               >
                 <PokerTableEditor />
@@ -289,7 +289,7 @@ export function TableEditorPage() {
               </button>
               <button
                 onClick={() => setEditingIdx(null)}
-                className="px-4 py-3 bg-warm-700 hover:bg-warm-600 text-white rounded-lg font-bold transition-colors"
+                className="px-4 py-3 bg-warm-700 hover:bg-warm-600 text-warm-100 rounded-lg font-bold transition-colors"
               >
                 {t.tableEditor.cancel}
               </button>
@@ -348,7 +348,7 @@ export function TableEditorPage() {
             </button>
             <button
               onClick={() => setPage('editor')}
-              className="w-28 py-3 bg-warm-700 hover:bg-warm-600 text-white rounded-lg font-bold transition-colors"
+              className="w-28 py-3 bg-warm-700 hover:bg-warm-600 text-warm-100 rounded-lg font-bold transition-colors"
             >
               {t.tableEditor.back}
             </button>
@@ -370,7 +370,7 @@ export function TableEditorPage() {
             aria-modal="true"
             aria-labelledby="range-name-modal-title"
           >
-            <h3 id="range-name-modal-title" className="font-bold text-white text-lg mb-1">{t.tableEditor.nameModalTitle}</h3>
+            <h3 id="range-name-modal-title" className="font-bold text-warm-100 text-lg mb-1">{t.tableEditor.nameModalTitle}</h3>
             <p className="text-xs text-warm-400 mb-4">
               {t.tableEditor.nameModalBody(modalEntries.length)}
             </p>
@@ -402,7 +402,7 @@ export function TableEditorPage() {
               type="text"
               autoFocus
               aria-label={t.tableEditor.nameAria}
-              className="w-full px-3 py-2.5 border border-warm-600 rounded-lg text-sm bg-warm-800 text-white placeholder-warm-500 focus:border-brand-500 focus:outline-none mb-4"
+              className="w-full px-3 py-2.5 border border-warm-600 rounded-lg text-sm bg-warm-800 text-warm-100 placeholder-warm-500 focus:border-brand-500 focus:outline-none mb-4"
               placeholder={t.editor.namePlaceholder}
               value={primaryName}
               onChange={e => setPrimaryName(e.target.value)}
@@ -418,7 +418,7 @@ export function TableEditorPage() {
               </button>
               <button
                 onClick={() => setNameModalOpen(false)}
-                className="px-4 py-2.5 bg-warm-700 hover:bg-warm-600 text-white rounded-lg font-bold transition-colors"
+                className="px-4 py-2.5 bg-warm-700 hover:bg-warm-600 text-warm-100 rounded-lg font-bold transition-colors"
               >
                 {t.tableEditor.cancel}
               </button>

@@ -41,7 +41,7 @@ export function RangeSetupPage() {
 
       {/* Q1: Table size */}
       <div className="bg-warm-800 border border-warm-700 rounded-xl p-5 space-y-3">
-        <p className="font-semibold text-white text-sm">{t.rangeSetup.howManyPlayers}</p>
+        <p className="font-semibold text-warm-100 text-sm">{t.rangeSetup.howManyPlayers}</p>
         <div className="flex gap-3">
           <OptionButton selected={tableSize === 6} onClick={() => { setTableSize(6); setHasStraddle(false) }}>
             6-max
@@ -55,7 +55,7 @@ export function RangeSetupPage() {
       {/* Q2: Straddle — only for 8-max */}
       {tableSize === 8 && (
         <div className="bg-warm-800 border border-warm-700 rounded-xl p-5 space-y-3">
-          <p className="font-semibold text-white text-sm">{t.rangeSetup.straddleQuestion}</p>
+          <p className="font-semibold text-warm-100 text-sm">{t.rangeSetup.straddleQuestion}</p>
           <div className="flex gap-3">
             <OptionButton selected={hasStraddle} onClick={() => setHasStraddle(true)}>{t.rangeSetup.yes}</OptionButton>
             <OptionButton selected={!hasStraddle} onClick={() => setHasStraddle(false)}>{t.rangeSetup.no}</OptionButton>
@@ -65,7 +65,7 @@ export function RangeSetupPage() {
 
       {/* Q3: Ante */}
       <div className="bg-warm-800 border border-warm-700 rounded-xl p-5 space-y-3">
-        <p className="font-semibold text-white text-sm">{t.rangeSetup.anteQuestion}</p>
+        <p className="font-semibold text-warm-100 text-sm">{t.rangeSetup.anteQuestion}</p>
         <div className="flex gap-3">
           <OptionButton selected={hasAnte} onClick={() => setHasAnte(true)}>{t.rangeSetup.yes}</OptionButton>
           <OptionButton selected={!hasAnte} onClick={() => setHasAnte(false)}>{t.rangeSetup.no}</OptionButton>
@@ -78,7 +78,7 @@ export function RangeSetupPage() {
               type="number" step={0.1} min={0.1}
               value={anteAmount}
               onChange={e => setAnteAmount(parseFloat(e.target.value) || 0.5)}
-              className="w-20 p-1.5 border border-warm-600 rounded text-sm bg-warm-900 text-white text-center"
+              className="w-20 p-1.5 border border-warm-600 rounded text-sm bg-warm-900 text-warm-100 text-center"
             />
             <span className="text-xs text-warm-400">bb</span>
           </div>
@@ -95,7 +95,7 @@ export function RangeSetupPage() {
         </button>
         <button
           onClick={() => setPage('dashboard')}
-          className="w-28 py-3 bg-warm-700 hover:bg-warm-600 text-white rounded-xl font-bold transition-colors"
+          className="w-28 py-3 bg-warm-700 hover:bg-warm-600 text-warm-100 rounded-xl font-bold transition-colors"
         >
           {t.rangeSetup.cancel}
         </button>

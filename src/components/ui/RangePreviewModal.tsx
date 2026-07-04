@@ -33,13 +33,13 @@ export function RangePreviewModal({ range, onClose }: Props) {
       >
         <div className="flex justify-between items-start mb-5">
           <div>
-            <h3 id="range-preview-title" className="font-bold text-white text-lg">{range.name}</h3>
+            <h3 id="range-preview-title" className="font-bold text-warm-100 text-lg">{range.name}</h3>
             <p className="text-xs text-warm-400 mt-0.5">
               {range.tableSize}-max · {range.positions.join(', ')} · {range.scenarios.length} cenário{range.scenarios.length !== 1 ? 's' : ''}
               {!!displayStackRange && <span className="ml-1 text-brand-400">· {displayStackRange}</span>}
             </p>
           </div>
-          <button onClick={onClose} aria-label={t.common.close} className="text-warm-400 hover:text-white text-xl ml-4 flex-shrink-0">✕</button>
+          <button onClick={onClose} aria-label={t.common.close} className="text-warm-400 hover:text-warm-100 text-xl ml-4 flex-shrink-0">✕</button>
         </div>
 
         {/* Stack grid selector */}

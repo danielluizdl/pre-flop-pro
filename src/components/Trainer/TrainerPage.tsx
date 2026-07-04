@@ -90,7 +90,7 @@ const HandHistorySidebar = memo(function HandHistorySidebar({ onOpenModal, onRep
     <div className="flex-1 min-h-0 bg-warm-800 rounded-xl border border-warm-700 p-3 flex flex-col">
       <button
         onClick={onOpenModal}
-        className="text-xs font-bold text-warm-400 mb-2 flex-shrink-0 text-left hover:text-white transition-colors"
+        className="text-xs font-bold text-warm-400 mb-2 flex-shrink-0 text-left hover:text-warm-100 transition-colors"
       >
         {t.drill.historyHeader} <span className="text-warm-500">({history.length})</span>
       </button>
@@ -138,7 +138,7 @@ function SessionDetail({ session, ranges }: {
       <div className="bg-warm-800 border border-warm-700 rounded-xl p-4">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
           <div>
-            <div className="text-2xl font-extrabold text-white">{session.hands}</div>
+            <div className="text-2xl font-extrabold text-warm-100">{session.hands}</div>
             <div className="text-xs text-warm-400">{t.stats.hands}</div>
           </div>
           <div>
@@ -185,7 +185,7 @@ function SessionDetail({ session, ranges }: {
                   className="w-full flex items-center justify-between px-4 py-3 bg-warm-800/60 hover:bg-warm-800 transition-colors text-left"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="font-bold text-white text-sm">{r.name}</span>
+                    <span className="font-bold text-warm-100 text-sm">{r.name}</span>
                     {r.positions.length > 0 && (
                       <span className="text-warm-400 text-xs">{r.positions.join(', ')}</span>
                     )}
@@ -302,7 +302,7 @@ function HistoryModal({ onClose }: { onClose: () => void }) {
                 className="w-full flex items-center justify-between px-4 py-3 bg-warm-800 hover:bg-warm-750 transition-colors text-left"
               >
                 <div className="min-w-0">
-                  <div className="font-semibold text-white text-sm">{formatDate(session.timestamp)}</div>
+                  <div className="font-semibold text-warm-100 text-sm">{formatDate(session.timestamp)}</div>
                   <div className="text-warm-400 text-xs truncate">{session.rangeNames.join(', ')}</div>
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0 ml-2">
@@ -584,7 +584,7 @@ function DrillRangeSelect() {
                       className="w-full flex items-center justify-between px-4 py-3 bg-warm-800 hover:bg-warm-750 transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <span className="font-extrabold text-white text-sm w-10 text-left">{pos}</span>
+                        <span className="font-extrabold text-warm-100 text-sm w-10 text-left">{pos}</span>
                         <span className="text-warm-400 text-xs">{t.ranges.rangeCount(group.length)}</span>
                         {selectedInGroup > 0 && (
                           <span className="bg-brand-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
@@ -632,7 +632,7 @@ function DrillRangeSelect() {
                               )}
                               <div className="flex items-start justify-between gap-1">
                                 <div className="flex items-start gap-1.5 flex-wrap flex-1 min-w-0">
-                                  <h3 className="font-bold text-white text-sm leading-tight">{r.name}</h3>
+                                  <h3 className="font-bold text-warm-100 text-sm leading-tight">{r.name}</h3>
                                   {r.stackGrids && r.stackGrids.length > 0 ? (
                                     r.stackGrids.map((sg, i) => sg.stackRange && (
                                       <span key={i} className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-500/10 border border-brand-500/40 text-brand-400 flex-shrink-0 leading-tight">
@@ -795,7 +795,7 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
       <div className="bg-warm-800 border border-warm-700 rounded-xl p-4">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
           <div>
-            <div className="text-2xl font-extrabold text-white">{sessionStats.hands}</div>
+            <div className="text-2xl font-extrabold text-warm-100">{sessionStats.hands}</div>
             <div className="text-xs text-warm-400">{t.stats.hands}</div>
           </div>
           <div>
@@ -840,7 +840,7 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
                 className="w-full flex items-center justify-between px-4 py-3 bg-warm-800 hover:bg-warm-750 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <span className="font-bold text-white text-sm">{r.name}</span>
+                  <span className="font-bold text-warm-100 text-sm">{r.name}</span>
                   {r.positions.length > 0 && (
                     <span className="text-warm-400 text-xs">{r.positions.join(', ')}</span>
                   )}
@@ -1164,7 +1164,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
 
           {/* Dark box: botões, mesa, cartas, resposta, ações */}
           <div
-            className="rounded-2xl border border-warm-800 flex flex-col"
+            className="dark rounded-2xl border border-warm-800 flex flex-col"
             style={{ background: '#16140f', boxShadow: 'inset 0 0 60px rgba(0,0,0,0.9)' }}
           >
             {/* Botões topo */}
@@ -1289,7 +1289,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
           {sidebarCollapsed ? (
             <button
               onClick={() => setSidebarCollapsed(false)}
-              className="flex-1 min-h-0 bg-warm-800 border border-warm-700 rounded-xl flex items-center justify-center text-warm-500 hover:text-white hover:bg-warm-700 transition-colors"
+              className="flex-1 min-h-0 bg-warm-800 border border-warm-700 rounded-xl flex items-center justify-center text-warm-500 hover:text-warm-100 hover:bg-warm-700 transition-colors"
               title={t.drill.expandHistory}
             >
               <span className="font-bold tracking-wider" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', fontSize: 10 }}>{t.drill.histShort} ›</span>
@@ -1300,14 +1300,14 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                 <HandHistorySidebar onOpenModal={onShowHistory} onReplayEntry={handleReplayEntry} />
                 <button
                   onClick={() => setSidebarCollapsed(true)}
-                  className="absolute top-2 right-2 z-10 w-5 h-5 rounded-full bg-warm-700 text-warm-400 hover:text-white hover:bg-warm-600 flex items-center justify-center text-xs transition-colors"
+                  className="absolute top-2 right-2 z-10 w-5 h-5 rounded-full bg-warm-700 text-warm-400 hover:text-warm-100 hover:bg-warm-600 flex items-center justify-center text-xs transition-colors"
                   title={t.drill.minimizeHistory}
                 >‹</button>
               </div>
 
               {/* Stats + info */}
               <div className="flex-shrink-0 bg-warm-800 border border-warm-700 rounded-xl p-3 space-y-2">
-                <div className="text-xs font-bold text-white leading-tight truncate" title={activeDrillRange.name}>
+                <div className="text-xs font-bold text-warm-100 leading-tight truncate" title={activeDrillRange.name}>
                   {activeDrillRange.name}
                 </div>
                 {!!activeDrillStackRange && (
@@ -1317,13 +1317,13 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                 )}
                 <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
                   <span className="text-warm-400">{t.stats.hands}</span>
-                  <span className="text-white font-bold text-right">{stats.hands}</span>
+                  <span className="text-warm-100 font-bold text-right">{stats.hands}</span>
                   <span className="text-emerald-400">{t.stats.correct}</span>
                   <span className="text-emerald-400 font-bold text-right">{stats.correct}</span>
                   <span className="text-red-400">{t.stats.errors}</span>
                   <span className="text-red-400 font-bold text-right">{stats.errors}</span>
                   <span className="text-warm-400">{t.drill.consults}</span>
-                  <span className="text-white font-bold text-right">{stats.consults}</span>
+                  <span className="text-warm-100 font-bold text-right">{stats.consults}</span>
                 </div>
                 <div className="pt-1 border-t border-warm-700 space-y-1.5">
                   <button
@@ -1353,8 +1353,8 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
           <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setModalViewMode(null)}>
             <div ref={viewRangeDialogRef} className="bg-warm-900 border border-warm-700 rounded-2xl p-6 max-w-3xl w-full" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="drill-range-modal-title">
               <div className="flex justify-between items-center mb-4">
-                <h3 id="drill-range-modal-title" className="font-bold text-white text-lg">{modalRange.name}</h3>
-                <button onClick={() => setModalViewMode(null)} aria-label="Fechar" className="text-warm-400 hover:text-white text-xl">✕</button>
+                <h3 id="drill-range-modal-title" className="font-bold text-warm-100 text-lg">{modalRange.name}</h3>
+                <button onClick={() => setModalViewMode(null)} aria-label="Fechar" className="text-warm-400 hover:text-warm-100 text-xl">✕</button>
               </div>
               <HandMatrix
                 readOnly

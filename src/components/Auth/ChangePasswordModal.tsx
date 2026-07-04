@@ -31,7 +31,7 @@ export function ChangePasswordModal() {
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
       <div ref={dialogRef} className="w-full max-w-sm bg-warm-900 border border-warm-700/50 rounded-2xl p-6 space-y-4" role="dialog" aria-modal="true" aria-labelledby="change-password-title">
-        <h2 id="change-password-title" className="text-lg font-semibold text-white">{t.changePassword.title}</h2>
+        <h2 id="change-password-title" className="text-lg font-semibold text-warm-100">{t.changePassword.title}</h2>
         <p className="text-xs text-warm-400">{t.changePassword.subtitle}</p>
 
         <div className="space-y-2">
@@ -41,7 +41,7 @@ export function ChangePasswordModal() {
             type="password"
             value={newPassword}
             onChange={e => { setNewPassword(e.target.value); setError('') }}
-            className="w-full bg-warm-800 border border-warm-600 rounded-lg px-3 py-2.5 text-sm text-white placeholder-warm-600 focus:outline-none focus:border-brand-500"
+            className="w-full bg-warm-800 border border-warm-600 rounded-lg px-3 py-2.5 text-sm text-warm-100 placeholder-warm-600 focus:outline-none focus:border-brand-500"
           />
         </div>
 
@@ -52,7 +52,7 @@ export function ChangePasswordModal() {
             type="password"
             value={confirm}
             onChange={e => { setConfirm(e.target.value); setError('') }}
-            className="w-full bg-warm-800 border border-warm-600 rounded-lg px-3 py-2.5 text-sm text-white placeholder-warm-600 focus:outline-none focus:border-brand-500"
+            className="w-full bg-warm-800 border border-warm-600 rounded-lg px-3 py-2.5 text-sm text-warm-100 placeholder-warm-600 focus:outline-none focus:border-brand-500"
             onKeyDown={e => { if (e.key === 'Enter') handleSubmit() }}
           />
         </div>
