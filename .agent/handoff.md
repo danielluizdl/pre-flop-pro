@@ -42,8 +42,9 @@
   Sem strings novas (reusa `t.ranges.viewRange`/`t.common.close`). **828 testes verdes (75 arquivos).**
 
 ### PENDENTE (gate humano — Daniel)
-- [ ] **Migração D1 manual**: `npx wrangler d1 execute preflop-db --file=schema_v4.sql --remote`
-      (sem ela: telemetria do modo descartada com 200 ok:false e aba coach vazia).
+- [x] **Migração D1 APLICADA (04/07/2026)**: `schema_v4.sql` executado no remoto com sucesso
+      (4 queries, tabela `range_build_events` + índices criados) — telemetria/analytics do
+      modo já gravam no D1.
 - [ ] Validar visual no preview (nav "Range Recall" + página do modo + painel coach novo).
 - [ ] Confirmar o nome "Range Recall" (troca centralizada no i18n).
 - [ ] Revisar/mergear a PR #40 para `feature/auth-telemetry`.
