@@ -271,11 +271,13 @@ interface AppState {
   buildLastResult: { score: number; perHand: Record<string, number>; userGrid: Record<string, HandData> } | null
   buildSessionUuid: string
   buildConfirmed: boolean
+  buildAttempt: number
   buildHistory: BuildSession[]
   toggleBuildRange: (id: number) => void
   startBuildSession: () => boolean
   confirmBuildSession: () => void
   submitBuildRound: () => void
+  retryBuildRound: () => void
   nextBuildRound: () => void
   stopBuildSession: () => void
 
@@ -1235,6 +1237,7 @@ export const useStore = create<AppState>()(
       buildLastResult: null,
       buildSessionUuid: '',
       buildConfirmed: false,
+      buildAttempt: 1,
       buildHistory: loadBuildHistory(),
 
       toggleBuildRange: (id) => {
@@ -1281,6 +1284,7 @@ export const useStore = create<AppState>()(
           buildLastResult: null,
           buildSessionUuid: crypto.randomUUID(),
           buildConfirmed: false,
+          buildAttempt: 1,
           rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: [], tableSize: currentTableSize, stackRange: '' },
           brush: {
             ...brush, call: 0, raise: 0, allin: 0, extra: 0,
@@ -1294,13 +1298,13 @@ export const useStore = create<AppState>()(
       confirmBuildSession: () => set({ buildConfirmed: true }),
 
       submitBuildRound: () => {
-        const { buildRounds, buildRoundIdx, buildResults, buildLastResult, rangeData } = get()
+        const { buildRounds, buildRoundIdx, buildResults, buildLastResult, buildAttempt, rangeData } = get()
         const round = buildRounds[buildRoundIdx]
         if (!round || buildLastResult) return
         const userGrid: Record<string, HandData> = JSON.parse(JSON.stringify(rangeData.grid))
         const { score, perHand } = scoreBuild(round.grid, userGrid)
         set({
-          buildResults: [...buildResults, { label: round.label, score }],
+          buildResults: [...buildResults, { roundIdx: buildRoundIdx, label: round.label, score, attempt: buildAttempt, userGrid, perHand }],
           buildLastResult: { score, perHand, userGrid },
         })
         fireEvent('range-build', {
@@ -1308,10 +1312,27 @@ export const useStore = create<AppState>()(
           rangeName: round.rangeName,
           stackRange: round.stackRange || null,
           score: Math.round(score * 10) / 10,
+          attempt: buildAttempt,
           roundsTotal: buildRounds.length,
           session_uuid: get().buildSessionUuid || null,
           client_event_id: crypto.randomUUID(),
         }, get().authToken)
+      },
+
+      retryBuildRound: () => {
+        const { buildRounds, buildRoundIdx, buildLastResult, buildAttempt, brush, currentTableSize } = get()
+        const round = buildRounds[buildRoundIdx]
+        if (!round || !buildLastResult) return
+        set({
+          buildLastResult: null,
+          buildAttempt: buildAttempt + 1,
+          rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: [], tableSize: currentTableSize, stackRange: '' },
+          brush: {
+            ...brush, call: 0, raise: 0, allin: 0, extra: 0,
+            extraLabel: round.customAction?.label ?? '',
+            extraColor: round.customAction?.color ?? '#a855f7',
+          },
+        })
       },
 
       nextBuildRound: () => {
@@ -1321,6 +1342,7 @@ export const useStore = create<AppState>()(
         set({
           buildRoundIdx: nextIdx,
           buildLastResult: null,
+          buildAttempt: 1,
           ...(next ? {
             rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: [], tableSize: currentTableSize, stackRange: '' },
             brush: {
@@ -1341,7 +1363,7 @@ export const useStore = create<AppState>()(
             id: Date.now(),
             timestamp: Date.now(),
             rangeNames: [...new Set(buildRounds.map(r => r.rangeName))],
-            rounds: buildResults.map(r => ({ label: r.label, score: Math.round(r.score * 10) / 10 })),
+            rounds: buildResults.map(r => ({ label: r.label, score: Math.round(r.score * 10) / 10, attempt: r.attempt })),
             avgScore: Math.round(avg * 10) / 10,
           }
           newHistory = [...buildHistory, session]
@@ -1355,6 +1377,7 @@ export const useStore = create<AppState>()(
           buildLastResult: null,
           buildSessionUuid: '',
           buildConfirmed: false,
+          buildAttempt: 1,
           buildHistory: newHistory,
           rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: [], tableSize: currentTableSize, stackRange: '' },
         })

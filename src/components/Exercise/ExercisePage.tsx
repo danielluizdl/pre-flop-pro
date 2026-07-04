@@ -247,7 +247,9 @@ function BuildRound() {
   const rounds        = useStore(s => s.buildRounds)
   const roundIdx      = useStore(s => s.buildRoundIdx)
   const lastResult    = useStore(s => s.buildLastResult)
+  const attempt       = useStore(s => s.buildAttempt)
   const submitRound   = useStore(s => s.submitBuildRound)
+  const retryRound    = useStore(s => s.retryBuildRound)
   const nextRound     = useStore(s => s.nextBuildRound)
   const stopBuild     = useStore(s => s.stopBuildSession)
   const buildResults  = useStore(s => s.buildResults)
@@ -272,6 +274,11 @@ function BuildRound() {
         <div>
           <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">
             {t.exercise.roundOf(roundIdx + 1, rounds.length)}
+            {attempt > 1 && (
+              <span className="ml-2 align-middle px-2 py-0.5 rounded-full text-xs font-bold tracking-normal normal-case bg-brand-500/10 border border-brand-500/40 text-brand-400">
+                {t.exercise.attemptN(attempt)}
+              </span>
+            )}
           </h2>
           <p className="text-warm-400 text-sm">
             {t.exercise.reproduceLabel} <span className="font-bold text-warm-100">{round.label}</span>
@@ -323,7 +330,13 @@ function BuildRound() {
             <ComboCounter grid={lastResult.userGrid} extraLabel={round.customAction?.label} extraColor={round.customAction?.color} />
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => retryRound()}
+              className="px-4 py-2 border border-warm-600 bg-warm-800 text-warm-300 rounded-lg text-sm font-semibold hover:bg-warm-700 transition-colors"
+            >
+              {t.exercise.retryRound}
+            </button>
             <button onClick={() => nextRound()} className="btn-commit">
               {isLast ? t.exercise.viewSummary : t.exercise.nextRound}
             </button>

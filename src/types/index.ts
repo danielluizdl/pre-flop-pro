@@ -154,15 +154,25 @@ export interface BuildRound {
 }
 
 export interface BuildRoundResult {
+  roundIdx: number
   label: string
   score: number
+  attempt: number
+  userGrid: Record<string, HandData>
+  perHand: Record<string, number>
+}
+
+export interface BuildHistoryRound {
+  label: string
+  score: number
+  attempt?: number
 }
 
 export interface BuildSession {
   id: number
   timestamp: number
   rangeNames: string[]
-  rounds: BuildRoundResult[]
+  rounds: BuildHistoryRound[]
   avgScore: number
 }
 

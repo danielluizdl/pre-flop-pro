@@ -153,6 +153,15 @@ describe('ExercisePage — round ativo', () => {
     expect(screen.getByText('Diferença por mão')).toBeInTheDocument()
   })
 
+  it('Tentar novamente refaz o round e marca a tentativa 2', () => {
+    render(<ExercisePage />)
+    fireEvent.click(screen.getByText('Enviar resposta'))
+    fireEvent.click(screen.getByText('Tentar novamente'))
+    expect(screen.getByText(/Pinte a matriz/)).toBeInTheDocument()
+    expect(screen.getByText('Tentativa 2')).toBeInTheDocument()
+    expect(useStore.getState().buildResults).toHaveLength(1)
+  })
+
   it('no último round o botão avança para o resumo', () => {
     render(<ExercisePage />)
     fireEvent.click(screen.getByText('Enviar resposta'))

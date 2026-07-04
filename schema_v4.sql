@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS range_build_events (
   range_name TEXT NOT NULL DEFAULT '',
   stack_range TEXT,
   score REAL NOT NULL,
+  attempt INTEGER NOT NULL DEFAULT 1,
   rounds_total INTEGER,
   session_uuid TEXT,
   client_event_id TEXT,

@@ -110,7 +110,9 @@ describe('submitBuildRound', () => {
     useStore.getState().submitBuildRound()
     const s = useStore.getState()
     expect(s.buildLastResult?.score).toBe(100)
-    expect(s.buildResults).toEqual([{ label: 'BTN RFI', score: 100 }])
+    expect(s.buildResults).toHaveLength(1)
+    expect(s.buildResults[0]).toMatchObject({ roundIdx: 0, label: 'BTN RFI', score: 100, attempt: 1 })
+    expect(s.buildResults[0].userGrid['AA'].raise).toBe(100)
   })
 
   it('grade vazia dá nota proporcional aos combos que faltam', () => {
@@ -130,6 +132,7 @@ describe('submitBuildRound', () => {
     expect(b.rangeId).toBe(11)
     expect(b.rangeName).toBe('BTN RFI')
     expect(b.stackRange).toBeNull()
+    expect(b.attempt).toBe(1)
     expect(b.roundsTotal).toBe(1)
     expect(typeof b.score).toBe('number')
     expect(typeof b.client_event_id).toBe('string')
@@ -140,6 +143,29 @@ describe('submitBuildRound', () => {
     useStore.getState().submitBuildRound()
     expect(enqueue).toHaveBeenCalledTimes(1)
     expect(useStore.getState().buildResults).toHaveLength(1)
+  })
+
+  it('retryBuildRound refaz o round do zero e a nova tentativa é registrada como attempt 2', () => {
+    useStore.getState().submitBuildRound()
+    useStore.getState().retryBuildRound()
+    let s = useStore.getState()
+    expect(s.buildLastResult).toBeNull()
+    expect(s.buildAttempt).toBe(2)
+    expect(Object.values(s.rangeData.grid).every(h => h.fold >= 100)).toBe(true)
+    useStore.setState({ rangeData: { ...s.rangeData, grid: gridWith({ AA: { raise: 100 } }) } })
+    useStore.getState().submitBuildRound()
+    s = useStore.getState()
+    expect(s.buildResults).toHaveLength(2)
+    expect(s.buildResults[0]).toMatchObject({ attempt: 1, roundIdx: 0 })
+    expect(s.buildResults[1]).toMatchObject({ attempt: 2, roundIdx: 0, score: 100 })
+    expect(enqueue).toHaveBeenCalledTimes(2)
+    const b = vi.mocked(enqueue).mock.calls[1][1] as Record<string, unknown>
+    expect(b.attempt).toBe(2)
+  })
+
+  it('retryBuildRound sem resultado enviado não faz nada', () => {
+    useStore.getState().retryBuildRound()
+    expect(useStore.getState().buildAttempt).toBe(1)
   })
 })
 
@@ -185,6 +211,7 @@ describe('nextBuildRound / stopBuildSession', () => {
     expect(session.rangeNames).toEqual(['SB Push'])
     expect(session.rounds).toHaveLength(2)
     expect(session.rounds[0].score).toBe(100)
+    expect(session.rounds[0].attempt).toBe(1)
     expect(session.avgScore).toBeCloseTo((session.rounds[0].score + session.rounds[1].score) / 2, 1)
     const saved = JSON.parse(localStorage.getItem('pfp-build-history-v1') ?? '[]')
     expect(saved).toHaveLength(1)

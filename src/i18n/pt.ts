@@ -319,6 +319,8 @@ export const pt = {
     diffLegend: 'verde = exato · amarelo = desvio pequeno · vermelho = muito diferente',
     diffTooltip: (hand: string, pct: number) => `${hand}: ${pct}% dos combos fora do lugar`,
     nextRound: 'Próximo round →',
+    retryRound: 'Tentar novamente',
+    attemptN: (n: number) => `Tentativa ${n}`,
     viewSummary: 'Ver resumo →',
     summaryTitle: 'Resumo do Exercício',
     summaryIntro: 'Nota por round e média da sessão.',

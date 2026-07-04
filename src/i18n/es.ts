@@ -321,6 +321,8 @@ export const es: Messages = {
     diffLegend: 'verde = exacto · amarillo = desvío pequeño · rojo = muy diferente',
     diffTooltip: (hand: string, pct: number) => `${hand}: ${pct}% de los combos fuera de lugar`,
     nextRound: 'Siguiente round →',
+    retryRound: 'Intentar de nuevo',
+    attemptN: (n: number) => `Intento ${n}`,
     viewSummary: 'Ver resumen →',
     summaryTitle: 'Resumen del Ejercicio',
     summaryIntro: 'Nota por round y promedio de la sesión.',

@@ -45,6 +45,15 @@ describe('validateRangeBuildPayload', () => {
     expect(validateRangeBuildPayload({ ...valid, stackRange: 42 })).toBe(false)
   })
 
+  it('aceita attempt válido ou ausente e rejeita attempt inválido', () => {
+    expect(validateRangeBuildPayload({ ...valid, attempt: 1 })).toBe(true)
+    expect(validateRangeBuildPayload({ ...valid, attempt: 3 })).toBe(true)
+    expect(validateRangeBuildPayload({ ...valid, attempt: null })).toBe(true)
+    expect(validateRangeBuildPayload({ ...valid, attempt: 0 })).toBe(false)
+    expect(validateRangeBuildPayload({ ...valid, attempt: 1.5 })).toBe(false)
+    expect(validateRangeBuildPayload({ ...valid, attempt: '2' })).toBe(false)
+  })
+
   it('rejeita roundsTotal inválido', () => {
     expect(validateRangeBuildPayload({ ...valid, roundsTotal: 0 })).toBe(false)
     expect(validateRangeBuildPayload({ ...valid, roundsTotal: 2.5 })).toBe(false)
