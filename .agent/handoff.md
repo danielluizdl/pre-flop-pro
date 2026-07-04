@@ -1,5 +1,49 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-04 (Rodada 2 do modo "Range Recall" — CONCLUÍDA)
+
+### Estado
+- **Branch `feature/build-range-exercise`**, PR #40 (→ `feature/auth-telemetry`) atualizada
+  (título + descrição refeitos com as opções de nome, os 7 ajustes e as pendências).
+- **827 testes verdes (75 arquivos)** (era 815), build verde, **SMOKE OK** (via
+  `SMOKE_CHROMIUM="C:/Program Files/Google/Chrome/Application/chrome.exe"` — o runner
+  não achou o Chromium do Playwright sozinho neste ambiente).
+- Os 7 ajustes da Rodada 2 estão TODOS entregues (commits `5b0f03d..f833b38`):
+  1. confirmação pré-rounds; 2. atalhos Pares/Suiteds/Offsuits; 3. múltiplas tentativas
+  (`attempt`); 4. resumo com detalhe por round; 5. renome para **"Range Recall"** (string
+  central no i18n); 6. aba Range Recall no Histórico do jogador; 7. painel coach (abaixo).
+
+### Item 7 — Painel Coach reestruturado (`f833b38`)
+- Aba **"Por jogador" REMOVIDA** inteira (PlayersView + endpoints de detalhe seguem no
+  backend `admin/user/[id].js`, agora sem uso no front — candidato a limpeza futura).
+- **"Visão do time" → "Drill"** (só o rótulo; `tabDrill`/`tabRecall` no i18n).
+- Aba nova **"Range Recall"** (`RecallView`): seções **Por jogador** (linha do TIME +
+  jogadores com tentativas>0), **Por range** e **Tentativas recentes** (stack, nº da
+  tentativa, nota, data; 100 últimas). Mesmos filtros (MultiPlayerSelect/RangeSelect/
+  PeriodFilter) e padrões (`Section`, `useAnalytics`→`fetchAnalyticsCached`).
+- Backend: views `build-overview`/`build-by-range`/`build-events` em
+  `functions/api/admin/analytics.js` (aproveitou o diff uncommitted da sessão anterior),
+  todas em try/catch **fail-open** — sem a migração schema_v4 devolvem vazio ("Sem dados.").
+- **DECISÃO — reset de senha**: vivia na aba removida; foi movido para o
+  `PlayerQuickSummary` (expandir um jogador em "Resumo do time" na aba Drill), com o
+  mesmo endpoint `admin/reset-password`, confirm + senha temporária + copiar. Chave nova
+  `coach.resetConfirm` (o confirm era hardcoded PT).
+- i18n: chaves novas `tabDrill`/`tabRecall`/`recall*`/`resetConfirm` em pt/en/es; chaves
+  mortas da aba removida limpas (tabTeam/tabPlayer/tabHands/colAction/etc.).
+- Testes: CoachPanel.test atualizado (abas novas, 3 testes RecallView incl. fail-open),
+  reset de senha testado direto no `CoachPanelParts.test.tsx`; AppLayout.test e
+  `smoke/smoke.mjs` passaram a identificar o CoachPanel pelo botão de publicar
+  (os nomes "Drill"/"Range Recall" agora colidem com a navegação).
+
+### PENDENTE (gate humano — Daniel)
+- [ ] **Migração D1 manual**: `npx wrangler d1 execute preflop-db --file=schema_v4.sql --remote`
+      (sem ela: telemetria do modo descartada com 200 ok:false e aba coach vazia).
+- [ ] Validar visual no preview (nav "Range Recall" + página do modo + painel coach novo).
+- [ ] Confirmar o nome "Range Recall" (troca centralizada no i18n).
+- [ ] Revisar/mergear a PR #40 para `feature/auth-telemetry`.
+
+---
+
 ## 2026-07-03 (tarde — feature nova: modo "Montar Range")
 
 ### Estado
