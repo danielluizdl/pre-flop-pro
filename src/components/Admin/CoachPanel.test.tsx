@@ -25,8 +25,8 @@ describe('CoachPanel', () => {
   it('renderiza as abas, o botão de publicar e os filtros do time', async () => {
     mockApi()
     render(<CoachPanel />)
-    expect(await screen.findByRole('button', { name: 'Visão do time' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Por jogador' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Drill' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Range Recall' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Publicar ranges para o time/ })).toBeInTheDocument()
     expect(screen.getByText('Todos os jogadores')).toBeInTheDocument()
     expect(screen.getByText('Todos os ranges')).toBeInTheDocument()
@@ -44,17 +44,20 @@ describe('CoachPanel', () => {
   it('período Custom revela dois campos de data', async () => {
     mockApi()
     const { container } = render(<CoachPanel />)
-    await screen.findByRole('button', { name: 'Visão do time' })
+    await screen.findByRole('button', { name: 'Drill' })
     expect(container.querySelectorAll('input[type="date"]')).toHaveLength(0)
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 'custom' } })
     expect(container.querySelectorAll('input[type="date"]')).toHaveLength(2)
   })
 
-  it('troca para a aba "Por jogador"', async () => {
+  it('troca para a aba "Range Recall" com as três seções e filtros', async () => {
     mockApi()
     render(<CoachPanel />)
-    fireEvent.click(await screen.findByRole('button', { name: 'Por jogador' }))
-    expect(await screen.findByText('Nenhum jogador cadastrado ainda.')).toBeInTheDocument()
+    fireEvent.click(await screen.findByRole('button', { name: 'Range Recall' }))
+    expect(await screen.findByText('Por jogador')).toBeInTheDocument()
+    expect(screen.getByText('Por range')).toBeInTheDocument()
+    expect(screen.getByText('Tentativas recentes')).toBeInTheDocument()
+    expect(screen.getByText('Todos os jogadores')).toBeInTheDocument()
   })
 
   it('o filtro de range expõe aria-expanded e alterna ao abrir', async () => {
@@ -260,7 +263,7 @@ describe('CoachPanel', () => {
   it('não tem violações de acessibilidade (axe)', async () => {
     mockApi()
     const { container } = render(<CoachPanel />)
-    await screen.findByRole('button', { name: 'Visão do time' })
+    await screen.findByRole('button', { name: 'Drill' })
     expect((await axe(container)).violations).toEqual([])
   })
 
@@ -277,13 +280,13 @@ describe('CoachPanel', () => {
     })
     useStore.setState({ authToken: 'tok' })
     const { container } = render(<CoachPanel />)
-    await screen.findByRole('button', { name: 'Visão do time' })
+    await screen.findByRole('button', { name: 'Drill' })
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 'custom' } })
     const dates = container.querySelectorAll('input[type="date"]')
     urls.length = 0
     fireEvent.change(dates[0], { target: { value: '2026-06-01' } })
     fireEvent.change(dates[1], { target: { value: '2026-06-30' } })
-    await screen.findByRole('button', { name: 'Visão do time' })
+    await screen.findByRole('button', { name: 'Drill' })
     const analytics = urls.filter(u => u.includes('/admin/analytics'))
     expect(analytics.length).toBeGreaterThan(0)
     expect(analytics.every(u => u.includes('from=') && u.includes('to=') && !u.includes('days='))).toBe(true)
@@ -303,7 +306,7 @@ describe('CoachPanel', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Filtrar jogadores' }))
     urls.length = 0
     fireEvent.click(await screen.findByText('Ana'))
-    await screen.findByRole('button', { name: 'Visão do time' })
+    await screen.findByRole('button', { name: 'Drill' })
     const analytics = urls.filter(u => u.includes('/admin/analytics'))
     expect(analytics.length).toBeGreaterThan(0)
     expect(analytics.every(u => u.includes('playerIds=7'))).toBe(true)
@@ -343,90 +346,56 @@ describe('CoachPanel', () => {
     expect(await screen.findByText('sem permissão')).toBeInTheDocument()
   })
 
-  // --- Fatia: aba "Por jogador" (PlayersView) ---
+  // --- Fatia: aba "Range Recall" (RecallView) ---
 
-  function mockPlayersApi(detailByTab: Record<string, unknown[]> = {}) {
+  function mockRecallApi() {
     vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
       const url = String(input)
-      if (url.includes('/admin/users')) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({
-            users: [
-              { id: 1, username: 'ana01', name: 'Ana', email: 'ana@x.com', total_hands: 120, correct_hands: 96 },
-              { id: 2, username: 'beto02', name: 'Beto', email: '', total_hands: 0, correct_hands: 0 },
-            ],
-          }),
-        } as unknown as Response)
+      let data: unknown = { rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }
+      if (url.includes('/admin/users')) data = { users: [] }
+      else if (url.includes('view=build-overview')) {
+        data = {
+          rows: [
+            { userId: 1, username: 'ana01', name: 'Ana', attempts: 12, avgScore: 84.5, bestScore: 97.2, ranges: 3, lastActivity: 1750000000 },
+            { userId: 2, username: 'beto02', name: 'Beto', attempts: 0, avgScore: 0, bestScore: 0, ranges: 0, lastActivity: 0 },
+          ],
+          team: { attempts: 12, avgScore: 84.5, bestScore: 97.2, ranges: 3, lastActivity: 1750000000 },
+        }
+      } else if (url.includes('view=build-by-range')) {
+        data = { rows: [{ rangeId: 5, rangeName: 'BTN RFI', attempts: 12, avgScore: 84.5, bestScore: 97.2, players: 1, lastActivity: 1750000000 }] }
+      } else if (url.includes('view=build-events')) {
+        data = { rows: [{ userId: 1, playerName: 'Ana', rangeId: 5, rangeName: 'BTN RFI', stackRange: '40bb+', score: 91.3, attempt: 2, createdAt: 1750000000 }] }
       }
-      const m = url.match(/\/admin\/user\/\d+\?tab=(\w+)/)
-      if (m) {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: detailByTab[m[1]] ?? [] }) } as unknown as Response)
-      }
-      return Promise.resolve({ ok: true, json: () => Promise.resolve({ rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }) } as unknown as Response)
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(data) } as unknown as Response)
     })
     useStore.setState({ authToken: 'tok' })
   }
 
-  it('Por jogador: lista jogadores com mãos/precisão e pede seleção', async () => {
-    mockPlayersApi()
+  it('Range Recall: tabela por jogador oculta quem não tentou e mostra a linha do time', async () => {
+    mockRecallApi()
     render(<CoachPanel />)
-    fireEvent.click(await screen.findByRole('button', { name: 'Por jogador' }))
-    expect(await screen.findByText('Ana')).toBeInTheDocument()
-    expect(screen.getByText('120 mãos · 80%')).toBeInTheDocument()
-    expect(screen.getByText('0 mãos · -')).toBeInTheDocument()
-    expect(screen.getByText('Selecione um jogador.')).toBeInTheDocument()
+    fireEvent.click(await screen.findByRole('button', { name: 'Range Recall' }))
+    expect((await screen.findAllByText('Ana')).length).toBeGreaterThanOrEqual(1)
+    expect(screen.queryByText('Beto')).not.toBeInTheDocument()
+    expect(screen.getByText('Time')).toBeInTheDocument()
+    expect(screen.getAllByText('84.5').length).toBeGreaterThanOrEqual(2)
   })
 
-  it('Por jogador: selecionar jogador carrega a tabela de mãos e troca de aba busca consultas', async () => {
-    mockPlayersApi({
-      hands: [{ hand: 'AKo', range_name: 'BTN RFI', action_taken: 'Fold', correct_action: 'Raise', is_correct: 0, severity: 'grave', created_at: 1700000000 }],
-      consults: [{ range_name: 'BTN RFI', hand: 'AKo', count: 4 }],
-    })
+  it('Range Recall: tentativas recentes mostram stack, nº da tentativa e nota', async () => {
+    mockRecallApi()
     render(<CoachPanel />)
-    fireEvent.click(await screen.findByRole('button', { name: 'Por jogador' }))
-    fireEvent.click(await screen.findByText('Ana'))
-    // aba Mãos (default)
-    expect(await screen.findByText('AKo')).toBeInTheDocument()
-    expect(screen.getByText('grave')).toBeInTheDocument()
-    // troca para Consultas
-    fireEvent.click(screen.getByRole('button', { name: 'Consultas' }))
-    expect(await screen.findByText('4x')).toBeInTheDocument()
+    fireEvent.click(await screen.findByRole('button', { name: 'Range Recall' }))
+    expect(await screen.findByText('40bb+')).toBeInTheDocument()
+    expect(screen.getByText('91.3')).toBeInTheDocument()
+    expect(screen.getByText('Tentativa')).toBeInTheDocument()
+    expect(screen.getAllByText('BTN RFI').length).toBeGreaterThanOrEqual(2)
   })
 
-  it('Por jogador: resetar senha confirma, mostra a senha temporária e copia', async () => {
-    mockPlayersApi({ hands: [] })
-    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input)
-      if (url.includes('/admin/users')) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({ users: [{ id: 1, username: 'ana01', name: 'Ana', email: '', total_hands: 10, correct_hands: 8 }] }),
-        } as unknown as Response)
-      }
-      if (url.includes('/admin/reset-password')) {
-        expect(init?.method).toBe('POST')
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true, tempPassword: 'temp1234' }) } as unknown as Response)
-      }
-      if (url.includes('/admin/user/')) {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: [] }) } as unknown as Response)
-      }
-      return Promise.resolve({ ok: true, json: () => Promise.resolve({ rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }) } as unknown as Response)
-    })
-    useStore.setState({ authToken: 'tok' })
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
-    const writeText = vi.fn()
-    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
-
+  it('Range Recall: fail-open (tabela ausente no D1) mostra "Sem dados." nas seções', async () => {
+    mockApi()
     render(<CoachPanel />)
-    fireEvent.click(await screen.findByRole('button', { name: 'Por jogador' }))
-    fireEvent.click(await screen.findByText('Ana'))
-    fireEvent.click(await screen.findByRole('button', { name: 'Resetar senha' }))
-    expect(confirmSpy).toHaveBeenCalled()
-    expect(await screen.findByText('temp1234')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Copiar' }))
-    expect(writeText).toHaveBeenCalledWith('temp1234')
-    expect(screen.getByRole('button', { name: 'Copiado' })).toBeInTheDocument()
+    fireEvent.click(await screen.findByRole('button', { name: 'Range Recall' }))
+    expect((await screen.findAllByText('Sem dados.')).length).toBe(3)
   })
 
   // --- Fatia: ordenação da tabela "Por range" ---
