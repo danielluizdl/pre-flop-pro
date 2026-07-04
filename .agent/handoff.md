@@ -35,6 +35,12 @@
   `smoke/smoke.mjs` passaram a identificar o CoachPanel pelo botão de publicar
   (os nomes "Drill"/"Range Recall" agora colidem com a navegação).
 
+### Extra pós-Rodada 2 (pedido do Daniel)
+- Tela "Confirme os rounds": ícone de olho por linha abre o **preview do gabarito do round**
+  reusando `RangePreviewModal` — o Range passado é sintético (grid = snapshot do round, sem
+  `stackGrids`), então round multi-stack abre direto na variante certa com o badge do stack.
+  Sem strings novas (reusa `t.ranges.viewRange`/`t.common.close`). **828 testes verdes (75 arquivos).**
+
 ### PENDENTE (gate humano — Daniel)
 - [ ] **Migração D1 manual**: `npx wrangler d1 execute preflop-db --file=schema_v4.sql --remote`
       (sem ela: telemetria do modo descartada com 200 ok:false e aba coach vazia).

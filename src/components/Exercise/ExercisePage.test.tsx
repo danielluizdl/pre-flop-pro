@@ -99,6 +99,23 @@ describe('ExercisePage — seleção', () => {
     expect(screen.getByText('SB Push — <=100')).toBeInTheDocument()
   })
 
+  it('olho na confirmação abre o preview do gabarito do round certo (multi-stack)', () => {
+    render(<ExercisePage />)
+    fireEvent.click(screen.getByText('SB'))
+    fireEvent.click(screen.getByText('SB Push'))
+    fireEvent.click(screen.getByText('INICIAR EXERCÍCIO'))
+    const eyes = screen.getAllByRole('button', { name: 'Visualizar range' })
+    expect(eyes).toHaveLength(2)
+    fireEvent.click(eyes[1])
+    const dialog = screen.getByRole('dialog', { name: 'SB Push — 100-250' })
+    expect(dialog).toBeInTheDocument()
+    expect(dialog).toHaveTextContent('100-250')
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    fireEvent.click(eyes[0])
+    expect(screen.getByRole('dialog', { name: 'SB Push — <=100' })).toBeInTheDocument()
+  })
+
   it('Voltar na confirmação retorna à seleção mantendo os ranges marcados', () => {
     render(<ExercisePage />)
     fireEvent.click(screen.getByText('BTN'))

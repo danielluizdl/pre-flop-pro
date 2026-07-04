@@ -1,12 +1,15 @@
 import { useState } from 'react'
+import { Eye } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import { BrushControls } from '../RangeBuilder/BrushControls'
 import { RangeActionGrid } from '../Admin/RangeActionGrid'
 import { ComboCounter } from '../ui/ComboCounter'
 import { HandQuickSelect } from '../ui/HandQuickSelect'
+import { RangePreviewModal } from '../ui/RangePreviewModal'
 import { RANKS } from '../../utils/hands'
 import { t } from '../../i18n'
+import type { Range } from '../../types'
 
 const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'UTG']
 
@@ -165,8 +168,27 @@ function BuildRangeSelect() {
 /* ── Confirmação pré-rounds ─────────────────────────────────────────────────── */
 function BuildConfirm() {
   const rounds       = useStore(s => s.buildRounds)
+  const ranges       = useStore(s => s.ranges)
   const confirmBuild = useStore(s => s.confirmBuildSession)
   const stopBuild    = useStore(s => s.stopBuildSession)
+  const [previewIdx, setPreviewIdx] = useState<number | null>(null)
+
+  const previewRange = ((): Range | null => {
+    if (previewIdx === null) return null
+    const r = rounds[previewIdx]
+    if (!r) return null
+    const base = ranges.find(x => x.id === r.rangeId)
+    return {
+      id: r.rangeId,
+      name: r.label,
+      positions: base?.positions ?? [],
+      scenarios: base?.scenarios ?? [],
+      tableSize: base?.tableSize ?? 8,
+      grid: r.grid,
+      stackRange: r.stackRange || base?.stackRange,
+      customAction: r.customAction ?? base?.customAction,
+    }
+  })()
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
@@ -179,10 +201,20 @@ function BuildConfirm() {
         {rounds.map((r, i) => (
           <div key={i} className="flex items-center gap-3 px-4 py-3 bg-warm-800 border border-warm-700 rounded-xl">
             <span className="text-warm-500 text-xs font-bold tabular-nums w-14">{t.exercise.roundOf(i + 1, rounds.length)}</span>
-            <span className="font-bold text-white text-sm">{r.label}</span>
+            <span className="font-bold text-white text-sm flex-1 min-w-0 truncate">{r.label}</span>
+            <button
+              onClick={() => setPreviewIdx(i)}
+              className="flex-shrink-0 text-warm-500 hover:text-blue-400 transition-colors"
+              title={t.ranges.viewRange}
+              aria-label={t.ranges.viewRange}
+            >
+              <Eye size={15} />
+            </button>
           </div>
         ))}
       </div>
+
+      {previewRange && <RangePreviewModal range={previewRange} onClose={() => setPreviewIdx(null)} />}
 
       <div className="flex items-center justify-between pt-2">
         <button
