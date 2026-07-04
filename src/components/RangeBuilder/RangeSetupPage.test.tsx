@@ -77,6 +77,43 @@ describe('RangeSetupPage', () => {
     expect(setupNewRange).toHaveBeenCalledWith(8, true, 1.5)
   })
 
+  it('alternar 6-max e voltar para 8-max reexibe straddle e envia 8', async () => {
+    const setupNewRange = vi.fn()
+    useStore.setState({ setupNewRange })
+    render(<RangeSetupPage />)
+    await userEvent.click(screen.getByRole('button', { name: '6-max' }))
+    expect(screen.queryByText('Terá Straddle obrigatório?')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: '8-max' }))
+    expect(screen.getByText('Terá Straddle obrigatório?')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /Continuar/ }))
+    // straddle segue false (foi desligado ao ir para 6-max e não religado)
+    expect(setupNewRange).toHaveBeenCalledWith(8, false, 0.5)
+  })
+
+  it('desligar e religar straddle envia straddle=true', async () => {
+    const setupNewRange = vi.fn()
+    useStore.setState({ setupNewRange })
+    render(<RangeSetupPage />)
+    const straddleBox = screen.getByText('Terá Straddle obrigatório?').closest('div') as HTMLElement
+    await userEvent.click(within(straddleBox).getByRole('button', { name: 'Não' }))
+    await userEvent.click(within(straddleBox).getByRole('button', { name: 'Sim' }))
+    await userEvent.click(screen.getByRole('button', { name: /Continuar/ }))
+    expect(setupNewRange).toHaveBeenCalledWith(8, true, 0.5)
+  })
+
+  it('desligar e religar ante reexibe o input e envia o valor', async () => {
+    const setupNewRange = vi.fn()
+    useStore.setState({ setupNewRange })
+    render(<RangeSetupPage />)
+    const anteBox = screen.getByText('Terá ante?').closest('div') as HTMLElement
+    await userEvent.click(within(anteBox).getByRole('button', { name: 'Não' }))
+    expect(screen.queryByText('Quanto o ante?')).not.toBeInTheDocument()
+    await userEvent.click(within(anteBox).getByRole('button', { name: 'Sim' }))
+    expect(screen.getByText('Quanto o ante?')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /Continuar/ }))
+    expect(setupNewRange).toHaveBeenCalledWith(8, true, 0.5)
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     const { container } = render(<RangeSetupPage />)
     const results = await axe(container)

@@ -40,6 +40,26 @@ describe('ChangePasswordModal', () => {
     expect(changePassword).toHaveBeenCalledWith('senha1234')
   })
 
+  it('Enter no campo de confirmação submete', async () => {
+    const changePassword = vi.fn().mockResolvedValue({ ok: true })
+    useStore.setState({ changePassword })
+    render(<ChangePasswordModal />)
+    fireEvent.change(screen.getByLabelText('Nova senha:'), { target: { value: 'senha1234' } })
+    fireEvent.change(screen.getByLabelText('Confirmar senha:'), { target: { value: 'senha1234' } })
+    fireEvent.keyDown(screen.getByLabelText('Confirmar senha:'), { key: 'Enter' })
+    expect(changePassword).toHaveBeenCalledWith('senha1234')
+  })
+
+  it('erro do servidor é exibido', async () => {
+    const changePassword = vi.fn().mockResolvedValue({ ok: false, error: 'Falhou no servidor' })
+    useStore.setState({ changePassword })
+    render(<ChangePasswordModal />)
+    fireEvent.change(screen.getByLabelText('Nova senha:'), { target: { value: 'senha1234' } })
+    fireEvent.change(screen.getByLabelText('Confirmar senha:'), { target: { value: 'senha1234' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar senha' }))
+    expect(await screen.findByText('Falhou no servidor')).toBeInTheDocument()
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     const { container } = render(<ChangePasswordModal />)
     expect((await axe(container)).violations).toEqual([])
