@@ -330,6 +330,8 @@ export const en: Messages = {
     avgScore: 'Average score',
     roundsCount: (n: number) => `${n} round${n !== 1 ? 's' : ''}`,
     finish: 'Finish',
+    historyEmpty: 'No sessions yet.',
+    historyEmptyHint: 'Complete an exercise to see the history here.',
   },
   myAccount: {
     activeSessions: 'Active sessions',

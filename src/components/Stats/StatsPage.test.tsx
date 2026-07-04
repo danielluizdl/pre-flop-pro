@@ -140,6 +140,34 @@ describe('StatsPage', () => {
     createSpy.mockRestore(); revokeSpy.mockRestore(); clickSpy.mockRestore()
   })
 
+  it('aba Range Recall: estado vazio sem sessões do modo', () => {
+    useStore.setState({ trainingHistory: [SESSION], buildHistory: [], currentUser: null })
+    render(<StatsPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Range Recall' }))
+    expect(screen.getByText('Nenhuma sessão ainda.')).toBeInTheDocument()
+  })
+
+  it('aba Range Recall: lista sessões do modo e expande os rounds com tentativa', () => {
+    useStore.setState({
+      trainingHistory: [], currentUser: null,
+      buildHistory: [{
+        id: 10, timestamp: Date.now(), rangeNames: ['BTN RFI'], avgScore: 91.5,
+        rounds: [
+          { label: 'BTN RFI', score: 83, attempt: 1 },
+          { label: 'BTN RFI', score: 100, attempt: 2 },
+        ],
+      }],
+    })
+    render(<StatsPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Range Recall' }))
+    expect(screen.getByText('92')).toBeInTheDocument()
+    expect(screen.getByText('2 rounds')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('92'))
+    expect(screen.getByText('83/100')).toBeInTheDocument()
+    expect(screen.getByText('100/100')).toBeInTheDocument()
+    expect(screen.getByText('Tentativa 2')).toBeInTheDocument()
+  })
+
   it('só mostra a aba de nuvem quando há usuário logado', () => {
     useStore.setState({ trainingHistory: [SESSION], currentUser: null })
     const { rerender } = render(<StatsPage />)

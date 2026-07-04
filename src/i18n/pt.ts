@@ -328,6 +328,8 @@ export const pt = {
     avgScore: 'Nota média',
     roundsCount: (n: number) => `${n} round${n !== 1 ? 's' : ''}`,
     finish: 'Encerrar',
+    historyEmpty: 'Nenhuma sessão ainda.',
+    historyEmptyHint: 'Complete um exercício para ver o histórico aqui.',
   },
   myAccount: {
     activeSessions: 'Sessões ativas',

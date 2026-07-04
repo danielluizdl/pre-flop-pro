@@ -391,13 +391,85 @@ function GlobalHistoryPanel() {
   )
 }
 
+/* ── Histórico do modo Range Recall ────────────────────────────────────────── */
+function buildScoreColor(s: number): string {
+  return s >= 80 ? 'text-brand-500' : s >= 50 ? 'text-gold' : 'text-result-bad'
+}
+
+function BuildHistoryPanel() {
+  const buildHistory = useStore(s => s.buildHistory)
+  const [openId, setOpenId] = useState<number | null>(null)
+
+  const sessions = [...buildHistory].reverse()
+
+  if (sessions.length === 0) {
+    return (
+      <div className="text-center py-16">
+        <p className="text-warm-400 text-sm">{t.exercise.historyEmpty}</p>
+        <p className="text-warm-500 text-xs mt-1">{t.exercise.historyEmptyHint}</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {sessions.map(s => {
+        const isOpen = openId === s.id
+        return (
+          <div key={s.id} className="card-surface p-4">
+            <button
+              onClick={() => setOpenId(isOpen ? null : s.id)}
+              aria-expanded={isOpen}
+              className="w-full flex gap-4 items-start text-left"
+            >
+              <div className={`font-stat font-black tabular-nums text-3xl w-14 text-center flex-shrink-0 leading-none ${buildScoreColor(s.avgScore)}`}>
+                {Math.round(s.avgScore)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className="text-xs text-warm-400">{formatDate(s.timestamp)}</span>
+                  <span className="text-xs text-warm-600">·</span>
+                  <span className="text-xs text-warm-400">{t.exercise.roundsCount(s.rounds.length)}</span>
+                </div>
+                <div className="font-display uppercase text-warm-100 truncate leading-none" style={{ fontSize:18, letterSpacing:'0.03em' }}>
+                  {s.rangeNames.join(' · ') || t.stats.noName}
+                </div>
+              </div>
+              <span className={`text-warm-400 text-lg transition-transform duration-200 inline-block flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}>›</span>
+            </button>
+            {isOpen && (
+              <div className="mt-3 pt-3 border-t border-warm-700/60 space-y-1.5">
+                {s.rounds.map((r, i) => (
+                  <div key={i} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="flex items-center gap-2 min-w-0">
+                      <span className="text-warm-200 truncate">{r.label}</span>
+                      {(r.attempt ?? 1) > 1 && (
+                        <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-500/10 border border-brand-500/40 text-brand-400 flex-shrink-0">
+                          {t.exercise.attemptN(r.attempt!)}
+                        </span>
+                      )}
+                    </span>
+                    <span className={`font-bold tabular-nums flex-shrink-0 ${buildScoreColor(r.score)}`}>
+                      {t.exercise.scoreOf(String(r.score))}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 /* ── Página principal ──────────────────────────────────────────────────────── */
 export function StatsPage() {
   const trainingHistory = useStore(s => s.trainingHistory)
   const ranges          = useStore(s => s.ranges)
   const currentUser     = useStore(s => s.currentUser)
 
-  const [activeTab, setActiveTab]         = useState<'sessions' | 'global' | 'cloud'>('sessions')
+  const [activeTab, setActiveTab]         = useState<'sessions' | 'build' | 'global' | 'cloud'>('sessions')
   const [selectedSession, setSelectedSession] = useState<TrainingSession | null>(null)
 
   const sessions = [...trainingHistory].reverse()
@@ -418,6 +490,7 @@ export function StatsPage() {
         {([
           ...(currentUser ? [{ key: 'cloud' as const, label: t.stats.tabCloud }] : []),
           { key: 'sessions' as const, label: t.stats.tabSessions },
+          { key: 'build' as const,    label: t.exercise.navLabel },
           { key: 'global' as const,   label: t.stats.tabGlobal },
         ]).map(tab => (
           <button
@@ -438,6 +511,8 @@ export function StatsPage() {
       {/* Conteúdo por aba */}
       {activeTab === 'cloud' ? (
         <MyAccountStats />
+      ) : activeTab === 'build' ? (
+        <BuildHistoryPanel />
       ) : activeTab === 'sessions' ? (
         selectedSession ? (
           <SessionDetailView
