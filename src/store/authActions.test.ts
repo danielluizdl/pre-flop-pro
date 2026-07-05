@@ -160,4 +160,42 @@ describe('store: ações de auth (caminho feliz)', () => {
     await useStore.getState().restoreSession()
     expect(spy).not.toHaveBeenCalled()
   })
+
+  it('authSignup falha do servidor: retorna o erro do body e não persiste token', async () => {
+    mockFetch(() => ({ status: 400, body: { error: 'código de time inválido' } }))
+    const r = await useStore.getState().authSignup('u', 'p', 'bad', 'Nome', 'e@e.com')
+    expect(r.ok).toBe(false)
+    expect(r.error).toBe('código de time inválido')
+    expect(sessionStorage.getItem('pfp-auth-token')).toBeNull()
+  })
+
+  it('changePassword falha do servidor: retorna o erro do body', async () => {
+    useStore.setState({ authToken: 'tok', currentUser: { id: 1, username: 'u', name: '', email: '', role: 'player', firstLogin: false } })
+    mockFetch(() => ({ status: 400, body: { error: 'senha fraca' } }))
+    const r = await useStore.getState().changePassword('123')
+    expect(r.ok).toBe(false)
+    expect(r.error).toBe('senha fraca')
+  })
+
+  it('listDevices/revokeDevice/revokeOtherDevices falha do servidor: retornam erro do body', async () => {
+    useStore.setState({ authToken: 'tok' })
+    mockFetch(() => ({ status: 500, body: { error: 'servidor' } }))
+    expect((await useStore.getState().listDevices()).error).toBe('servidor')
+    expect((await useStore.getState().revokeDevice(1)).error).toBe('servidor')
+    expect((await useStore.getState().revokeOtherDevices()).error).toBe('servidor')
+  })
+
+  it('syncTeamRanges com versão mais nova mescla os ranges do time', async () => {
+    useStore.setState({ authToken: 'tok', ranges: [] })
+    localStorage.removeItem('team-ranges-version')
+    mockFetch((url) => {
+      if (url.includes('/api/ranges/list')) {
+        return { body: { version: Date.now(), ranges: [{ id: 7, name: 'Time BTN', positions: ['BTN'], grid: {}, scenarios: [], tableSize: 8 }] } }
+      }
+      return { body: {} }
+    })
+    await useStore.getState().syncTeamRanges()
+    expect(useStore.getState().ranges.some(r => r.id === 7)).toBe(true)
+    expect(useStore.getState().teamRangeIds).toContain(7)
+  })
 })
