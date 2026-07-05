@@ -1,5 +1,32 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-05 (PR #43 — 3 ajustes pós-revisão: contraste claro, nota decimal, aba Admin)
+
+- **Contexto:** PR #40 mergeada em `feature/auth-telemetry`; Dependabot #38/#39 (bumps de
+  patch/minor, testados e mergeados); issues #37/#17/#15 fechadas (concluídas). Daniel
+  revisou o preview e pediu 3 ajustes — branch `fix/coach-admin-tab` (a partir de
+  `feature/auth-telemetry` pós-merge), PR #43 aberta para `feature/auth-telemetry`.
+- **1. Contraste do claro no Range Check:** `ExercisePage.tsx` tinha `text-white` sobre
+  superfícies `warm-800` (cabeçalho de posição, nome dos ranges, linhas de confirmação/
+  resumo) — ilegível no claro porque foi escrito antes do sweep de tokens do tema.
+  Trocado para `text-warm-100` (padrão já usado em TrainerPage/SituationsPage).
+- **2. Nota decimal no histórico:** `StatsPage.tsx` usava `Math.round(s.avgScore)` na nota
+  principal da sessão de Range Check (escondia a precisão real, ex. 91.5→"92"). Agora
+  `toFixed(1)`, igual à nota por round.
+- **3. Nova aba "Funcionalidades de Admin" no CoachPanel** (`AdminView`, exportado p/
+  teste) — terceira aba ao lado de Drill/Range Check: lista de contas com busca, **criar
+  conta** (`POST /api/admin/create-user`, endpoint novo, coach-only, sem Turnstile, gera
+  senha temporária), **resetar senha** (reusa o endpoint existente) e **excluir conta**
+  (`POST /api/admin/delete-user`, endpoint novo, coach-only, recusa auto-exclusão e contas
+  não-`player`; cascade via FK). Reset de senha continua também no `PlayerQuickSummary`.
+- **946 testes verdes (80 arquivos)** (era 933), tsc limpo, build verde, **SMOKE OK**.
+
+### Pendente (Daniel)
+- [ ] Validar visualmente no preview (contraste claro, casa decimal, aba Admin: criar/
+      resetar/excluir conta) e revisar/mergear a PR #43.
+
+---
+
 ## 2026-07-05 (merge manual — Range Check + tema claro + daily improvements integrados)
 
 - A pedido do Daniel: `feature/auth-telemetry` (já com tema claro + daily improvements
