@@ -1,5 +1,5 @@
 import { useStore } from '../../store/useStore'
-import { LayoutDashboard, Layers, Edit3, PlayCircle, Clock, Moon, Sun, LogOut, Menu } from 'lucide-react'
+import { LayoutDashboard, Layers, Edit3, PlayCircle, Grid3x3, Clock, Moon, Sun, LogOut, Menu } from 'lucide-react'
 import { clsx } from 'clsx'
 import type { Page } from '../../types'
 import { AdminPanel } from '../Admin/AdminPanel'
@@ -11,6 +11,7 @@ const NAV_ICONS: { id: Page; icon: React.ElementType }[] = [
   { id: 'ranges',      icon: Layers },
   { id: 'range-setup', icon: Edit3 },
   { id: 'drill',       icon: PlayCircle },
+  { id: 'exercise',    icon: Grid3x3 },
   { id: 'history',     icon: Clock },
 ]
 
@@ -23,7 +24,7 @@ export function Sidebar({ collapsed, onToggle }: Props) {
   const { page, setPage, darkMode, toggleDarkMode, userMode, logout } = useStore()
   const NAV_LABELS: Partial<Record<Page, string>> = {
     dashboard: t.nav.dashboard, ranges: t.nav.ranges, 'range-setup': t.nav.createRange,
-    drill: t.nav.drill, history: t.nav.history,
+    drill: t.nav.drill, exercise: t.exercise.navLabel, history: t.nav.history,
   }
   const NAV_ITEMS = NAV_ICONS.map(n => ({ ...n, label: NAV_LABELS[n.id] ?? n.id }))
 

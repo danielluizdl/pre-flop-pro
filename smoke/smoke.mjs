@@ -38,7 +38,8 @@ if (!executablePath) {
   process.exit(1)
 }
 
-const preview = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort'], { stdio: 'ignore' })
+// shell:true no Windows: spawn('npx') puro só resolve npx.cmd via shell
+const preview = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort'], { stdio: 'ignore', shell: process.platform === 'win32' })
 const problems = []
 
 try {
@@ -105,8 +106,8 @@ try {
   await coach.route('**/api/admin/analytics*', r => r.fulfill({ json: { rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] } }))
   await coach.addInitScript(() => sessionStorage.setItem('pfp-auth-token', 'smoke-coach'))
   await coach.goto(`${BASE}/coach`, { waitUntil: 'networkidle' })
-  const gotCoach = await coach.getByRole('button', { name: 'Visão do time' }).first().isVisible().catch(() => false)
-  if (!gotCoach) problems.push('painel do coach não renderizou a aba Visão do time')
+  const gotCoach = await coach.getByRole('button', { name: /Publicar ranges para o time/ }).first().isVisible().catch(() => false)
+  if (!gotCoach) problems.push('painel do coach não renderizou o botão de publicar ranges')
   await coach.close()
 
   // Fôlego para um eventual loop de render estourar como pageerror/console.

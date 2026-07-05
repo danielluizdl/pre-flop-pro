@@ -7,7 +7,7 @@ export const SUIT_ICONS: Record<string, string> = { h: '♥', d: '♦', s: '♠'
 export type ActionType = 'fold' | 'call' | 'raise' | 'allin'
 export type RoleType = 'fold' | 'post' | 'limp' | 'limp-fold' | 'open' | '3bet' | 'iso' | 'call' | 'allin'
 export type TableSize = 6 | 8
-export type Page = 'dashboard' | 'editor' | 'table-editor' | 'ranges' | 'drill' | 'history' | 'range-setup' | 'category-detail' | 'admin'
+export type Page = 'dashboard' | 'editor' | 'table-editor' | 'ranges' | 'drill' | 'exercise' | 'history' | 'range-setup' | 'category-detail' | 'admin'
 
 export interface CurrentUser {
   id: number
@@ -142,6 +142,38 @@ export interface TrainingSession {
   consults: number
   durationSeconds: number
   handPerf?: Record<string, Record<string, { c: number; t: number }>>
+}
+
+export interface BuildRound {
+  rangeId: number
+  rangeName: string
+  stackRange: string
+  label: string
+  grid: Record<string, HandData>
+  customAction?: { label: string; color: string }
+}
+
+export interface BuildRoundResult {
+  roundIdx: number
+  label: string
+  score: number
+  attempt: number
+  userGrid: Record<string, HandData>
+  perHand: Record<string, number>
+}
+
+export interface BuildHistoryRound {
+  label: string
+  score: number
+  attempt?: number
+}
+
+export interface BuildSession {
+  id: number
+  timestamp: number
+  rangeNames: string[]
+  rounds: BuildHistoryRound[]
+  avgScore: number
 }
 
 // ── Table position definitions ───────────────────────────────────────────────

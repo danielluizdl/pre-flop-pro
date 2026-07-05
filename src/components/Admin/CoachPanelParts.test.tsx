@@ -105,4 +105,35 @@ describe('PlayerQuickSummary', () => {
     render(<PlayerQuickSummary userId={1} days={null} from={null} to={null} token="tok" />)
     expect(await screen.findByText('Sem dados de range para este jogador.')).toBeInTheDocument()
   })
+
+  it('resetar senha confirma, mostra a senha temporária e copia', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url.includes('/admin/reset-password')) {
+        expect(init?.method).toBe('POST')
+        expect(JSON.parse(String(init?.body))).toEqual({ userId: 1 })
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true, tempPassword: 'temp1234' }) } as unknown as Response)
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ rows: [] }) } as unknown as Response)
+    })
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const writeText = vi.fn()
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+
+    render(<PlayerQuickSummary userId={1} days={null} from={null} to={null} token="tok" />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Resetar senha' }))
+    expect(confirmSpy).toHaveBeenCalled()
+    expect(await screen.findByText('temp1234')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Copiar' }))
+    expect(writeText).toHaveBeenCalledWith('temp1234')
+    expect(screen.getByRole('button', { name: 'Copiado' })).toBeInTheDocument()
+  })
+
+  it('recusar a confirmação não chama o endpoint de reset', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: () => Promise.resolve({ rows: [] }) } as unknown as Response)
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    render(<PlayerQuickSummary userId={1} days={null} from={null} to={null} token="tok" />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Resetar senha' }))
+    expect(fetchSpy.mock.calls.every(c => !String(c[0]).includes('reset-password'))).toBe(true)
+  })
 })
