@@ -422,8 +422,8 @@ function BuildHistoryPanel() {
               aria-expanded={isOpen}
               className="w-full flex gap-4 items-start text-left"
             >
-              <div className={`font-stat font-black tabular-nums text-3xl w-14 text-center flex-shrink-0 leading-none ${buildScoreColor(s.avgScore)}`}>
-                {Math.round(s.avgScore)}
+              <div className={`font-stat font-black tabular-nums text-3xl w-16 text-center flex-shrink-0 leading-none ${buildScoreColor(s.avgScore)}`}>
+                {s.avgScore.toFixed(1)}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
