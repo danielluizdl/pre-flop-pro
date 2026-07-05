@@ -88,7 +88,7 @@ SLOTS_6MAX / SLOTS_8MAX: Slot[]              // {t:%, l:%} posição visual dos 
 
 ## Worker de Admin (`worker/index.js`) — segurança
 - Arquivo único (deploy manual copiando para o Cloudflare). Funções puras exportadas e testadas em `worker/index.test.js`.
-- **CORS** (`corsOrigin`): ecoa a Origin só se estiver na allowlist (`danielluizdl.github.io`, `localhost:5173`).
+- **CORS** (`corsOrigin`): ecoa a Origin só se estiver na allowlist (`danielluizdl.github.io`, `pre-flop-pro.pages.dev`, `localhost:5173`) **ou** for um preview de branch (`*.pre-flop-pro.pages.dev`, regex travada no sufixo) — sem isso, "Publicar ranges" falha com `Failed to fetch` em qualquer preview.
 - **Senha** (`passwordMatches`): compara digests SHA-256 byte a byte (constant-time), sem early-return.
 - **Rate limit** (`checkRateLimit`): Map em memória por `CF-Connecting-IP`, 5 tentativas/min → 429. Best-effort (reseta por isolate; complementar com WAF).
 - **Token de sessão** (`generateToken`/`verifyToken`): action `validate` com senha correta retorna `{ ok, token, expiresAt }`, token = HMAC-SHA256 (chave = `ADMIN_PASSWORD`, exp 30 min). Publish aceita `Authorization: Bearer <token>` OU senha no body.
