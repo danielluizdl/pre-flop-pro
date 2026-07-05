@@ -1,5 +1,49 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-05 (PR #43 — rodada 2: modal de confirmação + editar dados + códigos de convite)
+
+- **Contexto:** Daniel pediu, antes do merge da PR #43, mais um ajuste na aba
+  "Funcionalidades de Admin": clicar na conta (em vez de botões soltos na linha) pra
+  revelar resetar senha/excluir/editar dados, com pop-up de confirmação enfatizando
+  risco/irreversibilidade em qualquer mudança, e um mecanismo de códigos únicos de
+  convite (substituindo o `TEAM_CODE` compartilhado) pra saber quem usou qual código.
+  Decisão confirmada com o Daniel: **substituir** o `TEAM_CODE`, não manter os dois.
+- **UX da conta**: linha da tabela agora é clicável (mesmo padrão do `OverviewTableRow` —
+  chevron ▸/▾, **sem `aria-expanded` no `<tr>`**, axe rejeita esse atributo fora de
+  `treegrid`) e expande **Editar dados** / **Resetar senha** / **Excluir**. As três passam
+  por **`ConfirmDangerModal`** (novo componente local, `useModalA11y`, `role="dialog"`)
+  antes de executar: mostra o que vai mudar (editar → diff nome/e-mail riscado→novo;
+  resetar/excluir → aviso vermelho "não pode ser desfeito") e só age no clique explícito
+  em Confirmar. Substituiu os `window.confirm()` nativos que existiam antes (só na
+  `PlayerQuickSummary`, aba Drill, o reset ainda usa `confirm()` nativo — não foi pedido
+  mexer lá).
+- **Editar dados**: novo endpoint `functions/api/admin/update-user.js` (coach-only, só
+  `role='player'`, valida nome/e-mail e duplicidade de e-mail).
+- **Códigos de convite** (`schema_v5.sql`, tabela `invite_codes`: `code` único,
+  `created_by`, `used_by`/`used_at` nullable `ON DELETE SET NULL`): `create-invite-code.js`
+  (coach-only, gera código de 8 hex maiúsculo com retry em colisão) e `invite-codes.js`
+  (lista com `LEFT JOIN users` mostrando quem usou cada um). **`signup.js` reescrito**:
+  `teamCode`/`TEAM_CODE` removidos, agora exige `inviteCode` válido e não-usado; ao
+  cadastrar, marca o código como usado (`used_by`/`used_at`). Front: `authSignup` e
+  `LoginPage` renomeados de `teamCode`→`inviteCode` (label "Código de convite:", chave
+  i18n `auth.inviteCodeLabel`). Nova seção "Códigos de convite" na aba Admin (botão
+  gerar + tabela com status).
+- **Migração `schema_v5.sql` JÁ APLICADA** no D1 remoto (tabela `invite_codes` criada,
+  9 tabelas no total agora). **IMPORTANTE:** a tabela está vazia — nenhum jogador
+  consegue se cadastrar no preview desta branch até o coach gerar pelo menos 1 código
+  na aba Admin.
+- **959 testes verdes (82 arquivos)** (era 946), tsc limpo, build verde, SMOKE OK.
+
+### Pendente (Daniel)
+- [ ] Gerar pelo menos 1 código de convite na aba Admin antes de testar cadastro novo
+      no preview (a tabela `invite_codes` está vazia após a migração).
+- [ ] Validar visualmente: modal de confirmação (editar/resetar/excluir), diff mostrado
+      antes de salvar edição, geração/listagem de códigos de convite.
+- [ ] Revisar/mergear a PR #43 para `feature/auth-telemetry` (era o próximo passo antes
+      deste pedido extra — agora inclui também estes ajustes).
+
+---
+
 ## 2026-07-05 (PR #43 — 3 ajustes pós-revisão: contraste claro, nota decimal, aba Admin)
 
 - **Contexto:** PR #40 mergeada em `feature/auth-telemetry`; Dependabot #38/#39 (bumps de
