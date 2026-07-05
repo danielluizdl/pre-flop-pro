@@ -37,6 +37,13 @@ describe('TopHandsPanel', () => {
     expect(onSelect).toHaveBeenCalledWith('KK')
   })
 
+  it('voltar para a aba de erros restaura a lista de erros', () => {
+    render(<TopHandsPanel cells={cells} selected={null} onSelect={() => {}} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Top 20 consultas' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Top 20 erros' }))
+    expect(screen.getByText('25%')).toBeInTheDocument()
+  })
+
   it('estado vazio quando não há dados', () => {
     render(<TopHandsPanel cells={[]} selected={null} onSelect={() => {}} />)
     expect(screen.getByText('Sem dados.')).toBeInTheDocument()
@@ -61,6 +68,11 @@ describe('HandDetailCard', () => {
     render(<HandDetailCard cell={cell({ played: { fold: 10, call: 0, raise: 90, allin: 0, extra: 0 } })} />)
     expect(screen.getByText('Como o time jogou esta mão')).toBeInTheDocument()
     expect(screen.getByText('Raise 90%')).toBeInTheDocument()
+  })
+
+  it('não mostra a barra "como o time jogou" quando o total jogado é zero', () => {
+    render(<HandDetailCard cell={cell({ played: { fold: 0, call: 0, raise: 0, allin: 0, extra: 0 } })} />)
+    expect(screen.queryByText('Como o time jogou esta mão')).not.toBeInTheDocument()
   })
 
   it('não tem violações de acessibilidade (axe)', async () => {
