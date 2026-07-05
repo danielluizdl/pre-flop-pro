@@ -38,6 +38,15 @@ describe('RangeActionGrid', () => {
     expect(getRenderCount('actionCell')).toBe(0)
   })
 
+  it('inclui all-in e ação extra no tooltip e o mouseLeave o esconde', () => {
+    const grid: Record<string, ActionFreq> = { AA: { allin: 30, extra: 20 } }
+    const { container } = render(<RangeActionGrid title="t" grid={grid} />)
+    fireEvent.mouseEnter(screen.getByText('AA'))
+    expect(screen.getByText('30% All-in · 20% Extra · 50% Fold')).toBeInTheDocument()
+    fireEvent.mouseLeave(container.querySelector('.grid')!)
+    expect(screen.queryByText('30% All-in · 20% Extra · 50% Fold')).not.toBeInTheDocument()
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     const { container } = render(<RangeActionGrid title="Range real" grid={{ AA: { raise: 100 } }} />)
     const results = await axe(container)

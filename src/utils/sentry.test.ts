@@ -91,6 +91,20 @@ describe('sentry', () => {
       a.self = a
       expect(() => scrubEvent(a)).not.toThrow()
     })
+
+    it('processa arrays elemento a elemento', async () => {
+      const { scrubEvent } = await loadWithDsn('https://exemplo@sentry.io/1')
+      const out = scrubEvent(['user@x.com', { token: 'a'.repeat(40) }]) as [string, { token: string }]
+      expect(out[0]).toBe('[email]')
+      expect(out[1].token).toBe('[redacted]')
+    })
+
+    it('o beforeSend passado ao init redige o evento', async () => {
+      const { initSentry } = await loadWithDsn('https://exemplo@sentry.io/1')
+      initSentry()
+      const beforeSend = init.mock.calls[0][0].beforeSend as (e: { message: string }) => { message: string }
+      expect(beforeSend({ message: 'erro de joao@teste.com' }).message).toBe('erro de [email]')
+    })
   })
 
   describe('captureError', () => {
