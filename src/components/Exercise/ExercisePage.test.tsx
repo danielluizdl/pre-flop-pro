@@ -173,15 +173,15 @@ describe('ExercisePage — round ativo', () => {
     expect(screen.getByText('Diferença por mão')).toBeInTheDocument()
   })
 
-  it('painel de combos compara gabarito x seu range e mostra a diferença por ação', () => {
+  it('painel de combos compara gabarito x seu range em % e mostra a diferença em pontos percentuais', () => {
     const { rangeData } = useStore.getState()
     useStore.setState({ rangeData: { ...rangeData, grid: gridWith({ AA: { call: 100 } }) } })
     render(<ExercisePage />)
     fireEvent.click(screen.getByText('Enviar resposta'))
     expect(screen.getByText('Combos por ação — gabarito x seu range')).toBeInTheDocument()
     expect(screen.getByText('Diferença')).toBeInTheDocument()
-    expect(screen.getByText('+6')).toBeInTheDocument()
-    expect(screen.getByText('-6')).toBeInTheDocument()
+    expect(screen.getByText('+0.5pp')).toBeInTheDocument()
+    expect(screen.getByText('-0.5pp')).toBeInTheDocument()
   })
 
   it('Tentar novamente refaz o round e marca a tentativa 2', () => {

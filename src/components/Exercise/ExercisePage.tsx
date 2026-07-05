@@ -7,7 +7,7 @@ import { RangeActionGrid } from '../Admin/RangeActionGrid'
 import { ComboCounter } from '../ui/ComboCounter'
 import { HandQuickSelect } from '../ui/HandQuickSelect'
 import { RANKS } from '../../utils/hands'
-import { rangeComboStats } from '../../utils/rangeCombos'
+import { rangeComboStats, TOTAL_COMBOS } from '../../utils/rangeCombos'
 import { t } from '../../i18n'
 import type { HandData } from '../../types'
 
@@ -280,8 +280,8 @@ function DiffGrid({ perHand }: { perHand: Record<string, number> }) {
 
 const COMBO_DIFF_COLORS = { raise: '#ef4444', call: '#22c55e', allin: '#6b2d0d', extra: '#d97757', fold: '#3a342c' }
 
-function fmtCombos(c: number): string {
-  return Math.abs(c - Math.round(c)) < 0.01 ? String(Math.round(c)) : c.toFixed(1)
+function fmtPct(p: number): string {
+  return Math.abs(p - Math.round(p)) < 0.05 ? String(Math.round(p)) : p.toFixed(1)
 }
 
 function ComboDiffPanel({ realGrid, userGrid, extraLabel, extraColor }: {
@@ -297,10 +297,10 @@ function ComboDiffPanel({ realGrid, userGrid, extraLabel, extraColor }: {
       key,
       label: key === 'extra' ? (extraLabel || t.common.actions.extra) : t.common.actions[key],
       color: key === 'extra' ? (extraColor || COMBO_DIFF_COLORS.extra) : COMBO_DIFF_COLORS[key],
-      real: real.byAction[key],
-      user: user.byAction[key],
+      real: (real.byAction[key] / TOTAL_COMBOS) * 100,
+      user: (user.byAction[key] / TOTAL_COMBOS) * 100,
     }))
-    .filter(r => r.real > 0.001 || r.user > 0.001)
+    .filter(r => r.real > 0.05 || r.user > 0.05)
 
   return (
     <div className="rounded-lg border border-warm-700 bg-warm-800/40 p-3 max-w-sm">
@@ -319,10 +319,10 @@ function ComboDiffPanel({ realGrid, userGrid, extraLabel, extraColor }: {
                 <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0 border border-warm-600/40" style={{ background: r.color }} />
                 {r.label}
               </span>
-              <span className="text-warm-100 font-semibold tabular-nums text-right">{fmtCombos(r.real)}</span>
-              <span className="text-warm-100 font-semibold tabular-nums text-right">{fmtCombos(r.user)}</span>
+              <span className="text-warm-100 font-semibold tabular-nums text-right">{fmtPct(r.real)}%</span>
+              <span className="text-warm-100 font-semibold tabular-nums text-right">{fmtPct(r.user)}%</span>
               <span className={`font-semibold tabular-nums text-right ${deltaClass}`}>
-                {delta > 0 ? '+' : ''}{fmtCombos(delta)}
+                {delta > 0 ? '+' : ''}{fmtPct(delta)}pp
               </span>
             </div>
           )
