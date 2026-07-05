@@ -1,5 +1,20 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-05 (agente — ajustes do tema claro pedidos pelo Daniel)
+
+- Feedback do Daniel na PR #42: light estava claro demais e a área da mesa (drill +
+  Configurar Cenários) ficava um bloco preto destoante.
+- **Rampa clara recalibrada** para bege (page #e6ddc6, card #f0e8d3, input #d8cca9 etc.).
+- **Área da mesa tematizada**: containers do drill/TableEditor deixaram de ser subtree
+  `dark`; usam `var(--table-box-bg, <hex dark>)` + `var(--table-box-shadow, ...)`; feltro do
+  `PokerTable.module.css` usa `var(--felt-1..3, <hex dark>)`. As vars são definidas SÓ em
+  `:root:not(.dark)` → no escuro os fallbacks reproduzem os valores originais (dark intacto).
+- DrillActionButton/badge RNG/labels internos: hex fixo → tokens warm (valores dark idênticos).
+- Tokens `brand-300/400` e `orange-300/400` (texto de destaque em superfície warm) ganharam
+  versão escura no claro; `brand-500` mantido (accent da marca, estilo claude.ai).
+- 776 testes + build verdes; screenshots claro/escuro re-verificados (dashboard, drill ativo,
+  editor). Dark permanece pixel-idêntico.
+
 ## 2026-07-04 (agente — TEMA CLARO implementado, PR aberta)
 
 ### O que foi feito
