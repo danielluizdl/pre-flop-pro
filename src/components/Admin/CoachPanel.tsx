@@ -1664,9 +1664,271 @@ function PublishTeamRanges() {
   )
 }
 
+export function AdminView({ token }: { token: string | null }) {
+  const [users, setUsers] = useState<CoachUser[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const [search, setSearch] = useState('')
+
+  const [showCreate, setShowCreate] = useState(false)
+  const [createForm, setCreateForm] = useState({ username: '', name: '', email: '' })
+  const [creating, setCreating] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
+  const [createResult, setCreateResult] = useState<{ username: string; tempPassword: string } | null>(null)
+
+  const [resetTargetId, setResetTargetId] = useState<number | null>(null)
+  const [resetting, setResetting] = useState(false)
+  const [resetResult, setResetResult] = useState<{ userId: number; tempPassword: string } | null>(null)
+  const [resetError, setResetError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [deleteError, setDeleteError] = useState<{ userId: number; message: string } | null>(null)
+
+  const loadUsers = useCallback(() => {
+    if (!token) return
+    setLoading(true)
+    setLoadError('')
+    fetch('/api/admin/users', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
+      .then(d => setUsers(d.users ?? []))
+      .catch(() => setLoadError(t.coach.loadError))
+      .finally(() => setLoading(false))
+  }, [token])
+
+  useEffect(() => { loadUsers() }, [loadUsers])
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault()
+    if (!token || creating) return
+    setCreating(true)
+    setCreateError(null)
+    setCreateResult(null)
+    try {
+      const res = await fetch('/api/admin/create-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(createForm),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok || !data?.ok) { setCreateError(data?.error ?? `${t.coach.loadError} (${res.status})`); return }
+      setCreateResult({ username: createForm.username, tempPassword: data.tempPassword })
+      setCreateForm({ username: '', name: '', email: '' })
+      loadUsers()
+    } catch (e) {
+      captureError(e, { area: 'admin-create-user' })
+      setCreateError(t.coach.loadError)
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  async function handleReset(userId: number) {
+    if (!token || resetting) return
+    if (!confirm(t.coach.resetConfirm)) return
+    setResetTargetId(userId)
+    setResetting(true)
+    setResetError(null)
+    setResetResult(null)
+    setCopied(false)
+    try {
+      const res = await fetch('/api/admin/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ userId }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok || !data?.ok) { setResetError(data?.error ?? `${t.coach.loadError} (${res.status})`); return }
+      setResetResult({ userId, tempPassword: data.tempPassword })
+    } catch (e) {
+      captureError(e, { area: 'admin-reset-password' })
+      setResetError(t.coach.loadError)
+    } finally {
+      setResetting(false)
+    }
+  }
+
+  async function handleDelete(userId: number, label: string) {
+    if (!token || deletingId) return
+    if (!confirm(t.coach.deleteConfirm(label))) return
+    setDeletingId(userId)
+    setDeleteError(null)
+    try {
+      const res = await fetch('/api/admin/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ userId }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok || !data?.ok) { setDeleteError({ userId, message: data?.error ?? `${t.coach.loadError} (${res.status})` }); return }
+      setUsers(u => u.filter(x => x.id !== userId))
+    } catch (e) {
+      captureError(e, { area: 'admin-delete-user' })
+      setDeleteError({ userId, message: t.coach.loadError })
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  const filtered = users.filter(u => {
+    const q = search.trim().toLowerCase()
+    if (!q) return true
+    return u.username.toLowerCase().includes(q) || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+  })
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder={t.coach.searchPlaceholder}
+          className="px-3 py-2 rounded-lg bg-warm-800 border border-warm-700 text-warm-100 text-sm placeholder:text-warm-500 focus:outline-none focus:border-brand-500"
+        />
+        <button
+          onClick={() => { setShowCreate(o => !o); setCreateError(null); setCreateResult(null) }}
+          className="px-3.5 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold transition-colors"
+        >
+          {showCreate ? t.coach.cancelCreate : t.coach.createAccount}
+        </button>
+      </div>
+
+      {showCreate && (
+        <form onSubmit={handleCreate} className="rounded-xl border border-warm-700 bg-warm-800/40 p-4 flex flex-wrap items-end gap-3">
+          <div className="flex flex-col gap-1">
+            <label htmlFor="admin-new-username" className="text-[0.7rem] font-semibold text-warm-500 uppercase tracking-wide">{t.coach.newUsername}</label>
+            <input
+              id="admin-new-username"
+              required
+              value={createForm.username}
+              onChange={e => setCreateForm(f => ({ ...f, username: e.target.value }))}
+              className="px-2.5 py-1.5 rounded-lg bg-warm-800 border border-warm-600 text-warm-100 text-sm focus:outline-none focus:border-brand-500"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="admin-new-name" className="text-[0.7rem] font-semibold text-warm-500 uppercase tracking-wide">{t.coach.newName}</label>
+            <input
+              id="admin-new-name"
+              required
+              value={createForm.name}
+              onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))}
+              className="px-2.5 py-1.5 rounded-lg bg-warm-800 border border-warm-600 text-warm-100 text-sm focus:outline-none focus:border-brand-500"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="admin-new-email" className="text-[0.7rem] font-semibold text-warm-500 uppercase tracking-wide">{t.coach.newEmail}</label>
+            <input
+              id="admin-new-email"
+              type="email"
+              value={createForm.email}
+              onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))}
+              className="px-2.5 py-1.5 rounded-lg bg-warm-800 border border-warm-600 text-warm-100 text-sm focus:outline-none focus:border-brand-500"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={creating}
+            className="px-3.5 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-40 text-white text-sm font-semibold transition-colors"
+          >
+            {creating ? t.coach.creating : t.coach.confirmCreate}
+          </button>
+          {createError && <span className="text-xs text-red-400 w-full">{createError}</span>}
+          {createResult && (
+            <div className="w-full rounded-xl border border-brand-600/50 bg-warm-800/60 p-3">
+              <p className="text-xs text-warm-400 mb-1.5">{t.coach.accountCreated(createResult.username)}</p>
+              <div className="flex items-center gap-2">
+                <code className="text-lg font-bold tracking-widest text-brand-300 select-all">{createResult.tempPassword}</code>
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard?.writeText(createResult.tempPassword)}
+                  className="px-2.5 py-1 text-xs rounded-lg border border-warm-600 text-warm-300 hover:bg-warm-800 transition-colors"
+                >
+                  {t.coach.copy}
+                </button>
+              </div>
+            </div>
+          )}
+        </form>
+      )}
+
+      <Section title={t.coach.accountsTitle} loading={loading} error={loadError} empty={filtered.length === 0} onRetry={loadUsers}>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-warm-800 text-warm-400 text-xs uppercase select-none">
+              <th className={TH}>{t.coach.colPlayer}</th>
+              <th className={TH}>{t.coach.newEmail}</th>
+              <th className={THR}>{t.coach.colHands}</th>
+              <th className={THR}>{t.coach.colAccuracy}</th>
+              <th className={THR}>{t.coach.createdAt}</th>
+              <th className={THR}>{t.coach.actionsCol}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map(u => {
+              const acc = u.total_hands > 0 && u.correct_hands !== null ? Math.round((u.correct_hands / u.total_hands) * 100) : null
+              return (
+                <Fragment key={u.id}>
+                  <tr className="border-t border-warm-700/60">
+                    <td className={`${TD} text-warm-100 font-semibold`}>{u.name || u.username}</td>
+                    <td className={`${TD} text-warm-400`}>{u.email || '—'}</td>
+                    <td className={`${TDR} text-warm-300`}>{u.total_hands}</td>
+                    <td className={`${TDR} ${acc !== null ? accColor(acc) : 'text-warm-500'}`}>{acc !== null ? `${acc}%` : '—'}</td>
+                    <td className={`${TDR} text-warm-500`}>{formatDateShort(u.created_at)}</td>
+                    <td className={`${TDR}`}>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleReset(u.id)}
+                          disabled={resetting && resetTargetId === u.id}
+                          className="px-2.5 py-1 text-xs rounded-lg border border-warm-600 text-warm-300 hover:bg-warm-700 hover:text-warm-100 disabled:opacity-40 transition-colors whitespace-nowrap"
+                        >
+                          {resetting && resetTargetId === u.id ? t.coach.resetting : t.coach.resetPassword}
+                        </button>
+                        <button
+                          onClick={() => handleDelete(u.id, u.name || u.username)}
+                          disabled={deletingId === u.id}
+                          className="px-2.5 py-1 text-xs rounded-lg border border-red-900/60 text-red-400 hover:bg-red-950/40 disabled:opacity-40 transition-colors whitespace-nowrap"
+                        >
+                          {deletingId === u.id ? t.coach.deleting : t.coach.deleteAccount}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {resetResult?.userId === u.id && (
+                    <tr className="bg-warm-800/40">
+                      <td colSpan={6} className="px-2.5 py-2.5">
+                        <div className="rounded-xl border border-brand-600/50 bg-warm-800/60 p-3 inline-flex items-center gap-2">
+                          <span className="text-xs text-warm-400">{t.coach.tempPassword}</span>
+                          <code className="text-lg font-bold tracking-widest text-brand-300 select-all">{resetResult.tempPassword}</code>
+                          <button
+                            onClick={() => { navigator.clipboard?.writeText(resetResult.tempPassword); setCopied(true) }}
+                            className="px-2.5 py-1 text-xs rounded-lg border border-warm-600 text-warm-300 hover:bg-warm-700 transition-colors"
+                          >
+                            {copied ? t.coach.copied : t.coach.copy}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  {resetError && resetTargetId === u.id && (
+                    <tr><td colSpan={6} className="px-2.5 py-1.5 text-xs text-red-400">{resetError}</td></tr>
+                  )}
+                  {deleteError?.userId === u.id && (
+                    <tr><td colSpan={6} className="px-2.5 py-1.5 text-xs text-red-400">{deleteError.message}</td></tr>
+                  )}
+                </Fragment>
+              )
+            })}
+          </tbody>
+        </table>
+      </Section>
+    </div>
+  )
+}
+
 export default function CoachPanel() {
   const authToken = useStore(s => s.authToken)
-  const [area, setArea] = useState<'drill' | 'recall'>('drill')
+  const [area, setArea] = useState<'drill' | 'recall' | 'admin'>('drill')
 
   return (
     <div className="space-y-4">
@@ -1675,6 +1937,7 @@ export default function CoachPanel() {
         {([
           { key: 'drill', label: t.coach.tabDrill },
           { key: 'recall', label: t.coach.tabRecall },
+          { key: 'admin', label: t.coach.tabAdmin },
         ] as const).map(tab => (
           <button
             key={tab.key}
@@ -1689,7 +1952,7 @@ export default function CoachPanel() {
         ))}
       </div>
 
-      {area === 'drill' ? <TeamView token={authToken} /> : <RecallView token={authToken} />}
+      {area === 'drill' ? <TeamView token={authToken} /> : area === 'recall' ? <RecallView token={authToken} /> : <AdminView token={authToken} />}
     </div>
   )
 }

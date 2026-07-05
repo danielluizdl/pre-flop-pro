@@ -60,6 +60,21 @@ describe('CoachPanel', () => {
     expect(screen.getByText('Todos os jogadores')).toBeInTheDocument()
   })
 
+  it('troca para a aba "Funcionalidades de Admin" e lista as contas', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      const data = url.includes('/admin/users')
+        ? { users: [{ id: 1, username: 'jogador1', name: 'Jogador Um', email: 'j1@x.com', created_at: 1700000000, total_hands: 10, correct_hands: 8 }] }
+        : { rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(data) } as unknown as Response)
+    })
+    useStore.setState({ authToken: 'tok' })
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Funcionalidades de Admin' }))
+    expect(await screen.findByText('Jogador Um')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '+ Adicionar conta' })).toBeInTheDocument()
+  })
+
   it('o filtro de range expõe aria-expanded e alterna ao abrir', async () => {
     mockApi()
     render(<CoachPanel />)

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { axe } from 'jest-axe'
-import { TopHandsPanel, HandDetailCard, PlayerQuickSummary } from './CoachPanel'
+import { TopHandsPanel, HandDetailCard, PlayerQuickSummary, AdminView } from './CoachPanel'
 import type { GridCell } from './RangeHeatGrid'
 
 const cell = (over: Partial<GridCell>): GridCell => ({
@@ -135,5 +135,117 @@ describe('PlayerQuickSummary', () => {
     render(<PlayerQuickSummary userId={1} days={null} from={null} to={null} token="tok" />)
     fireEvent.click(await screen.findByRole('button', { name: 'Resetar senha' }))
     expect(fetchSpy.mock.calls.every(c => !String(c[0]).includes('reset-password'))).toBe(true)
+  })
+})
+
+describe('AdminView', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  const users = [
+    { id: 1, username: 'jogador1', name: 'Jogador Um', email: 'j1@example.com', created_at: 1700000000, total_hands: 100, correct_hands: 80 },
+    { id: 2, username: 'jogador2', name: 'Jogador Dois', email: '', created_at: 1700000100, total_hands: 0, correct_hands: null },
+  ]
+
+  function mockUsers(list = users) {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      if (String(input).includes('/admin/users')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ users: list }) } as unknown as Response)
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) } as unknown as Response)
+    })
+  }
+
+  it('lista as contas com mãos e precisão', async () => {
+    mockUsers()
+    render(<AdminView token="tok" />)
+    expect(await screen.findByText('Jogador Um')).toBeInTheDocument()
+    expect(screen.getByText('80%')).toBeInTheDocument()
+    expect(screen.getByText('Jogador Dois')).toBeInTheDocument()
+  })
+
+  it('busca filtra por nome/usuário/e-mail', async () => {
+    mockUsers()
+    render(<AdminView token="tok" />)
+    await screen.findByText('Jogador Um')
+    fireEvent.change(screen.getByPlaceholderText('Buscar jogador…'), { target: { value: 'dois' } })
+    expect(screen.queryByText('Jogador Um')).not.toBeInTheDocument()
+    expect(screen.getByText('Jogador Dois')).toBeInTheDocument()
+  })
+
+  it('criar conta chama o endpoint e mostra a senha temporária', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url.includes('/admin/create-user')) {
+        expect(JSON.parse(String(init?.body))).toEqual({ username: 'novojogador', name: 'Novo', email: '' })
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true, tempPassword: 'abc123' }) } as unknown as Response)
+      }
+      if (url.includes('/admin/users')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ users }) } as unknown as Response)
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) } as unknown as Response)
+    })
+    render(<AdminView token="tok" />)
+    await screen.findByText('Jogador Um')
+    fireEvent.click(screen.getByRole('button', { name: '+ Adicionar conta' }))
+    fireEvent.change(screen.getByLabelText('Usuário'), { target: { value: 'novojogador' } })
+    fireEvent.change(screen.getByLabelText('Nome'), { target: { value: 'Novo' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Criar conta' }))
+    expect(await screen.findByText('abc123')).toBeInTheDocument()
+    expect(screen.getByText(/Conta "novojogador" criada/)).toBeInTheDocument()
+  })
+
+  it('resetar senha de uma conta específica mostra a senha temporária inline', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url.includes('/admin/reset-password')) {
+        expect(JSON.parse(String(init?.body))).toEqual({ userId: 2 })
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true, tempPassword: 'reset999' }) } as unknown as Response)
+      }
+      if (url.includes('/admin/users')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ users }) } as unknown as Response)
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) } as unknown as Response)
+    })
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<AdminView token="tok" />)
+    await screen.findByText('Jogador Um')
+    const resetButtons = screen.getAllByRole('button', { name: 'Resetar senha' })
+    fireEvent.click(resetButtons[1])
+    expect(await screen.findByText('reset999')).toBeInTheDocument()
+  })
+
+  it('excluir conta confirma e remove da lista', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url.includes('/admin/delete-user')) {
+        expect(JSON.parse(String(init?.body))).toEqual({ userId: 1 })
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) } as unknown as Response)
+      }
+      if (url.includes('/admin/users')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ users }) } as unknown as Response)
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) } as unknown as Response)
+    })
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<AdminView token="tok" />)
+    await screen.findByText('Jogador Um')
+    fireEvent.click(screen.getAllByRole('button', { name: 'Excluir' })[0])
+    await new Promise(r => setTimeout(r, 0))
+    expect(screen.queryByText('Jogador Um')).not.toBeInTheDocument()
+  })
+
+  it('recusar a confirmação de exclusão não chama o endpoint', async () => {
+    const fetchSpy = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+      if (String(input).includes('/admin/users')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ users }) } as unknown as Response)
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) } as unknown as Response)
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    render(<AdminView token="tok" />)
+    await screen.findByText('Jogador Um')
+    fireEvent.click(screen.getAllByRole('button', { name: 'Excluir' })[0])
+    expect(fetchSpy.mock.calls.every(c => !String(c[0]).includes('delete-user'))).toBe(true)
   })
 })
