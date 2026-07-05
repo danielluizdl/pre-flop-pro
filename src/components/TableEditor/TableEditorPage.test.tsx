@@ -268,6 +268,43 @@ describe('TableEditorPage', () => {
     expect(removeSessionGrid).toHaveBeenCalled()
   })
 
+  it('marcar o herói de uma posição chama updateHero', () => {
+    const updateHero = vi.fn()
+    setup({ updateHero })
+    render(<TableEditorPage />)
+    const heroRadios = screen.getAllByRole('radio')
+    fireEvent.click(heroRadios[0])
+    expect(updateHero).toHaveBeenCalled()
+  })
+
+  it('remover o cenário em edição limpa o modo de edição', () => {
+    const removeScenario = vi.fn()
+    setup({
+      removeScenario,
+      tempScenarios: [{ id: 1, data: fullScenario(), pot: '5.0', ante: 0.5, summary: 'BTN Open (2bb)' }],
+    })
+    render(<TableEditorPage />)
+    const matches = screen.getAllByText(/BTN Open/)
+    fireEvent.click(matches[matches.length - 1])
+    expect(screen.getByRole('button', { name: /Salvar alterações/ })).toBeInTheDocument()
+    const removeBtn = document.querySelector('button.text-red-400')!
+    fireEvent.click(removeBtn)
+    expect(removeScenario).toHaveBeenCalledWith(0)
+    expect(screen.queryByRole('button', { name: /Salvar alterações/ })).not.toBeInTheDocument()
+  })
+
+  it('modal de nome ao editar range existente pré-preenche com o nome atual do range', () => {
+    setup({
+      rangeData: { id: 42, name: 'BTN RFI', grid: makeEmptyGrid(), positions: ['BTN'], tableSize: 8, stackRange: '' },
+      ranges: [{ id: 42, name: 'Range existente', positions: ['BTN'], grid: makeEmptyGrid(), scenarios: [], tableSize: 8 }],
+      tempScenarios: [{ id: 1, data: fullScenario(), pot: '5.0', ante: 0.5, summary: 'BTN Open (2bb)' }],
+      sessionGrids: [{ name: 'BTN 100bb', stackRange: '<=100bb', grid: makeEmptyGrid(), positions: ['BTN'] }],
+    })
+    render(<TableEditorPage />)
+    fireEvent.click(screen.getByRole('button', { name: /Finalizar/ }))
+    expect(screen.getByDisplayValue('Range existente')).toBeInTheDocument()
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     setup()
     const { container } = render(<TableEditorPage />)
