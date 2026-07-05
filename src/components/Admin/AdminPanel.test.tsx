@@ -4,6 +4,7 @@ import { axe } from 'jest-axe'
 import { AdminPanel } from './AdminPanel'
 import { useStore } from '../../store/useStore'
 import { makeEmptyGrid } from '../../utils/hands'
+import { t } from '../../i18n'
 import type { Range } from '../../types'
 
 const INVALID_RANGE: Range = {
@@ -127,6 +128,31 @@ describe('AdminPanel', () => {
     fireEvent.change(input, { target: { value: 'segredo' } })
     fireEvent.keyDown(input, { key: 'Enter' })
     expect(adminSaveRanges).toHaveBeenCalledWith('segredo')
+  })
+
+  it('modo controlado: fechar pelo ✕ chama onClose externo', () => {
+    const onClose = vi.fn()
+    render(<AdminPanel open onClose={onClose} />)
+    fireEvent.click(screen.getByRole('button', { name: t.common.close }))
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('modo nao-controlado: fechar o modal interno pelo ✕ o remove', () => {
+    render(<AdminPanel />)
+    fireEvent.click(screen.getByRole('button', { name: 'Publicar' }))
+    expect(screen.getByRole('dialog', { name: 'Publicar Ranges' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: t.common.close }))
+    expect(screen.queryByRole('dialog', { name: 'Publicar Ranges' })).not.toBeInTheDocument()
+  })
+
+  it('Enter com range invalido nao publica (bloqueado por validacao)', () => {
+    const adminSaveRanges = vi.fn().mockResolvedValue('ok')
+    useStore.setState({ ranges: [INVALID_RANGE], adminSaveRanges })
+    render(<AdminPanel open onClose={() => {}} />)
+    const input = screen.getByPlaceholderText('••••••••')
+    fireEvent.change(input, { target: { value: 'segredo' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(adminSaveRanges).not.toHaveBeenCalled()
   })
 
   it('nao tem violacoes de acessibilidade no modal (axe)', async () => {
