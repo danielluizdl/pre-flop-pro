@@ -310,7 +310,7 @@ interface AppState {
   authToken: string | null
   justSignedUp: boolean
   authLogin: (username: string, password: string, turnstileToken?: string | null) => Promise<{ ok: boolean; error?: string }>
-  authSignup: (username: string, password: string, teamCode: string, name: string, email: string, turnstileToken?: string | null) => Promise<{ ok: boolean; error?: string }>
+  authSignup: (username: string, password: string, inviteCode: string, name: string, email: string, turnstileToken?: string | null) => Promise<{ ok: boolean; error?: string }>
   authLogout: () => Promise<void>
   changePassword: (newPassword: string) => Promise<{ ok: boolean; error?: string }>
   listDevices: () => Promise<{ ok: boolean; devices?: DeviceSession[]; error?: string }>
@@ -1464,12 +1464,12 @@ export const useStore = create<AppState>()(
           return { ok: true }
         } catch (e) { captureError(e, { area: 'auth-login' }); return { ok: false, error: t.netErrors.connection } }
       },
-      authSignup: async (username, password, teamCode, name, email, turnstileToken) => {
+      authSignup: async (username, password, inviteCode, name, email, turnstileToken) => {
         try {
           const res = await fetch('/api/auth/signup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password, teamCode, name, email, turnstileToken: turnstileToken ?? undefined }),
+            body: JSON.stringify({ username, password, inviteCode, name, email, turnstileToken: turnstileToken ?? undefined }),
           })
           const data = await res.json().catch(() => null)
           if (!res.ok || !data) return { ok: false, error: data?.error ?? t.netErrors.server(res.status) }

@@ -18,13 +18,13 @@ export function LoginPage() {
   const [name, setName]         = useState('')
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
-  const [teamCode, setTeamCode] = useState('')
+  const [inviteCode, setInviteCode] = useState('')
   const [error, setError]       = useState('')
   const [loading, setLoading]   = useState(false)
   const [tsToken, setTsToken]   = useState<string | null>(null)
 
   const tsReady = !turnstileEnabled || !!tsToken
-  const canSubmit = !!username && !!password && (view !== 'signup' || (!!teamCode && !!name && !!email)) && tsReady
+  const canSubmit = !!username && !!password && (view !== 'signup' || (!!inviteCode && !!name && !!email)) && tsReady
 
   async function handleSubmit() {
     if (!canSubmit || loading) return
@@ -37,7 +37,7 @@ export function LoginPage() {
     setError('')
     const result = view === 'login'
       ? await authLogin(username, password, tsToken)
-      : await authSignup(username, password, teamCode, name, email, tsToken)
+      : await authSignup(username, password, inviteCode, name, email, tsToken)
     setLoading(false)
     if (!result.ok) setError(result.error ?? t.auth.errors.unexpected)
   }
@@ -137,12 +137,12 @@ export function LoginPage() {
 
               {view === 'signup' && (
                 <div className="space-y-2">
-                  <label htmlFor="lp-teamcode" className="text-xs text-warm-400 block">{t.auth.teamCodeLabel}</label>
+                  <label htmlFor="lp-invitecode" className="text-xs text-warm-400 block">{t.auth.inviteCodeLabel}</label>
                   <input
-                    id="lp-teamcode"
+                    id="lp-invitecode"
                     type="text"
-                    value={teamCode}
-                    onChange={e => { setTeamCode(e.target.value); setError('') }}
+                    value={inviteCode}
+                    onChange={e => { setInviteCode(e.target.value); setError('') }}
                     className={INPUT_CLASS}
                     onKeyDown={e => { if (e.key === 'Enter') handleSubmit() }}
                   />
