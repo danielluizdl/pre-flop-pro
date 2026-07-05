@@ -76,23 +76,37 @@
   :root:not(.dark) {
     color-scheme: light;
 
-    --color-warm-50:  #16140f;
-    --color-warm-100: #26221a;
-    --color-warm-200: #3b362b;
-    --color-warm-300: #554e3e;
-    --color-warm-400: #665f50;
-    --color-warm-500: #7d7666;
-    --color-warm-600: #c8bfa9;
-    --color-warm-700: #e0d8c6;
-    --color-warm-750: #f0ead9;
-    --color-warm-800: #fbf8f1;
-    --color-warm-900: #eee8d9;
-    --color-warm-950: #f5f0e4;
+    --color-warm-50:  #15120c;
+    --color-warm-100: #241f15;
+    --color-warm-200: #363023;
+    --color-warm-300: #4a4335;
+    --color-warm-400: #5c5545;
+    --color-warm-500: #726a57;
+    --color-warm-600: #a19274;
+    --color-warm-700: #c3b491;
+    --color-warm-750: #dfd4b6;
+    --color-warm-800: #f0e8d3;
+    --color-warm-900: #d8cca9;
+    --color-warm-950: #e6ddc6;
+
+    /* Área da mesa de poker (drill / editor de cenários): superfície e feltro
+       seguem o tema no claro; no escuro as vars não existem e os fallbacks
+       inline/module.css reproduzem os valores originais. */
+    --table-box-bg: #cfc19c;
+    --table-box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.10);
+    --felt-1: #93836a;
+    --felt-2: #75664e;
+    --felt-3: #64563f;
 
     --color-result-good: #047857;
     --color-result-mid:  #a16207;
     --color-result-bad:  #dc2626;
     --color-gold:        #a97417;
+
+    --color-brand-300:   #a8451f;
+    --color-brand-400:   #b04826;
+    --color-orange-300:  #b4530a;
+    --color-orange-400:  #b04826;
 
     --color-red-200:     #b91c1c;
     --color-red-300:     #dc2626;
@@ -135,6 +149,11 @@
     --color-result-mid:  #facc15;
     --color-result-bad:  #f87171;
     --color-gold:        #f5b855;
+
+    --color-brand-300:   #eda080;
+    --color-brand-400:   #e5916e;
+    --color-orange-300:  oklch(83.8% 0.128 66.29);
+    --color-orange-400:  #e5916e;
 
     --color-red-200:     oklch(88.5% 0.062 18.334);
     --color-red-300:     oklch(80.8% 0.114 19.571);

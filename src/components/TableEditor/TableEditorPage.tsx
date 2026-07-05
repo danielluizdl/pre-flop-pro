@@ -270,8 +270,8 @@ export function TableEditorPage() {
           <div className="flex justify-center">
             <div className="w-full" style={{ maxWidth: 575 }}>
               <div
-                className="dark rounded-2xl border border-warm-800 px-10 pt-8 pb-16"
-                style={{ background: '#1b1a17', boxShadow: 'inset 0 0 50px rgba(0,0,0,0.8)' }}
+                className="rounded-2xl border border-warm-800 px-10 pt-8 pb-16"
+                style={{ background: 'var(--table-box-bg, #1b1a17)', boxShadow: 'var(--table-box-shadow, inset 0 0 50px rgba(0,0,0,0.8))' }}
               >
                 <PokerTableEditor />
               </div>

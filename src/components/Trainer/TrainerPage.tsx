@@ -933,20 +933,22 @@ function DrillActionButton({ name, sub, action, hotkey, isPressed, isDisabled, o
       style={{
         position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         minWidth: 132, height: 54, padding: '0 22px',
-        background: isPressed ? 'linear-gradient(180deg,#252220 0%,#16140f 100%)' : 'linear-gradient(180deg,#1f1d1a 0%,#16140f 100%)',
-        border: `1px solid ${isPressed ? 'rgba(217,119,87,0.45)' : hovered ? '#4a463e' : '#2f2c25'}`,
+        background: isPressed
+          ? 'linear-gradient(180deg, var(--color-warm-750) 0%, var(--color-warm-900) 100%)'
+          : 'linear-gradient(180deg, var(--color-warm-800) 0%, var(--color-warm-900) 100%)',
+        border: `1px solid ${isPressed ? 'rgba(217,119,87,0.45)' : hovered ? 'var(--color-warm-600)' : 'var(--color-warm-700)'}`,
         borderRadius: 8,
         boxShadow: isPressed
           ? 'inset 0 1px 0 rgba(255,255,255,0.06),0 0 0 1px rgba(217,119,87,0.35),0 0 22px rgba(217,119,87,0.18)'
           : 'inset 0 1px 0 rgba(255,255,255,0.04),0 1px 0 rgba(0,0,0,0.5)',
         cursor: (isDisabled && !isPressed) ? 'not-allowed' : 'pointer',
         opacity: (isDisabled && !isPressed) ? 0.4 : 1,
-        color: '#ede8de',
+        color: 'var(--color-warm-100)',
         transition: 'transform 0.08s ease',
       }}
     >
       {hotkey && (
-        <span style={{ position:'absolute', top:4, right:6, fontSize:9, fontWeight:700, color:'#6b665c', letterSpacing:'0.05em', pointerEvents:'none' }}>
+        <span style={{ position:'absolute', top:4, right:6, fontSize:9, fontWeight:700, color:'var(--color-warm-500)', letterSpacing:'0.05em', pointerEvents:'none' }}>
           {hotkey}
         </span>
       )}
@@ -955,7 +957,7 @@ function DrillActionButton({ name, sub, action, hotkey, isPressed, isDisabled, o
           {name}
         </span>
         {sub && (
-          <span style={{ fontWeight:600, fontSize:10, letterSpacing:'0.05em', color:'#8a857a', fontVariantNumeric:'tabular-nums' }}>
+          <span style={{ fontWeight:600, fontSize:10, letterSpacing:'0.05em', color:'var(--color-warm-400)', fontVariantNumeric:'tabular-nums' }}>
             {sub}
           </span>
         )}
@@ -1164,14 +1166,14 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
 
           {/* Dark box: botões, mesa, cartas, resposta, ações */}
           <div
-            className="dark rounded-2xl border border-warm-800 flex flex-col"
-            style={{ background: '#16140f', boxShadow: 'inset 0 0 60px rgba(0,0,0,0.9)' }}
+            className="rounded-2xl border border-warm-800 flex flex-col"
+            style={{ background: 'var(--table-box-bg, #16140f)', boxShadow: 'var(--table-box-shadow, inset 0 0 60px rgba(0,0,0,0.9))' }}
           >
             {/* Botões topo */}
             <div className="flex-shrink-0 flex items-center justify-between gap-1.5 pt-1.5 px-2">
               <div>
                 {useRng && (
-                  <span className="bg-warm-800 border border-warm-600 text-white text-xs rounded-full font-bold px-2.5 py-1 tracking-wider whitespace-nowrap">
+                  <span className="bg-warm-800 border border-warm-600 text-warm-100 text-xs rounded-full font-bold px-2.5 py-1 tracking-wider whitespace-nowrap">
                     RNG {displayRng}
                   </span>
                 )}
@@ -1250,7 +1252,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                 onClick={doGoNext}
                 className={[
                   'px-6 py-2 rounded-xl font-bold text-sm transition-colors',
-                  isAnswered ? 'bg-brand-600 hover:bg-brand-500 text-white' : 'bg-warm-700 hover:bg-warm-600 text-white',
+                  isAnswered ? 'bg-brand-600 hover:bg-brand-500 text-white' : 'bg-warm-700 hover:bg-warm-600 text-warm-100',
                 ].join(' ')}
               >
                 {viewingPrev ? t.drill.currentHand : t.drill.nextHand}
