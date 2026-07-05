@@ -1,5 +1,40 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-05 (run automático — cobertura incremental segura, 8 fatias)
+
+### Estado (PONTO DE PARTIDA do próximo run)
+- **PR #41 ABERTA e atualizada** (auto/daily-improvements → feature/auth-telemetry). NÃO mergeada (gate humano).
+  Só testes — zero mudança de código de produção, zero risco visual. O título/corpo da PR agora acumula 04/07 + 05/07.
+- **872 testes verdes (74 arquivos)** (era 830), build (tsc+vite) verde.
+- Cobertura de linhas do **frontend `src/` em 98.30%** (total incl. backend gate-humano: 94.61%; branch total 81.34%).
+- `main`/produção intactos. `feature/build-range-exercise` (PR #40, modo Montar Range) NÃO tocada — segue no gate do Daniel.
+- Branch `auto/daily-improvements` foi mesclada com `origin/feature/auth-telemetry` no início do run (trouxe o fix de CORS do worker + docs).
+
+### Feito nesta run (8 commits, cada um test+build verde + push)
+1. **test(store):** ramos de erro de rede/sem-token — `authSignup`/`revokeDevice`/`revokeOtherDevices`/`adminSaveRanges`/`syncTeamRanges` no catch de rede (captureError por área); `listDevices`/`revoke*` sem token não tocam a rede (`networkErrors.test.ts`).
+2. **test(store):** helpers de boot via import dinâmico com localStorage semeado (`boot.test.ts`) — `loadRanges` (versão nova vs vista, admin deletado não reinjetado, catch de JSON inválido), `loadTeamRangeIds` (filtro numérico/erro), `SEEDED_DEFAULTS` com `adminRanges.json` mockado vazio (`vi.doMock`), `deleteRange` de admin id gravando em `fbr-deleted-admin-ids`.
+3. **test(editor):** single-select de posição, alertas de validação (sem posição no "Salvar e criar"/PRÓXIMO), `checkOverlap` ignorando self e grids de outra posição, alerta de sobreposição ao salvar edição, PRÓXIMO em modo de edição (salva/cancela), remoção de grid ajustando o índice em edição.
+4. **test(table-editor):** `updateHero` via radio de herói, remover cenário em edição limpando o modo, modal de nome pré-preenchido com o nome do range existente ao finalizar edição combinada.
+5. **test(utils):** `eventQueue` trata fila com JSON inválido como vazia; `scrubEvent` processa arrays + `beforeSend` do init redige o evento; `RangeActionGrid` compõe all-in + ação extra no tooltip e mouseLeave o esconde.
+6. **test(admin):** fechar modal (controlado via ✕ chama onClose / interno some) e Enter com range inválido não publica (early return de `handlePublish`).
+7. **test(store):** cascata do clamp do `setBrush` (reduz até três ações quando o excesso é grande); erros de servidor (res não-ok, distinto do catch de rede) de `authSignup`/`changePassword`/`listDevices`/`revoke*`; `syncTeamRanges` de versão mais nova.
+8. **test(coach):** `TopHandsPanel` volta à aba de erros ao sair de consultas; `HandDetailCard` omite a barra "como o time jogou" quando o total jogado é zero (`playedPct` tot<=0).
+
+### Notas técnicas úteis (replicáveis)
+- **Boot helpers do store (singleton):** `vi.resetModules()` + `await import('./useStore')` DEPOIS de semear localStorage; para o caminho `ADMIN_RANGES.length===0` use `vi.doMock('../data/adminRanges.json', () => ({ default: { version: 0, ranges: [] } }))`. Ler `ADMIN_VERSION`/`FIRST_ADMIN_ID` de um `import adminRaw from '../data/adminRanges.json'` no topo (não é resetado pelo resetModules).
+- **Erros de servidor vs rede:** dois ramos distintos — `res.ok===false` (retorna `data.error`) e `catch` de rede (retorna `t.netErrors.connection` + `captureError`). Cobrir cada um com um mock diferente.
+- **`setBrush` cascata:** `{call:10,raise:10,allin:10}` + `setBrush('extra',95)` força redução de 3 ações (excess 25 → zera call e raise, corta 5 do allin).
+- **AdminPanel:** botão Publicar fica `disabled` quando bloqueado; para exercitar o early return de `handlePublish` use Enter no input de senha (`keyDown Enter`), que chama direto.
+
+### Maiores lacunas restantes (ROI muito baixo — considerar mudar de estratégia)
+- **CoachPanel.tsx** (br 70%): formatação de sessões (`formatDateShort`/`formatDuration`/`formatHours`<60s), comparadores de ordenação das views por jogador e guardas de token/cancel dos hooks de analytics — exigem a view de sessões/analytics com dados reais montados no painel inteiro.
+- **TrainerPage.tsx** (8 linhas): `pickHotkey` sem letra, atalhos de teclado com foco em input, guardas de `DrillActive` — exigem sessão de drill completa montada.
+- **useStore.ts** (~13 linhas): ramos raros de `finalizeRange` (edição de range existente com extras) e `freqLabel` de ação extra.
+- **Backend (gate humano):** `worker/index.js`, `functions/api/*`, `me/devices.js` — não cobrir sem decisão.
+- **Sugestão para o próximo run:** a cobertura front está saturada (98.3% linhas). Vale propor ao Daniel um epic de produto/polish (ex.: os 7 ajustes do modo Montar Range quando ele liberar, ou pequenas melhorias de UX/a11y validadas no preview) em vez de continuar caçando branches de baixo valor.
+
+---
+
 ## 2026-07-04 (run automático — cobertura incremental segura, 6 fatias)
 
 ### Estado (PONTO DE PARTIDA do próximo run)
