@@ -84,7 +84,7 @@ function BuildRangeSelect() {
                     className="w-full flex items-center justify-between px-4 py-3 bg-warm-800 hover:bg-warm-750 transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="font-extrabold text-white text-sm w-10 text-left">{pos}</span>
+                      <span className="font-extrabold text-warm-100 text-sm w-10 text-left">{pos}</span>
                       <span className="text-warm-400 text-xs">{t.ranges.rangeCount(group.length)}</span>
                       {selectedInGroup > 0 && (
                         <span className="bg-brand-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
@@ -118,7 +118,7 @@ function BuildRangeSelect() {
                                 </div>
                               )}
                               <div className="flex items-start gap-1.5 flex-wrap">
-                                <h3 className="font-bold text-white text-sm leading-tight">{r.name}</h3>
+                                <h3 className="font-bold text-warm-100 text-sm leading-tight">{r.name}</h3>
                                 {r.stackGrids && r.stackGrids.length > 0 ? (
                                   r.stackGrids.map((sg, i) => sg.stackRange && (
                                     <span key={i} className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-500/10 border border-brand-500/40 text-brand-400 flex-shrink-0 leading-tight">
@@ -198,7 +198,7 @@ function BuildConfirm() {
             <div key={i} className="bg-warm-800 border border-warm-700 rounded-xl overflow-hidden">
               <div className="flex items-center gap-3 px-4 py-3">
                 <span className="text-warm-500 text-xs font-bold tabular-nums w-14">{t.exercise.roundOf(i + 1, rounds.length)}</span>
-                <span className="font-bold text-white text-sm flex-1 min-w-0 truncate">{r.label}</span>
+                <span className="font-bold text-warm-100 text-sm flex-1 min-w-0 truncate">{r.label}</span>
                 <button
                   onClick={() => togglePreview(i)}
                   className="flex-shrink-0 text-warm-500 hover:text-blue-400 transition-colors"
@@ -487,7 +487,7 @@ function BuildSummary() {
                 className="w-full flex items-center justify-between px-4 py-3 bg-warm-800 hover:bg-warm-750 transition-colors text-left"
               >
                 <span className="flex items-center gap-2">
-                  <span className="font-bold text-white text-sm">{r.label}</span>
+                  <span className="font-bold text-warm-100 text-sm">{r.label}</span>
                   {r.attempt > 1 && (
                     <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-500/10 border border-brand-500/40 text-brand-400">
                       {t.exercise.attemptN(r.attempt)}
