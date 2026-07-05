@@ -1,82 +1,56 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
-## 2026-07-05 (run automático — cobertura incremental segura, 8 fatias)
+## 2026-07-05 (agente — ajustes do tema claro pedidos pelo Daniel)
 
-### Estado (PONTO DE PARTIDA do próximo run)
-- **PR #41 ABERTA e atualizada** (auto/daily-improvements → feature/auth-telemetry). NÃO mergeada (gate humano).
-  Só testes — zero mudança de código de produção, zero risco visual. O título/corpo da PR agora acumula 04/07 + 05/07.
-- **872 testes verdes (74 arquivos)** (era 830), build (tsc+vite) verde.
-- Cobertura de linhas do **frontend `src/` em 98.30%** (total incl. backend gate-humano: 94.61%; branch total 81.34%).
-- `main`/produção intactos. `feature/build-range-exercise` (PR #40, modo Montar Range) NÃO tocada — segue no gate do Daniel.
-- Branch `auto/daily-improvements` foi mesclada com `origin/feature/auth-telemetry` no início do run (trouxe o fix de CORS do worker + docs).
+- Feedback do Daniel na PR #42: light estava claro demais e a área da mesa (drill +
+  Configurar Cenários) ficava um bloco preto destoante.
+- **Rampa clara recalibrada** para bege (page #e6ddc6, card #f0e8d3, input #d8cca9 etc.).
+- **Área da mesa tematizada**: containers do drill/TableEditor deixaram de ser subtree
+  `dark`; usam `var(--table-box-bg, <hex dark>)` + `var(--table-box-shadow, ...)`; feltro do
+  `PokerTable.module.css` usa `var(--felt-1..3, <hex dark>)`. As vars são definidas SÓ em
+  `:root:not(.dark)` → no escuro os fallbacks reproduzem os valores originais (dark intacto).
+- DrillActionButton/badge RNG/labels internos: hex fixo → tokens warm (valores dark idênticos).
+- Tokens `brand-300/400` e `orange-300/400` (texto de destaque em superfície warm) ganharam
+  versão escura no claro; `brand-500` mantido (accent da marca, estilo claude.ai).
+- 776 testes + build verdes; screenshots claro/escuro re-verificados (dashboard, drill ativo,
+  editor). Dark permanece pixel-idêntico.
 
-### Feito nesta run (8 commits, cada um test+build verde + push)
-1. **test(store):** ramos de erro de rede/sem-token — `authSignup`/`revokeDevice`/`revokeOtherDevices`/`adminSaveRanges`/`syncTeamRanges` no catch de rede (captureError por área); `listDevices`/`revoke*` sem token não tocam a rede (`networkErrors.test.ts`).
-2. **test(store):** helpers de boot via import dinâmico com localStorage semeado (`boot.test.ts`) — `loadRanges` (versão nova vs vista, admin deletado não reinjetado, catch de JSON inválido), `loadTeamRangeIds` (filtro numérico/erro), `SEEDED_DEFAULTS` com `adminRanges.json` mockado vazio (`vi.doMock`), `deleteRange` de admin id gravando em `fbr-deleted-admin-ids`.
-3. **test(editor):** single-select de posição, alertas de validação (sem posição no "Salvar e criar"/PRÓXIMO), `checkOverlap` ignorando self e grids de outra posição, alerta de sobreposição ao salvar edição, PRÓXIMO em modo de edição (salva/cancela), remoção de grid ajustando o índice em edição.
-4. **test(table-editor):** `updateHero` via radio de herói, remover cenário em edição limpando o modo, modal de nome pré-preenchido com o nome do range existente ao finalizar edição combinada.
-5. **test(utils):** `eventQueue` trata fila com JSON inválido como vazia; `scrubEvent` processa arrays + `beforeSend` do init redige o evento; `RangeActionGrid` compõe all-in + ação extra no tooltip e mouseLeave o esconde.
-6. **test(admin):** fechar modal (controlado via ✕ chama onClose / interno some) e Enter com range inválido não publica (early return de `handlePublish`).
-7. **test(store):** cascata do clamp do `setBrush` (reduz até três ações quando o excesso é grande); erros de servidor (res não-ok, distinto do catch de rede) de `authSignup`/`changePassword`/`listDevices`/`revoke*`; `syncTeamRanges` de versão mais nova.
-8. **test(coach):** `TopHandsPanel` volta à aba de erros ao sair de consultas; `HandDetailCard` omite a barra "como o time jogou" quando o total jogado é zero (`playedPct` tot<=0).
+## 2026-07-04 (agente — TEMA CLARO implementado, PR aberta)
 
-### Notas técnicas úteis (replicáveis)
-- **Boot helpers do store (singleton):** `vi.resetModules()` + `await import('./useStore')` DEPOIS de semear localStorage; para o caminho `ADMIN_RANGES.length===0` use `vi.doMock('../data/adminRanges.json', () => ({ default: { version: 0, ranges: [] } }))`. Ler `ADMIN_VERSION`/`FIRST_ADMIN_ID` de um `import adminRaw from '../data/adminRanges.json'` no topo (não é resetado pelo resetModules).
-- **Erros de servidor vs rede:** dois ramos distintos — `res.ok===false` (retorna `data.error`) e `catch` de rede (retorna `t.netErrors.connection` + `captureError`). Cobrir cada um com um mock diferente.
-- **`setBrush` cascata:** `{call:10,raise:10,allin:10}` + `setBrush('extra',95)` força redução de 3 ações (excess 25 → zera call e raise, corta 5 do allin).
-- **AdminPanel:** botão Publicar fica `disabled` quando bloqueado; para exercitar o early return de `handlePublish` use Enter no input de senha (`keyDown Enter`), que chama direto.
+### O que foi feito
+- **Tema claro completo** na branch `feature/light-mode` (a partir de `feature/auth-telemetry`),
+  PR aberta para `feature/auth-telemetry`. **776 testes verdes (71 arquivos)**, build verde,
+  `npm run smoke` OK.
+- **Diagnóstico:** o `toggleDarkMode` existia mas não fazia nada — a classe `dark` era posta num
+  div interno sem nenhum utilitário `dark:` e toda a paleta `warm-*` era fixa escura.
+- **Estratégia (menor diff): tokens CSS por escopo** em `src/index.css`. `@theme` mantém os valores
+  dark; `:root:not(.dark)` injeta a rampa `warm-*` invertida (fundo creme, texto escuro) + versões
+  escuras dos tons frios usados como texto (`red-400`→vermelho escuro, `emerald-400`, `yellow-400`,
+  `blue-400`, `sky/purple/violet/amber-*`, `gold`, `result-good/mid/bad`); `.dark` restaura os
+  valores EXATOS (warm + oklch da paleta padrão do Tailwind 4) em qualquer subtree → dark mode fica
+  pixel-idêntico E permite superfície permanentemente escura via `class="dark"` no container.
+- Classe `dark` movida para o `<html>`: `main.tsx` aplica antes do 1º paint; effect no `AppLayout`
+  sincroniza com `store.darkMode`. `@custom-variant dark` (class-based) declarado.
+- **Store:** `darkMode` default `true`; persist `fbr-ui-state` ganhou `version: 1` + `migrate` que
+  força `darkMode=true` em estado v0 (usuários existentes continuam vendo dark; claro é opt-in
+  pelo toggle Sun/Moon do TopNav, que já existia e agora funciona nos dois sentidos).
+- **Superfícies sempre escuras (decisão de design):** caixa do drill (TrainerPage), mesa do
+  TableEditor (`class="dark"` nos containers) e as matrizes 13×13 (HandMatrix/RangeActionGrid/
+  RangeHeatGrid mantêm células escuras nos dois temas — cores de ação idênticas e legíveis).
+- **Sweeps:** `text-white`/`hover:text-white` sobre superfícies warm → `text-warm-100` (~85 pontos,
+  23 arquivos; branco mantido sobre brand/emerald/red/chips de heat/cartas); hex inline de página →
+  `var(--color-warm-*)` (chips de stack do editor, AccuracySparkline, sparkline do coach);
+  Turnstile segue o tema; inputs de data do PeriodFilter herdam `color-scheme` do root; scrollbar
+  via tokens.
+- **i18n:** nenhuma string nova necessária (`nav.lightMode`/`darkMode` já existiam nos 3 idiomas).
+- **Validação visual real (Playwright/Chromium headless):** screenshots claro+escuro de dashboard,
+  login, Meus Ranges, drill (seleção e ativo), editor, histórico, preview modal e CoachPanel —
+  claro legível/consistente, dark inalterado. Scripts no scratchpad (não commitados).
 
-### Maiores lacunas restantes (ROI muito baixo — considerar mudar de estratégia)
-- **CoachPanel.tsx** (br 70%): formatação de sessões (`formatDateShort`/`formatDuration`/`formatHours`<60s), comparadores de ordenação das views por jogador e guardas de token/cancel dos hooks de analytics — exigem a view de sessões/analytics com dados reais montados no painel inteiro.
-- **TrainerPage.tsx** (8 linhas): `pickHotkey` sem letra, atalhos de teclado com foco em input, guardas de `DrillActive` — exigem sessão de drill completa montada.
-- **useStore.ts** (~13 linhas): ramos raros de `finalizeRange` (edição de range existente com extras) e `freqLabel` de ação extra.
-- **Backend (gate humano):** `worker/index.js`, `functions/api/*`, `me/devices.js` — não cobrir sem decisão.
-- **Sugestão para o próximo run:** a cobertura front está saturada (98.3% linhas). Vale propor ao Daniel um epic de produto/polish (ex.: os 7 ajustes do modo Montar Range quando ele liberar, ou pequenas melhorias de UX/a11y validadas no preview) em vez de continuar caçando branches de baixo valor.
-
----
-
-## 2026-07-04 (run automático — cobertura incremental segura, 6 fatias)
-
-### Estado (PONTO DE PARTIDA do próximo run)
-- **PR NOVA aberta** auto/daily-improvements → feature/auth-telemetry (NÃO mergeada; gate humano).
-  Só testes — zero mudança de código de produção, zero risco visual.
-- **830 testes verdes (74 arquivos)** (era 774), build verde. Cobertura de linhas 90.1% → **93.8%**
-  (useStore 92.3→96.0, TableEditorPage 87.9→97.0, TrainerPage 96→97.7).
-- `main`/produção intactos. `feature/build-range-exercise` (PR #40, modo Montar Range) NÃO tocada — segue no gate do Daniel.
-- Branch `auto/daily-improvements` recriada a partir de `feature/auth-telemetry` (que já tinha PR #35 mergeada + docs do modo Montar Range).
-
-### Feito nesta run (6 commits, cada um test+build verde + push)
-1. **test(store):** ramos de bet/role do `updateRole` (post/fold/limp/limp-fold/open/iso por posição),
-   `setupNewRange` com straddle e setters; guards de "não autenticado" e ramos de erro do servidor de
-   `listDevices`/`revokeDevice`/`revokeOtherDevices`/`changePassword`/`authSignup`; ramos do `nextDrillHand`
-   (id inexistente, multi-stack sem faixa que case o stack, prereq multi-stack) e `freqOf` com mão fora do grid.
-2. **test(table-editor):** stack customizado (aplicar + guarda de zero), input de raise futuro, botão Cancelar da
-   edição de cenário, modal de nome (Enter confirma, Cancelar/backdrop fecham, remover variação de grid da sessão).
-3. **test(ui):** RangeSetup (alternar 6/8-max e religar straddle/ante), ChangePasswordModal (Enter + erro do
-   servidor), ErrorBoundary (recarregar nas 2 variantes, 2ª confirmação negada), BrushControls (sliders de %
-   e preset da condição custom), LoginPage (Enter em Nome/E-mail/Usuário do cadastro).
-4. **test(trainer):** feedback com mistura de frequências (All-in + condição custom — `freqLabelFor`), sidebar de
-   histórico colapsável, modal Ver Range (fecha por ✕ e backdrop; teclas de ação ignoradas com ele aberto),
-   toggle "Aceitar freq. > 0" no filtro de mãos.
-5. **test(matrix):** tooltip do heatmap some ao sair da célula (`onLeave`) e da grade (`handleMouseUp`).
-6. **test(coach):** dropdowns de jogadores e range fecham por clique fora (mousedown no document) e Escape.
-
-### Notas técnicas úteis (replicáveis)
-- **LIÇÃO (repetida):** rodar `npm run build` (tsc) ANTES de `git commit`, não só vitest. Um helper de teste
-  retornou objeto largo (`currentHandSuits: string[]` em vez do tuple `[string,string]`) — vitest passou, tsc
-  quebrou. Corrigido anotando o retorno como `Partial<ReturnType<typeof useStore.getState>>` (o tuple pega o
-  contexto de tipo). O commit chegou a ir vermelho e foi corrigido com `--amend` + `--force-with-lease` (branch só do agente).
-- Guards `if(!token) return` das ações do store: setar `authToken:null` e mockar `fetch` para lançar → assert `fetch` não chamado.
-- `nextDrillHand` multi-stack: montar `Scenario.data` com um hero `{isHero:true, stack}` para o cálculo de `heroStack`; `stackMatchesRange` aceita "<= 100", "> 100", "0-100" etc.
-- Modais (TableEditor nome, TrainerPage Ver Range): fechar pelo backdrop = clicar `dialog.parentElement`.
-- CoachPanel: `mockApi()` (fetch stub) + `invalidateAnalyticsCache()` no afterEach; botões `Filtrar jogadores`/`Filtrar por range` expõem `aria-expanded`.
-
-### Maiores lacunas restantes (ROI baixo daqui pra frente)
-- **CoachPanel.tsx** (94%): guardas de token/cancel dos hooks (`useAnalytics`/`useRangeGrid`/`useTrend`), comparadores de
-  ordenação por tendência/nome, reset de senha do coach, PlayerQuickSummary — exigem fetch por-view populado (setup pesado).
-- **useStore.ts** (96%): helpers de boot (`loadRanges` merge por ADMIN_VERSION, `loadTeamRangeIds`) rodam no import do singleton — difíceis sem manipular localStorage antes do import.
-- **worker/** e **functions/api** e **schema*.sql**: gate humano — NÃO cobrir sem decisão do Daniel.
-- **Decisões pendentes do Daniel:** PR do dia (validar/mergear), PR #40 (modo Montar Range — 7 ajustes registrados abaixo).
+### Pendências
+- [ ] **Daniel validar o tema claro no preview do Cloudflare Pages** (mudança ampla e visual —
+      teste+build+smoke verdes NÃO garantem estética) e mergear a PR.
+- [ ] Se aprovado, considerar honrar `prefers-color-scheme` no primeiro boot (hoje default é dark).
 
 ---
 

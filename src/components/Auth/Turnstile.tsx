@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useStore } from '../../store/useStore'
 
 interface TurnstileApi {
   render: (el: HTMLElement, opts: Record<string, unknown>) => string
@@ -31,6 +32,7 @@ function loadScript(): Promise<void> {
 export function Turnstile({ onToken }: { onToken: (token: string | null) => void }) {
   const ref = useRef<HTMLDivElement>(null)
   const widgetId = useRef<string | null>(null)
+  const darkMode = useStore(s => s.darkMode)
 
   useEffect(() => {
     if (!SITE_KEY) return
@@ -42,7 +44,7 @@ export function Turnstile({ onToken }: { onToken: (token: string | null) => void
         if (!ts) return
         widgetId.current = ts.render(ref.current, {
           sitekey: SITE_KEY,
-          theme: 'dark',
+          theme: darkMode ? 'dark' : 'light',
           callback: (token: string) => onToken(token),
           'expired-callback': () => onToken(null),
           'error-callback': () => onToken(null),

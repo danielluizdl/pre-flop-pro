@@ -57,11 +57,11 @@ function SessionDetailView({ session, ranges, onBack }: {
         <div>
           <button
             onClick={onBack}
-            className="flex items-center gap-1.5 text-warm-400 hover:text-white text-sm font-semibold transition-colors mb-1"
+            className="flex items-center gap-1.5 text-warm-400 hover:text-warm-100 text-sm font-semibold transition-colors mb-1"
           >
             {t.stats.back}
           </button>
-          <h2 className="text-xl font-extrabold text-white">{formatDate(session.timestamp)}</h2>
+          <h2 className="text-xl font-extrabold text-warm-100">{formatDate(session.timestamp)}</h2>
           <p className="text-warm-400 text-xs">{session.tableSize}-max · {formatDuration(session.durationSeconds)} · {session.rangeNames.join(', ')}</p>
         </div>
       </div>
@@ -107,7 +107,7 @@ function SessionDetailView({ session, ranges, onBack }: {
                   className="w-full flex items-center justify-between px-4 py-3 bg-warm-800 hover:bg-warm-750 transition-colors text-left"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="font-bold text-white text-sm">{r.name}</span>
+                    <span className="font-bold text-warm-100 text-sm">{r.name}</span>
                     {r.positions.length > 0 && (
                       <span className="text-warm-400 text-xs">{r.positions.join(', ')}</span>
                     )}
@@ -198,7 +198,7 @@ function SessionCard({ session, onView }: { session: TrainingSession; onView: ()
           {session.rangeNames.join(' · ') || t.stats.noName}
         </div>
         <div className="flex gap-4 text-sm flex-wrap">
-          <span className="text-warm-300">{t.stats.handsLabel} <strong className="text-white">{session.hands}</strong></span>
+          <span className="text-warm-300">{t.stats.handsLabel} <strong className="text-warm-100">{session.hands}</strong></span>
           <span className="text-emerald-400">{t.stats.correctLabel} <strong>{session.correct}</strong></span>
           <span className="text-red-400">{t.stats.errorsLabel} <strong>{session.errors}</strong></span>
           {session.consults > 0 && (
@@ -212,7 +212,7 @@ function SessionCard({ session, onView }: { session: TrainingSession; onView: ()
           downloadText(sessionCsvFilename(session), csv, 'text/csv')
         }}
         title={t.stats.exportCsv}
-        className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border border-warm-600 bg-warm-900/60 text-warm-400 hover:text-white hover:border-warm-400 transition-colors"
+        className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border border-warm-600 bg-warm-900/60 text-warm-400 hover:text-warm-100 hover:border-warm-400 transition-colors"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -223,7 +223,7 @@ function SessionCard({ session, onView }: { session: TrainingSession; onView: ()
       <button
         onClick={onView}
         title={t.stats.viewDetails}
-        className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border border-warm-600 bg-warm-900/60 text-warm-400 hover:text-white hover:border-warm-400 transition-colors"
+        className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border border-warm-600 bg-warm-900/60 text-warm-400 hover:text-warm-100 hover:border-warm-400 transition-colors"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -301,7 +301,7 @@ function GlobalHistoryPanel() {
               className="w-full flex items-center justify-between px-4 py-3 bg-warm-800 hover:bg-warm-750 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <span className="font-extrabold text-white text-sm w-10 text-left">{pos}</span>
+                <span className="font-extrabold text-warm-100 text-sm w-10 text-left">{pos}</span>
                 <span className="text-warm-400 text-xs">{t.ranges.rangeCount(group.length)}</span>
               </div>
               <span className={`text-warm-400 text-lg transition-transform duration-200 inline-block ${isPosOpen ? 'rotate-180' : ''}`}>›</span>
@@ -426,7 +426,7 @@ export function StatsPage() {
             className={[
               'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors',
               activeTab === tab.key
-                ? 'border-brand-500 text-white'
+                ? 'border-brand-500 text-warm-100'
                 : 'border-transparent text-warm-400 hover:text-warm-200',
             ].join(' ')}
           >

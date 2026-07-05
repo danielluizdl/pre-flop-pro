@@ -52,7 +52,7 @@ export function Sidebar({ collapsed, onToggle }: Props) {
         )}
         <button
           onClick={onToggle}
-          className="p-1.5 rounded-lg text-warm-400 hover:text-white hover:bg-warm-800 transition-colors flex-shrink-0"
+          className="p-1.5 rounded-lg text-warm-400 hover:text-warm-100 hover:bg-warm-800 transition-colors flex-shrink-0"
           title={collapsed ? t.nav.expandSidebar : t.nav.collapseSidebar}
         >
           <Menu size={18} />
@@ -73,7 +73,7 @@ export function Sidebar({ collapsed, onToggle }: Props) {
                 'w-full flex items-center gap-3 px-2 py-2.5 rounded-lg text-sm transition-all',
                 active
                   ? 'bg-brand-600/20 text-brand-400 font-semibold'
-                  : 'text-warm-400 hover:bg-warm-800 hover:text-white',
+                  : 'text-warm-400 hover:bg-warm-800 hover:text-warm-100',
                 collapsed && 'justify-center px-0',
               )}
               title={collapsed ? item.label : undefined}
@@ -94,7 +94,7 @@ export function Sidebar({ collapsed, onToggle }: Props) {
         <button
           onClick={toggleDarkMode}
           className={clsx(
-            'w-full flex items-center gap-3 px-2 py-2.5 rounded-lg text-sm text-warm-400 hover:bg-warm-800 hover:text-white transition-all',
+            'w-full flex items-center gap-3 px-2 py-2.5 rounded-lg text-sm text-warm-400 hover:bg-warm-800 hover:text-warm-100 transition-all',
             collapsed && 'justify-center px-0',
           )}
           title={darkMode ? t.nav.lightMode : t.nav.darkMode}

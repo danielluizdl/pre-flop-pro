@@ -65,8 +65,8 @@ export function PrereqRangePicker({ ranges, excludeId, filterPositions, currentP
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-warm-700 flex-shrink-0">
-          <h2 id="prereq-picker-title" className="text-sm font-bold text-white">{t.prereqPicker.title}</h2>
-          <button onClick={onClose} aria-label={t.common.close} className="text-warm-400 hover:text-white transition-colors">
+          <h2 id="prereq-picker-title" className="text-sm font-bold text-warm-100">{t.prereqPicker.title}</h2>
+          <button onClick={onClose} aria-label={t.common.close} className="text-warm-400 hover:text-warm-100 transition-colors">
             <X size={16} />
           </button>
         </div>
@@ -79,8 +79,8 @@ export function PrereqRangePicker({ ranges, excludeId, filterPositions, currentP
             className={[
               'w-full flex items-center justify-between px-3 py-2 rounded-lg border text-sm transition-colors',
               currentPrereqId === undefined
-                ? 'bg-brand-900/30 border-brand-600/60 text-white'
-                : 'bg-warm-800 border-warm-700 text-warm-400 hover:border-warm-500 hover:text-white',
+                ? 'bg-brand-900/30 border-brand-600/60 text-warm-100'
+                : 'bg-warm-800 border-warm-700 text-warm-400 hover:border-warm-500 hover:text-warm-100',
             ].join(' ')}
           >
             <span>{t.editor.noPrereq}</span>
@@ -98,7 +98,7 @@ export function PrereqRangePicker({ ranges, excludeId, filterPositions, currentP
                   className="w-full flex items-center justify-between px-3 py-2 bg-warm-800 hover:bg-warm-750 transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="font-extrabold text-white text-sm w-10 text-left">{pos}</span>
+                    <span className="font-extrabold text-warm-100 text-sm w-10 text-left">{pos}</span>
                     <span className="text-warm-400 text-xs">{t.ranges.rangeCount(group.length)}</span>
                   </div>
                   <span className={`text-warm-400 text-lg transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>›</span>
@@ -120,7 +120,7 @@ export function PrereqRangePicker({ ranges, excludeId, filterPositions, currentP
                           ].join(' ')}
                         >
                           <div>
-                            <p className="text-sm font-semibold text-white leading-tight">{r.name}</p>
+                            <p className="text-sm font-semibold text-warm-100 leading-tight">{r.name}</p>
                             <p className="text-xs text-warm-500 mt-0.5">{countNonFoldHands(r.grid)} {t.common.hands}</p>
                           </div>
                           {selected && <Check size={14} className="text-brand-400 flex-shrink-0" />}

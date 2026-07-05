@@ -46,7 +46,7 @@ export function LanguageSelect({ compact = false }: { compact?: boolean }) {
               role="option"
               aria-selected={l.code === lang}
               onClick={() => { setLang(l.code); setOpen(false) }}
-              className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm transition-colors ${l.code === lang ? 'text-brand-300 font-semibold bg-warm-800/50' : 'text-warm-300 hover:bg-warm-800 hover:text-white'}`}
+              className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm transition-colors ${l.code === lang ? 'text-brand-300 font-semibold bg-warm-800/50' : 'text-warm-300 hover:bg-warm-800 hover:text-warm-100'}`}
             >
               <span>{l.name}</span>
               <span className="text-xs text-warm-500">{l.label}</span>

@@ -1,4 +1,4 @@
-﻿import { lazy, Suspense } from 'react'
+﻿import { lazy, Suspense, useEffect } from 'react'
 import { useStore } from '../../store/useStore'
 import { TopNav } from './TopNav'
 import { Dashboard } from './Dashboard'
@@ -26,6 +26,12 @@ export function AppLayout() {
   const currentUser = useStore(s => s.currentUser)
   const justSignedUp = useStore(s => s.justSignedUp)
 
+  /* A classe .dark vive no <html> (não num div interno): assim o body, a LoginPage
+     e qualquer overlay herdam os tokens do tema. */
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', darkMode)
+  }, [darkMode])
+
   if (userMode === null) return <LoginPage />
 
   function renderPage() {
@@ -44,7 +50,7 @@ export function AppLayout() {
   }
 
   return (
-    <div className={darkMode ? 'dark' : ''}>
+    <div>
       <RouterSync />
       {/* key={lang}: troca de idioma re-monta a árvore (estado do drill vive no
           store, não se perde) garantindo que até componentes memoizados peguem o novo idioma. */}

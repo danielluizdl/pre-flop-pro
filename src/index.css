@@ -2,6 +2,8 @@
 
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-warm-50:  #f5f0e6;
   --color-warm-100: #ede8de;
@@ -68,6 +70,109 @@
 }
 
 @layer base {
+  /* Tema claro: quando o root NÃO tem .dark, a rampa warm inverte (fundo claro,
+     texto escuro) e os tons frios usados como texto sobre fundo escuro ganham
+     versões escuras legíveis. As classes existentes (bg-warm-800 etc.) não mudam. */
+  :root:not(.dark) {
+    color-scheme: light;
+
+    --color-warm-50:  #15120c;
+    --color-warm-100: #241f15;
+    --color-warm-200: #363023;
+    --color-warm-300: #4a4335;
+    --color-warm-400: #5c5545;
+    --color-warm-500: #726a57;
+    --color-warm-600: #a19274;
+    --color-warm-700: #c3b491;
+    --color-warm-750: #dfd4b6;
+    --color-warm-800: #f0e8d3;
+    --color-warm-900: #d8cca9;
+    --color-warm-950: #e6ddc6;
+
+    /* Área da mesa de poker (drill / editor de cenários): superfície e feltro
+       seguem o tema no claro; no escuro as vars não existem e os fallbacks
+       inline/module.css reproduzem os valores originais. */
+    --table-box-bg: #cfc19c;
+    --table-box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.10);
+    --felt-1: #93836a;
+    --felt-2: #75664e;
+    --felt-3: #64563f;
+
+    --color-result-good: #047857;
+    --color-result-mid:  #a16207;
+    --color-result-bad:  #dc2626;
+    --color-gold:        #a97417;
+
+    --color-brand-300:   #a8451f;
+    --color-brand-400:   #b04826;
+    --color-orange-300:  #b4530a;
+    --color-orange-400:  #b04826;
+
+    --color-red-200:     #b91c1c;
+    --color-red-300:     #dc2626;
+    --color-red-400:     #c22a1c;
+    --color-emerald-300: #059669;
+    --color-emerald-400: #047857;
+    --color-green-400:   #15803d;
+    --color-yellow-300:  #a16207;
+    --color-yellow-400:  #a16207;
+    --color-blue-400:    #1d4ed8;
+    --color-sky-300:     #0284c7;
+    --color-sky-400:     #0369a1;
+    --color-purple-300:  #7e22ce;
+    --color-violet-300:  #6d28d9;
+    --color-amber-200:   #b45309;
+    --color-amber-400:   #b45309;
+    --color-amber-500:   #b45309;
+  }
+
+  /* Restaura os tokens dark em qualquer subtree .dark (root inteiro no modo escuro,
+     ou superfícies permanentemente escuras — mesa de poker/caixa do drill — no claro).
+     Valores idênticos ao @theme / paleta padrão do Tailwind: modo escuro fica intacto. */
+  .dark {
+    color-scheme: dark;
+
+    --color-warm-50:  #f5f0e6;
+    --color-warm-100: #ede8de;
+    --color-warm-200: #d4cfc4;
+    --color-warm-300: #a8a193;
+    --color-warm-400: #8a857a;
+    --color-warm-500: #6a655b;
+    --color-warm-600: #4a463e;
+    --color-warm-700: #2f2c25;
+    --color-warm-750: #252220;
+    --color-warm-800: #1f1d1a;
+    --color-warm-900: #16140f;
+    --color-warm-950: #1b1a17;
+
+    --color-result-good: #34d399;
+    --color-result-mid:  #facc15;
+    --color-result-bad:  #f87171;
+    --color-gold:        #f5b855;
+
+    --color-brand-300:   #eda080;
+    --color-brand-400:   #e5916e;
+    --color-orange-300:  oklch(83.8% 0.128 66.29);
+    --color-orange-400:  #e5916e;
+
+    --color-red-200:     oklch(88.5% 0.062 18.334);
+    --color-red-300:     oklch(80.8% 0.114 19.571);
+    --color-red-400:     oklch(70.4% 0.191 22.216);
+    --color-emerald-300: oklch(84.5% 0.143 164.978);
+    --color-emerald-400: oklch(76.5% 0.177 163.223);
+    --color-green-400:   oklch(79.2% 0.209 151.711);
+    --color-yellow-300:  oklch(90.5% 0.182 98.111);
+    --color-yellow-400:  oklch(85.2% 0.199 91.936);
+    --color-blue-400:    oklch(70.7% 0.165 254.624);
+    --color-sky-300:     oklch(82.8% 0.111 230.318);
+    --color-sky-400:     oklch(74.6% 0.16 232.661);
+    --color-purple-300:  oklch(82.7% 0.119 306.383);
+    --color-violet-300:  oklch(81.1% 0.111 293.571);
+    --color-amber-200:   oklch(92.4% 0.12 95.746);
+    --color-amber-400:   oklch(82.8% 0.189 84.429);
+    --color-amber-500:   oklch(76.9% 0.188 70.08);
+  }
+
   :root {
     --action-fold:      #6b7280;
     --action-call:      #22c55e;
@@ -111,8 +216,8 @@
 
   *::-webkit-scrollbar       { width: 6px; height: 6px; }
   *::-webkit-scrollbar-track { background: transparent; }
-  *::-webkit-scrollbar-thumb { background: #2f2c25; border-radius: 3px; }
-  *::-webkit-scrollbar-thumb:hover { background: #4a463e; }
+  *::-webkit-scrollbar-thumb { background: var(--color-warm-700); border-radius: 3px; }
+  *::-webkit-scrollbar-thumb:hover { background: var(--color-warm-600); }
 
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {

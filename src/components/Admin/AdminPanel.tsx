@@ -118,8 +118,8 @@ export function AdminPanel({ open: externalOpen, onClose: externalClose }: Props
             aria-labelledby="admin-publish-title"
           >
             <div className="flex justify-between items-center">
-              <h3 id="admin-publish-title" className="font-bold text-white">{t.admin.publishTitle}</h3>
-              <button onClick={handleClose} aria-label={t.common.close} className="text-warm-400 hover:text-white text-xl">✕</button>
+              <h3 id="admin-publish-title" className="font-bold text-warm-100">{t.admin.publishTitle}</h3>
+              <button onClick={handleClose} aria-label={t.common.close} className="text-warm-400 hover:text-warm-100 text-xl">✕</button>
             </div>
 
             <p className="text-xs text-warm-400">
@@ -155,7 +155,7 @@ export function AdminPanel({ open: externalOpen, onClose: externalClose }: Props
                   value={password}
                   onChange={e => { setPassword(e.target.value); setStatus('idle') }}
                   placeholder="••••••••"
-                  className="w-full bg-warm-800 border border-warm-600 rounded-lg px-3 py-2 text-sm text-white placeholder-warm-600 focus:outline-none focus:border-brand-500"
+                  className="w-full bg-warm-800 border border-warm-600 rounded-lg px-3 py-2 text-sm text-warm-100 placeholder-warm-600 focus:outline-none focus:border-brand-500"
                   onKeyDown={e => { if (e.key === 'Enter') handlePublish() }}
                   autoFocus
                 />

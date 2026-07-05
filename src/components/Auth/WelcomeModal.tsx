@@ -60,7 +60,7 @@ export function WelcomeModal() {
           </div>
         </div>
 
-        <h2 id="welcome-modal-title" className="text-2xl font-bold text-white mb-1">
+        <h2 id="welcome-modal-title" className="text-2xl font-bold text-warm-100 mb-1">
           {t.welcome.greeting(firstName)}
         </h2>
         <p className="text-brand-400 text-sm font-semibold mb-5">
@@ -68,7 +68,7 @@ export function WelcomeModal() {
         </p>
 
         <p className="text-warm-300 text-sm leading-relaxed mb-7">
-          {t.welcome.bodyBefore}<span className="text-white font-semibold">{t.common.appName}</span>{t.welcome.bodyAfter}
+          {t.welcome.bodyBefore}<span className="text-warm-100 font-semibold">{t.common.appName}</span>{t.welcome.bodyAfter}
         </p>
 
         <button
