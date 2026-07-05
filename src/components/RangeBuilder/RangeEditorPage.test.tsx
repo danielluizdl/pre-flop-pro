@@ -229,6 +229,147 @@ describe('RangeEditorPage', () => {
     expect(useStore.getState().rangeData.prereqRangeId).toBe(9)
   })
 
+  it('clicar num botão de posição seleciona o HERO (single-select)', () => {
+    setup()
+    render(<RangeEditorPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'BTN' }))
+    expect(useStore.getState().selectedEditorPositions).toEqual(['BTN'])
+  })
+
+  it('"Salvar e criar" com nome mas sem posição dispara alerta de validação', () => {
+    const pushGridToSession = vi.fn()
+    setup({
+      rangeData: { id: null, name: 'Sem posição', grid: makeEmptyGrid(), positions: [], tableSize: 8, stackRange: '' },
+      pushGridToSession,
+    })
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
+    render(<RangeEditorPage />)
+    fireEvent.click(screen.getByRole('button', { name: /Salvar e criar/ }))
+    expect(alertSpy).toHaveBeenCalled()
+    expect(pushGridToSession).not.toHaveBeenCalled()
+  })
+
+  it('"PRÓXIMO" com nome mas sem posição dispara alerta e não navega', () => {
+    const setPage = vi.fn()
+    setup({
+      selectedEditorPositions: [],
+      rangeData: { id: null, name: 'BTN RFI', grid: makeEmptyGrid(), positions: [], tableSize: 8, stackRange: '' },
+      setPage,
+    })
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
+    render(<RangeEditorPage />)
+    fireEvent.click(screen.getByRole('button', { name: /PRÓXIMO/ }))
+    expect(alertSpy).toHaveBeenCalled()
+    expect(setPage).not.toHaveBeenCalled()
+  })
+
+  it('modo de edição: salvar sem sobreposição ignora self e grids de outra posição', () => {
+    const updateSessionGrid = vi.fn()
+    setup({
+      selectedEditorPositions: ['BTN'],
+      sessionGrids: [
+        { name: 'CO x',  stackRange: '20-40', grid: makeEmptyGrid(), positions: ['CO'] },
+        { name: 'BTN A', stackRange: '20-40', grid: makeEmptyGrid(), positions: ['BTN'] },
+        { name: 'BTN B', stackRange: '60-80', grid: makeEmptyGrid(), positions: ['BTN'] },
+      ],
+      updateSessionGrid,
+    })
+    render(<RangeEditorPage />)
+    fireEvent.click(screen.getByText('BTN B'))
+    fireEvent.change(screen.getByPlaceholderText('Ex: Defesa BB vs UTG'), { target: { value: 'BTN B v2' } })
+    fireEvent.click(screen.getByRole('button', { name: /Salvar alterações no #3/ }))
+    expect(updateSessionGrid).toHaveBeenCalledWith(2, expect.objectContaining({ name: 'BTN B v2', stackRange: '60-80' }))
+  })
+
+  it('modo de edição: salvar com stack sobreposto a outro grid dispara alerta e não salva', () => {
+    const updateSessionGrid = vi.fn()
+    setup({
+      selectedEditorPositions: ['BTN'],
+      sessionGrids: [
+        { name: 'BTN A', stackRange: '20-40', grid: makeEmptyGrid(), positions: ['BTN'] },
+        { name: 'BTN B', stackRange: '60-80', grid: makeEmptyGrid(), positions: ['BTN'] },
+      ],
+      updateSessionGrid,
+    })
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
+    render(<RangeEditorPage />)
+    fireEvent.click(screen.getByText('BTN B'))
+    fireEvent.change(screen.getByPlaceholderText('Ex: <= 250, ou 250-300'), { target: { value: '30-50' } })
+    fireEvent.click(screen.getByRole('button', { name: /Salvar alterações no #2/ }))
+    expect(alertSpy).toHaveBeenCalled()
+    expect(updateSessionGrid).not.toHaveBeenCalled()
+  })
+
+  it('"PRÓXIMO" em modo de edição com mudança salva o grid antes de navegar', () => {
+    const updateSessionGrid = vi.fn()
+    const initTableConfig = vi.fn()
+    const setPage = vi.fn()
+    setup({
+      selectedEditorPositions: ['BTN'],
+      rangeData: { id: null, name: 'Base', grid: makeEmptyGrid(), positions: [], tableSize: 8, stackRange: '' },
+      sessionGrids: [{ name: 'Grid A', stackRange: '', grid: makeEmptyGrid(), positions: ['BTN'] }],
+      updateSessionGrid, initTableConfig, setPage,
+    })
+    render(<RangeEditorPage />)
+    fireEvent.click(screen.getByText('Grid A'))
+    fireEvent.change(screen.getByPlaceholderText('Ex: Defesa BB vs UTG'), { target: { value: 'Grid A editado' } })
+    fireEvent.click(screen.getByRole('button', { name: /PRÓXIMO/ }))
+    expect(updateSessionGrid).toHaveBeenCalled()
+    expect(setPage).toHaveBeenCalledWith('table-editor')
+  })
+
+  it('"PRÓXIMO" em modo de edição sem mudança cancela a edição e navega', () => {
+    const updateSessionGrid = vi.fn()
+    const setPage = vi.fn()
+    setup({
+      selectedEditorPositions: ['BTN'],
+      rangeData: { id: null, name: 'Base', grid: makeEmptyGrid(), positions: [], tableSize: 8, stackRange: '' },
+      sessionGrids: [{ name: 'Grid A', stackRange: '', grid: makeEmptyGrid(), positions: ['BTN'] }],
+      updateSessionGrid, setPage,
+    })
+    render(<RangeEditorPage />)
+    fireEvent.click(screen.getByText('Grid A'))
+    fireEvent.click(screen.getByRole('button', { name: /PRÓXIMO/ }))
+    expect(updateSessionGrid).not.toHaveBeenCalled()
+    expect(setPage).toHaveBeenCalledWith('table-editor')
+  })
+
+  it('remover o grid em edição cancela a edição', () => {
+    const removeSessionGrid = vi.fn()
+    setup({
+      selectedEditorPositions: ['BTN'],
+      sessionGrids: [{ name: 'Grid A', stackRange: '', grid: makeEmptyGrid(), positions: ['BTN'] }],
+      removeSessionGrid,
+    })
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const { container } = render(<RangeEditorPage />)
+    fireEvent.click(screen.getByText('Grid A'))
+    expect(screen.getByText('editando')).toBeInTheDocument()
+    const removeBtn = container.querySelector('.card-surface .relative button')!
+    fireEvent.click(removeBtn)
+    expect(removeSessionGrid).toHaveBeenCalledWith(0)
+    expect(screen.queryByText('editando')).not.toBeInTheDocument()
+  })
+
+  it('remover um grid anterior ao que está em edição decrementa o índice de edição', () => {
+    const removeSessionGrid = vi.fn()
+    setup({
+      selectedEditorPositions: ['BTN'],
+      sessionGrids: [
+        { name: 'Grid A', stackRange: '', grid: makeEmptyGrid(), positions: ['BTN'] },
+        { name: 'Grid B', stackRange: '', grid: makeEmptyGrid(), positions: ['BTN'] },
+      ],
+      removeSessionGrid,
+    })
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const { container } = render(<RangeEditorPage />)
+    fireEvent.click(screen.getByText('Grid B'))
+    const badges = container.querySelectorAll('.card-surface .relative')
+    fireEvent.click(badges[0].querySelector('button')!)
+    expect(removeSessionGrid).toHaveBeenCalledWith(0)
+    expect(screen.getByText('editando')).toBeInTheDocument()
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     setup()
     const { container } = render(<RangeEditorPage />)

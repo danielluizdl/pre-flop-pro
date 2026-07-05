@@ -338,7 +338,7 @@ export const useStore = create<AppState>()(
     (set, get) => ({
       // ── Navigation ────────────────────────────────────────────────────────────
       page: 'dashboard',
-      darkMode: false,
+      darkMode: true,
       lang: 'pt',
       activeCategory: null,
       setPage: (page) => { addBreadcrumb('nav', `page → ${page}`); set({ page }) },
@@ -1649,7 +1649,15 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'fbr-ui-state',
+      version: 1,
       partialize: (state) => ({ darkMode: state.darkMode, lang: state.lang }),
+      // v0: darkMode nunca teve efeito visual (o app era sempre escuro) — preserva
+      // a experiência dos usuários existentes forçando dark na migração.
+      migrate: (persisted, version) => {
+        const state = persisted as { darkMode?: boolean; lang?: Lang }
+        if (version === 0) state.darkMode = true
+        return state
+      },
       onRehydrateStorage: () => (state) => { if (state) setLangDict(state.lang) },
     }
   )

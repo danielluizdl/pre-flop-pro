@@ -63,6 +63,12 @@ describe('BrushControls', () => {
     expect(useStore.getState().brush.raiseSize).toBe('2.5')
   })
 
+  it('o slider de porcentagem de uma ação atualiza o brush', () => {
+    render(<BrushControls />)
+    fireEvent.change(screen.getByLabelText('Call porcentagem (controle deslizante)'), { target: { value: '35' } })
+    expect(useStore.getState().brush.call).toBe(35)
+  })
+
   describe('condição custom (extra)', () => {
     beforeEach(() => setBrushState({ extraLabel: 'Iso', extraColor: '#a855f7', extra: 10 }))
 
@@ -78,6 +84,15 @@ describe('BrushControls', () => {
       render(<BrushControls />)
       fireEvent.click(screen.getByLabelText(/cor #f97316/i))
       expect(useStore.getState().brush.extraColor).toBe('#f97316')
+    })
+
+    it('slider e preset da condição custom atualizam o extra', async () => {
+      render(<BrushControls />)
+      fireEvent.change(screen.getByLabelText('Condição custom porcentagem (controle deslizante)'), { target: { value: '55' } })
+      expect(useStore.getState().brush.extra).toBe(55)
+      const presets = screen.getAllByRole('button', { name: '75%' })
+      await userEvent.click(presets[presets.length - 1])
+      expect(useStore.getState().brush.extra).toBe(75)
     })
 
     it('remover devolve a frequência extra ao fold e zera o label', () => {

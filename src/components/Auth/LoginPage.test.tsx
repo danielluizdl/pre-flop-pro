@@ -149,6 +149,22 @@ describe('LoginPage', () => {
     expect(authSignup).toHaveBeenCalledWith('daniel1', 'senhaforte1', 'TIME', 'Daniel', 'd@x.com', null)
   })
 
+  it('Enter em Nome/E-mail/Usuário do cadastro também submete', () => {
+    const authSignup = vi.fn().mockResolvedValue({ ok: true })
+    useStore.setState({ authSignup })
+    render(<LoginPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Criar conta' }))
+    fireEvent.change(screen.getByLabelText('Nome Completo:'), { target: { value: 'Daniel' } })
+    fireEvent.change(screen.getByLabelText('E-mail:'), { target: { value: 'd@x.com' } })
+    fireEvent.change(screen.getByLabelText('Usuário:'), { target: { value: 'daniel1' } })
+    fireEvent.change(screen.getByLabelText('Senha:'), { target: { value: 'senhaforte1' } })
+    fireEvent.change(screen.getByLabelText('Código do time:'), { target: { value: 'TIME' } })
+    fireEvent.keyDown(screen.getByLabelText('Nome Completo:'), { key: 'Enter' })
+    fireEvent.keyDown(screen.getByLabelText('E-mail:'), { key: 'Enter' })
+    fireEvent.keyDown(screen.getByLabelText('Usuário:'), { key: 'Enter' })
+    expect(authSignup).toHaveBeenCalledWith('daniel1', 'senhaforte1', 'TIME', 'Daniel', 'd@x.com', null)
+  })
+
   it('não submete sem os campos obrigatórios (guarda canSubmit)', () => {
     const authLogin = vi.fn().mockResolvedValue({ ok: true })
     useStore.setState({ authLogin })

@@ -25,6 +25,15 @@ describe('eventQueue', () => {
     expect(getQueue()).toHaveLength(0)
   })
 
+  it('JSON inválido na fila é tratado como vazio ao enfileirar', () => {
+    localStorage.setItem(KEY, '{corrompido')
+    globalThis.fetch = vi.fn(async () => { throw new Error('offline') }) as unknown as typeof fetch
+    enqueue('hand', { n: 1 }, 'tok')
+    const q = getQueue()
+    expect(q).toHaveLength(1)
+    expect(q[0].path).toBe('hand')
+  })
+
   it('flush envia em ordem e remove em sucesso', async () => {
     const sent: unknown[] = []
     globalThis.fetch = vi.fn(async (_url: string, opts: { body: string }) => {

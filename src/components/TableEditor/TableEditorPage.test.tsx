@@ -183,6 +183,128 @@ describe('TableEditorPage', () => {
     expect(updateStack).toHaveBeenCalled()
   })
 
+  it('stack customizado: digitar e aplicar chama setAllStacks; zero não chama', () => {
+    const setAllStacks = vi.fn()
+    setup({ setAllStacks })
+    render(<TableEditorPage />)
+    const input = screen.getByLabelText('Stack para todos os jogadores')
+    fireEvent.change(input, { target: { value: '80' } })
+    fireEvent.click(screen.getByTitle('Aplicar'))
+    expect(setAllStacks).toHaveBeenCalledWith(80)
+    setAllStacks.mockClear()
+    fireEvent.change(input, { target: { value: '0' } })
+    fireEvent.click(screen.getByTitle('Aplicar'))
+    expect(setAllStacks).not.toHaveBeenCalled()
+  })
+
+  it('input de raise futuro do herói chama setHeroRaiseSize', () => {
+    const setHeroRaiseSize = vi.fn()
+    setup({ setHeroRaiseSize })
+    render(<TableEditorPage />)
+    fireEvent.change(screen.getByLabelText('Tamanho do raise futuro'), { target: { value: '3.5' } })
+    expect(setHeroRaiseSize).toHaveBeenCalledWith(3.5)
+  })
+
+  it('entrar em edição e cancelar volta ao botão de adicionar cenário', () => {
+    setup({ tempScenarios: [{ id: 1, data: fullScenario(), pot: '5.0', ante: 0.5, summary: 'BTN Open (2bb)' }] })
+    render(<TableEditorPage />)
+    const matches = screen.getAllByText(/BTN Open/)
+    fireEvent.click(matches[matches.length - 1])
+    expect(screen.getByRole('button', { name: /Salvar alterações/ })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(screen.getByRole('button', { name: /Adicionar Cenário/ })).toBeInTheDocument()
+  })
+
+  it('modal de nome: Enter no campo confirma e chama finalizeRange', () => {
+    const finalizeRange = vi.fn()
+    setup({
+      finalizeRange,
+      tempScenarios: [{ id: 1, data: fullScenario(), pot: '5.0', ante: 0.5, summary: 'BTN Open (2bb)' }],
+      sessionGrids: [{ name: 'BTN 100bb', stackRange: '<=100bb', grid: makeEmptyGrid(), positions: ['BTN'] }],
+    })
+    render(<TableEditorPage />)
+    fireEvent.click(screen.getByRole('button', { name: /Finalizar/ }))
+    const input = screen.getByDisplayValue('BTN 100bb')
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(finalizeRange).toHaveBeenCalledWith('BTN 100bb')
+  })
+
+  it('modal de nome: Cancelar e backdrop fecham sem finalizar', () => {
+    const finalizeRange = vi.fn()
+    setup({
+      finalizeRange,
+      tempScenarios: [{ id: 1, data: fullScenario(), pot: '5.0', ante: 0.5, summary: 'BTN Open (2bb)' }],
+      sessionGrids: [{ name: 'BTN 100bb', stackRange: '<=100bb', grid: makeEmptyGrid(), positions: ['BTN'] }],
+    })
+    render(<TableEditorPage />)
+    fireEvent.click(screen.getByRole('button', { name: /Finalizar/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(finalizeRange).not.toHaveBeenCalled()
+    // reabre e fecha pelo backdrop
+    fireEvent.click(screen.getByRole('button', { name: /Finalizar/ }))
+    const dialog = screen.getByRole('dialog')
+    fireEvent.click(dialog.parentElement as HTMLElement)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('modal de nome: remover uma variação de grid da sessão chama removeSessionGrid', () => {
+    const removeSessionGrid = vi.fn()
+    const playedGrid = () => { const g = makeEmptyGrid(); g['AA'] = { fold: 0, call: 0, raise: 100, allin: 0 }; return g }
+    setup({
+      removeSessionGrid,
+      tempScenarios: [{ id: 1, data: fullScenario(), pot: '5.0', ante: 0.5, summary: 'BTN Open (2bb)' }],
+      sessionGrids: [
+        { name: 'BTN 100bb', stackRange: '<=100bb', grid: playedGrid(), positions: ['BTN'] },
+        { name: 'BTN 40bb', stackRange: '<=40bb', grid: playedGrid(), positions: ['BTN'] },
+      ],
+    })
+    render(<TableEditorPage />)
+    fireEvent.click(screen.getByRole('button', { name: /Finalizar/ }))
+    const dialog = screen.getByRole('dialog')
+    const removeButtons = dialog.querySelectorAll('button.absolute')
+    expect(removeButtons.length).toBeGreaterThan(0)
+    fireEvent.click(removeButtons[0])
+    expect(removeSessionGrid).toHaveBeenCalled()
+  })
+
+  it('marcar o herói de uma posição chama updateHero', () => {
+    const updateHero = vi.fn()
+    setup({ updateHero })
+    render(<TableEditorPage />)
+    const heroRadios = screen.getAllByRole('radio')
+    fireEvent.click(heroRadios[0])
+    expect(updateHero).toHaveBeenCalled()
+  })
+
+  it('remover o cenário em edição limpa o modo de edição', () => {
+    const removeScenario = vi.fn()
+    setup({
+      removeScenario,
+      tempScenarios: [{ id: 1, data: fullScenario(), pot: '5.0', ante: 0.5, summary: 'BTN Open (2bb)' }],
+    })
+    render(<TableEditorPage />)
+    const matches = screen.getAllByText(/BTN Open/)
+    fireEvent.click(matches[matches.length - 1])
+    expect(screen.getByRole('button', { name: /Salvar alterações/ })).toBeInTheDocument()
+    const removeBtn = document.querySelector('button.text-red-400')!
+    fireEvent.click(removeBtn)
+    expect(removeScenario).toHaveBeenCalledWith(0)
+    expect(screen.queryByRole('button', { name: /Salvar alterações/ })).not.toBeInTheDocument()
+  })
+
+  it('modal de nome ao editar range existente pré-preenche com o nome atual do range', () => {
+    setup({
+      rangeData: { id: 42, name: 'BTN RFI', grid: makeEmptyGrid(), positions: ['BTN'], tableSize: 8, stackRange: '' },
+      ranges: [{ id: 42, name: 'Range existente', positions: ['BTN'], grid: makeEmptyGrid(), scenarios: [], tableSize: 8 }],
+      tempScenarios: [{ id: 1, data: fullScenario(), pot: '5.0', ante: 0.5, summary: 'BTN Open (2bb)' }],
+      sessionGrids: [{ name: 'BTN 100bb', stackRange: '<=100bb', grid: makeEmptyGrid(), positions: ['BTN'] }],
+    })
+    render(<TableEditorPage />)
+    fireEvent.click(screen.getByRole('button', { name: /Finalizar/ }))
+    expect(screen.getByDisplayValue('Range existente')).toBeInTheDocument()
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     setup()
     const { container } = render(<TableEditorPage />)

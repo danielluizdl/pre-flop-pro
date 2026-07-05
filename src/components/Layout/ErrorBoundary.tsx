@@ -53,7 +53,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.props.variant === 'section') {
       return (
         <div className="bg-warm-900 border border-warm-700 rounded-2xl p-6 space-y-3 max-w-md">
-          <h2 className="text-base font-bold text-white">{t.errorBoundary.sectionTitle}</h2>
+          <h2 className="text-base font-bold text-warm-100">{t.errorBoundary.sectionTitle}</h2>
           <p className="text-sm text-warm-400 break-words">
             {this.state.error.message || t.errorBoundary.sectionDefault}{t.errorBoundary.sectionHint}
           </p>
@@ -69,7 +69,7 @@ export class ErrorBoundary extends Component<Props, State> {
     return (
       <div className="min-h-screen bg-warm-950 text-warm-100 flex items-center justify-center p-4">
         <div className="w-full max-w-md bg-warm-900 border border-warm-700 rounded-2xl p-6 space-y-4">
-          <h1 className="text-lg font-bold text-white">{t.errorBoundary.appTitle}</h1>
+          <h1 className="text-lg font-bold text-warm-100">{t.errorBoundary.appTitle}</h1>
           <p className="text-sm text-warm-400 break-words">
             {this.state.error.message || t.errorBoundary.appDefault}
           </p>
@@ -82,7 +82,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </button>
             <button
               onClick={this.handleExportAndReset}
-              className="w-full py-2.5 rounded-xl border border-warm-700 hover:border-warm-500 hover:bg-warm-800 text-warm-300 hover:text-white text-sm font-semibold transition-colors"
+              className="w-full py-2.5 rounded-xl border border-warm-700 hover:border-warm-500 hover:bg-warm-800 text-warm-300 hover:text-warm-100 text-sm font-semibold transition-colors"
             >
               {t.errorBoundary.exportReset}
             </button>

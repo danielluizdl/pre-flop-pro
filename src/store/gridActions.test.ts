@@ -82,6 +82,16 @@ describe('setBrush clampeia o total em 100', () => {
     expect(s().brush.call).toBe(0)
     expect(s().brush.raise).toBe(0)
   })
+
+  it('excesso grande cascateia a redução por até três ações', () => {
+    useStore.setState({ brush: { call: 10, raise: 10, allin: 10, extra: 0, raiseSize: '2.5', extraLabel: 'Iso', extraColor: '#a855f7' } })
+    s().setBrush('extra', 95)
+    expect(s().brush.extra).toBe(95)
+    expect(s().brush.call).toBe(0)
+    expect(s().brush.raise).toBe(0)
+    expect(s().brush.allin).toBe(5)
+    expect(s().brush.call + s().brush.raise + s().brush.allin + s().brush.extra).toBe(100)
+  })
 })
 
 describe('grids da sessão', () => {

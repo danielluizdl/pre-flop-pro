@@ -14,6 +14,16 @@ describe('corsOrigin', () => {
     expect(corsOrigin(null)).toBeNull()
     expect(corsOrigin('')).toBeNull()
   })
+  it('ecoa previews de branch em *.pre-flop-pro.pages.dev', () => {
+    expect(corsOrigin('https://feature-build-range-exercise.pre-flop-pro.pages.dev'))
+      .toBe('https://feature-build-range-exercise.pre-flop-pro.pages.dev')
+    expect(corsOrigin('https://auto-daily-improvements.pre-flop-pro.pages.dev'))
+      .toBe('https://auto-daily-improvements.pre-flop-pro.pages.dev')
+  })
+  it('rejeita domínios que só parecem pages.dev', () => {
+    expect(corsOrigin('https://pre-flop-pro.pages.dev.evil.com')).toBeNull()
+    expect(corsOrigin('https://foo.pre-flop-pro.pages.dev.evil.com')).toBeNull()
+  })
 })
 
 describe('passwordMatches', () => {

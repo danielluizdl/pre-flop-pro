@@ -28,14 +28,14 @@ export function AccuracySparkline({ sessions }: { sessions: TrainingSession[] })
       <div className="eyebrow mb-2">{t.sparkline.title}</div>
       <div className="relative">
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full" preserveAspectRatio="xMidYMid meet" style={{ display: 'block' }}>
-          <line x1={padX} y1={ref80} x2={W - padX} y2={ref80} stroke="#5a5247" strokeWidth="1" strokeDasharray="5 5" />
-          <text x={W - padX} y={ref80 - 4} textAnchor="end" fontSize="9" fill="#8a857a">80%</text>
+          <line x1={padX} y1={ref80} x2={W - padX} y2={ref80} stroke="var(--color-warm-500)" strokeWidth="1" strokeDasharray="5 5" />
+          <text x={W - padX} y={ref80 - 4} textAnchor="end" fontSize="9" fill="var(--color-warm-400)">80%</text>
           <path d={path} fill="none" stroke="#d97757" strokeWidth="2" />
           {pts.map((p, i) => (
             <circle
               key={i}
               cx={xOf(i)} cy={yOf(p.acc)} r={hover === i ? 5 : 3}
-              fill={p.acc >= 80 ? '#34d399' : p.acc >= 50 ? '#facc15' : '#f87171'}
+              fill={p.acc >= 80 ? 'var(--color-result-good)' : p.acc >= 50 ? 'var(--color-result-mid)' : 'var(--color-result-bad)'}
               onMouseEnter={() => setHover(i)}
               onMouseLeave={() => setHover(null)}
               style={{ cursor: 'pointer' }}
@@ -44,7 +44,7 @@ export function AccuracySparkline({ sessions }: { sessions: TrainingSession[] })
         </svg>
         {hover !== null && (
           <div
-            className="absolute bg-warm-950 border border-warm-600 rounded-lg px-2 py-1 text-xs text-white pointer-events-none whitespace-nowrap z-10"
+            className="absolute bg-warm-950 border border-warm-600 rounded-lg px-2 py-1 text-xs text-warm-100 pointer-events-none whitespace-nowrap z-10"
             style={{ left: `${(xOf(hover) / W) * 100}%`, top: `${(yOf(pts[hover].acc) / H) * 100}%`, transform: 'translate(-50%, -130%)' }}
           >
             <div className="font-bold tabular-nums">{pts[hover].acc}%</div>

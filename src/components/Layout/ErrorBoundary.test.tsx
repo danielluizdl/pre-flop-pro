@@ -116,6 +116,35 @@ describe('ErrorBoundary', () => {
       spy.mockRestore()
     })
 
+    it('não reseta se a segunda confirmação for negada', () => {
+      const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValueOnce(true).mockReturnValueOnce(false)
+      const reset = useStore.getState().resetLocalData
+      render(<ErrorBoundary><Boom /></ErrorBoundary>)
+      fireEvent.click(screen.getByRole('button', { name: /Exportar backup/ }))
+      expect(confirmSpy).toHaveBeenCalledTimes(2)
+      expect(reset).not.toHaveBeenCalled()
+      expect(reloadMock).not.toHaveBeenCalled()
+      confirmSpy.mockRestore()
+      spy.mockRestore()
+    })
+
+    it('botão Recarregar recarrega na variante page', () => {
+      const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      render(<ErrorBoundary><Boom /></ErrorBoundary>)
+      fireEvent.click(screen.getByRole('button', { name: 'Recarregar' }))
+      expect(reloadMock).toHaveBeenCalled()
+      spy.mockRestore()
+    })
+
+    it('botão Recarregar recarrega na variante section', () => {
+      const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      render(<ErrorBoundary variant="section"><Boom /></ErrorBoundary>)
+      fireEvent.click(screen.getByRole('button', { name: 'Recarregar' }))
+      expect(reloadMock).toHaveBeenCalled()
+      spy.mockRestore()
+    })
+
     it('se o backup falhar, ainda segue para a confirmação (catch)', () => {
       const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
       vi.mocked(downloadText).mockImplementation(() => { throw new Error('sem disco') })

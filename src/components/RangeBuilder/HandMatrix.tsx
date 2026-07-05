@@ -237,7 +237,7 @@ export function HandMatrix({ readOnly = false, grid: externalGrid, heatmap, cust
           : t.matrix.notTrained
         return (
           <div
-            className="fixed z-50 pointer-events-none px-2 py-1 rounded bg-warm-900 border border-warm-600 text-xs text-white shadow-lg whitespace-nowrap"
+            className="fixed z-50 pointer-events-none px-2 py-1 rounded bg-warm-900 border border-warm-600 text-xs text-warm-100 shadow-lg whitespace-nowrap"
             style={{ left: mousePos.x + 14, top: mousePos.y - 28 }}
           >
             <span className="font-bold text-warm-300 mr-1">{hoveredHand}</span>{text}

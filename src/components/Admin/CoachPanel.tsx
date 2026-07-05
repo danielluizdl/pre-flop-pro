@@ -399,7 +399,7 @@ function PeriodFilter({ days, from, to, onChange }: {
   const [start, setStart] = useState(isCustom ? toDateInput(from!) : '')
   const [end, setEnd] = useState(isCustom ? toDateInput(to!) : '')
   const selectCls = 'bg-warm-900 border border-warm-600 rounded-lg px-2.5 py-1.5 text-sm text-warm-100'
-  const dateCls = 'bg-warm-900 border border-warm-600 rounded-lg px-2 py-1.5 text-sm text-warm-100 [color-scheme:dark]'
+  const dateCls = 'bg-warm-900 border border-warm-600 rounded-lg px-2 py-1.5 text-sm text-warm-100'
 
   const apply = (s: string, e: string) => {
     if (!s || !e) return
@@ -634,8 +634,8 @@ function Sparkline({ weeks, width = 120, height = 30 }: { weeks: { week: number;
   if (weeks.length === 1) {
     return (
       <svg width={width} height={height} className="overflow-visible">
-        <line x1={0} x2={width} y1={y80} y2={y80} stroke="rgba(255,255,255,0.12)" strokeDasharray="2 2" />
-        <circle cx={px(weeks[0].week)} cy={py(weeks[0].accuracy)} r={2.5} fill="#60a5fa" />
+        <line x1={0} x2={width} y1={y80} y2={y80} stroke="var(--color-warm-600)" strokeDasharray="2 2" />
+        <circle cx={px(weeks[0].week)} cy={py(weeks[0].accuracy)} r={2.5} fill="var(--color-blue-400)" />
       </svg>
     )
   }
@@ -643,9 +643,9 @@ function Sparkline({ weeks, width = 120, height = 30 }: { weeks: { week: number;
   const last = weeks[weeks.length - 1]
   return (
     <svg width={width} height={height} className="overflow-visible">
-      <line x1={0} x2={width} y1={y80} y2={y80} stroke="rgba(255,255,255,0.12)" strokeDasharray="2 2" />
-      <path d={d} fill="none" stroke="#60a5fa" strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
-      <circle cx={px(last.week)} cy={py(last.accuracy)} r={2.3} fill="#60a5fa" />
+      <line x1={0} x2={width} y1={y80} y2={y80} stroke="var(--color-warm-600)" strokeDasharray="2 2" />
+      <path d={d} fill="none" stroke="var(--color-blue-400)" strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx={px(last.week)} cy={py(last.accuracy)} r={2.3} fill="var(--color-blue-400)" />
     </svg>
   )
 }
@@ -1183,7 +1183,7 @@ function TeamView({ token }: { token: string | null }) {
             ))}
             {overview.team && (
               <tr className="border-t-2 border-warm-600 bg-warm-800/40 font-bold">
-                <td className={`${TD} text-white`}><span className="inline-block w-3" />TIME</td>
+                <td className={`${TD} text-warm-100`}><span className="inline-block w-3" />TIME</td>
                 <td className={`${TDR} text-warm-200`}>{overview.team.hands}</td>
                 <td className={`${TDR} ${accColor(overview.team.accuracy)}`}>{overview.team.accuracy}%</td>
                 <td className={`${TDR} text-red-400`}>{overview.team.graves}</td>
@@ -1681,7 +1681,7 @@ export default function CoachPanel() {
             onClick={() => setArea(tab.key)}
             className={[
               'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors',
-              area === tab.key ? 'border-brand-500 text-white' : 'border-transparent text-warm-400 hover:text-warm-200',
+              area === tab.key ? 'border-brand-500 text-warm-100' : 'border-transparent text-warm-400 hover:text-warm-200',
             ].join(' ')}
           >
             {tab.label}

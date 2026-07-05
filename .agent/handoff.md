@@ -1,5 +1,70 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-05 (merge manual — Range Check + tema claro + daily improvements integrados)
+
+- A pedido do Daniel: `feature/auth-telemetry` (já com tema claro + daily improvements
+  mergeados) foi trazida para dentro de `feature/build-range-exercise` (PR #40, modo
+  "Range Check"), pra tudo rodar junto antes do merge final. Conflitos só em
+  `.agent/handoff.md` (seções concorrentes, resolvido combinando) e `CoachPanel.tsx`
+  (abas "Drill"/"Range Check" do modo novo + qualquer ajuste de tema claro nas mesmas
+  linhas — resolvido preservando as duas mudanças). `npm test` + `npm run build` verdes
+  após o merge. Preview da branch: `feature-build-range-exercise.pre-flop-pro.pages.dev`.
+
+---
+
+## 2026-07-05 (agente — ajustes do tema claro pedidos pelo Daniel)
+
+- Feedback do Daniel na PR #42: light estava claro demais e a área da mesa (drill +
+  Configurar Cenários) ficava um bloco preto destoante.
+- **Rampa clara recalibrada** para bege (page #e6ddc6, card #f0e8d3, input #d8cca9 etc.).
+- **Área da mesa tematizada**: containers do drill/TableEditor deixaram de ser subtree
+  `dark`; usam `var(--table-box-bg, <hex dark>)` + `var(--table-box-shadow, ...)`; feltro do
+  `PokerTable.module.css` usa `var(--felt-1..3, <hex dark>)`. As vars são definidas SÓ em
+  `:root:not(.dark)` → no escuro os fallbacks reproduzem os valores originais (dark intacto).
+- DrillActionButton/badge RNG/labels internos: hex fixo → tokens warm (valores dark idênticos).
+- Tokens `brand-300/400` e `orange-300/400` (texto de destaque em superfície warm) ganharam
+  versão escura no claro; `brand-500` mantido (accent da marca, estilo claude.ai).
+- 776 testes + build verdes; screenshots claro/escuro re-verificados (dashboard, drill ativo,
+  editor). Dark permanece pixel-idêntico.
+
+## 2026-07-04 (agente — TEMA CLARO implementado, PR aberta)
+
+### O que foi feito
+- **Tema claro completo** na branch `feature/light-mode` (a partir de `feature/auth-telemetry`),
+  PR aberta para `feature/auth-telemetry`. **776 testes verdes (71 arquivos)**, build verde,
+  `npm run smoke` OK.
+- **Diagnóstico:** o `toggleDarkMode` existia mas não fazia nada — a classe `dark` era posta num
+  div interno sem nenhum utilitário `dark:` e toda a paleta `warm-*` era fixa escura.
+- **Estratégia (menor diff): tokens CSS por escopo** em `src/index.css`. `@theme` mantém os valores
+  dark; `:root:not(.dark)` injeta a rampa `warm-*` invertida (fundo creme, texto escuro) + versões
+  escuras dos tons frios usados como texto (`red-400`→vermelho escuro, `emerald-400`, `yellow-400`,
+  `blue-400`, `sky/purple/violet/amber-*`, `gold`, `result-good/mid/bad`); `.dark` restaura os
+  valores EXATOS (warm + oklch da paleta padrão do Tailwind 4) em qualquer subtree → dark mode fica
+  pixel-idêntico E permite superfície permanentemente escura via `class="dark"` no container.
+- Classe `dark` movida para o `<html>`: `main.tsx` aplica antes do 1º paint; effect no `AppLayout`
+  sincroniza com `store.darkMode`. `@custom-variant dark` (class-based) declarado.
+- **Store:** `darkMode` default `true`; persist `fbr-ui-state` ganhou `version: 1` + `migrate` que
+  força `darkMode=true` em estado v0 (usuários existentes continuam vendo dark; claro é opt-in
+  pelo toggle Sun/Moon do TopNav, que já existia e agora funciona nos dois sentidos).
+- **Superfícies sempre escuras (decisão de design):** caixa do drill (TrainerPage), mesa do
+  TableEditor (`class="dark"` nos containers) e as matrizes 13×13 (HandMatrix/RangeActionGrid/
+  RangeHeatGrid mantêm células escuras nos dois temas — cores de ação idênticas e legíveis).
+- **Sweeps:** `text-white`/`hover:text-white` sobre superfícies warm → `text-warm-100` (~85 pontos,
+  23 arquivos; branco mantido sobre brand/emerald/red/chips de heat/cartas); hex inline de página →
+  `var(--color-warm-*)` (chips de stack do editor, AccuracySparkline, sparkline do coach);
+  Turnstile segue o tema; inputs de data do PeriodFilter herdam `color-scheme` do root; scrollbar
+  via tokens.
+- **i18n:** nenhuma string nova necessária (`nav.lightMode`/`darkMode` já existiam nos 3 idiomas).
+- **Validação visual real (Playwright/Chromium headless):** screenshots claro+escuro de dashboard,
+  login, Meus Ranges, drill (seleção e ativo), editor, histórico, preview modal e CoachPanel —
+  claro legível/consistente, dark inalterado. Scripts no scratchpad (não commitados).
+
+### Pendências
+- [x] Tema claro validado e mergeado (PR #42, MERGEADA em `feature/auth-telemetry`).
+- [ ] Se aprovado, considerar honrar `prefers-color-scheme` no primeiro boot (hoje default é dark).
+
+---
+
 ## 2026-07-04 (Rodada 2 do modo "Range Recall" — CONCLUÍDA)
 
 ### Estado

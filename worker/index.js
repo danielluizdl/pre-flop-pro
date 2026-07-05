@@ -16,6 +16,8 @@ const FILE_PATH = 'src/data/adminRanges.json'
 
 const ALLOWED_ORIGINS = ['https://danielluizdl.github.io', 'https://pre-flop-pro.pages.dev', 'http://localhost:5173']
 
+const PAGES_DEV_PREVIEW_RE = /^https:\/\/[a-z0-9-]+\.pre-flop-pro\.pages\.dev$/
+
 const TOKEN_TTL_MS = 30 * 60 * 1000
 
 const RATE_LIMIT_MAX = 5
@@ -24,7 +26,9 @@ const RATE_LIMIT_WINDOW_MS = 60 * 1000
 const passwordAttempts = new Map()
 
 export function corsOrigin(origin) {
-  return ALLOWED_ORIGINS.includes(origin) ? origin : null
+  if (ALLOWED_ORIGINS.includes(origin)) return origin
+  if (typeof origin === 'string' && PAGES_DEV_PREVIEW_RE.test(origin)) return origin
+  return null
 }
 
 function bufToHex(buf) {

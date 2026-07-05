@@ -106,6 +106,32 @@ describe('CoachPanel', () => {
     expect(screen.queryByText('Bob')).not.toBeInTheDocument()
   })
 
+  it('o dropdown de jogadores fecha por clique fora e por Escape', async () => {
+    mockApi()
+    render(<CoachPanel />)
+    const btn = await screen.findByRole('button', { name: 'Filtrar jogadores' })
+    // clique fora fecha
+    fireEvent.click(btn)
+    expect(btn).toHaveAttribute('aria-expanded', 'true')
+    fireEvent.mouseDown(document.body)
+    expect(btn).toHaveAttribute('aria-expanded', 'false')
+    // Escape fecha
+    fireEvent.click(btn)
+    expect(btn).toHaveAttribute('aria-expanded', 'true')
+    fireEvent.keyDown(screen.getByRole('textbox', { name: 'Buscar jogador' }), { key: 'Escape' })
+    expect(btn).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('o dropdown de range fecha por clique fora', async () => {
+    mockApi()
+    render(<CoachPanel />)
+    const btn = await screen.findByRole('button', { name: 'Filtrar por range' })
+    fireEvent.click(btn)
+    expect(btn).toHaveAttribute('aria-expanded', 'true')
+    fireEvent.mouseDown(document.body)
+    expect(btn).toHaveAttribute('aria-expanded', 'false')
+  })
+
   it('seção "Por range" mostra erro e "Tentar novamente" recarrega', async () => {
     let failByRange = true
     vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {

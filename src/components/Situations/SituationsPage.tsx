@@ -49,7 +49,7 @@ function RangeCard({ r, allRanges, onViewHeatmap, onPreview }: CardProps) {
     <div className="card-surface rounded-lg p-3 hover:border-warm-500 transition-all flex flex-col gap-2">
       <div>
         <div className="flex items-start gap-1.5 flex-wrap">
-          <h2 className="font-bold text-white text-sm leading-tight">{r.name}</h2>
+          <h2 className="font-bold text-warm-100 text-sm leading-tight">{r.name}</h2>
           {isTeamRange && (
             <span
               title={t.ranges.coachLocked}
@@ -218,7 +218,7 @@ export function SituationsPage() {
                   className="w-full flex items-center justify-between px-4 py-3 bg-warm-800 hover:bg-warm-750 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="font-extrabold text-white text-sm w-10 text-left">{pos}</span>
+                    <span className="font-extrabold text-warm-100 text-sm w-10 text-left">{pos}</span>
                     <span className="text-warm-400 text-xs">{t.ranges.rangeCount(group.length)}</span>
                   </div>
                   <span className={`text-warm-400 text-lg transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
@@ -255,10 +255,10 @@ export function SituationsPage() {
           >
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h3 id="situations-heatmap-title" className="font-bold text-white text-lg">{heatmapRange.name}</h3>
+                <h3 id="situations-heatmap-title" className="font-bold text-warm-100 text-lg">{heatmapRange.name}</h3>
                 <p className="text-xs text-warm-400 mt-0.5">{t.ranges.heatmapSubtitle}</p>
               </div>
-              <button onClick={() => setHeatmapId(null)} aria-label="Fechar" className="text-warm-400 hover:text-white text-xl ml-4">✕</button>
+              <button onClick={() => setHeatmapId(null)} aria-label="Fechar" className="text-warm-400 hover:text-warm-100 text-xl ml-4">✕</button>
             </div>
 
             {heatmapGrids && (

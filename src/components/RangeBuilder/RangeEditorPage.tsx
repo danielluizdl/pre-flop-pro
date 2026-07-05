@@ -173,7 +173,7 @@ export function RangeEditorPage() {
                 ].join(' ')}
                 onClick={() => editingIdx === i ? handleCancelSessionEdit() : loadSessionForEdit(i)}
               >
-                <span className="text-xs font-semibold text-white">{sg.name}</span>
+                <span className="text-xs font-semibold text-warm-100">{sg.name}</span>
                 {sg.stackRange && (
                   <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-500/10 border border-brand-500/40 text-brand-400 leading-tight">
                     {sg.stackRange}
@@ -220,9 +220,9 @@ export function RangeEditorPage() {
                       minWidth: 42, height: 26, padding: '0 10px',
                       borderRadius: 999,
                       fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: '0.06em',
-                      background: active ? '#c95f3a' : '#1f1d1a',
-                      borderColor: active ? '#d97757' : '#4a463e',
-                      color: active ? '#fff' : '#8a857a',
+                      background: active ? '#c95f3a' : 'var(--color-warm-800)',
+                      borderColor: active ? '#d97757' : 'var(--color-warm-600)',
+                      color: active ? '#fff' : 'var(--color-warm-400)',
                     }}
                   >
                     {p.label}
@@ -359,7 +359,7 @@ export function RangeEditorPage() {
               </button>
               <button
                 onClick={handleCancelSessionEdit}
-                className="w-full py-2.5 bg-warm-700 hover:bg-warm-600 text-white rounded-lg font-bold text-sm transition-colors border border-warm-600"
+                className="w-full py-2.5 bg-warm-700 hover:bg-warm-600 text-warm-100 rounded-lg font-bold text-sm transition-colors border border-warm-600"
               >
                 {t.editor.cancel}
               </button>
@@ -367,7 +367,7 @@ export function RangeEditorPage() {
           ) : (
             <button
               onClick={handlePushToSession}
-              className="w-full py-2.5 bg-warm-700 hover:bg-warm-600 text-white rounded-lg font-bold text-sm transition-colors border border-warm-600"
+              className="w-full py-2.5 bg-warm-700 hover:bg-warm-600 text-warm-100 rounded-lg font-bold text-sm transition-colors border border-warm-600"
             >
               {t.editor.saveAndCreate}
             </button>

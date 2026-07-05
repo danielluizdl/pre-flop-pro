@@ -173,7 +173,7 @@ export function TopNav() {
             <div className="absolute right-0 top-full mt-2 w-36 bg-warm-900 border border-warm-700 rounded-xl shadow-xl overflow-hidden z-50">
               <button
                 onClick={() => { setProfileOpen(false); authLogout() }}
-                className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-warm-300 hover:bg-warm-800 hover:text-white transition-colors"
+                className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-warm-300 hover:bg-warm-800 hover:text-warm-100 transition-colors"
               >
                 <LogOut size={15} />
                 {t.nav.logout}
