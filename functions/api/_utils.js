@@ -98,6 +98,7 @@ export function isShortStr(v, max) {
 const RATE_LIMIT_MAX = 8
 const RATE_LIMIT_WINDOW_MS = 60 * 1000
 const authAttempts = new Map()
+const adminAttempts = new Map()
 
 export function checkRateLimit(ip, now = Date.now(), store = authAttempts) {
   const recent = (store.get(ip) ?? []).filter(t => now - t < RATE_LIMIT_WINDOW_MS)
@@ -113,9 +114,12 @@ export function checkRateLimit(ip, now = Date.now(), store = authAttempts) {
 // Rate limit persistente via KV (janela fixa por IP). Sobrevive a troca de
 // isolate, ao contrário do Map em memória. Fail-open: sem binding KV cai no
 // in-memory; se o KV falhar, libera (nunca trava login legítimo por infra).
-export async function checkRateLimitKV(env, ip, now = Date.now()) {
-  if (!env || !env.RATE_LIMIT) return checkRateLimit(ip, now)
-  const key = `rl:auth:${ip}`
+// `scope` isola o balde de tentativas (ex.: 'auth' vs 'admin') para que ações
+// administrativas não consumam/disputem o mesmo limite de login/signup do IP.
+export async function checkRateLimitKV(env, ip, now = Date.now(), scope = 'auth') {
+  const store = scope === 'admin' ? adminAttempts : authAttempts
+  if (!env || !env.RATE_LIMIT) return checkRateLimit(ip, now, store)
+  const key = `rl:${scope}:${ip}`
   const windowSec = RATE_LIMIT_WINDOW_MS / 1000
   const nowSec = Math.floor(now / 1000)
   try {
@@ -184,4 +188,24 @@ export function json(data, status = 200) {
 
 export function handleOptions() {
   return new Response(null, { status: 204, headers: CORS_HEADERS })
+}
+
+const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
+
+// Escapa texto controlado pelo usuário (ex.: nome) antes de interpolar em
+// templates de e-mail HTML — evita quebra de layout/injeção de markup.
+export function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, c => HTML_ESCAPES[c])
+}
+
+// Log de auditoria best-effort das ações administrativas (criar/editar/
+// excluir conta, resetar senha, gerar código de convite). Nunca trava a ação
+// principal — se a tabela ainda não existir (migração pendente) ou o insert
+// falhar, engole o erro silenciosamente, igual ao padrão fail-open do projeto.
+export async function logAdminAction(env, actorId, action, targetId, detail) {
+  try {
+    await env.DB.prepare(
+      'INSERT INTO admin_audit_log (actor_id, action, target_id, detail) VALUES (?, ?, ?, ?)'
+    ).bind(actorId, action, targetId ?? null, detail ? JSON.stringify(detail) : null).run()
+  } catch { /* best-effort */ }
 }

@@ -1,4 +1,4 @@
-import { getAuthUser, isShortStr, json, handleOptions } from '../_utils.js'
+import { getAuthUser, isShortStr, logAdminAction, checkRateLimitKV, json, handleOptions } from '../_utils.js'
 
 const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/
 
@@ -19,6 +19,11 @@ export async function onRequest(context) {
   if (!coach) return json({ error: 'Unauthorized' }, 401)
   if (coach.role !== 'coach') return json({ error: 'Forbidden' }, 403)
 
+  const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown'
+  if (!(await checkRateLimitKV(env, ip, Date.now(), 'admin'))) {
+    return json({ error: 'Muitas tentativas. Aguarde um minuto.' }, 429)
+  }
+
   let body
   try {
     body = await request.json()
@@ -36,6 +41,8 @@ export async function onRequest(context) {
   if (emailTaken) return json({ error: 'E-mail já cadastrado em outra conta' }, 409)
 
   await env.DB.prepare('UPDATE users SET name = ?, email = ? WHERE id = ?').bind(name, email, userId).run()
+
+  await logAdminAction(env, coach.id, 'update_user', userId, { name, email })
 
   return json({ ok: true, user: { id: userId, name, email } })
 }

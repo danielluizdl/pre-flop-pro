@@ -1,4 +1,4 @@
-import { getAuthUser, hashPassword, randomHex, json, handleOptions } from '../_utils.js'
+import { getAuthUser, hashPassword, randomHex, escapeHtml, logAdminAction, checkRateLimitKV, json, handleOptions } from '../_utils.js'
 import { sendEmail } from '../_email.js'
 
 export async function onRequest(context) {
@@ -9,6 +9,11 @@ export async function onRequest(context) {
   const coach = await getAuthUser(request, env)
   if (!coach) return json({ error: 'Unauthorized' }, 401)
   if (coach.role !== 'coach') return json({ error: 'Forbidden' }, 403)
+
+  const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown'
+  if (!(await checkRateLimitKV(env, ip, Date.now(), 'admin'))) {
+    return json({ error: 'Muitas tentativas. Aguarde um minuto.' }, 429)
+  }
 
   let body
   try {
@@ -34,13 +39,15 @@ export async function onRequest(context) {
       await sendEmail(env, {
         to: target.email,
         subject: 'Pre-Flop Pro — senha temporária',
-        html: `<p>Olá ${target.name || target.username},</p>
+        html: `<p>Olá ${escapeHtml(target.name || target.username)},</p>
 <p>Sua senha foi resetada pelo coach. Use a senha temporária abaixo para entrar; no primeiro acesso você definirá uma nova senha.</p>
 <p style="font-size:20px;font-weight:bold;letter-spacing:2px">${tempPassword}</p>
-<p>Usuário: <strong>${target.username}</strong></p>`,
+<p>Usuário: <strong>${escapeHtml(target.username)}</strong></p>`,
       })
     } catch { /* best-effort */ }
   }
+
+  await logAdminAction(env, coach.id, 'reset_password', userId, null)
 
   return json({ ok: true, tempPassword })
 }

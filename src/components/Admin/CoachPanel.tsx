@@ -1625,6 +1625,18 @@ interface InviteCode {
   used_by_name: string | null
 }
 
+interface AuditLogEntry {
+  id: number
+  action: string
+  target_id: number | null
+  detail: string | null
+  created_at: number
+  actor_username: string
+  actor_name: string
+  target_username: string | null
+  target_name: string | null
+}
+
 type PendingAction =
   | { type: 'reset'; userId: number; label: string }
   | { type: 'delete'; userId: number; label: string }
@@ -1657,6 +1669,18 @@ export function AdminView({ token }: { token: string | null }) {
   const [generateError, setGenerateError] = useState<string | null>(null)
   const [newCode, setNewCode] = useState<string | null>(null)
 
+  const [logs, setLogs] = useState<AuditLogEntry[]>([])
+  const [logsLoading, setLogsLoading] = useState(true)
+  const [logsError, setLogsError] = useState('')
+
+  const AUDIT_ACTION_LABEL: Record<string, string> = {
+    create_user: t.coach.auditActionCreateUser,
+    update_user: t.coach.auditActionUpdateUser,
+    delete_user: t.coach.auditActionDeleteUser,
+    reset_password: t.coach.auditActionResetPassword,
+    create_invite_code: t.coach.auditActionCreateInviteCode,
+  }
+
   const loadUsers = useCallback(() => {
     if (!token) return
     setLoading(true)
@@ -1679,8 +1703,20 @@ export function AdminView({ token }: { token: string | null }) {
       .finally(() => setCodesLoading(false))
   }, [token])
 
+  const loadLogs = useCallback(() => {
+    if (!token) return
+    setLogsLoading(true)
+    setLogsError('')
+    fetch('/api/admin/audit-log', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
+      .then(d => setLogs(d.entries ?? []))
+      .catch(() => setLogsError(t.coach.loadError))
+      .finally(() => setLogsLoading(false))
+  }, [token])
+
   useEffect(() => { loadUsers() }, [loadUsers])
   useEffect(() => { loadCodes() }, [loadCodes])
+  useEffect(() => { loadLogs() }, [loadLogs])
 
   async function handleGenerateCode() {
     if (!token || generating) return
@@ -1696,6 +1732,7 @@ export function AdminView({ token }: { token: string | null }) {
       if (!res.ok || !data?.ok) { setGenerateError(data?.error ?? `${t.coach.loadError} (${res.status})`); return }
       setNewCode(data.code)
       loadCodes()
+      loadLogs()
     } catch (e) {
       captureError(e, { area: 'admin-create-invite-code' })
       setGenerateError(t.coach.loadError)
@@ -1721,6 +1758,7 @@ export function AdminView({ token }: { token: string | null }) {
       setCreateResult({ username: createForm.username, tempPassword: data.tempPassword })
       setCreateForm({ username: '', name: '', email: '' })
       loadUsers()
+      loadLogs()
     } catch (e) {
       captureError(e, { area: 'admin-create-user' })
       setCreateError(t.coach.loadError)
@@ -1789,6 +1827,7 @@ export function AdminView({ token }: { token: string | null }) {
         setEditForm(null)
       }
       setPendingAction(null)
+      loadLogs()
     } catch (e) {
       captureError(e, { area: `admin-${pendingAction.type}` })
       setActionError(t.coach.loadError)
@@ -2045,6 +2084,29 @@ export function AdminView({ token }: { token: string | null }) {
             </table>
           )}
         </div>
+      </Section>
+
+      <Section title={t.coach.auditLogTitle} loading={logsLoading} error={logsError} empty={logs.length === 0} onRetry={loadLogs} defaultOpen={false}>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-warm-800 text-warm-400 text-xs uppercase select-none">
+              <th className={TH}>{t.coach.colAction}</th>
+              <th className={TH}>{t.coach.colActor}</th>
+              <th className={TH}>{t.coach.colTargetAccount}</th>
+              <th className={THR}>{t.coach.createdAt}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {logs.map(l => (
+              <tr key={l.id} className="border-t border-warm-700/60">
+                <td className={`${TD} text-warm-100 font-semibold`}>{AUDIT_ACTION_LABEL[l.action] ?? l.action}</td>
+                <td className={`${TD} text-warm-300`}>{l.actor_name || l.actor_username}</td>
+                <td className={`${TD} text-warm-400`}>{l.target_name || l.target_username || '—'}</td>
+                <td className={`${TDR} text-warm-500`}>{formatDateShort(l.created_at)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </Section>
 
       {pendingAction && (

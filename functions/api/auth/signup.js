@@ -1,4 +1,4 @@
-import { sha256Hex, hashPassword, randomHex, json, handleOptions, emailDomainExists, checkRateLimitKV, verifyTurnstile } from '../_utils.js'
+import { sha256Hex, hashPassword, randomHex, escapeHtml, json, handleOptions, emailDomainExists, checkRateLimitKV, verifyTurnstile } from '../_utils.js'
 import { sendEmail } from '../_email.js'
 
 const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/
@@ -68,9 +68,9 @@ export async function onRequest(context) {
     await sendEmail(env, {
       to: email,
       subject: 'Bem-vindo(a) ao Pre-Flop Pro',
-      html: `<p>Olá ${name || username},</p>
+      html: `<p>Olá ${escapeHtml(name || username)},</p>
 <p>Sua conta no <strong>Pre-Flop Pro</strong> foi criada com sucesso. Treine seus ranges pré-flop até virar reflexo.</p>
-<p>Usuário: <strong>${username}</strong></p>
+<p>Usuário: <strong>${escapeHtml(username)}</strong></p>
 <p>Bons estudos e boa sorte nas mesas!</p>`,
     })
   } catch { /* best-effort, nunca falha o cadastro */ }

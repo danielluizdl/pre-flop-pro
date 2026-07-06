@@ -1,4 +1,4 @@
-import { getAuthUser, randomHex, json, handleOptions } from '../_utils.js'
+import { getAuthUser, randomHex, logAdminAction, checkRateLimitKV, json, handleOptions } from '../_utils.js'
 
 export function formatInviteCode(hex) {
   return hex.toUpperCase()
@@ -13,6 +13,11 @@ export async function onRequest(context) {
   if (!coach) return json({ error: 'Unauthorized' }, 401)
   if (coach.role !== 'coach') return json({ error: 'Forbidden' }, 403)
 
+  const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown'
+  if (!(await checkRateLimitKV(env, ip, Date.now(), 'admin'))) {
+    return json({ error: 'Muitas tentativas. Aguarde um minuto.' }, 429)
+  }
+
   let code
   for (let attempt = 0; attempt < 5; attempt++) {
     const candidate = formatInviteCode(randomHex(4))
@@ -22,6 +27,8 @@ export async function onRequest(context) {
   if (!code) return json({ error: 'Não foi possível gerar um código único, tente novamente' }, 500)
 
   await env.DB.prepare('INSERT INTO invite_codes (code, created_by) VALUES (?, ?)').bind(code, coach.id).run()
+
+  await logAdminAction(env, coach.id, 'create_invite_code', null, { code })
 
   return json({ ok: true, code })
 }
