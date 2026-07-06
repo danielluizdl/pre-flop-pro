@@ -1,5 +1,50 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-06 (arquitetura — pacote 2: split do CoachPanel, requireCoach(), README)
+
+- Continuação do relatório de revisão sênior: os 3 achados "menores" de arquitetura,
+  implementados nesta rodada (Daniel pediu para seguir o documento do "dev sênior").
+- **`CoachPanel.tsx` (2178 linhas) dividido em `src/components/Admin/CoachPanel/`**:
+  `shared.tsx` (código usado por 2+ abas — `MultiPlayerSelect`, `RangeSelect`,
+  `groupRangesByPosition`, `PeriodFilter`, `Section`, os hooks `useAnalytics`/`useRangeGrid`/
+  `usePlayerRanges`, formatação/cor e os tipos `CoachUser`/`Filters`), `TeamView.tsx` (aba
+  Drill — inclui `TopHandsPanel`, `HandDetailCard`, `PlayerQuickSummary`,
+  `ConsultRangeDetail`, exportados), `RecallView.tsx` (aba Range Check + `PublishTeamRanges`),
+  `AdminView.tsx` (aba Admin + `ConfirmDangerModal`), `index.tsx` (componente `CoachPanel` +
+  re-export dos exports acima). **Refactor mecânico, zero mudança de comportamento** — a
+  conversão de `CoachPanel.tsx` pra `CoachPanel/index.tsx` faz todo `import ... from
+  './CoachPanel'` (3 sites: `AppLayout.tsx`, `CoachPanel.test.tsx`,
+  `CoachPanelParts.test.tsx`) continuar resolvendo sem nenhuma mudança externa. Validado com
+  `tsc --noEmit` limpo, 1002 testes verdes, build e smoke OK.
+  **Nota (não corrigida, é bug pré-existente carregado no refactor)**: `CONSULT_RANGE_COLS`
+  em `TeamView.tsx` captura `t.coach.colX` numa constante de módulo — viola o gotcha de i18n
+  do projeto (congela o idioma do boot). Já existia no arquivo original; mantido idêntico
+  porque o objetivo aqui era só mover código, não corrigir comportamento.
+- **`requireCoach(request, env)`** (novo helper em `_utils.js`): dedup do skeleton repetido
+  nos 5 endpoints de escrita da aba Admin (`create-user`/`update-user`/`delete-user`/
+  `reset-password`/`create-invite-code`) — `getAuthUser` + checar `role==='coach'` +
+  `checkRateLimitKV(scope='admin')`, 8 linhas repetidas em cada endpoint viraram 2
+  (`const { coach, response } = await requireCoach(request, env); if (response) return response`).
+- **`README.md` na raiz** (nunca existiu) — setup, scripts, smoke test, aponta pro CLAUDE.md
+  como referência completa.
+- **CLAUDE.md**: atualizado pra refletir a pasta `CoachPanel/`, o `requireCoach()`, e
+  **corrigidas duas informações que estavam desatualizadas** (não relacionadas a este
+  trabalho, encontradas ao mexer no arquivo): a contagem de testes (estava em "560/63", real
+  atual é 1002/84) e o aviso "NÃO mergear Dependabot #20/#21" — essas migrações (Tailwind
+  3→4, Vite 6→8, TS 5→6, react-router 6→7, lucide-react 0.47→1.22) **já foram feitas e
+  mergeadas** em commits dedicados (`feat(deps): migra ...`) antes desta sessão; o texto no
+  CLAUDE.md só não tinha sido atualizado.
+- Branch `refactor/coach-panel-modules` → PR pra `feature/auth-telemetry`.
+
+### Pendente (Daniel)
+- [ ] Revisar/mergear a PR.
+- [ ] Bug pré-existente notado (não corrigido de propósito): `CONSULT_RANGE_COLS` em
+      `TeamView.tsx` captura `t.coach.*` em constante de módulo — só afeta o cabeçalho da
+      tabela "Consultas x Drill" se o idioma for trocado em runtime; corrigir numa sessão à
+      parte se quiser (mover pra dentro de um `useMemo`/computar no corpo do componente).
+
+---
+
 ## 2026-07-06 (revisão de segurança — pacote 1: CI, rate limit admin, log de auditoria, HTML escape)
 
 - Daniel pediu uma revisão de código/segurança "como se fosse um dev sênior contratado pra
@@ -34,12 +79,12 @@
 - Branch `security/audit-log-rate-limit-ci` → PR pra `feature/auth-telemetry`.
 
 ### Pendente (Daniel)
-- [ ] Revisar/mergear a PR.
-- [ ] Proteção de branch do `main` no GitHub (Settings → Branches) — feita via `gh api` numa
-      ação separada logo em seguida a esta, não faz parte deste PR de código.
-- [ ] Do relatório de segurança: os 3 achados "menores" (quebrar `CoachPanel.tsx` em
-      arquivos menores, extrair `requireCoach()` nos endpoints de admin, README.md) ainda
-      não foram atacados — combinar com o Daniel se entram numa próxima rodada.
+- [x] PR revisada/mergeada.
+- [x] Proteção de branch do `main` no GitHub (Settings → Branches) — feita via `gh api` logo
+      em seguida a esta, `enforce_admins:true`.
+- [x] Do relatório de segurança: os 3 achados "menores" (quebrar `CoachPanel.tsx` em
+      arquivos menores, extrair `requireCoach()` nos endpoints de admin, README.md) —
+      implementados na sessão seguinte, ver seção "arquitetura — pacote 2" acima.
 
 ---
 

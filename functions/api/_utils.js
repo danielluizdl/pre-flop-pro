@@ -142,6 +142,22 @@ export async function checkRateLimitKV(env, ip, now = Date.now(), scope = 'auth'
   }
 }
 
+// Skeleton repetido nos endpoints de admin (create/update/delete-user,
+// reset-password, create-invite-code): exige coach autenticado e aplica o
+// rate limit no escopo 'admin'. Retorna { coach } em caso de sucesso, ou
+// { response } já pronto pro chamador devolver (early return).
+export async function requireCoach(request, env) {
+  const coach = await getAuthUser(request, env)
+  if (!coach) return { response: json({ error: 'Unauthorized' }, 401) }
+  if (coach.role !== 'coach') return { response: json({ error: 'Forbidden' }, 403) }
+
+  const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown'
+  if (!(await checkRateLimitKV(env, ip, Date.now(), 'admin'))) {
+    return { response: json({ error: 'Muitas tentativas. Aguarde um minuto.' }, 429) }
+  }
+  return { coach }
+}
+
 export async function verifyTurnstile(env, token, ip) {
   if (!env.TURNSTILE_SECRET_KEY) {
     console.warn('TURNSTILE_SECRET_KEY ausente — validação Turnstile ignorada (fail-open)')
