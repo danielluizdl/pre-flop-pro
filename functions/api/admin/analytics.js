@@ -334,35 +334,29 @@ export async function onRequest(context) {
   if (view === 'consult-by-range') {
     const hf = handFilters(filters)
     const playedRes = await env.DB.prepare(
-      `SELECT range_id AS rangeId, MAX(range_name) AS rangeName,
-        COUNT(*) AS totalPlayed, COUNT(DISTINCT hand) AS playedHands
+      `SELECT range_id AS rangeId, MAX(range_name) AS rangeName, COUNT(*) AS totalPlayed
        FROM hand_events ${hf.clause} GROUP BY range_id`
     ).bind(...hf.binds).all()
 
-    const cConds = ['hand IS NOT NULL']
+    const cConds = []
     const cBinds = []
     const cPc = playerCond(filters.playerIds)
     if (cPc.sql) { cConds.push(cPc.sql); cBinds.push(...cPc.binds) }
     if (filters.rangeId !== null) { cConds.push('range_id = ?'); cBinds.push(filters.rangeId) }
     { const dc = dateCond('created_at', filters); cConds.push(...dc.conds); cBinds.push(...dc.binds) }
     const consultRes = await env.DB.prepare(
-      `SELECT range_id AS rangeId, COUNT(*) AS totalConsults, COUNT(DISTINCT hand) AS consultedHands
-       FROM consult_events WHERE ${cConds.join(' AND ')} GROUP BY range_id`
+      `SELECT range_id AS rangeId, COUNT(*) AS totalConsults
+       FROM consult_events ${cConds.length ? 'WHERE ' + cConds.join(' AND ') : ''} GROUP BY range_id`
     ).bind(...cBinds).all()
-    const cMap = new Map((consultRes.results ?? []).map(r => [r.rangeId, r]))
+    const cMap = new Map((consultRes.results ?? []).map(r => [r.rangeId, r.totalConsults]))
 
     const rows = (playedRes.results ?? []).map(r => {
-      const c = cMap.get(r.rangeId)
-      const consultedHands = c?.consultedHands ?? 0
-      const totalConsults = c?.totalConsults ?? 0
+      const totalConsults = cMap.get(r.rangeId) ?? 0
       return {
         rangeId: r.rangeId,
         rangeName: r.rangeName,
-        consultedHands,
         totalConsults,
-        playedHands: r.playedHands,
         totalPlayed: r.totalPlayed,
-        pctConsult: r.playedHands > 0 ? ACC(consultedHands, r.playedHands) : 0,
         rate: r.totalPlayed > 0 ? ACC(totalConsults, r.totalPlayed) : 0,
       }
     })

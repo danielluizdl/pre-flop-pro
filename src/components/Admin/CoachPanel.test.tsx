@@ -657,6 +657,43 @@ describe('CoachPanel', () => {
     expect(screen.queryByText('Alice')).not.toBeInTheDocument()
   })
 
+  it('Leaks relativos ordena por z asc (pior primeiro) por padrão e reordena ao clicar Jogador', async () => {
+    const pr = (userId: number, correct: number) => ({ userId, rangeId: 1, rangeName: 'BTN RFI', total: 100, correct })
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/admin/users')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ users: [] }) } as unknown as Response)
+      }
+      if (url.includes('view=player-ranges')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            rows: [pr(1, 40), pr(2, 50), pr(3, 95), pr(4, 90)],
+            users: [
+              { id: 1, name: 'Dave', username: 'dave' },
+              { id: 2, name: 'Carlos', username: 'carlos' },
+              { id: 3, name: 'Alice', username: 'alice' },
+              { id: 4, name: 'Bob', username: 'bob' },
+            ],
+          }),
+        } as unknown as Response)
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }) } as unknown as Response)
+    })
+    useStore.setState({ authToken: 'tok' })
+
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Leaks relativos/ }))
+    await screen.findByText('Dave')
+    let texts = screen.getAllByRole('row').map(r => r.textContent ?? '')
+    // Dave (40%, pior) antes de Carlos (50%) — z ascendente por padrão
+    expect(texts.findIndex(t => t.includes('Dave'))).toBeLessThan(texts.findIndex(t => t.includes('Carlos')))
+    fireEvent.click(screen.getByRole('button', { name: /Jogador/ }))
+    texts = screen.getAllByRole('row').map(r => r.textContent ?? '')
+    // ordem alfabética: Carlos antes de Dave
+    expect(texts.findIndex(t => t.includes('Carlos'))).toBeLessThan(texts.findIndex(t => t.includes('Dave')))
+  })
+
   // --- Fatia: clicar linha Por range → carrega range-grid ---
 
   it('clicar numa linha da tabela Por range carrega a matriz 13×13', async () => {
@@ -760,6 +797,39 @@ describe('CoachPanel', () => {
     expect(screen.getByText('BTN RFI')).toBeInTheDocument()
   })
 
+  it('Maiores leaks ordena por Impacto desc por padrão e reordena ao clicar Blunder', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/admin/users')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ users: [] }) } as unknown as Response)
+      }
+      if (url.includes('view=leaks')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            rows: [
+              { hand: 'AKo', rangeName: 'BTN RFI', total: 30, correct: 10, accuracy: 33, graves: 2, imprecisos: 15 },
+              { hand: 'QJs', rangeName: 'CO RFI', total: 30, correct: 20, accuracy: 67, graves: 9, imprecisos: 0 },
+            ],
+          }),
+        } as unknown as Response)
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }) } as unknown as Response)
+    })
+    useStore.setState({ authToken: 'tok' })
+
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Maiores leaks/ }))
+    await screen.findByText('AKo')
+    let texts = screen.getAllByRole('row').map(r => r.textContent ?? '')
+    // AKo (impacto 10.1) antes de QJs (impacto 9.7) — default desc por Impacto
+    expect(texts.findIndex(t => t.includes('AKo'))).toBeLessThan(texts.findIndex(t => t.includes('QJs')))
+    fireEvent.click(screen.getByRole('button', { name: /Blunder/ }))
+    texts = screen.getAllByRole('row').map(r => r.textContent ?? '')
+    // QJs tem mais blunders (9 vs 2) — inverte a ordem
+    expect(texts.findIndex(t => t.includes('QJs'))).toBeLessThan(texts.findIndex(t => t.includes('AKo')))
+  })
+
   // --- Fatia: Consulta no drill ---
 
   function mockViews(byView: Record<string, unknown>) {
@@ -778,18 +848,18 @@ describe('CoachPanel', () => {
   }
 
   const consultRows = [
-    { rangeId: 1, rangeName: 'CO RFI', consultedHands: 20, totalConsults: 30, playedHands: 67, totalPlayed: 200, pctConsult: 30, rate: 15 },
-    { rangeId: 2, rangeName: 'BTN RFI', consultedHands: 4, totalConsults: 10, playedHands: 5, totalPlayed: 50, pctConsult: 80, rate: 20 },
+    { rangeId: 1, rangeName: 'CO RFI', totalConsults: 30, totalPlayed: 200, rate: 15 },
+    { rangeId: 2, rangeName: 'BTN RFI', totalConsults: 10, totalPlayed: 50, rate: 20 },
   ]
 
-  it('Consulta no drill lista ranges com cobertura e taxa, ordenado por % de consulta desc por padrão', async () => {
+  it('Consulta no drill lista ranges com taxa de consulta, ordenado por % Consultas/Mão desc por padrão', async () => {
     mockViews({ 'consult-by-range': { rows: consultRows } })
     render(<CoachPanel />)
     fireEvent.click(await screen.findByRole('button', { name: /Consulta no drill/ }))
     await screen.findByText('CO RFI')
     expect(screen.getByText('BTN RFI')).toBeInTheDocument()
     const texts = screen.getAllByRole('row').map(r => r.textContent ?? '')
-    // BTN RFI (80%) antes de CO RFI (30%)
+    // BTN RFI (20%) antes de CO RFI (15%)
     expect(texts.findIndex(t => t.includes('BTN RFI'))).toBeLessThan(texts.findIndex(t => t.includes('CO RFI')))
   })
 

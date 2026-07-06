@@ -623,6 +623,8 @@ interface OverviewRow {
   durationSeconds: number; lastActivity: number
 }
 interface LeakRow { rangeId: number; rangeName: string; hand: string; total: number; correct: number; graves: number; imprecisos: number; accuracy: number }
+type LeaksSortKey = 'hand' | 'rangeName' | 'total' | 'accuracyLower' | 'graves' | 'imprecisos' | 'impact'
+type RelativeSortKey = 'name' | 'rangeName' | 'total' | 'playerAcc' | 'teamMean' | 'deviation' | 'z'
 
 const CONF_DOT: Record<Confidence, { cls: string; title: string }> = {
   low: { cls: 'bg-red-400', title: 'Amostra pequena (<15) — pouca confiança' },
@@ -631,14 +633,9 @@ const CONF_DOT: Record<Confidence, { cls: string; title: string }> = {
 }
 interface ByRangeRow { rangeId: number; rangeName: string; hands: number; accuracy: number; graves: number; imprecisos: number; consults: number; players: number }
 
-interface ConsultRangeRow {
-  rangeId: number; rangeName: string
-  consultedHands: number; totalConsults: number
-  playedHands: number; totalPlayed: number
-  pctConsult: number; rate: number
-}
+interface ConsultRangeRow { rangeId: number; rangeName: string; totalConsults: number; totalPlayed: number; rate: number }
 interface ConsultHandRow { hand: string; consults: number; played: number; pct: number }
-type ConsultSortKey = 'rangeName' | 'consultedHands' | 'pctConsult' | 'totalPlayed' | 'rate'
+type ConsultSortKey = 'rangeName' | 'totalConsults' | 'rate' | 'totalPlayed'
 type ConsultHandSortKey = 'hand' | 'consults' | 'played' | 'pct'
 
 const SEVERITY_CLS: Record<SeverityClass, string> = {
@@ -799,10 +796,9 @@ export function ConsultRangeDetail({ rangeId, playerIds, days, from, to, token }
 
 const CONSULT_RANGE_COLS: { k: ConsultSortKey; label: string; align: 'l' | 'r' }[] = [
   { k: 'rangeName', label: t.coach.colRange, align: 'l' },
-  { k: 'consultedHands', label: t.coach.colConsultedHands, align: 'r' },
-  { k: 'pctConsult', label: t.coach.colConsultPct, align: 'r' },
-  { k: 'totalPlayed', label: t.coach.colPlayedRange, align: 'r' },
+  { k: 'totalConsults', label: t.coach.colConsultedHands, align: 'r' },
   { k: 'rate', label: t.coach.colConsultRate, align: 'r' },
+  { k: 'totalPlayed', label: t.coach.colPlayedRange, align: 'r' },
 ]
 
 const ConsultRangeTableRow = memo(function ConsultRangeTableRow({ row: r, isOpen, onToggle, playerIds, days, from, to, token }: {
@@ -825,14 +821,13 @@ const ConsultRangeTableRow = memo(function ConsultRangeTableRow({ row: r, isOpen
           <span className={`inline-block w-3 text-warm-600 text-[0.6rem] ${isOpen ? 'text-brand-400' : ''}`}>{isOpen ? '▾' : '▸'}</span>
           {r.rangeName}
         </td>
-        <td className={`${TDR} text-purple-300`}>{r.consultedHands}</td>
-        <td className={`${TDR} font-bold text-warm-200`}>{r.pctConsult}%</td>
+        <td className={`${TDR} text-purple-300`}>{r.totalConsults}</td>
+        <td className={`${TDR} font-bold text-warm-200`}>{r.rate}%</td>
         <td className={`${TDR} text-warm-300`}>{r.totalPlayed}</td>
-        <td className={`${TDR} text-warm-300`}>{r.rate}%</td>
       </tr>
       {isOpen && (
         <tr>
-          <td colSpan={5} className="p-0">
+          <td colSpan={4} className="p-0">
             <ConsultRangeDetail rangeId={r.rangeId} playerIds={playerIds} days={days} from={from} to={to} token={token} />
           </td>
         </tr>
@@ -921,9 +916,13 @@ function TeamView({ token }: { token: string | null }) {
   const [brSortKey, setBrSortKey] = useState<ByRangeSortKey>('hands')
   const [brSortDir, setBrSortDir] = useState<'asc' | 'desc'>('desc')
   const [openPlayer, setOpenPlayer] = useState<number | null>(null)
-  const [consultSortKey, setConsultSortKey] = useState<ConsultSortKey>('pctConsult')
+  const [consultSortKey, setConsultSortKey] = useState<ConsultSortKey>('rate')
   const [consultSortDir, setConsultSortDir] = useState<'asc' | 'desc'>('desc')
   const [openConsultRange, setOpenConsultRange] = useState<number | null>(null)
+  const [leaksSortKey, setLeaksSortKey] = useState<LeaksSortKey>('impact')
+  const [leaksSortDir, setLeaksSortDir] = useState<'asc' | 'desc'>('desc')
+  const [relSortKey, setRelSortKey] = useState<RelativeSortKey>('z')
+  const [relSortDir, setRelSortDir] = useState<'asc' | 'desc'>('asc')
   const [filters, setFilters] = useState<Filters>({ playerIds: [], rangeId: null, days: null, from: null, to: null })
   const [stackIdx, setStackIdx] = useState<number | null>(null)
 
@@ -1049,6 +1048,42 @@ function TeamView({ token }: { token: string | null }) {
   function handleConsultSort(key: ConsultSortKey) {
     if (key === consultSortKey) setConsultSortDir(d => (d === 'asc' ? 'desc' : 'asc'))
     else { setConsultSortKey(key); setConsultSortDir(key === 'rangeName' ? 'asc' : 'desc') }
+  }
+
+  const sortedLeaks = useMemo(() => {
+    const rows = [...rankedLeaks]
+    rows.sort((a, b) => {
+      if (leaksSortKey === 'hand' || leaksSortKey === 'rangeName') {
+        const av = a[leaksSortKey], bv = b[leaksSortKey]
+        return leaksSortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av)
+      }
+      const av = a[leaksSortKey] as number, bv = b[leaksSortKey] as number
+      return leaksSortDir === 'asc' ? av - bv : bv - av
+    })
+    return rows
+  }, [rankedLeaks, leaksSortKey, leaksSortDir])
+
+  function handleLeaksSort(key: LeaksSortKey) {
+    if (key === leaksSortKey) setLeaksSortDir(d => (d === 'asc' ? 'desc' : 'asc'))
+    else { setLeaksSortKey(key); setLeaksSortDir(key === 'hand' || key === 'rangeName' ? 'asc' : 'desc') }
+  }
+
+  const sortedRelative = useMemo(() => {
+    const rows = [...relativeLeaks]
+    rows.sort((a, b) => {
+      if (relSortKey === 'name' || relSortKey === 'rangeName') {
+        const av = a[relSortKey], bv = b[relSortKey]
+        return relSortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av)
+      }
+      const av = a[relSortKey] as number, bv = b[relSortKey] as number
+      return relSortDir === 'asc' ? av - bv : bv - av
+    })
+    return rows
+  }, [relativeLeaks, relSortKey, relSortDir])
+
+  function handleRelSort(key: RelativeSortKey) {
+    if (key === relSortKey) setRelSortDir(d => (d === 'asc' ? 'desc' : 'asc'))
+    else { setRelSortKey(key); setRelSortDir(key === 'name' || key === 'rangeName' ? 'asc' : 'desc') }
   }
 
   return (
@@ -1270,17 +1305,30 @@ function TeamView({ token }: { token: string | null }) {
         </div>
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-warm-800 text-warm-400 text-xs uppercase">
-              <th className={TH}>{t.coach.colHand}</th>
-              <th className={TH}>{t.coach.colRange}</th>
-              <th className={THR}>{t.coach.colAttempts}</th>
-              <th className={THR}>{t.coach.colAccuracyMin}</th>
-              <th className={THR}>{t.coach.colBlunder}</th>
-              <th className={THR}>{t.coach.colImpact}</th>
+            <tr className="bg-warm-800 text-warm-400 text-xs uppercase select-none">
+              {([
+                { k: 'hand', label: t.coach.colHand, align: 'l' },
+                { k: 'rangeName', label: t.coach.colRange, align: 'l' },
+                { k: 'total', label: t.coach.colAttempts, align: 'r' },
+                { k: 'accuracyLower', label: t.coach.colAccuracyMin, align: 'r' },
+                { k: 'graves', label: t.coach.colBlunder, align: 'r' },
+                { k: 'imprecisos', label: t.coach.colImprecise, align: 'r' },
+                { k: 'impact', label: t.coach.colImpact, align: 'r' },
+              ] as { k: LeaksSortKey; label: string; align: 'l' | 'r' }[]).map(col => (
+                <th key={col.k} className={col.align === 'l' ? TH : THR}>
+                  <button
+                    onClick={() => handleLeaksSort(col.k)}
+                    className={`inline-flex items-center gap-1 hover:text-warm-100 transition-colors ${col.align === 'r' ? 'flex-row-reverse' : ''} ${leaksSortKey === col.k ? 'text-brand-300' : ''}`}
+                  >
+                    {col.label}
+                    <span className="text-[0.6rem] w-2">{leaksSortKey === col.k ? (leaksSortDir === 'asc' ? '▲' : '▼') : ''}</span>
+                  </button>
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {rankedLeaks.map((r, i) => {
+            {sortedLeaks.map((r, i) => {
               const dot = CONF_DOT[r.confidence]
               return (
                 <tr key={i} className={`border-t border-warm-700/60 ${r.confidence === 'low' ? 'opacity-60' : ''} ${r.accuracy < 50 && r.confidence !== 'low' ? 'bg-red-950/30' : ''}`}>
@@ -1296,6 +1344,7 @@ function TeamView({ token }: { token: string | null }) {
                     {r.accuracy}% <span className="text-warm-500 font-normal text-xs">({r.accuracyLower}%)</span>
                   </td>
                   <td className={`${TDR} text-red-400`}>{r.graves}</td>
+                  <td className={`${TDR} text-yellow-400`}>{r.imprecisos}</td>
                   <td className={`${TDR} font-bold text-orange-300`}>{Math.round(r.impact * 10) / 10}</td>
                 </tr>
               )
@@ -1349,18 +1398,30 @@ function TeamView({ token }: { token: string | null }) {
         </div>
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-warm-800 text-warm-400 text-xs uppercase">
-              <th className={TH}>{t.coach.colPlayer}</th>
-              <th className={TH}>{t.coach.colRange}</th>
-              <th className={THR}>{t.coach.colHands}</th>
-              <th className={THR}>{t.coach.colAccuracy}</th>
-              <th className={THR}>{t.coach.colTeamAvg}</th>
-              <th className={THR}>Δ</th>
-              <th className={THR}>z</th>
+            <tr className="bg-warm-800 text-warm-400 text-xs uppercase select-none">
+              {([
+                { k: 'name', label: t.coach.colPlayer, align: 'l' },
+                { k: 'rangeName', label: t.coach.colRange, align: 'l' },
+                { k: 'total', label: t.coach.colHands, align: 'r' },
+                { k: 'playerAcc', label: t.coach.colAccuracy, align: 'r' },
+                { k: 'teamMean', label: t.coach.colTeamAvg, align: 'r' },
+                { k: 'deviation', label: 'Δ', align: 'r' },
+                { k: 'z', label: 'z', align: 'r' },
+              ] as { k: RelativeSortKey; label: string; align: 'l' | 'r' }[]).map(col => (
+                <th key={col.k} className={col.align === 'l' ? TH : THR}>
+                  <button
+                    onClick={() => handleRelSort(col.k)}
+                    className={`inline-flex items-center gap-1 hover:text-warm-100 transition-colors ${col.align === 'r' ? 'flex-row-reverse' : ''} ${relSortKey === col.k ? 'text-brand-300' : ''}`}
+                  >
+                    {col.label}
+                    <span className="text-[0.6rem] w-2">{relSortKey === col.k ? (relSortDir === 'asc' ? '▲' : '▼') : ''}</span>
+                  </button>
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {relativeLeaks.map((r, i) => (
+            {sortedRelative.map((r, i) => (
               <tr key={i} className={`border-t border-warm-700/60 ${r.z <= -2 ? 'bg-red-950/30' : ''}`}>
                 <td className={`${TD} text-warm-100 font-semibold`}>{r.name}</td>
                 <td className={`${TD} text-warm-300`}>{r.rangeName}</td>
