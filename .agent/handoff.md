@@ -1,5 +1,48 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-06 (revisão de segurança — pacote 1: CI, rate limit admin, log de auditoria, HTML escape)
+
+- Daniel pediu uma revisão de código/segurança "como se fosse um dev sênior contratado pra
+  revisar o site" — publicada como artifact com achados verificados (1 crítico, 4
+  importantes, 3 menores, 7 ideias de produto). Ele autorizou implementar tudo de segurança;
+  esta é a primeira leva (falta só a proteção de branch do `main`, que é config do GitHub,
+  feita à parte).
+- **CI em PRs (`'.github/workflows/pr-checks.yml`, novo)**: roda `npm test` + `npm run build`
+  em todo PR mirando `main` OU `feature/auth-telemetry`. Antes só existia `deploy.yml`
+  (builda em push pra `main`, sem rodar teste nenhum) — os 994+ testes só rodavam quando
+  alguém lembrava de rodar `npm test` manualmente antes de mergear.
+- **Rate limit nos 5 endpoints de admin**: `create-user`/`update-user`/`delete-user`/
+  `reset-password`/`create-invite-code` chamam `checkRateLimitKV(env, ip, Date.now(), 'admin')`.
+  **Mudança na assinatura de `checkRateLimitKV`** (`_utils.js`): ganhou um 4º parâmetro
+  `scope` (default `'auth'`, mantém `login`/`signup` intactos) — sem isso, ações de admin e
+  tentativas de login do mesmo IP disputariam o mesmo balde de 8/min.
+- **Log de auditoria** (`schema_v7.sql`, tabela `admin_audit_log`: `actor_id`, `action`,
+  `target_id` nullable **sem FK** — sobrevive à exclusão do próprio alvo —, `detail` JSON,
+  `created_at`). Helper `logAdminAction` (best-effort/fail-open, nunca trava a ação
+  principal) chamado nos 5 endpoints de escrita. Leitura: `GET /api/admin/audit-log`
+  (coach-only, fail-open se a tabela não existir). Nova seção "Log de auditoria" na aba
+  Admin (`AdminView`), colapsável, recarrega após qualquer ação. **Migração já aplicada no
+  D1 remoto.**
+- **HTML escape nos e-mails**: nome/usuário (controlado pelo usuário) entrava direto na
+  string HTML dos templates de boas-vindas/senha temporária. Novo helper `escapeHtml`
+  aplicado em `signup.js`, `create-user.js` e `reset-password.js`.
+- **1002 testes verdes (84 arquivos)** (era 994), tsc limpo, build verde, SMOKE OK.
+  **Gotcha do smoke**: o `vite preview` do `npm run smoke` ficou preso na porta 4173 duas
+  vezes nesta sessão (processo `node` não encerrado de uma run anterior) — se o smoke
+  falhar com "vite preview não respondeu", checar `netstat -ano | grep 4173` e matar o
+  processo antes de rodar de novo.
+- Branch `security/audit-log-rate-limit-ci` → PR pra `feature/auth-telemetry`.
+
+### Pendente (Daniel)
+- [ ] Revisar/mergear a PR.
+- [ ] Proteção de branch do `main` no GitHub (Settings → Branches) — feita via `gh api` numa
+      ação separada logo em seguida a esta, não faz parte deste PR de código.
+- [ ] Do relatório de segurança: os 3 achados "menores" (quebrar `CoachPanel.tsx` em
+      arquivos menores, extrair `requireCoach()` nos endpoints de admin, README.md) ainda
+      não foram atacados — combinar com o Daniel se entram numa próxima rodada.
+
+---
+
 ## 2026-07-06 (cadastro: nome capitalizado, confirmar senha, tier/turma)
 
 - Daniel pediu 4 mudanças no formulário de cadastro (screenshot da tela real):
