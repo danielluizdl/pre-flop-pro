@@ -451,6 +451,8 @@ export const es: Messages = {
     createRange: 'Crear Range',
     expandSidebar: 'Expandir barra lateral',
     collapseSidebar: 'Contraer barra lateral',
+    language: 'Idioma',
+    replayTutorial: 'Repetir tutorial',
   },
   dashboard: {
     eyebrow: 'Empieza ahora',

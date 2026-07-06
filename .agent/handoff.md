@@ -26,17 +26,29 @@
   : firstLogin && ChangePasswordModal` — o tour só aparece pra quem acabou de fechar o
   welcome (nunca compete com o ChangePasswordModal do reset de senha).
 - **i18n**: nova chave `tour` (9 chaves: 3 pares título/corpo + skip/next/finish) em
-  `pt.ts`/`en.ts`/`es.ts` — 516 chaves no total agora.
-- **1011 testes verdes (85 arquivos)** (era 1002/84): `OnboardingTour.test.tsx` novo (7
-  testes: passo 1, avançar, último passo vira "Concluir", pular, Esc, clique no fundo,
-  axe), + 1 teste novo em `WelcomeModal.test.tsx`, + 1 teste novo em `AppLayout.test.tsx`.
-  tsc limpo, build verde, smoke verde.
-- Sem branch/PR ainda nesta sessão — ver com o Daniel antes de abrir PR (mesmo fluxo:
-  branch dedicada a partir de `feature/auth-telemetry`, testar, abrir PR, conferir CI real,
-  mergear).
+  `pt.ts`/`en.ts`/`es.ts`.
+- PR #50 (`feat/onboarding-tour` → `feature/auth-telemetry`) mergeada, CI real verde.
+- **Follow-up no mesmo dia (feedback com screenshot)**: Daniel pediu que o botão de
+  idioma e um botão de "acionar/desativar o tutorial" ficassem junto do nome do usuário
+  (onde hoje só tinha "Sair"). Perguntei via `AskUserQuestion` se seria dentro do menu do
+  perfil ou como ícones fixos ao lado do avatar — escolheu **dentro do menu do perfil**.
+  Implementado: `TopNav` — o ícone de globo saiu da fileira de utilitários do header (que
+  ficou só com modo escuro + engrenagem de admin) e o menu de perfil (abre clicando no
+  avatar/nome) ganhou duas linhas antes de "Sair": **"Idioma"** (cicla PT→EN→ES→PT a cada
+  clique — `nextLang()` local, sem submenu aninhado, pra não ter que lidar com o
+  `overflow-hidden` do painel do menu recortando um popover dentro de outro) e **"Rever
+  tutorial"** (`useStore.setState({ onboardingStep: 0 })`, disponível a qualquer momento —
+  não só logo após o cadastro). `LanguageSelect` (componente com popover próprio) continua
+  em uso só no `Sidebar` (órfão) e no `LoginPage` (pré-login). Novas chaves i18n
+  `nav.language`/`nav.replayTutorial` nos 3 idiomas — **518 chaves no total agora**.
+- **1013 testes verdes (85 arquivos)** (era 1002/84 antes de hoje): `OnboardingTour.test.tsx`
+  novo (7 testes), + 1 teste novo em `WelcomeModal.test.tsx`, + 1 em `AppLayout.test.tsx`,
+  + 2 novos em `TopNav.test.tsx` (ciclar idioma pelo menu, "Rever tutorial" seta
+  `onboardingStep`). tsc limpo, build verde, smoke verde.
 
 ### Pendente (Daniel)
-- [ ] Revisar/mergear a PR do tour guiado (branch ainda não criada/pushada nesta sessão).
+- [ ] Revisar/mergear a PR do follow-up (menu de perfil) — branch ainda não aberta no
+      momento de escrever este handoff, ver próximo passo da sessão.
 - [ ] Do backlog de produto (não pedido ainda): filtro Tier/Turma no painel do coach — dado
       já existe no `schema_v6`, falta só o filtro + coluna na lista de contas.
 
