@@ -636,7 +636,6 @@ interface ByRangeRow { rangeId: number; rangeName: string; hands: number; accura
 interface ConsultRangeRow { rangeId: number; rangeName: string; totalConsults: number; totalPlayed: number; rate: number }
 interface ConsultHandRow { hand: string; consults: number; played: number; pct: number }
 type ConsultSortKey = 'rangeName' | 'totalConsults' | 'rate' | 'totalPlayed'
-type ConsultHandSortKey = 'hand' | 'consults' | 'played' | 'pct'
 
 const SEVERITY_CLS: Record<SeverityClass, string> = {
   conceitual: 'text-red-300',
@@ -728,68 +727,32 @@ function useConsultHands(rangeId: number | null, playerIds: number[], days: numb
   return { rows, loading, error }
 }
 
-const CONSULT_HAND_COLS: { k: ConsultHandSortKey; label: string }[] = [
-  { k: 'hand', label: t.coach.colHand },
-  { k: 'consults', label: t.coach.colConsultedHand },
-  { k: 'played', label: t.coach.colPlayedHand },
-  { k: 'pct', label: t.coach.colConsultPct },
-]
+const CONSULT_CHIP_BG = 'rgba(139,92,246,0.9)'
 
 export function ConsultRangeDetail({ rangeId, playerIds, days, from, to, token }: {
   rangeId: number; playerIds: number[]; days: number | null; from: number | null; to: number | null; token: string | null
 }) {
   const { rows, loading, error } = useConsultHands(rangeId, playerIds, days, from, to, token)
-  const [sortKey, setSortKey] = useState<ConsultHandSortKey>('pct')
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
-
-  const sorted = useMemo(() => {
-    const list = [...rows]
-    list.sort((a, b) => {
-      if (sortKey === 'hand') return sortDir === 'asc' ? a.hand.localeCompare(b.hand) : b.hand.localeCompare(a.hand)
-      const av = a[sortKey] as number, bv = b[sortKey] as number
-      return sortDir === 'asc' ? av - bv : bv - av
-    })
-    return list
-  }, [rows, sortKey, sortDir])
-
-  function handleSort(key: ConsultHandSortKey) {
-    if (key === sortKey) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))
-    else { setSortKey(key); setSortDir(key === 'hand' ? 'asc' : 'desc') }
-  }
 
   if (loading) return <div className="px-4 py-3 text-xs text-warm-500">{t.coach.loading}</div>
   if (error) return <div className="px-4 py-3 text-xs text-red-400">{error}</div>
   if (rows.length === 0) return <div className="px-4 py-3 text-xs text-warm-500">{t.coach.noData}</div>
 
+  const top20 = [...rows].sort((a, b) => b.consults - a.consults).slice(0, 20)
+
   return (
     <div className="px-4 py-3 bg-warm-900/50 border-t border-warm-700/60">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-warm-400 text-xs uppercase">
-            {CONSULT_HAND_COLS.map(col => (
-              <th key={col.k} className={col.k === 'hand' ? TH : THR}>
-                <button
-                  onClick={() => handleSort(col.k)}
-                  className={`inline-flex items-center gap-1 hover:text-warm-100 transition-colors ${col.k !== 'hand' ? 'flex-row-reverse' : ''} ${sortKey === col.k ? 'text-brand-300' : ''}`}
-                >
-                  {col.label}
-                  <span className="text-[0.6rem] w-2">{sortKey === col.k ? (sortDir === 'asc' ? '▲' : '▼') : ''}</span>
-                </button>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map(r => (
-            <tr key={r.hand} className="border-t border-warm-700/60">
-              <td className={`${TD} text-warm-100 font-semibold`}>{r.hand}</td>
-              <td className={`${TDR} text-purple-300`}>{r.consults}</td>
-              <td className={`${TDR} text-warm-300`}>{r.played}</td>
-              <td className={`${TDR} font-bold text-warm-200`}>{r.pct}%</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <p className="text-[0.62rem] text-warm-500 mb-1.5 uppercase font-semibold tracking-wider">{t.coach.top20consults}</p>
+      <div className="space-y-0.5 max-h-[460px] overflow-y-auto pr-1">
+        {top20.map((r, i) => (
+          <div key={r.hand} className="flex items-center gap-1.5 text-xs rounded px-1 py-0.5">
+            <span className="text-warm-600 w-3.5 text-right tabular-nums text-[0.65rem]">{i + 1}</span>
+            <span className="px-1.5 py-0.5 rounded text-[0.7rem] font-bold text-white" style={{ background: CONSULT_CHIP_BG, textShadow: '0 0 3px rgba(0,0,0,0.6)' }}>{r.hand}</span>
+            <span className="flex-1 truncate text-left text-[0.66rem] text-warm-500">{t.coach.consultHandSummary(r.played, r.pct)}</span>
+            <span className="font-bold text-warm-200">{r.consults}x</span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

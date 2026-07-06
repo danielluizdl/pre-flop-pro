@@ -897,5 +897,34 @@ describe('CoachPanel', () => {
     fireEvent.click(await screen.findByRole('button', { name: /Consulta no drill/ }))
     fireEvent.click(await screen.findByText('CO RFI'))
     expect(await screen.findByText('QJs')).toBeInTheDocument()
+    expect(screen.getByText('Top 20 consultas')).toBeInTheDocument()
+    expect(screen.getByText('20x jogada · 35% consulta')).toBeInTheDocument()
+  })
+
+  it('detalhe da Consulta no drill mostra só o Top 20, ordenado por vezes consultada desc', async () => {
+    const hands = Array.from({ length: 25 }, (_, i) => ({
+      hand: `H${i}`, consults: 25 - i, played: 100, pct: 25 - i,
+    }))
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/admin/users')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ users: [] }) } as unknown as Response)
+      }
+      if (url.includes('view=consult-by-range-hand')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ rows: hands }) } as unknown as Response)
+      }
+      if (url.includes('view=consult-by-range')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ rows: [consultRows[0]] }) } as unknown as Response)
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }) } as unknown as Response)
+    })
+    useStore.setState({ authToken: 'tok' })
+
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Consulta no drill/ }))
+    fireEvent.click(await screen.findByText('CO RFI'))
+    // top 20 (mais consultada primeiro): H0 aparece, H24 (a menos consultada) fica de fora
+    expect(await screen.findByText('H0')).toBeInTheDocument()
+    expect(screen.queryByText('H24')).not.toBeInTheDocument()
   })
 })
