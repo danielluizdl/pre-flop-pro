@@ -1,4 +1,4 @@
-import { getAuthUser, hashPassword, randomHex, isShortStr, json, handleOptions } from '../_utils.js'
+import { getAuthUser, hashPassword, randomHex, isShortStr, escapeHtml, logAdminAction, checkRateLimitKV, json, handleOptions } from '../_utils.js'
 import { sendEmail } from '../_email.js'
 
 const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/
@@ -21,6 +21,11 @@ export async function onRequest(context) {
   const coach = await getAuthUser(request, env)
   if (!coach) return json({ error: 'Unauthorized' }, 401)
   if (coach.role !== 'coach') return json({ error: 'Forbidden' }, 403)
+
+  const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown'
+  if (!(await checkRateLimitKV(env, ip, Date.now(), 'admin'))) {
+    return json({ error: 'Muitas tentativas. Aguarde um minuto.' }, 429)
+  }
 
   let body
   try {
@@ -53,13 +58,15 @@ export async function onRequest(context) {
       await sendEmail(env, {
         to: email,
         subject: 'Pre-Flop Pro — sua conta foi criada',
-        html: `<p>Olá ${name || username},</p>
+        html: `<p>Olá ${escapeHtml(name || username)},</p>
 <p>O coach criou uma conta pra você no <strong>Pre-Flop Pro</strong>. Use a senha temporária abaixo para entrar; no primeiro acesso você definirá uma nova senha.</p>
 <p style="font-size:20px;font-weight:bold;letter-spacing:2px">${tempPassword}</p>
-<p>Usuário: <strong>${username}</strong></p>`,
+<p>Usuário: <strong>${escapeHtml(username)}</strong></p>`,
       })
     } catch { /* best-effort */ }
   }
+
+  await logAdminAction(env, coach.id, 'create_user', result.meta.last_row_id, { username })
 
   return json({ ok: true, tempPassword, user: { id: result.meta.last_row_id, username, name, email } })
 }

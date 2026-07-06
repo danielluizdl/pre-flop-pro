@@ -326,6 +326,44 @@ describe('AdminView', () => {
     expect(screen.getByText('Não utilizado')).toBeInTheDocument()
   })
 
+  it('lista o log de auditoria com ação, quem fez e a conta afetada', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/admin/audit-log')) {
+        return Promise.resolve({
+          ok: true, json: () => Promise.resolve({
+            entries: [
+              { id: 1, action: 'delete_user', target_id: 2, detail: null, created_at: 1700000000, actor_username: 'coach', actor_name: 'Coach', target_username: 'jogador2', target_name: 'Jogador Dois' },
+              { id: 2, action: 'create_invite_code', target_id: null, detail: '{"code":"ABCD1234"}', created_at: 1700000100, actor_username: 'coach', actor_name: 'Coach', target_username: null, target_name: null },
+            ],
+          }),
+        } as unknown as Response)
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ users }) } as unknown as Response)
+    })
+    render(<AdminView token="tok" />)
+    await screen.findByText('Jogador Um')
+    fireEvent.click(screen.getByText('Log de auditoria'))
+    expect(await screen.findByText('Excluiu conta')).toBeInTheDocument()
+    expect(screen.getAllByText('Jogador Dois').length).toBeGreaterThan(0)
+    expect(screen.getByText('Gerou código de convite')).toBeInTheDocument()
+    expect(screen.getAllByText('Coach').length).toBe(2)
+  })
+
+  it('log de auditoria vazio mostra o estado sem dados', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/admin/audit-log')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ entries: [] }) } as unknown as Response)
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ users }) } as unknown as Response)
+    })
+    render(<AdminView token="tok" />)
+    await screen.findByText('Jogador Um')
+    fireEvent.click(screen.getByText('Log de auditoria'))
+    expect(await screen.findByText('Sem dados.')).toBeInTheDocument()
+  })
+
   it('modal de confirmação (Excluir) não tem violações de acessibilidade (axe)', async () => {
     mockUsers()
     const { container } = render(<AdminView token="tok" />)

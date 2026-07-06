@@ -9,6 +9,8 @@ import {
   checkRateLimit,
   checkRateLimitKV,
   isAllowedOrigin,
+  escapeHtml,
+  logAdminAction,
 } from './_utils.js'
 
 describe('hashPassword', () => {
@@ -139,5 +141,50 @@ describe('checkRateLimitKV', () => {
     const now = 2_000_000
     for (let i = 0; i < 8; i++) expect(await checkRateLimitKV({}, 'ipMem', now)).toBe(true)
     expect(await checkRateLimitKV({}, 'ipMem', now)).toBe(false)
+  })
+
+  it('scope isola o balde: admin esgotado não bloqueia auth do mesmo IP', async () => {
+    const env = { RATE_LIMIT: makeKV() }
+    const now = 3_000_000
+    for (let i = 0; i < 8; i++) expect(await checkRateLimitKV(env, 'ipScope', now, 'admin')).toBe(true)
+    expect(await checkRateLimitKV(env, 'ipScope', now, 'admin')).toBe(false)
+    expect(await checkRateLimitKV(env, 'ipScope', now, 'auth')).toBe(true)
+  })
+})
+
+describe('escapeHtml', () => {
+  it('escapa os 5 caracteres especiais de HTML', () => {
+    expect(escapeHtml(`<script>alert('x')&"y"</script>`))
+      .toBe('&lt;script&gt;alert(&#39;x&#39;)&amp;&quot;y&quot;&lt;/script&gt;')
+  })
+
+  it('nomes normais passam intactos', () => {
+    expect(escapeHtml('Daniel Silva')).toBe('Daniel Silva')
+  })
+
+  it('lida com null/undefined sem lançar', () => {
+    expect(escapeHtml(null)).toBe('')
+    expect(escapeHtml(undefined)).toBe('')
+  })
+})
+
+describe('logAdminAction', () => {
+  it('grava a ação com os campos esperados', async () => {
+    const calls = []
+    const env = {
+      DB: {
+        prepare: sql => ({
+          bind: (...args) => { calls.push({ sql, args }); return { run: async () => ({}) } },
+        }),
+      },
+    }
+    await logAdminAction(env, 7, 'delete_user', 42, { reason: 'teste' })
+    expect(calls).toHaveLength(1)
+    expect(calls[0].args).toEqual([7, 'delete_user', 42, JSON.stringify({ reason: 'teste' })])
+  })
+
+  it('best-effort: não lança se a tabela ainda não existir', async () => {
+    const env = { DB: { prepare: () => { throw new Error('no such table: admin_audit_log') } } }
+    await expect(logAdminAction(env, 1, 'create_user', 2, null)).resolves.toBeUndefined()
   })
 })
