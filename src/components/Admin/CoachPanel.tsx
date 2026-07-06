@@ -1250,7 +1250,7 @@ function TeamView({ token }: { token: string | null }) {
           <span className="text-sky-300 font-semibold">{t.coach.legendMixedStrategy}</span>{t.coach.legendMixedStrategyDesc}
           <span className="text-yellow-300 font-semibold">{t.coach.legendMixed}</span>{t.coach.legendMixedDesc}
         </div>
-        <table className="text-sm">
+        <table className="w-full text-sm">
           <thead>
             <tr className="bg-warm-800 text-warm-400 text-xs uppercase select-none">
               <th className={TH}>{t.coach.colRange}</th>
