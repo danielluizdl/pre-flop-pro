@@ -1,18 +1,12 @@
-import { getAuthUser, logAdminAction, checkRateLimitKV, json, handleOptions } from '../_utils.js'
+import { requireCoach, logAdminAction, json, handleOptions } from '../_utils.js'
 
 export async function onRequest(context) {
   const { request, env } = context
   if (request.method === 'OPTIONS') return handleOptions()
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
-  const coach = await getAuthUser(request, env)
-  if (!coach) return json({ error: 'Unauthorized' }, 401)
-  if (coach.role !== 'coach') return json({ error: 'Forbidden' }, 403)
-
-  const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown'
-  if (!(await checkRateLimitKV(env, ip, Date.now(), 'admin'))) {
-    return json({ error: 'Muitas tentativas. Aguarde um minuto.' }, 429)
-  }
+  const { coach, response } = await requireCoach(request, env)
+  if (response) return response
 
   let body
   try {
