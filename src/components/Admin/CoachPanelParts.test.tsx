@@ -30,6 +30,20 @@ describe('TopHandsPanel', () => {
     expect(screen.getByText('5x')).toBeInTheDocument()
   })
 
+  it('aba de consultas ordena por Jogadas ao clicar no controle de ordenação', () => {
+    const sortCells: GridCell[] = [
+      cell({ hand: 'KK', total: 8, consults: 6 }),
+      cell({ hand: 'AA', total: 20, consults: 5 }),
+    ]
+    const { container } = render(<TopHandsPanel cells={sortCells} selected={null} onSelect={() => {}} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Top 20 consultas' }))
+    // default: Consultas desc → KK (6x) antes de AA (5x)
+    expect(container.textContent!.indexOf('KK')).toBeLessThan(container.textContent!.indexOf('AA'))
+    fireEvent.click(screen.getByRole('button', { name: /^Jogadas/ }))
+    // agora por Jogadas desc → AA (20 jogadas) antes de KK (8 jogadas)
+    expect(container.textContent!.indexOf('AA')).toBeLessThan(container.textContent!.indexOf('KK'))
+  })
+
   it('clicar numa mão chama onSelect', () => {
     const onSelect = vi.fn()
     render(<TopHandsPanel cells={cells} selected={null} onSelect={onSelect} />)

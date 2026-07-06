@@ -279,10 +279,51 @@ function confChipBg(acc: number): string {
   return 'rgba(220,38,38,0.92)'
 }
 
+type Top20SortKey = 'played' | 'pct' | 'consults'
+
+function useTop20Sort(defaultKey: Top20SortKey = 'consults') {
+  const [sortKey, setSortKey] = useState<Top20SortKey>(defaultKey)
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+  function handleSort(key: Top20SortKey) {
+    if (key === sortKey) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))
+    else { setSortKey(key); setSortDir('desc') }
+  }
+  return { sortKey, sortDir, handleSort }
+}
+
+const TOP20_SORT_OPTS: { k: Top20SortKey; label: string }[] = [
+  { k: 'played', label: t.coach.top20SortPlayed },
+  { k: 'pct', label: t.coach.top20SortPct },
+  { k: 'consults', label: t.coach.top20SortConsults },
+]
+
+function Top20SortBar({ sortKey, sortDir, onSort }: { sortKey: Top20SortKey; sortDir: 'asc' | 'desc'; onSort: (key: Top20SortKey) => void }) {
+  return (
+    <div className="flex items-center gap-2.5 mb-1.5">
+      {TOP20_SORT_OPTS.map(o => (
+        <button
+          key={o.k}
+          onClick={() => onSort(o.k)}
+          className={`inline-flex items-center gap-0.5 text-[0.6rem] font-semibold uppercase tracking-wide transition-colors ${sortKey === o.k ? 'text-brand-300' : 'text-warm-500 hover:text-warm-300'}`}
+        >
+          {o.label}
+          <span className="text-[0.55rem] w-1.5">{sortKey === o.k ? (sortDir === 'asc' ? '▲' : '▼') : ''}</span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
 export function TopHandsPanel({ cells, selected, onSelect }: { cells: GridCell[]; selected: string | null; onSelect: (hand: string) => void }) {
   const [tab, setTab] = useState<'errors' | 'consults'>('errors')
+  const { sortKey: consultSortKey, sortDir: consultSortDir, handleSort: handleConsultSort } = useTop20Sort()
+  const consultValue = (c: GridCell, key: Top20SortKey) =>
+    key === 'played' ? c.total : key === 'pct' ? (c.total > 0 ? (c.consults / c.total) * 100 : 0) : c.consults
   const errors = [...cells].filter(c => c.total >= 3).sort((a, b) => a.accuracy - b.accuracy).slice(0, 20)
-  const consults = [...cells].filter(c => c.consults > 0).sort((a, b) => b.consults - a.consults).slice(0, 20)
+  const consults = [...cells]
+    .filter(c => c.consults > 0)
+    .sort((a, b) => (consultSortDir === 'asc' ? 1 : -1) * (consultValue(a, consultSortKey) - consultValue(b, consultSortKey)))
+    .slice(0, 20)
   const list = tab === 'errors' ? errors : consults
   const tabCls = (on: boolean) => `flex-1 px-2 py-1 rounded-md text-[0.7rem] font-semibold border transition-colors ${on ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:text-warm-200'}`
 
@@ -292,6 +333,7 @@ export function TopHandsPanel({ cells, selected, onSelect }: { cells: GridCell[]
         <button onClick={() => setTab('errors')} className={tabCls(tab === 'errors')}>{t.coach.top20errors}</button>
         <button onClick={() => setTab('consults')} className={tabCls(tab === 'consults')}>{t.coach.top20consults}</button>
       </div>
+      {tab === 'consults' && <Top20SortBar sortKey={consultSortKey} sortDir={consultSortDir} onSort={handleConsultSort} />}
       <p className="text-[0.62rem] text-warm-500 mb-1.5">{t.coach.clickHandDetail}</p>
       <div className="space-y-0.5 max-h-[460px] overflow-y-auto pr-1">
         {list.length === 0 ? (
@@ -304,7 +346,11 @@ export function TopHandsPanel({ cells, selected, onSelect }: { cells: GridCell[]
           >
             <span className="text-warm-600 w-3.5 text-right tabular-nums text-[0.65rem]">{i + 1}</span>
             <span className="px-1.5 py-0.5 rounded text-[0.7rem] font-bold text-white" style={{ background: confChipBg(c.accuracy), textShadow: '0 0 3px rgba(0,0,0,0.6)' }}>{c.hand}</span>
-            <span className="flex-1 truncate text-left text-[0.66rem] text-warm-500">{c.correctAction ?? '—'}{c.topWrong ? ` → ${c.topWrong.action}` : ''}</span>
+            <span className="flex-1 truncate text-left text-[0.66rem] text-warm-500">
+              {tab === 'errors'
+                ? <>{c.correctAction ?? '—'}{c.topWrong ? ` → ${c.topWrong.action}` : ''}</>
+                : t.coach.consultHandSummary(c.total, Math.round(consultValue(c, 'pct') * 10) / 10)}
+            </span>
             {tab === 'errors'
               ? <span className={`font-bold ${accColor(c.accuracy)}`}>{c.accuracy}%</span>
               : <span className="font-bold text-warm-200">{c.consults}x</span>}
@@ -771,16 +817,21 @@ export function ConsultRangeDetail({ rangeId, playerIds, days, from, to, token }
   rangeId: number; playerIds: number[]; days: number | null; from: number | null; to: number | null; token: string | null
 }) {
   const { rows, loading, error } = useConsultHands(rangeId, playerIds, days, from, to, token)
+  const { sortKey, sortDir, handleSort } = useTop20Sort()
 
   if (loading) return <div className="px-4 py-3 text-xs text-warm-500">{t.coach.loading}</div>
   if (error) return <div className="px-4 py-3 text-xs text-red-400">{error}</div>
 
-  const top20 = rows.filter(r => r.consults > 0).sort((a, b) => b.consults - a.consults).slice(0, 20)
+  const top20 = rows
+    .filter(r => r.consults > 0)
+    .sort((a, b) => (sortDir === 'asc' ? 1 : -1) * (a[sortKey] - b[sortKey]))
+    .slice(0, 20)
   if (top20.length === 0) return <div className="px-4 py-3 text-xs text-warm-500">{t.coach.noData}</div>
 
   return (
     <div className="px-4 py-3 bg-warm-900/50 border-t border-warm-700/60">
       <p className="text-[0.62rem] text-warm-500 mb-1.5 uppercase font-semibold tracking-wider">{t.coach.top20consults}</p>
+      <Top20SortBar sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
       <div className="w-fit min-w-[220px] max-w-[300px] space-y-0.5 max-h-[460px] overflow-y-auto pr-1">
         {top20.map((r, i) => (
           <div key={r.hand} className="flex items-center gap-1.5 text-xs rounded px-1 py-0.5">

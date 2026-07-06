@@ -940,4 +940,35 @@ describe('CoachPanel', () => {
     expect(screen.queryByText('KK')).not.toBeInTheDocument()
     expect(screen.queryByText('QQ')).not.toBeInTheDocument()
   })
+
+  it('detalhe da Consulta no drill reordena ao clicar em Jogadas', async () => {
+    const hands = [
+      { hand: 'AA', consults: 5, played: 10, pct: 50 },
+      { hand: 'KK', consults: 3, played: 30, pct: 10 },
+    ]
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/admin/users')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ users: [] }) } as unknown as Response)
+      }
+      if (url.includes('view=consult-by-range-hand')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ rows: hands }) } as unknown as Response)
+      }
+      if (url.includes('view=consult-by-range')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ rows: [consultRows[0]] }) } as unknown as Response)
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }) } as unknown as Response)
+    })
+    useStore.setState({ authToken: 'tok' })
+
+    const { container } = render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Consulta no drill/ }))
+    fireEvent.click(await screen.findByText('CO RFI'))
+    await screen.findByText('AA')
+    // default: Consultas desc → AA (5x) antes de KK (3x)
+    expect(container.textContent!.indexOf('AA')).toBeLessThan(container.textContent!.indexOf('KK'))
+    fireEvent.click(screen.getByRole('button', { name: /^Jogadas/ }))
+    // agora por Jogadas desc → KK (30 jogadas) antes de AA (10 jogadas)
+    expect(container.textContent!.indexOf('KK')).toBeLessThan(container.textContent!.indexOf('AA'))
+  })
 })
