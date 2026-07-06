@@ -1,5 +1,30 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-06 (PlayerQuickSummary vira somente-leitura — reset de senha só na aba Admin)
+
+- Daniel viu o "Resumo individual por jogador" (aba Drill) no preview e pediu pra tirar o
+  botão "Resetar senha" de lá — mexer em conta de usuário deve existir **só** na aba
+  "Funcionalidades de Admin", sem duplicar em outro lugar.
+- `PlayerQuickSummary` (`src/components/Admin/CoachPanel.tsx`) perdeu todo o bloco de reset
+  (estado `resetting`/`tempPassword`/`resetError`/`copied`, `handleResetPassword`,
+  `resetBlock` e as 3 renderizações dele) — agora é **puramente leitura** (ranges mais
+  treinados / onde mais erra / mais consultados).
+- i18n: `coach.resetting` e `coach.resetConfirm` ficaram órfãos (só eram usados ali) —
+  removidos de pt/en/es (não confundir com `errorBoundary.resetConfirm`, que é outra coisa,
+  intocado). `coach.resetPassword`/`tempPassword`/`copy`/`copied` continuam em uso na aba
+  Admin.
+- Testes: removidos os 2 testes de reset em `PlayerQuickSummary` (CoachPanelParts.test.tsx),
+  novo teste garantindo que o botão não aparece mais ali. **Gotcha de teste:** o novo teste
+  colidiu com o cache de analytics (TTL 15s, chave por URL) do teste anterior que usava os
+  mesmos parâmetros (`userId=1, days=null`) — resolvido variando `days` entre os testes.
+- **976 testes verdes (83 arquivos)**, tsc limpo, build verde, SMOKE OK.
+- Branch `fix/remove-player-summary-reset` → PR pra `feature/auth-telemetry`.
+
+### Pendente (Daniel)
+- [ ] Revisar/mergear a PR (branch `fix/remove-player-summary-reset`).
+
+---
+
 ## 2026-07-05 (issues #6 e #36 — fechamento)
 
 - Daniel pediu pra resolver as duas issues "proposta" que ainda estavam abertas.

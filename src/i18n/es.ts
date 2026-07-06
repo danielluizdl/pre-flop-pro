@@ -168,8 +168,6 @@ export const es: Messages = {
     players: 'Jugadores',
     tempPassword: 'Contraseña temporal — compártela con el jugador. Definirá una nueva contraseña en su próximo acceso.',
     resetPassword: 'Restablecer contraseña',
-    resetting: 'Restableciendo…',
-    resetConfirm: '¿Restablecer la contraseña de este jugador? La contraseña actual dejará de funcionar y necesitará la temporal.',
     copy: 'Copiar',
     copied: 'Copiado',
     colDate: 'Fecha',
