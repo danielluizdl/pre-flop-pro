@@ -166,8 +166,6 @@ export const pt = {
     players: 'Jogadores',
     tempPassword: 'Senha temporária — repasse ao jogador. Ele definirá uma nova senha no próximo acesso.',
     resetPassword: 'Resetar senha',
-    resetting: 'Resetando…',
-    resetConfirm: 'Resetar a senha deste jogador? A senha atual deixará de funcionar e ele precisará usar a senha temporária.',
     copy: 'Copiar',
     copied: 'Copiado',
     colDate: 'Data',

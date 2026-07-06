@@ -168,8 +168,6 @@ export const en: Messages = {
     players: 'Players',
     tempPassword: 'Temporary password — share it with the player. They will set a new password on next login.',
     resetPassword: 'Reset password',
-    resetting: 'Resetting…',
-    resetConfirm: "Reset this player's password? The current password will stop working and they will need the temporary one.",
     copy: 'Copy',
     copied: 'Copied',
     colDate: 'Date',

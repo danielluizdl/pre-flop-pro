@@ -623,34 +623,6 @@ function severityHelp(c: SeverityClass): string {
 export function PlayerQuickSummary({ userId, days, from, to, token }: { userId: number; days: number | null; from: number | null; to: number | null; token: string | null }) {
   const [rows, setRows] = useState<ByRangeRow[]>([])
   const [loading, setLoading] = useState(true)
-  const [resetting, setResetting] = useState(false)
-  const [tempPassword, setTempPassword] = useState<string | null>(null)
-  const [resetError, setResetError] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
-
-  async function handleResetPassword() {
-    if (!token || resetting) return
-    if (!confirm(t.coach.resetConfirm)) return
-    setResetting(true)
-    setResetError(null)
-    setTempPassword(null)
-    setCopied(false)
-    try {
-      const res = await fetch('/api/admin/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ userId }),
-      })
-      const data = await res.json().catch(() => null)
-      if (!res.ok || !data?.ok) { setResetError(data?.error ?? `Erro do servidor (${res.status})`); return }
-      setTempPassword(data.tempPassword)
-    } catch (e) {
-      captureError(e, { area: 'admin-reset-password' })
-      setResetError(t.coach.loadError)
-    } finally {
-      setResetting(false)
-    }
-  }
 
   useEffect(() => {
     if (!token) return
@@ -664,39 +636,9 @@ export function PlayerQuickSummary({ userId, days, from, to, token }: { userId: 
     return () => { cancelled = true }
   }, [userId, days, from, to, token])
 
-  const resetBlock = (
-    <div className="space-y-2">
-      <div className="flex items-center gap-3 flex-wrap">
-        <button
-          onClick={handleResetPassword}
-          disabled={resetting}
-          className="px-2.5 py-1 text-xs rounded-lg border border-warm-600 text-warm-300 hover:bg-warm-800 hover:text-white disabled:opacity-40 transition-colors"
-        >
-          {resetting ? t.coach.resetting : t.coach.resetPassword}
-        </button>
-        {resetError && <span className="text-xs text-red-400">{resetError}</span>}
-      </div>
-      {tempPassword && (
-        <div className="rounded-xl border border-brand-600/50 bg-warm-800/60 p-3">
-          <p className="text-xs text-warm-400 mb-1.5">{t.coach.tempPassword}</p>
-          <div className="flex items-center gap-2">
-            <code className="text-lg font-bold tracking-widest text-brand-300 select-all">{tempPassword}</code>
-            <button
-              onClick={() => { navigator.clipboard?.writeText(tempPassword); setCopied(true) }}
-              className="px-2.5 py-1 text-xs rounded-lg border border-warm-600 text-warm-300 hover:bg-warm-800 transition-colors"
-            >
-              {copied ? t.coach.copied : t.coach.copy}
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-
   if (loading) {
     return (
       <div className="px-4 py-3 space-y-3 bg-warm-900/50 border-t border-warm-700/60">
-        {resetBlock}
         <p className="text-xs text-warm-500">{t.coach.loadingSummary}</p>
       </div>
     )
@@ -704,7 +646,6 @@ export function PlayerQuickSummary({ userId, days, from, to, token }: { userId: 
   if (rows.length === 0) {
     return (
       <div className="px-4 py-3 space-y-3 bg-warm-900/50 border-t border-warm-700/60">
-        {resetBlock}
         <p className="text-xs text-warm-500">{t.coach.noRangeDataPlayer}</p>
       </div>
     )
@@ -732,7 +673,6 @@ export function PlayerQuickSummary({ userId, days, from, to, token }: { userId: 
 
   return (
     <div className="px-4 py-3 space-y-3 bg-warm-900/50 border-t border-warm-700/60">
-      {resetBlock}
       <div className="grid gap-5 md:grid-cols-3">
         <Col title={t.coach.mostTrained} items={treinados} render={r => <span className="text-warm-200">{r.hands} {t.common.hands}</span>} />
         <Col title={t.coach.whereErrsMost} items={piores} render={r => <span className={accColor(r.accuracy)}>{r.accuracy}%</span>} />
