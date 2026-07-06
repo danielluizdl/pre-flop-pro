@@ -142,7 +142,6 @@ export const pt = {
     colPlayedRange: 'Mãos jogadas',
     colConsultRate: '% Consultas/Mão',
     colImprecise: 'Imprecisos',
-    consultHandSummary: (played: number, pct: number) => `${played}x jogada · ${pct}% consulta`,
     belowPeers: 'abaixo dos colegas',
     relativeLegendBefore: 'Onde cada jogador está ',
     relativeLegendAfter: ' no mesmo range (z-score). Considera jogadores com ≥15 mãos e ranges com ≥3 jogadores. Selecione vários jogadores para comparar.',

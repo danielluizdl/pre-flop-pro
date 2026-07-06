@@ -297,20 +297,25 @@ const TOP20_SORT_OPTS: { k: Top20SortKey; label: string }[] = [
   { k: 'consults', label: t.coach.top20SortConsults },
 ]
 
-function Top20SortBar({ sortKey, sortDir, onSort }: { sortKey: Top20SortKey; sortDir: 'asc' | 'desc'; onSort: (key: Top20SortKey) => void }) {
+function Top20TableHead({ sortKey, sortDir, onSort }: { sortKey: Top20SortKey; sortDir: 'asc' | 'desc'; onSort: (key: Top20SortKey) => void }) {
   return (
-    <div className="flex items-center gap-2.5 mb-1.5">
-      {TOP20_SORT_OPTS.map(o => (
-        <button
-          key={o.k}
-          onClick={() => onSort(o.k)}
-          className={`inline-flex items-center gap-0.5 text-[0.6rem] font-semibold uppercase tracking-wide transition-colors ${sortKey === o.k ? 'text-brand-300' : 'text-warm-500 hover:text-warm-300'}`}
-        >
-          {o.label}
-          <span className="text-[0.55rem] w-1.5">{sortKey === o.k ? (sortDir === 'asc' ? '▲' : '▼') : ''}</span>
-        </button>
-      ))}
-    </div>
+    <thead>
+      <tr className="text-warm-500 text-[0.6rem] uppercase select-none">
+        <th className="w-4" />
+        <th className="text-left pb-1 pr-2">{t.coach.colHand}</th>
+        {TOP20_SORT_OPTS.map(o => (
+          <th key={o.k} className="text-right pb-1 pl-2 whitespace-nowrap">
+            <button
+              onClick={() => onSort(o.k)}
+              className={`inline-flex items-center gap-0.5 font-semibold transition-colors ${sortKey === o.k ? 'text-brand-300' : 'text-warm-500 hover:text-warm-300'}`}
+            >
+              {o.label}
+              <span className="text-[0.55rem] w-1.5">{sortKey === o.k ? (sortDir === 'asc' ? '▲' : '▼') : ''}</span>
+            </button>
+          </th>
+        ))}
+      </tr>
+    </thead>
   )
 }
 
@@ -324,40 +329,63 @@ export function TopHandsPanel({ cells, selected, onSelect }: { cells: GridCell[]
     .filter(c => c.consults > 0)
     .sort((a, b) => (consultSortDir === 'asc' ? 1 : -1) * (consultValue(a, consultSortKey) - consultValue(b, consultSortKey)))
     .slice(0, 20)
-  const list = tab === 'errors' ? errors : consults
   const tabCls = (on: boolean) => `flex-1 px-2 py-1 rounded-md text-[0.7rem] font-semibold border transition-colors ${on ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:text-warm-200'}`
 
   return (
-    <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-3 w-[260px] shrink-0">
+    <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-3 w-[300px] shrink-0">
       <div className="flex gap-1 mb-1.5">
         <button onClick={() => setTab('errors')} className={tabCls(tab === 'errors')}>{t.coach.top20errors}</button>
         <button onClick={() => setTab('consults')} className={tabCls(tab === 'consults')}>{t.coach.top20consults}</button>
       </div>
-      {tab === 'consults' && <Top20SortBar sortKey={consultSortKey} sortDir={consultSortDir} onSort={handleConsultSort} />}
-      <p className="text-[0.62rem] text-warm-500 mb-1.5">{t.coach.clickHandDetail}</p>
-      <div className="space-y-0.5 max-h-[460px] overflow-y-auto pr-1">
-        {list.length === 0 ? (
-          <p className="text-xs text-warm-500 py-2">{t.coach.noData}</p>
-        ) : list.map((c, i) => (
-          <button
-            key={c.hand}
-            onClick={() => onSelect(c.hand)}
-            className={`group w-full flex items-center gap-1.5 text-xs rounded px-1 py-0.5 cursor-pointer transition-colors ${selected === c.hand ? 'bg-warm-800 ring-1 ring-brand-500/50' : 'hover:bg-warm-800/60'}`}
-          >
-            <span className="text-warm-600 w-3.5 text-right tabular-nums text-[0.65rem]">{i + 1}</span>
-            <span className="px-1.5 py-0.5 rounded text-[0.7rem] font-bold text-white" style={{ background: confChipBg(c.accuracy), textShadow: '0 0 3px rgba(0,0,0,0.6)' }}>{c.hand}</span>
-            <span className="flex-1 truncate text-left text-[0.66rem] text-warm-500">
-              {tab === 'errors'
-                ? <>{c.correctAction ?? '—'}{c.topWrong ? ` → ${c.topWrong.action}` : ''}</>
-                : t.coach.consultHandSummary(c.total, Math.round(consultValue(c, 'pct') * 10) / 10)}
-            </span>
-            {tab === 'errors'
-              ? <span className={`font-bold ${accColor(c.accuracy)}`}>{c.accuracy}%</span>
-              : <span className="font-bold text-warm-200">{c.consults}x</span>}
-            <span className={`text-xs ${selected === c.hand ? 'text-brand-400' : 'text-warm-600 group-hover:text-warm-300'}`}>›</span>
-          </button>
-        ))}
-      </div>
+      {tab === 'errors' ? (
+        <>
+          <p className="text-[0.62rem] text-warm-500 mb-1.5">{t.coach.clickHandDetail}</p>
+          <div className="space-y-0.5 max-h-[460px] overflow-y-auto pr-1">
+            {errors.length === 0 ? (
+              <p className="text-xs text-warm-500 py-2">{t.coach.noData}</p>
+            ) : errors.map((c, i) => (
+              <button
+                key={c.hand}
+                onClick={() => onSelect(c.hand)}
+                className={`group w-full flex items-center gap-1.5 text-xs rounded px-1 py-0.5 cursor-pointer transition-colors ${selected === c.hand ? 'bg-warm-800 ring-1 ring-brand-500/50' : 'hover:bg-warm-800/60'}`}
+              >
+                <span className="text-warm-600 w-3.5 text-right tabular-nums text-[0.65rem]">{i + 1}</span>
+                <span className="px-1.5 py-0.5 rounded text-[0.7rem] font-bold text-white" style={{ background: confChipBg(c.accuracy), textShadow: '0 0 3px rgba(0,0,0,0.6)' }}>{c.hand}</span>
+                <span className="flex-1 truncate text-left text-[0.66rem] text-warm-500">{c.correctAction ?? '—'}{c.topWrong ? ` → ${c.topWrong.action}` : ''}</span>
+                <span className={`font-bold ${accColor(c.accuracy)}`}>{c.accuracy}%</span>
+                <span className={`text-xs ${selected === c.hand ? 'text-brand-400' : 'text-warm-600 group-hover:text-warm-300'}`}>›</span>
+              </button>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className="max-h-[460px] overflow-y-auto pr-1">
+          {consults.length === 0 ? (
+            <p className="text-xs text-warm-500 py-2">{t.coach.noData}</p>
+          ) : (
+            <table className="w-full text-sm">
+              <Top20TableHead sortKey={consultSortKey} sortDir={consultSortDir} onSort={handleConsultSort} />
+              <tbody>
+                {consults.map((c, i) => (
+                  <tr
+                    key={c.hand}
+                    onClick={() => onSelect(c.hand)}
+                    className={`cursor-pointer transition-colors ${selected === c.hand ? 'bg-warm-800' : 'hover:bg-warm-800/60'}`}
+                  >
+                    <td className="text-warm-600 text-right tabular-nums text-[0.62rem] pr-1 py-0.5">{i + 1}</td>
+                    <td className="py-0.5 pr-2">
+                      <span className="px-1.5 py-0.5 rounded text-[0.7rem] font-bold text-white" style={{ background: confChipBg(c.accuracy), textShadow: '0 0 3px rgba(0,0,0,0.6)' }}>{c.hand}</span>
+                    </td>
+                    <td className="text-right text-warm-300 text-[0.68rem] pl-2 tabular-nums">{c.total}x</td>
+                    <td className="text-right text-warm-300 text-[0.68rem] pl-2 tabular-nums">{Math.round(consultValue(c, 'pct') * 10) / 10}%</td>
+                    <td className="text-right font-bold text-warm-200 text-[0.7rem] pl-2 tabular-nums">{c.consults}x</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -831,16 +859,23 @@ export function ConsultRangeDetail({ rangeId, playerIds, days, from, to, token }
   return (
     <div className="px-4 py-3 bg-warm-900/50 border-t border-warm-700/60">
       <p className="text-[0.62rem] text-warm-500 mb-1.5 uppercase font-semibold tracking-wider">{t.coach.top20consults}</p>
-      <Top20SortBar sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-      <div className="w-fit min-w-[220px] max-w-[300px] space-y-0.5 max-h-[460px] overflow-y-auto pr-1">
-        {top20.map((r, i) => (
-          <div key={r.hand} className="flex items-center gap-1.5 text-xs rounded px-1 py-0.5">
-            <span className="text-warm-600 w-3.5 text-right tabular-nums text-[0.65rem]">{i + 1}</span>
-            <span className="px-1.5 py-0.5 rounded text-[0.7rem] font-bold text-white shrink-0" style={{ background: CONSULT_CHIP_BG, textShadow: '0 0 3px rgba(0,0,0,0.6)' }}>{r.hand}</span>
-            <span className="truncate text-left text-[0.66rem] text-warm-500">{t.coach.consultHandSummary(r.played, r.pct)}</span>
-            <span className="font-bold text-warm-200 ml-auto pl-2 shrink-0">{r.consults}x</span>
-          </div>
-        ))}
+      <div className="w-fit max-w-[360px] max-h-[460px] overflow-y-auto">
+        <table className="text-sm">
+          <Top20TableHead sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+          <tbody>
+            {top20.map((r, i) => (
+              <tr key={r.hand} className="border-t border-warm-800/60">
+                <td className="text-warm-600 text-right tabular-nums text-[0.62rem] pr-1 py-0.5">{i + 1}</td>
+                <td className="py-0.5 pr-2">
+                  <span className="px-1.5 py-0.5 rounded text-[0.7rem] font-bold text-white" style={{ background: CONSULT_CHIP_BG, textShadow: '0 0 3px rgba(0,0,0,0.6)' }}>{r.hand}</span>
+                </td>
+                <td className="text-right text-warm-300 text-[0.68rem] pl-2 tabular-nums">{r.played}x</td>
+                <td className="text-right text-warm-300 text-[0.68rem] pl-2 tabular-nums">{r.pct}%</td>
+                <td className="text-right font-bold text-warm-200 text-[0.7rem] pl-2 tabular-nums">{r.consults}x</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )

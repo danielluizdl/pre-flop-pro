@@ -144,7 +144,6 @@ export const es: Messages = {
     colPlayedRange: 'Manos jugadas',
     colConsultRate: '% Consultas/Mano',
     colImprecise: 'Imprecisas',
-    consultHandSummary: (played: number, pct: number) => `${played}x jugada · ${pct}% consulta`,
     belowPeers: 'por debajo de sus colegas',
     relativeLegendBefore: 'Dónde está cada jugador ',
     relativeLegendAfter: ' en el mismo range (z-score). Considera jugadores con ≥15 manos y ranges con ≥3 jugadores. Selecciona varios jugadores para comparar.',

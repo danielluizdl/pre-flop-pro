@@ -882,7 +882,9 @@ describe('CoachPanel', () => {
     fireEvent.click(await screen.findByText('CO RFI'))
     expect(await screen.findByText('QJs')).toBeInTheDocument()
     expect(screen.getByText('Top 20 consultas')).toBeInTheDocument()
-    expect(screen.getByText('20x jogada · 35% consulta')).toBeInTheDocument()
+    expect(screen.getByText('20x')).toBeInTheDocument()
+    expect(screen.getByText('35%')).toBeInTheDocument()
+    expect(screen.getByText('7x')).toBeInTheDocument()
   })
 
   it('detalhe da Consulta no drill mostra só o Top 20, ordenado por vezes consultada desc', async () => {

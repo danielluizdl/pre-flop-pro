@@ -144,7 +144,6 @@ export const en: Messages = {
     colPlayedRange: 'Hands played',
     colConsultRate: '% Lookups/Hand',
     colImprecise: 'Imprecise',
-    consultHandSummary: (played: number, pct: number) => `${played}x played · ${pct}% lookup`,
     belowPeers: 'below their peers',
     relativeLegendBefore: 'Where each player is ',
     relativeLegendAfter: ' in the same range (z-score). Considers players with ≥15 hands and ranges with ≥3 players. Select multiple players to compare.',
