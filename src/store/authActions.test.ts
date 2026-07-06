@@ -78,7 +78,7 @@ describe('store: ações de auth (caminho feliz)', () => {
       }
       return { body: { ranges: [] } }
     })
-    const r = await useStore.getState().authSignup('novo', 'senha', 'TEAM', 'Novo', 'n@x.com')
+    const r = await useStore.getState().authSignup('novo', 'senha', 'TEAM', 'Novo', 'n@x.com', 'fundamentals', 'A')
     expect(r.ok).toBe(true)
     const s = useStore.getState()
     expect(s.justSignedUp).toBe(true)
@@ -163,7 +163,7 @@ describe('store: ações de auth (caminho feliz)', () => {
 
   it('authSignup falha do servidor: retorna o erro do body e não persiste token', async () => {
     mockFetch(() => ({ status: 400, body: { error: 'código de time inválido' } }))
-    const r = await useStore.getState().authSignup('u', 'p', 'bad', 'Nome', 'e@e.com')
+    const r = await useStore.getState().authSignup('u', 'p', 'bad', 'Nome', 'e@e.com', 'fundamentals', 'A')
     expect(r.ok).toBe(false)
     expect(r.error).toBe('código de time inválido')
     expect(sessionStorage.getItem('pfp-auth-token')).toBeNull()

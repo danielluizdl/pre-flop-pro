@@ -44,7 +44,7 @@ describe('store: erros de rede capturados (#15 FASE 2)', () => {
   })
 
   it('authSignup: falha de rede → {ok:false} e captureError', async () => {
-    const r = await useStore.getState().authSignup('u', 'p', 'code', 'Nome', 'e@e.com')
+    const r = await useStore.getState().authSignup('u', 'p', 'code', 'Nome', 'e@e.com', 'fundamentals', 'A')
     expect(r.ok).toBe(false)
     expect(captureError).toHaveBeenCalledWith(expect.any(Error), { area: 'auth-signup' })
   })
