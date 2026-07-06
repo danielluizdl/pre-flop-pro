@@ -774,20 +774,20 @@ export function ConsultRangeDetail({ rangeId, playerIds, days, from, to, token }
 
   if (loading) return <div className="px-4 py-3 text-xs text-warm-500">{t.coach.loading}</div>
   if (error) return <div className="px-4 py-3 text-xs text-red-400">{error}</div>
-  if (rows.length === 0) return <div className="px-4 py-3 text-xs text-warm-500">{t.coach.noData}</div>
 
-  const top20 = [...rows].sort((a, b) => b.consults - a.consults).slice(0, 20)
+  const top20 = rows.filter(r => r.consults > 0).sort((a, b) => b.consults - a.consults).slice(0, 20)
+  if (top20.length === 0) return <div className="px-4 py-3 text-xs text-warm-500">{t.coach.noData}</div>
 
   return (
     <div className="px-4 py-3 bg-warm-900/50 border-t border-warm-700/60">
       <p className="text-[0.62rem] text-warm-500 mb-1.5 uppercase font-semibold tracking-wider">{t.coach.top20consults}</p>
-      <div className="space-y-0.5 max-h-[460px] overflow-y-auto pr-1">
+      <div className="w-fit min-w-[220px] max-w-[300px] space-y-0.5 max-h-[460px] overflow-y-auto pr-1">
         {top20.map((r, i) => (
           <div key={r.hand} className="flex items-center gap-1.5 text-xs rounded px-1 py-0.5">
             <span className="text-warm-600 w-3.5 text-right tabular-nums text-[0.65rem]">{i + 1}</span>
-            <span className="px-1.5 py-0.5 rounded text-[0.7rem] font-bold text-white" style={{ background: CONSULT_CHIP_BG, textShadow: '0 0 3px rgba(0,0,0,0.6)' }}>{r.hand}</span>
-            <span className="flex-1 truncate text-left text-[0.66rem] text-warm-500">{t.coach.consultHandSummary(r.played, r.pct)}</span>
-            <span className="font-bold text-warm-200">{r.consults}x</span>
+            <span className="px-1.5 py-0.5 rounded text-[0.7rem] font-bold text-white shrink-0" style={{ background: CONSULT_CHIP_BG, textShadow: '0 0 3px rgba(0,0,0,0.6)' }}>{r.hand}</span>
+            <span className="truncate text-left text-[0.66rem] text-warm-500">{t.coach.consultHandSummary(r.played, r.pct)}</span>
+            <span className="font-bold text-warm-200 ml-auto pl-2 shrink-0">{r.consults}x</span>
           </div>
         ))}
       </div>
