@@ -32,11 +32,20 @@ describe('CoachPanel', () => {
     expect(screen.getByText('Todos os ranges')).toBeInTheDocument()
   })
 
+  it('header de filtros mostra os rótulos Período/Jogadores/Ranges', async () => {
+    mockApi()
+    render(<CoachPanel />)
+    await screen.findByRole('button', { name: 'Visão do time' })
+    expect(screen.getByText('Período:')).toBeInTheDocument()
+    expect(screen.getByText('Jogadores:')).toBeInTheDocument()
+    expect(screen.getByText('Ranges:')).toBeInTheDocument()
+  })
+
   it('mostra "Por range" como primeira seção colapsável', async () => {
     mockApi()
     render(<CoachPanel />)
     expect(await screen.findByText('Por range')).toBeInTheDocument()
-    expect(screen.getByText('Resumo do time')).toBeInTheDocument()
+    expect(screen.getByText('Resumo individual por jogador')).toBeInTheDocument()
     expect(screen.getByText('Maiores leaks')).toBeInTheDocument()
     expect(screen.queryByText('Hotspots de consulta')).not.toBeInTheDocument()
   })
@@ -254,7 +263,7 @@ describe('CoachPanel', () => {
     useStore.setState({ authToken: 'tok' })
 
     render(<CoachPanel />)
-    fireEvent.click(await screen.findByRole('button', { name: /Resumo do time/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /Resumo individual por jogador/ }))
     const alice = await screen.findByText('Alice')
     resetRenderCount('overviewRow')
     fireEvent.click(alice)
@@ -518,7 +527,7 @@ describe('CoachPanel', () => {
     expect(coIdx).toBeLessThan(btnIdx)
   })
 
-  // --- Fatia: ordenação e agregado do "Resumo do time" ---
+  // --- Fatia: ordenação e agregado do "Resumo individual por jogador" ---
 
   const orow = (userId: number, name: string, hands: number, accuracy: number) => ({
     userId, username: name.toLowerCase(), name, hands, accuracy,
@@ -542,19 +551,19 @@ describe('CoachPanel', () => {
     useStore.setState({ authToken: 'tok' })
   }
 
-  it('Resumo do time ordena por Mãos desc por padrão (Bob antes de Alice)', async () => {
+  it('Resumo individual por jogador ordena por Mãos desc por padrão (Bob antes de Alice)', async () => {
     mockApiWithOverview()
     render(<CoachPanel />)
-    fireEvent.click(await screen.findByRole('button', { name: /Resumo do time/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /Resumo individual por jogador/ }))
     await screen.findByText('Alice')
     const texts = screen.getAllByRole('row').map(r => r.textContent ?? '')
     expect(texts.findIndex(t => t.includes('Bob'))).toBeLessThan(texts.findIndex(t => t.includes('Alice')))
   })
 
-  it('clicar coluna Precisão do Resumo do time ordena por accuracy desc', async () => {
+  it('clicar coluna Precisão do Resumo individual por jogador ordena por accuracy desc', async () => {
     mockApiWithOverview()
     render(<CoachPanel />)
-    fireEvent.click(await screen.findByRole('button', { name: /Resumo do time/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /Resumo individual por jogador/ }))
     await screen.findByText('Alice')
     fireEvent.click(screen.getByRole('button', { name: /^Precisão/ }))
     const texts = screen.getAllByRole('row').map(r => r.textContent ?? '')
@@ -565,7 +574,7 @@ describe('CoachPanel', () => {
   it('linha agregada TIME aparece quando a API devolve o total do time', async () => {
     mockApiWithOverview({ hands: 150, accuracy: 80, graves: 4, imprecisos: 2, consults: 2, durationSeconds: 3600, lastActivity: 0 })
     render(<CoachPanel />)
-    fireEvent.click(await screen.findByRole('button', { name: /Resumo do time/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /Resumo individual por jogador/ }))
     expect(await screen.findByText('TIME')).toBeInTheDocument()
   })
 
@@ -585,24 +594,10 @@ describe('CoachPanel', () => {
     useStore.setState({ authToken: 'tok' })
   }
 
-  it('seção Evolução mostra "Erro ao carregar" quando a API falha', async () => {
-    mockApiWithViewError('trend')
+  it('seção Consulta no drill mostra "Erro ao carregar" quando a API falha', async () => {
+    mockApiWithViewError('consult-by-range')
     render(<CoachPanel />)
-    fireEvent.click(await screen.findByRole('button', { name: /Evolução/ }))
-    expect(await screen.findByText('Erro ao carregar')).toBeInTheDocument()
-  })
-
-  it('seção Segmentos mostra "Erro ao carregar" quando a API falha', async () => {
-    mockApiWithViewError('segments')
-    render(<CoachPanel />)
-    fireEvent.click(await screen.findByRole('button', { name: /Segmentos/ }))
-    expect(await screen.findByText('Erro ao carregar')).toBeInTheDocument()
-  })
-
-  it('seção Lacunas mostra "Erro ao carregar" quando a API falha', async () => {
-    mockApiWithViewError('knowledge-gaps')
-    render(<CoachPanel />)
-    fireEvent.click(await screen.findByRole('button', { name: /Lacunas/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /Consulta no drill/ }))
     expect(await screen.findByText('Erro ao carregar')).toBeInTheDocument()
   })
 
@@ -620,10 +615,10 @@ describe('CoachPanel', () => {
     expect(await screen.findByText('Sem dados.')).toBeInTheDocument()
   })
 
-  it('seção Segmentos mostra "Sem dados." quando retorna vazio', async () => {
+  it('seção Consulta no drill mostra "Sem dados." quando retorna vazio', async () => {
     mockApi()
     render(<CoachPanel />)
-    fireEvent.click(await screen.findByRole('button', { name: /Segmentos/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /Consulta no drill/ }))
     expect(await screen.findByText('Sem dados.')).toBeInTheDocument()
   })
 
@@ -765,7 +760,7 @@ describe('CoachPanel', () => {
     expect(screen.getByText('BTN RFI')).toBeInTheDocument()
   })
 
-  // --- Fatia: Segmentos / Lacunas / Evolução com dados ---
+  // --- Fatia: Consulta no drill ---
 
   function mockViews(byView: Record<string, unknown>) {
     vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
@@ -782,45 +777,55 @@ describe('CoachPanel', () => {
     useStore.setState({ authToken: 'tok' })
   }
 
-  it('seção Segmentos exibe categorias e ações quando há dados', async () => {
-    mockViews({
-      segments: {
-        byHand: [{ hand: 'AA', total: 40, correct: 30, graves: 6, imprecisos: 4 }],
-        byAction: [{ action: 'Raise', total: 50, correct: 40, graves: 5, imprecisos: 5, accuracy: 80 }],
-      },
-    })
+  const consultRows = [
+    { rangeId: 1, rangeName: 'CO RFI', consultedHands: 20, totalConsults: 30, playedHands: 67, totalPlayed: 200, pctConsult: 30, rate: 15 },
+    { rangeId: 2, rangeName: 'BTN RFI', consultedHands: 4, totalConsults: 10, playedHands: 5, totalPlayed: 50, pctConsult: 80, rate: 20 },
+  ]
+
+  it('Consulta no drill lista ranges com cobertura e taxa, ordenado por % de consulta desc por padrão', async () => {
+    mockViews({ 'consult-by-range': { rows: consultRows } })
     render(<CoachPanel />)
-    fireEvent.click(await screen.findByRole('button', { name: /Segmentos/ }))
-    expect(await screen.findByText('Raise')).toBeInTheDocument()
+    fireEvent.click(await screen.findByRole('button', { name: /Consulta no drill/ }))
+    await screen.findByText('CO RFI')
+    expect(screen.getByText('BTN RFI')).toBeInTheDocument()
+    const texts = screen.getAllByRole('row').map(r => r.textContent ?? '')
+    // BTN RFI (80%) antes de CO RFI (30%)
+    expect(texts.findIndex(t => t.includes('BTN RFI'))).toBeLessThan(texts.findIndex(t => t.includes('CO RFI')))
   })
 
-  it('seção Lacunas de conhecimento lista mãos consultadas com erro', async () => {
-    mockViews({
-      'knowledge-gaps': {
-        rows: [{ rangeId: 1, rangeName: 'CO RFI', hand: 'QJs', consults: 7, total: 20, correct: 10, graves: 6, imprecisos: 4 }],
-      },
-    })
+  it('clicar cabeçalho "Mãos consultadas" reordena a tabela de Consulta no drill', async () => {
+    mockViews({ 'consult-by-range': { rows: consultRows } })
     render(<CoachPanel />)
-    fireEvent.click(await screen.findByRole('button', { name: /Lacunas de conhecimento/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /Consulta no drill/ }))
+    await screen.findByText('CO RFI')
+    fireEvent.click(screen.getByRole('button', { name: /Mãos consultadas/ }))
+    const texts = screen.getAllByRole('row').map(r => r.textContent ?? '')
+    // desc por mãos consultadas: CO RFI (20) antes de BTN RFI (4)
+    expect(texts.findIndex(t => t.includes('CO RFI'))).toBeLessThan(texts.findIndex(t => t.includes('BTN RFI')))
+  })
+
+  it('clicar uma linha da Consulta no drill expande o detalhe por mão', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/admin/users')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ users: [] }) } as unknown as Response)
+      }
+      if (url.includes('view=consult-by-range-hand')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ rows: [{ hand: 'QJs', consults: 7, played: 20, pct: 35 }] }),
+        } as unknown as Response)
+      }
+      if (url.includes('view=consult-by-range')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ rows: [consultRows[0]] }) } as unknown as Response)
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ rows: [], team: null, cells: [], byHand: [], byAction: [], users: [] }) } as unknown as Response)
+    })
+    useStore.setState({ authToken: 'tok' })
+
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: /Consulta no drill/ }))
+    fireEvent.click(await screen.findByText('CO RFI'))
     expect(await screen.findByText('QJs')).toBeInTheDocument()
-    expect(screen.getByText('CO RFI')).toBeInTheDocument()
-  })
-
-  it('seção Evolução renderiza sparkline e badge de tendência com dados semanais', async () => {
-    mockViews({
-      trend: {
-        rows: [
-          { userId: 1, week: 1, hands: 40, correct: 20 },
-          { userId: 1, week: 2, hands: 40, correct: 28 },
-          { userId: 1, week: 3, hands: 40, correct: 36 },
-        ],
-        users: [{ id: 1, username: 'ana', name: 'Ana' }],
-      },
-    })
-    const { container } = render(<CoachPanel />)
-    fireEvent.click(await screen.findByRole('button', { name: /Evolução/ }))
-    expect(await screen.findByText('Ana')).toBeInTheDocument()
-    // sparkline SVG renderizado
-    expect(container.querySelector('svg polyline, svg path, svg line')).toBeTruthy()
   })
 })

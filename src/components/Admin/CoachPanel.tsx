@@ -30,9 +30,7 @@ function ComboSummary({ stats }: { stats: ComboStats }) {
     </div>
   )
 }
-import { rankLeaks, rankKnowledgeGaps, severityProfile, type Confidence, type SeverityClass } from '../../utils/coachStats'
-import { buildTrend, aggregateTeamBuckets, type PlayerTrend, type TrendDir, type WeekBucket } from '../../utils/coachTrend'
-import { aggregateSegments, type HandRow } from '../../utils/handCategories'
+import { rankLeaks, severityProfile, type Confidence, type SeverityClass } from '../../utils/coachStats'
 import { buildRelativeLeaks, type PlayerRangeStat } from '../../utils/coachRelative'
 
 const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'EP', 'LJ', 'UTG']
@@ -539,78 +537,13 @@ function useRangeGrid(rangeId: number | null, days: number | null, from: number 
   return { cells, loading, error }
 }
 
-interface TrendRow { userId: number; week: number; hands: number; correct: number }
-interface TrendUser { id: number; username: string; name: string }
-
-function useTrend(filters: Filters, token: string | null) {
-  const [rows, setRows] = useState<TrendRow[]>([])
-  const [users, setUsers] = useState<TrendUser[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [tick, setTick] = useState(0)
-  const idsKey = filters.playerIds.join(',')
-
-  useEffect(() => {
-    if (!token) return
-    let cancelled = false
-    setLoading(true)
-    setError('')
-    const qs = new URLSearchParams({ view: 'trend' })
-    if (idsKey) qs.set('playerIds', idsKey)
-    if (filters.rangeId !== null) qs.set('rangeId', String(filters.rangeId))
-    setDateParams(qs, filters)
-    fetchAnalyticsCached(`/api/admin/analytics?${qs.toString()}`, token)
-      .then(d => {
-        if (cancelled) return
-        setRows(d.rows ?? [])
-        setUsers(d.users ?? [])
-        setLoading(false)
-      })
-      .catch(e => { if (!cancelled) { captureError(e, { area: 'coach-analytics', view: 'trend' }); setError(t.coach.loadError); setLoading(false) } })
-    return () => { cancelled = true }
-  }, [token, idsKey, filters.rangeId, filters.days, filters.from, filters.to, tick])
-
-  return { rows, users, loading, error, reload: () => { invalidateAnalyticsCache(); setTick(t => t + 1) } }
-}
-
-interface ActionRow { action: string; total: number; correct: number; graves: number; imprecisos: number; accuracy: number }
-
-function useSegments(filters: Filters, token: string | null) {
-  const [byHand, setByHand] = useState<HandRow[]>([])
-  const [byAction, setByAction] = useState<ActionRow[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [tick, setTick] = useState(0)
-  const idsKey = filters.playerIds.join(',')
-
-  useEffect(() => {
-    if (!token) return
-    let cancelled = false
-    setLoading(true)
-    setError('')
-    const qs = new URLSearchParams({ view: 'segments' })
-    if (idsKey) qs.set('playerIds', idsKey)
-    if (filters.rangeId !== null) qs.set('rangeId', String(filters.rangeId))
-    setDateParams(qs, filters)
-    fetchAnalyticsCached(`/api/admin/analytics?${qs.toString()}`, token)
-      .then(d => {
-        if (cancelled) return
-        setByHand(d.byHand ?? [])
-        setByAction(d.byAction ?? [])
-        setLoading(false)
-      })
-      .catch(e => { if (!cancelled) { captureError(e, { area: 'coach-analytics', view: 'segments' }); setError(t.coach.loadError); setLoading(false) } })
-    return () => { cancelled = true }
-  }, [token, idsKey, filters.rangeId, filters.days, filters.from, filters.to, tick])
-
-  return { byHand, byAction, loading, error, reload: () => { invalidateAnalyticsCache(); setTick(t => t + 1) } }
-}
+interface UserOpt { id: number; username: string; name: string }
 
 interface PlayerRangeApiRow { userId: number; rangeId: number; rangeName: string; total: number; correct: number }
 
 function usePlayerRanges(filters: Filters, token: string | null) {
   const [rows, setRows] = useState<PlayerRangeApiRow[]>([])
-  const [users, setUsers] = useState<TrendUser[]>([])
+  const [users, setUsers] = useState<UserOpt[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [tick, setTick] = useState(0)
@@ -634,60 +567,6 @@ function usePlayerRanges(filters: Filters, token: string | null) {
   return { rows, users, loading, error, reload: () => { invalidateAnalyticsCache(); setTick(t => t + 1) } }
 }
 
-const TREND_META: Record<TrendDir, { arrow: string; cls: string }> = {
-  improving: { arrow: '▲', cls: 'text-emerald-400' },
-  regressing: { arrow: '▼', cls: 'text-red-400' },
-  stable: { arrow: '▬', cls: 'text-warm-400' },
-  insufficient: { arrow: '–', cls: 'text-warm-600' },
-}
-function trendLabel(dir: TrendDir): string {
-  return dir === 'improving' ? t.coach.trendImproving
-    : dir === 'regressing' ? t.coach.trendRegressing
-    : dir === 'stable' ? t.coach.trendStable
-    : t.coach.trendInsufficient
-}
-
-function TrendBadge({ t }: { t: PlayerTrend }) {
-  const m = TREND_META[t.classification]
-  const sign = t.slope > 0 ? '+' : ''
-  return (
-    <span className={`inline-flex items-center gap-1 text-xs font-semibold ${m.cls}`}>
-      <span>{m.arrow}</span>
-      <span>{trendLabel(t.classification)}</span>
-      {t.classification !== 'insufficient' && (
-        <span className="text-warm-500 font-normal">{sign}{t.slope}pp/sem</span>
-      )}
-    </span>
-  )
-}
-
-function Sparkline({ weeks, width = 120, height = 30 }: { weeks: { week: number; accuracy: number }[]; width?: number; height?: number }) {
-  if (weeks.length === 0) return <span className="text-warm-600 text-xs">—</span>
-  const xs = weeks.map(w => w.week)
-  const minX = Math.min(...xs), maxX = Math.max(...xs)
-  const spanX = maxX - minX || 1
-  const pad = 3
-  const px = (week: number) => pad + ((week - minX) / spanX) * (width - 2 * pad)
-  const py = (acc: number) => pad + (1 - acc / 100) * (height - 2 * pad)
-  const y80 = py(80)
-  if (weeks.length === 1) {
-    return (
-      <svg width={width} height={height} className="overflow-visible">
-        <line x1={0} x2={width} y1={y80} y2={y80} stroke="var(--color-warm-600)" strokeDasharray="2 2" />
-        <circle cx={px(weeks[0].week)} cy={py(weeks[0].accuracy)} r={2.5} fill="var(--color-blue-400)" />
-      </svg>
-    )
-  }
-  const d = weeks.map((w, i) => `${i === 0 ? 'M' : 'L'}${px(w.week).toFixed(1)},${py(w.accuracy).toFixed(1)}`).join(' ')
-  const last = weeks[weeks.length - 1]
-  return (
-    <svg width={width} height={height} className="overflow-visible">
-      <line x1={0} x2={width} y1={y80} y2={y80} stroke="var(--color-warm-600)" strokeDasharray="2 2" />
-      <path d={d} fill="none" stroke="var(--color-blue-400)" strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
-      <circle cx={px(last.week)} cy={py(last.accuracy)} r={2.3} fill="var(--color-blue-400)" />
-    </svg>
-  )
-}
 
 function Section({ title, loading, error, empty, children, defaultOpen = true, onRetry }: {
   title: string
@@ -750,8 +629,17 @@ const CONF_DOT: Record<Confidence, { cls: string; title: string }> = {
   medium: { cls: 'bg-yellow-400', title: 'Amostra média (15–49)' },
   high: { cls: 'bg-emerald-400', title: 'Amostra robusta (≥50)' },
 }
-interface GapRow { rangeId: number; rangeName: string; hand: string; consults: number; total: number; correct: number; graves: number; imprecisos: number }
 interface ByRangeRow { rangeId: number; rangeName: string; hands: number; accuracy: number; graves: number; imprecisos: number; consults: number; players: number }
+
+interface ConsultRangeRow {
+  rangeId: number; rangeName: string
+  consultedHands: number; totalConsults: number
+  playedHands: number; totalPlayed: number
+  pctConsult: number; rate: number
+}
+interface ConsultHandRow { hand: string; consults: number; played: number; pct: number }
+type ConsultSortKey = 'rangeName' | 'consultedHands' | 'pctConsult' | 'totalPlayed' | 'rate'
+type ConsultHandSortKey = 'hand' | 'consults' | 'played' | 'pct'
 
 const SEVERITY_CLS: Record<SeverityClass, string> = {
   conceitual: 'text-red-300',
@@ -819,6 +707,139 @@ export function PlayerQuickSummary({ userId, days, from, to, token }: { userId: 
     </div>
   )
 }
+
+function useConsultHands(rangeId: number | null, playerIds: number[], days: number | null, from: number | null, to: number | null, token: string | null) {
+  const [rows, setRows] = useState<ConsultHandRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const idsKey = playerIds.join(',')
+
+  useEffect(() => {
+    if (!token || rangeId === null) return
+    let cancelled = false
+    setLoading(true)
+    setError('')
+    const qs = new URLSearchParams({ view: 'consult-by-range-hand', rangeId: String(rangeId) })
+    if (idsKey) qs.set('playerIds', idsKey)
+    setDateParams(qs, { days, from, to })
+    fetchAnalyticsCached(`/api/admin/analytics?${qs.toString()}`, token)
+      .then(d => { if (!cancelled) { setRows(d.rows ?? []); setLoading(false) } })
+      .catch(e => { if (!cancelled) { captureError(e, { area: 'coach-analytics', view: 'consult-by-range-hand' }); setError(t.coach.loadError); setLoading(false) } })
+    return () => { cancelled = true }
+  }, [token, rangeId, idsKey, days, from, to])
+
+  return { rows, loading, error }
+}
+
+const CONSULT_HAND_COLS: { k: ConsultHandSortKey; label: string }[] = [
+  { k: 'hand', label: t.coach.colHand },
+  { k: 'consults', label: t.coach.colConsultedHand },
+  { k: 'played', label: t.coach.colPlayedHand },
+  { k: 'pct', label: t.coach.colConsultPct },
+]
+
+export function ConsultRangeDetail({ rangeId, playerIds, days, from, to, token }: {
+  rangeId: number; playerIds: number[]; days: number | null; from: number | null; to: number | null; token: string | null
+}) {
+  const { rows, loading, error } = useConsultHands(rangeId, playerIds, days, from, to, token)
+  const [sortKey, setSortKey] = useState<ConsultHandSortKey>('pct')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+
+  const sorted = useMemo(() => {
+    const list = [...rows]
+    list.sort((a, b) => {
+      if (sortKey === 'hand') return sortDir === 'asc' ? a.hand.localeCompare(b.hand) : b.hand.localeCompare(a.hand)
+      const av = a[sortKey] as number, bv = b[sortKey] as number
+      return sortDir === 'asc' ? av - bv : bv - av
+    })
+    return list
+  }, [rows, sortKey, sortDir])
+
+  function handleSort(key: ConsultHandSortKey) {
+    if (key === sortKey) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))
+    else { setSortKey(key); setSortDir(key === 'hand' ? 'asc' : 'desc') }
+  }
+
+  if (loading) return <div className="px-4 py-3 text-xs text-warm-500">{t.coach.loading}</div>
+  if (error) return <div className="px-4 py-3 text-xs text-red-400">{error}</div>
+  if (rows.length === 0) return <div className="px-4 py-3 text-xs text-warm-500">{t.coach.noData}</div>
+
+  return (
+    <div className="px-4 py-3 bg-warm-900/50 border-t border-warm-700/60">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-warm-400 text-xs uppercase">
+            {CONSULT_HAND_COLS.map(col => (
+              <th key={col.k} className={col.k === 'hand' ? TH : THR}>
+                <button
+                  onClick={() => handleSort(col.k)}
+                  className={`inline-flex items-center gap-1 hover:text-warm-100 transition-colors ${col.k !== 'hand' ? 'flex-row-reverse' : ''} ${sortKey === col.k ? 'text-brand-300' : ''}`}
+                >
+                  {col.label}
+                  <span className="text-[0.6rem] w-2">{sortKey === col.k ? (sortDir === 'asc' ? '▲' : '▼') : ''}</span>
+                </button>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map(r => (
+            <tr key={r.hand} className="border-t border-warm-700/60">
+              <td className={`${TD} text-warm-100 font-semibold`}>{r.hand}</td>
+              <td className={`${TDR} text-purple-300`}>{r.consults}</td>
+              <td className={`${TDR} text-warm-300`}>{r.played}</td>
+              <td className={`${TDR} font-bold text-warm-200`}>{r.pct}%</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+const CONSULT_RANGE_COLS: { k: ConsultSortKey; label: string; align: 'l' | 'r' }[] = [
+  { k: 'rangeName', label: t.coach.colRange, align: 'l' },
+  { k: 'consultedHands', label: t.coach.colConsultedHands, align: 'r' },
+  { k: 'pctConsult', label: t.coach.colConsultPct, align: 'r' },
+  { k: 'totalPlayed', label: t.coach.colPlayedRange, align: 'r' },
+  { k: 'rate', label: t.coach.colConsultRate, align: 'r' },
+]
+
+const ConsultRangeTableRow = memo(function ConsultRangeTableRow({ row: r, isOpen, onToggle, playerIds, days, from, to, token }: {
+  row: ConsultRangeRow
+  isOpen: boolean
+  onToggle: (rangeId: number) => void
+  playerIds: number[]
+  days: number | null
+  from: number | null
+  to: number | null
+  token: string | null
+}) {
+  return (
+    <Fragment>
+      <tr
+        onClick={() => onToggle(r.rangeId)}
+        className={`border-t border-warm-700/60 cursor-pointer transition-colors ${isOpen ? 'bg-warm-800/70' : 'hover:bg-warm-800/50'}`}
+      >
+        <td className={`${TD} text-warm-100 font-semibold`}>
+          <span className={`inline-block w-3 text-warm-600 text-[0.6rem] ${isOpen ? 'text-brand-400' : ''}`}>{isOpen ? '▾' : '▸'}</span>
+          {r.rangeName}
+        </td>
+        <td className={`${TDR} text-purple-300`}>{r.consultedHands}</td>
+        <td className={`${TDR} font-bold text-warm-200`}>{r.pctConsult}%</td>
+        <td className={`${TDR} text-warm-300`}>{r.totalPlayed}</td>
+        <td className={`${TDR} text-warm-300`}>{r.rate}%</td>
+      </tr>
+      {isOpen && (
+        <tr>
+          <td colSpan={5} className="p-0">
+            <ConsultRangeDetail rangeId={r.rangeId} playerIds={playerIds} days={days} from={from} to={to} token={token} />
+          </td>
+        </tr>
+      )}
+    </Fragment>
+  )
+})
 
 type SortKey = 'name' | 'hands' | 'accuracy' | 'graves' | 'consults' | 'durationSeconds' | 'lastActivity'
 type ByRangeSortKey = 'hands' | 'accuracy' | 'graves' | 'consults' | 'players'
@@ -900,6 +921,9 @@ function TeamView({ token }: { token: string | null }) {
   const [brSortKey, setBrSortKey] = useState<ByRangeSortKey>('hands')
   const [brSortDir, setBrSortDir] = useState<'asc' | 'desc'>('desc')
   const [openPlayer, setOpenPlayer] = useState<number | null>(null)
+  const [consultSortKey, setConsultSortKey] = useState<ConsultSortKey>('pctConsult')
+  const [consultSortDir, setConsultSortDir] = useState<'asc' | 'desc'>('desc')
+  const [openConsultRange, setOpenConsultRange] = useState<number | null>(null)
   const [filters, setFilters] = useState<Filters>({ playerIds: [], rangeId: null, days: null, from: null, to: null })
   const [stackIdx, setStackIdx] = useState<number | null>(null)
 
@@ -921,9 +945,7 @@ function TeamView({ token }: { token: string | null }) {
   const overview = useAnalytics<OverviewRow>('team-overview', filters, token)
   const leaks = useAnalytics<LeakRow>('leaks', filters, token)
   const byRange = useAnalytics<ByRangeRow>('by-range', filters, token)
-  const trend = useTrend(filters, token)
-  const segments = useSegments(filters, token)
-  const gaps = useAnalytics<GapRow>('knowledge-gaps', filters, token)
+  const consultRanges = useAnalytics<ConsultRangeRow>('consult-by-range', filters, token)
   const playerRanges = usePlayerRanges(filters, token)
   const grid = useRangeGrid(filters.rangeId, filters.days, filters.from, filters.to, filters.playerIds, stackIdx, token)
 
@@ -934,30 +956,6 @@ function TeamView({ token }: { token: string | null }) {
     }))
     return buildRelativeLeaks(stats).slice(0, 40)
   }, [playerRanges.rows, playerRanges.users])
-
-  const categorySegs = useMemo(() => aggregateSegments(segments.byHand), [segments.byHand])
-  const rankedGaps = useMemo(() => rankKnowledgeGaps(gaps.rows).slice(0, 40), [gaps.rows])
-
-  const playerTrends = useMemo(() => {
-    const byUser = new Map<number, WeekBucket[]>()
-    for (const r of trend.rows) {
-      if (!byUser.has(r.userId)) byUser.set(r.userId, [])
-      byUser.get(r.userId)!.push({ week: r.week, hands: r.hands, correct: r.correct })
-    }
-    const nameOf = (id: number) => { const u = trend.users.find(x => x.id === id); return u ? (u.name || u.username) : `#${id}` }
-    const order: Record<TrendDir, number> = { regressing: 0, stable: 1, improving: 2, insufficient: 3 }
-    return [...byUser.entries()]
-      .map(([userId, buckets]) => ({ userId, name: nameOf(userId), trend: buildTrend(buckets) }))
-      .sort((a, b) =>
-        order[a.trend.classification] - order[b.trend.classification] ||
-        a.trend.slope - b.trend.slope ||
-        a.name.localeCompare(b.name))
-  }, [trend.rows, trend.users])
-
-  const teamTrend = useMemo(
-    () => buildTrend(aggregateTeamBuckets(trend.rows.map(r => ({ week: r.week, hands: r.hands, correct: r.correct })))),
-    [trend.rows],
-  )
 
   const rankedLeaks = useMemo(() => rankLeaks(leaks.rows), [leaks.rows])
 
@@ -1032,25 +1030,130 @@ function TeamView({ token }: { token: string | null }) {
     else { setBrSortKey(key); setBrSortDir('desc') }
   }
 
+  const toggleConsultRange = useCallback((rangeId: number) => {
+    setOpenConsultRange(p => (p === rangeId ? null : rangeId))
+  }, [])
+
+  const sortedConsult = useMemo(() => {
+    const rows = [...consultRanges.rows]
+    rows.sort((a, b) => {
+      if (consultSortKey === 'rangeName') {
+        return consultSortDir === 'asc' ? a.rangeName.localeCompare(b.rangeName) : b.rangeName.localeCompare(a.rangeName)
+      }
+      const av = a[consultSortKey] as number, bv = b[consultSortKey] as number
+      return consultSortDir === 'asc' ? av - bv : bv - av
+    })
+    return rows
+  }, [consultRanges.rows, consultSortKey, consultSortDir])
+
+  function handleConsultSort(key: ConsultSortKey) {
+    if (key === consultSortKey) setConsultSortDir(d => (d === 'asc' ? 'desc' : 'asc'))
+    else { setConsultSortKey(key); setConsultSortDir(key === 'rangeName' ? 'asc' : 'desc') }
+  }
+
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap gap-3" style={{ order: -2 }}>
-        <MultiPlayerSelect
-          users={sortedUsers}
-          selected={filters.playerIds}
-          onChange={ids => setFilters(f => ({ ...f, playerIds: ids }))}
-        />
-        <RangeSelect
-          groups={rangeGroups}
-          value={filters.rangeId}
-          onChange={id => setFilters(f => ({ ...f, rangeId: id }))}
-        />
-        <PeriodFilter
-          days={filters.days}
-          from={filters.from}
-          to={filters.to}
-          onChange={d => setFilters(f => ({ ...f, ...d }))}
-        />
+      <div className="rounded-xl border border-warm-700 bg-warm-900/30 p-4 space-y-3">
+        <div>
+          <p className="text-xs font-semibold text-warm-400 uppercase tracking-wide mb-1.5">{t.coach.period}:</p>
+          <PeriodFilter
+            days={filters.days}
+            from={filters.from}
+            to={filters.to}
+            onChange={d => setFilters(f => ({ ...f, ...d }))}
+          />
+        </div>
+        <div className="flex flex-wrap gap-6">
+          <div>
+            <p className="text-xs font-semibold text-warm-400 uppercase tracking-wide mb-1.5">{t.coach.players}:</p>
+            <MultiPlayerSelect
+              users={sortedUsers}
+              selected={filters.playerIds}
+              onChange={ids => setFilters(f => ({ ...f, playerIds: ids }))}
+            />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-warm-400 uppercase tracking-wide mb-1.5">{t.coach.colRanges}:</p>
+            <RangeSelect
+              groups={rangeGroups}
+              value={filters.rangeId}
+              onChange={id => setFilters(f => ({ ...f, rangeId: id }))}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-sm font-semibold text-warm-200 mb-2">
+          {t.coach.matrixTitle} {selectedRangeName ? <span className="text-brand-400">· {selectedRangeName}</span> : ''}
+          {filters.playerIds.length > 0 && <span className="text-warm-500 text-xs font-normal">{t.coach.playersSuffix(filters.playerIds.length)}</span>}
+        </h3>
+        {filters.rangeId !== null && selectedStackGrids.length > 1 && (
+          <div className="flex flex-wrap items-center gap-1.5 mb-3">
+            <span className="text-xs text-warm-500 mr-1">{t.coach.effectiveStack}</span>
+            <button
+              onClick={() => setStackIdx(null)}
+              className={[
+                'px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors',
+                stackIdx === null ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:text-warm-200',
+              ].join(' ')}
+            >
+              {t.coach.matrixAll}
+            </button>
+            {selectedStackGrids.map((sg, i) => (
+              <button
+                key={i}
+                onClick={() => setStackIdx(i)}
+                className={[
+                  'px-2.5 py-1 rounded-full text-xs font-medium border transition-colors',
+                  stackIdx === i ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:text-warm-200',
+                ].join(' ')}
+              >
+                {sg.name || sg.stackRange}
+              </button>
+            ))}
+          </div>
+        )}
+        {filters.rangeId === null ? (
+          <p className="text-sm text-warm-500">{t.coach.selectRangeForMatrix}</p>
+        ) : grid.loading ? (
+          <p className="text-sm text-warm-500">{t.coach.loading}</p>
+        ) : grid.error ? (
+          <p className="text-sm text-red-400">{grid.error}</p>
+        ) : grid.cells.length === 0 ? (
+          <p className="text-sm text-warm-500">{t.coach.noRangeData}</p>
+        ) : (
+          <div className="space-y-5">
+            <div className="flex items-center gap-3 text-[0.7rem] text-warm-400">
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded" style={{ background: '#ef4444' }} />{t.coach.legendRaise}</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded" style={{ background: '#22c55e' }} />{t.coach.legendCall}</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded" style={{ background: '#6b2d0d' }} />{t.coach.legendAllin}</span>
+              <span className="text-warm-600">{t.coach.legendFold}</span>
+            </div>
+            <div className="flex flex-col xl:flex-row items-start gap-6">
+              <div className="flex flex-wrap items-start gap-6 flex-1 min-w-0">
+                <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
+                  <RangeActionGrid title={t.coach.actionGridRealTitle} subtitle={t.coach.actionGridRealSub} grid={realGrid} />
+                  <ComboSummary stats={comboReal} />
+                </div>
+                <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
+                  <RangeActionGrid title={t.coach.actionGridPlayedTitle} subtitle={t.coach.actionGridPlayedSub} grid={playedGrid} />
+                  <ComboSummary stats={comboPlayed} />
+                </div>
+              </div>
+              <div className="flex flex-wrap xl:flex-nowrap items-start gap-4 xl:shrink-0">
+                <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
+                  <h4 className="text-xs font-semibold text-warm-200 mb-2">{t.coach.accuracyErrors}</h4>
+                  <RangeHeatGrid cells={grid.cells} />
+                </div>
+                <TopHandsPanel cells={grid.cells} selected={detailHand} onSelect={h => setDetailHand(h === detailHand ? null : h)} />
+                <div className="w-[270px] shrink-0">
+                  {detailCell && <HandDetailCard cell={detailCell} />}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <Section title={t.coach.sectionByRange} defaultOpen={false} loading={byRange.loading} error={byRange.error} empty={byRange.rows.length === 0} onRetry={byRange.reload}>
@@ -1161,46 +1264,6 @@ function TeamView({ token }: { token: string | null }) {
         </table>
       </Section>
 
-
-      <Section title={t.coach.sectionTrend} defaultOpen={false} loading={trend.loading} error={trend.error} empty={playerTrends.length === 0} onRetry={trend.reload}>
-        <div className="p-3 flex flex-col gap-3">
-          <div className="flex items-center gap-4 rounded-lg bg-warm-800/40 border border-warm-700/60 px-3 py-2">
-            <span className="text-xs font-semibold text-warm-300 uppercase w-20">{t.coach.colTeam}</span>
-            <Sparkline weeks={teamTrend.weeks} width={160} height={34} />
-            <div className="flex flex-col">
-              <TrendBadge t={teamTrend} />
-              {teamTrend.firstAccuracy !== null && (
-                <span className="text-[11px] text-warm-500">
-                  {teamTrend.weeks.length} sem · {teamTrend.firstAccuracy}% → {teamTrend.lastAccuracy}%
-                </span>
-              )}
-            </div>
-          </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-warm-800 text-warm-400 text-xs uppercase">
-                <th className={TH}>{t.coach.colPlayer}</th>
-                <th className={TH}>{t.coach.colTrend}</th>
-                <th className={THR}>{t.coach.colStartEnd}</th>
-                <th className={TH}>{t.coach.colTrendLabel}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {playerTrends.map(p => (
-                <tr key={p.userId} className={`border-t border-warm-700/60 ${p.trend.classification === 'regressing' ? 'bg-red-950/30' : ''}`}>
-                  <td className={`${TD} text-warm-100 font-semibold`}>{p.name}</td>
-                  <td className={TD}><Sparkline weeks={p.trend.weeks} /></td>
-                  <td className={`${TDR} text-warm-300`}>
-                    {p.trend.firstAccuracy !== null ? `${p.trend.firstAccuracy}% → ${p.trend.lastAccuracy}%` : '—'}
-                  </td>
-                  <td className={TD}><TrendBadge t={p.trend} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Section>
-
       <Section title={t.coach.sectionLeaks} defaultOpen={false} loading={leaks.loading} error={leaks.error} empty={rankedLeaks.length === 0} onRetry={leaks.reload}>
         <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60">
           {t.coach.leaksLegendBefore}<span className="text-warm-300">{t.coach.colImpactLower}</span>{t.coach.leaksLegendAfter}
@@ -1241,95 +1304,40 @@ function TeamView({ token }: { token: string | null }) {
         </table>
       </Section>
 
-      <Section title={t.coach.sectionSegments} defaultOpen={false} loading={segments.loading} error={segments.error} empty={categorySegs.length === 0 && segments.byAction.length === 0} onRetry={segments.reload}>
-        <div className="p-3 grid gap-5 md:grid-cols-2">
-          <div>
-            <p className="text-xs text-warm-400 mb-2 uppercase font-semibold">{t.coach.byHandCategory}</p>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-warm-800 text-warm-400 text-[11px] uppercase">
-                  <th className={TH}>{t.coach.colCategory}</th>
-                  <th className={THR}>{t.coach.colHands}</th>
-                  <th className={THR}>{t.coach.colAccuracy}</th>
-                  <th className={THR}>{t.coach.colBlunder}</th>
-                  <th className={THR}>{t.coach.colImpact}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {categorySegs.map(s => (
-                  <tr key={s.segment} className="border-t border-warm-700/60">
-                    <td className={`${TD} text-warm-100 font-semibold`}>{s.segment}</td>
-                    <td className={`${TDR} text-warm-300`}>{s.total}</td>
-                    <td className={`${TDR} font-bold ${accColor(s.accuracy)}`}>{s.accuracy}%</td>
-                    <td className={`${TDR} text-red-400`}>{s.graves}</td>
-                    <td className={`${TDR} font-bold text-orange-300`}>{Math.round(s.impact * 10) / 10}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div>
-            <p className="text-xs text-warm-400 mb-2 uppercase font-semibold">{t.coach.byCorrectAction}</p>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-warm-800 text-warm-400 text-[11px] uppercase">
-                  <th className={TH}>{t.coach.colCorrectAction}</th>
-                  <th className={THR}>{t.coach.colHands}</th>
-                  <th className={THR}>{t.coach.colAccuracy}</th>
-                  <th className={THR}>{t.coach.colBlunder}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {segments.byAction.map(a => (
-                  <tr key={a.action} className="border-t border-warm-700/60">
-                    <td className={`${TD} text-warm-100 font-semibold`}>{a.action}</td>
-                    <td className={`${TDR} text-warm-300`}>{a.total}</td>
-                    <td className={`${TDR} font-bold ${accColor(a.accuracy)}`}>{a.accuracy}%</td>
-                    <td className={`${TDR} text-red-400`}>{a.graves}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </Section>
-
-      <Section title={t.coach.sectionGaps} defaultOpen={false} loading={gaps.loading} error={gaps.error} empty={rankedGaps.length === 0} onRetry={gaps.reload}>
-        <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60">
-          {t.coach.gapsLegendBefore}<span className="text-warm-300">{t.coach.consultsAndErrs}</span>{t.coach.gapsLegendAfter}
+      <Section title={t.coach.sectionConsultDrill} defaultOpen={false} loading={consultRanges.loading} error={consultRanges.error} empty={sortedConsult.length === 0} onRetry={consultRanges.reload}>
+        <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60 leading-relaxed">
+          {t.coach.consultDrillLegend}
         </div>
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-warm-800 text-warm-400 text-xs uppercase">
-              <th className={TH}>{t.coach.colHand}</th>
-              <th className={TH}>{t.coach.colRange}</th>
-              <th className={THR}>{t.coach.colConsults}</th>
-              <th className={THR}>{t.coach.colAccuracyMin}</th>
-              <th className={THR}>{t.coach.colBlunder}</th>
-              <th className={THR}>{t.coach.colScore}</th>
+            <tr className="bg-warm-800 text-warm-400 text-xs uppercase select-none">
+              {CONSULT_RANGE_COLS.map(col => (
+                <th key={col.k} className={col.align === 'l' ? TH : THR}>
+                  <button
+                    onClick={() => handleConsultSort(col.k)}
+                    className={`inline-flex items-center gap-1 hover:text-warm-100 transition-colors ${col.align === 'r' ? 'flex-row-reverse' : ''} ${consultSortKey === col.k ? 'text-brand-300' : ''}`}
+                  >
+                    {col.label}
+                    <span className="text-[0.6rem] w-2">{consultSortKey === col.k ? (consultSortDir === 'asc' ? '▲' : '▼') : ''}</span>
+                  </button>
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {rankedGaps.map((r, i) => {
-              const dot = CONF_DOT[r.confidence]
-              return (
-                <tr key={i} className="border-t border-warm-700/60">
-                  <td className={`${TD} text-warm-100 font-bold`}>
-                    <span className="inline-flex items-center gap-1.5">
-                      <span className={`inline-block w-1.5 h-1.5 rounded-full ${dot.cls}`} title={dot.title} />
-                      {r.hand}
-                    </span>
-                  </td>
-                  <td className={`${TD} text-warm-300`}>{r.rangeName}</td>
-                  <td className={`${TDR} text-violet-300`}>{r.consults}</td>
-                  <td className={`${TDR} font-bold ${r.total > 0 ? accColor(r.accuracy) : 'text-warm-500'}`}>
-                    {r.total > 0 ? <>{r.accuracy}% <span className="text-warm-500 font-normal text-xs">({r.accuracyLower}%)</span></> : '—'}
-                  </td>
-                  <td className={`${TDR} text-red-400`}>{r.graves}</td>
-                  <td className={`${TDR} font-bold text-orange-300`}>{r.score}</td>
-                </tr>
-              )
-            })}
+            {sortedConsult.map(r => (
+              <ConsultRangeTableRow
+                key={r.rangeId}
+                row={r}
+                isOpen={openConsultRange === r.rangeId}
+                onToggle={toggleConsultRange}
+                playerIds={filters.playerIds}
+                days={filters.days}
+                from={filters.from}
+                to={filters.to}
+                token={token}
+              />
+            ))}
           </tbody>
         </table>
       </Section>
@@ -1367,78 +1375,6 @@ function TeamView({ token }: { token: string | null }) {
         </table>
       </Section>
 
-      <div style={{ order: -1 }}>
-        <h3 className="text-sm font-semibold text-warm-200 mb-2">
-          {t.coach.matrixTitle} {selectedRangeName ? <span className="text-brand-400">· {selectedRangeName}</span> : ''}
-          {filters.playerIds.length > 0 && <span className="text-warm-500 text-xs font-normal">{t.coach.playersSuffix(filters.playerIds.length)}</span>}
-        </h3>
-        {filters.rangeId !== null && selectedStackGrids.length > 1 && (
-          <div className="flex flex-wrap items-center gap-1.5 mb-3">
-            <span className="text-xs text-warm-500 mr-1">{t.coach.effectiveStack}</span>
-            <button
-              onClick={() => setStackIdx(null)}
-              className={[
-                'px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors',
-                stackIdx === null ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:text-warm-200',
-              ].join(' ')}
-            >
-              {t.coach.matrixAll}
-            </button>
-            {selectedStackGrids.map((sg, i) => (
-              <button
-                key={i}
-                onClick={() => setStackIdx(i)}
-                className={[
-                  'px-2.5 py-1 rounded-full text-xs font-medium border transition-colors',
-                  stackIdx === i ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:text-warm-200',
-                ].join(' ')}
-              >
-                {sg.name || sg.stackRange}
-              </button>
-            ))}
-          </div>
-        )}
-        {filters.rangeId === null ? (
-          <p className="text-sm text-warm-500">{t.coach.selectRangeForMatrix}</p>
-        ) : grid.loading ? (
-          <p className="text-sm text-warm-500">{t.coach.loading}</p>
-        ) : grid.error ? (
-          <p className="text-sm text-red-400">{grid.error}</p>
-        ) : grid.cells.length === 0 ? (
-          <p className="text-sm text-warm-500">{t.coach.noRangeData}</p>
-        ) : (
-          <div className="space-y-5">
-            <div className="flex items-center gap-3 text-[0.7rem] text-warm-400">
-              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded" style={{ background: '#ef4444' }} />{t.coach.legendRaise}</span>
-              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded" style={{ background: '#22c55e' }} />{t.coach.legendCall}</span>
-              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded" style={{ background: '#6b2d0d' }} />{t.coach.legendAllin}</span>
-              <span className="text-warm-600">{t.coach.legendFold}</span>
-            </div>
-            <div className="flex flex-col xl:flex-row items-start gap-6">
-              <div className="flex flex-wrap items-start gap-6 flex-1 min-w-0">
-                <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
-                  <RangeActionGrid title={t.coach.actionGridRealTitle} subtitle={t.coach.actionGridRealSub} grid={realGrid} />
-                  <ComboSummary stats={comboReal} />
-                </div>
-                <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
-                  <RangeActionGrid title={t.coach.actionGridPlayedTitle} subtitle={t.coach.actionGridPlayedSub} grid={playedGrid} />
-                  <ComboSummary stats={comboPlayed} />
-                </div>
-              </div>
-              <div className="flex flex-wrap xl:flex-nowrap items-start gap-4 xl:shrink-0">
-                <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
-                  <h4 className="text-xs font-semibold text-warm-200 mb-2">{t.coach.accuracyErrors}</h4>
-                  <RangeHeatGrid cells={grid.cells} />
-                </div>
-                <TopHandsPanel cells={grid.cells} selected={detailHand} onSelect={h => setDetailHand(h === detailHand ? null : h)} />
-                <div className="w-[270px] shrink-0">
-                  {detailCell && <HandDetailCard cell={detailCell} />}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
     </div>
   )
 }

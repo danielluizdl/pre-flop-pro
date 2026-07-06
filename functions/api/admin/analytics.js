@@ -331,6 +331,74 @@ export async function onRequest(context) {
     return json({ view, rows })
   }
 
+  if (view === 'consult-by-range') {
+    const hf = handFilters(filters)
+    const playedRes = await env.DB.prepare(
+      `SELECT range_id AS rangeId, MAX(range_name) AS rangeName,
+        COUNT(*) AS totalPlayed, COUNT(DISTINCT hand) AS playedHands
+       FROM hand_events ${hf.clause} GROUP BY range_id`
+    ).bind(...hf.binds).all()
+
+    const cConds = ['hand IS NOT NULL']
+    const cBinds = []
+    const cPc = playerCond(filters.playerIds)
+    if (cPc.sql) { cConds.push(cPc.sql); cBinds.push(...cPc.binds) }
+    if (filters.rangeId !== null) { cConds.push('range_id = ?'); cBinds.push(filters.rangeId) }
+    { const dc = dateCond('created_at', filters); cConds.push(...dc.conds); cBinds.push(...dc.binds) }
+    const consultRes = await env.DB.prepare(
+      `SELECT range_id AS rangeId, COUNT(*) AS totalConsults, COUNT(DISTINCT hand) AS consultedHands
+       FROM consult_events WHERE ${cConds.join(' AND ')} GROUP BY range_id`
+    ).bind(...cBinds).all()
+    const cMap = new Map((consultRes.results ?? []).map(r => [r.rangeId, r]))
+
+    const rows = (playedRes.results ?? []).map(r => {
+      const c = cMap.get(r.rangeId)
+      const consultedHands = c?.consultedHands ?? 0
+      const totalConsults = c?.totalConsults ?? 0
+      return {
+        rangeId: r.rangeId,
+        rangeName: r.rangeName,
+        consultedHands,
+        totalConsults,
+        playedHands: r.playedHands,
+        totalPlayed: r.totalPlayed,
+        pctConsult: r.playedHands > 0 ? ACC(consultedHands, r.playedHands) : 0,
+        rate: r.totalPlayed > 0 ? ACC(totalConsults, r.totalPlayed) : 0,
+      }
+    })
+    return json({ view, rows })
+  }
+
+  if (view === 'consult-by-range-hand') {
+    if (filters.rangeId === null) return json({ error: 'rangeId obrigatório' }, 400)
+
+    const conds = ['range_id = ?']
+    const binds = [filters.rangeId]
+    const pc = playerCond(filters.playerIds)
+    if (pc.sql) { conds.push(pc.sql); binds.push(...pc.binds) }
+    { const dc = dateCond('created_at', filters); conds.push(...dc.conds); binds.push(...dc.binds) }
+    const clause = 'WHERE ' + conds.join(' AND ')
+
+    const playedRes = await env.DB.prepare(
+      `SELECT hand, COUNT(*) AS played FROM hand_events ${clause} GROUP BY hand`
+    ).bind(...binds).all()
+
+    const cConds = ['range_id = ?', 'hand IS NOT NULL']
+    const cBinds = [filters.rangeId]
+    if (pc.sql) { cConds.push(pc.sql); cBinds.push(...pc.binds) }
+    { const dc = dateCond('created_at', filters); cConds.push(...dc.conds); cBinds.push(...dc.binds) }
+    const consultRes = await env.DB.prepare(
+      `SELECT hand, COUNT(*) AS consults FROM consult_events WHERE ${cConds.join(' AND ')} GROUP BY hand`
+    ).bind(...cBinds).all()
+    const consultMap = new Map((consultRes.results ?? []).map(r => [r.hand, r.consults]))
+
+    const rows = (playedRes.results ?? []).map(r => {
+      const consults = consultMap.get(r.hand) ?? 0
+      return { hand: r.hand, consults, played: r.played, pct: r.played > 0 ? ACC(consults, r.played) : 0 }
+    })
+    return json({ view, rows })
+  }
+
   if (view === 'range-grid') {
     if (filters.rangeId === null) return json({ error: 'rangeId obrigatório' }, 400)
 
