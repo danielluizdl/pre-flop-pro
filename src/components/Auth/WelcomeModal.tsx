@@ -32,7 +32,11 @@ export function WelcomeModal() {
     setVisible(false)
     setTimeout(() => {
       const cur = useStore.getState().currentUser
-      if (cur) useStore.setState({ currentUser: { ...cur, firstLogin: false } })
+      useStore.setState({
+        currentUser: cur ? { ...cur, firstLogin: false } : cur,
+        justSignedUp: false,
+        onboardingStep: 0,
+      })
     }, 350)
   }
 

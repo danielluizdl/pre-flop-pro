@@ -573,6 +573,17 @@ export const pt = {
     bodyAfter: ' para estudar seus ranges, treinar situações reais de mesa e subir de nível no pré-flop. Bons estudos e boa sorte nas mesas!',
     cta: 'Bora treinar!',
   },
+  tour: {
+    step1Title: 'Aqui é o Drill',
+    step1Body: 'Treine mão a mão contra situações reais de mesa e receba feedback na hora — é onde você fixa o range na prática.',
+    step2Title: 'Aqui é o Range Check',
+    step2Body: 'Reproduza um range de memória, pintando a matriz do zero, e veja sua nota comparada ao gabarito.',
+    step3Title: 'Aqui é o seu Histórico',
+    step3Body: 'Todas as suas sessões de treino ficam salvas aqui, com sua evolução ao longo do tempo.',
+    skip: 'Pular tour',
+    next: 'Próximo',
+    finish: 'Concluir',
+  },
   changePassword: {
     title: 'Defina sua senha',
     subtitle: 'Este é seu primeiro acesso. Escolha uma nova senha para continuar.',

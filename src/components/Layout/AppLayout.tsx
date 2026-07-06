@@ -5,6 +5,7 @@ import { Dashboard } from './Dashboard'
 import { SituationsPage } from '../Situations/SituationsPage'
 import { LoginPage } from '../Auth/LoginPage'
 import { WelcomeModal } from '../Auth/WelcomeModal'
+import { OnboardingTour } from '../Auth/OnboardingTour'
 import { ChangePasswordModal } from '../Auth/ChangePasswordModal'
 import { RouterSync } from './RouterSync'
 import { ErrorBoundary } from './ErrorBoundary'
@@ -26,6 +27,7 @@ export function AppLayout() {
   const storageBlocked = useStore(s => s.storageBlocked)
   const currentUser = useStore(s => s.currentUser)
   const justSignedUp = useStore(s => s.justSignedUp)
+  const onboardingStep = useStore(s => s.onboardingStep)
 
   /* A classe .dark vive no <html> (não num div interno): assim o body, a LoginPage
      e qualquer overlay herdam os tokens do tema. */
@@ -64,6 +66,8 @@ export function AppLayout() {
         )}
         {justSignedUp
           ? <WelcomeModal />
+          : onboardingStep !== null
+          ? <OnboardingTour />
           : currentUser?.firstLogin === true && <ChangePasswordModal />}
         <TopNav />
         <main className="w-full max-w-[1800px] mx-auto px-4 sm:px-6 md:px-10 pt-6 sm:pt-8 pb-16">

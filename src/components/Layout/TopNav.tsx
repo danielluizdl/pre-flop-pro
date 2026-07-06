@@ -76,6 +76,7 @@ export function TopNav() {
             return (
               <button
                 key={item.id}
+                data-tour={item.id}
                 onClick={() => setPage(item.id)}
                 className={clsx(
                   'relative flex items-center gap-1.5 px-3.5 h-full whitespace-nowrap text-[13px] font-medium transition-colors',

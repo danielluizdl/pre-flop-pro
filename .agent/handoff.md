@@ -1,5 +1,47 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-06 (onboarding — tour guiado no primeiro acesso, 3 idiomas)
+
+- Da parte "Oportunidades de produto" do relatório de revisão sênior, Daniel escolheu só
+  o tour guiado por agora (as demais ideias — filtro tier/turma no coach, leaderboard,
+  digest semanal etc. — seguem no backlog, não pedidas ainda).
+- **Novo `src/components/Auth/OnboardingTour.tsx`**: 3 passos apontando pros itens do
+  `TopNav` — Drill, Range Check, Histórico (as 3 telas que o Daniel pediu explicitamente).
+  Mede a posição real do botão via `getBoundingClientRect` nos atributos
+  `data-tour="drill"|"exercise"|"history"` (novos, adicionados no `TopNav.tsx`), recalcula
+  em resize/scroll, e desenha um "spotlight" (`box-shadow: 0 0 0 9999px` ao redor do alvo)
+  + um card com título/descrição/dots de progresso. `Pular tour`, clique no fundo e Esc
+  (via `useModalA11y`) encerram a qualquer momento; `Próximo` avança e no último passo vira
+  `Concluir`. z-index 60 (acima do `TopNav`/modais, que usam 50) pra garantir que o
+  spotlight sempre pinte por cima, sem depender de empate de z-index + ordem no DOM.
+- **Store**: novo campo `onboardingStep: number | null` (`null` = tour inativo). Resetado
+  pra `null` em login/signup/logout/restoreSession, mesmo padrão do `justSignedUp`.
+- **`WelcomeModal.handleClose` mudou**: antes só zerava `currentUser.firstLogin`, deixando
+  `justSignedUp` true pra sempre (o componente ficava montado-porém-invisível, um `fixed
+  inset-0` sem `pointer-events-none` — bloqueando cliques na tela inteira até o próximo
+  login/logout). Agora zera `justSignedUp` **e** seta `onboardingStep: 0`, o que desmonta o
+  `WelcomeModal` de verdade e liga o tour em seguida — resolve os dois problemas na mesma
+  mudança.
+- **`AppLayout`**: `justSignedUp ? WelcomeModal : onboardingStep !== null ? OnboardingTour
+  : firstLogin && ChangePasswordModal` — o tour só aparece pra quem acabou de fechar o
+  welcome (nunca compete com o ChangePasswordModal do reset de senha).
+- **i18n**: nova chave `tour` (9 chaves: 3 pares título/corpo + skip/next/finish) em
+  `pt.ts`/`en.ts`/`es.ts` — 516 chaves no total agora.
+- **1011 testes verdes (85 arquivos)** (era 1002/84): `OnboardingTour.test.tsx` novo (7
+  testes: passo 1, avançar, último passo vira "Concluir", pular, Esc, clique no fundo,
+  axe), + 1 teste novo em `WelcomeModal.test.tsx`, + 1 teste novo em `AppLayout.test.tsx`.
+  tsc limpo, build verde, smoke verde.
+- Sem branch/PR ainda nesta sessão — ver com o Daniel antes de abrir PR (mesmo fluxo:
+  branch dedicada a partir de `feature/auth-telemetry`, testar, abrir PR, conferir CI real,
+  mergear).
+
+### Pendente (Daniel)
+- [ ] Revisar/mergear a PR do tour guiado (branch ainda não criada/pushada nesta sessão).
+- [ ] Do backlog de produto (não pedido ainda): filtro Tier/Turma no painel do coach — dado
+      já existe no `schema_v6`, falta só o filtro + coluna na lista de contas.
+
+---
+
 ## 2026-07-06 (arquitetura — pacote 2: split do CoachPanel, requireCoach(), README)
 
 - Continuação do relatório de revisão sênior: os 3 achados "menores" de arquitetura,

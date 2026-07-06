@@ -575,6 +575,17 @@ export const es: Messages = {
     bodyAfter: ' para estudiar tus ranges, entrenar situaciones reales de mesa y subir de nivel en el pre-flop. ¡Buen estudio y suerte en las mesas!',
     cta: '¡A entrenar!',
   },
+  tour: {
+    step1Title: 'Aquí está el Drill',
+    step1Body: 'Entrena mano a mano contra situaciones reales de mesa y recibe feedback al instante — aquí es donde fijas el range en la práctica.',
+    step2Title: 'Aquí está el Range Check',
+    step2Body: 'Reproduce un range de memoria, pintando la matriz desde cero, y compara tu nota con la respuesta correcta.',
+    step3Title: 'Aquí está tu Historial',
+    step3Body: 'Todas tus sesiones de entrenamiento se guardan aquí, con tu evolución a lo largo del tiempo.',
+    skip: 'Saltar tour',
+    next: 'Siguiente',
+    finish: 'Finalizar',
+  },
   changePassword: {
     title: 'Define tu contraseña',
     subtitle: 'Este es tu primer acceso. Elige una nueva contraseña para continuar.',
