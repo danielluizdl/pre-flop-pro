@@ -1,6 +1,6 @@
 import { getAuthUser, json, handleOptions } from '../_utils.js'
 
-function parseIntParam(raw, { min, max }) {
+export function parseIntParam(raw, { min, max }) {
   if (raw === null || raw === undefined || raw === '') return { ok: true, value: null }
   if (!/^-?\d+$/.test(raw)) return { ok: false }
   const v = parseInt(raw, 10)
@@ -9,7 +9,7 @@ function parseIntParam(raw, { min, max }) {
   return { ok: true, value: v }
 }
 
-function parsePlayerIds(raw) {
+export function parsePlayerIds(raw) {
   const parts = (raw ?? '').split(',').map(s => s.trim()).filter(Boolean)
   const out = []
   for (const p of parts) {
@@ -21,12 +21,12 @@ function parsePlayerIds(raw) {
   return out
 }
 
-function playerCond(playerIds) {
+export function playerCond(playerIds) {
   if (!playerIds.length) return { sql: '', binds: [] }
   return { sql: `user_id IN (${playerIds.map(() => '?').join(',')})`, binds: [...playerIds] }
 }
 
-function dateCond(field, { days, from, to }) {
+export function dateCond(field, { days, from, to }) {
   const conds = []
   const binds = []
   if (from !== null && to !== null) {
@@ -41,7 +41,7 @@ function dateCond(field, { days, from, to }) {
   return { conds, binds }
 }
 
-function handFilters(filters) {
+export function handFilters(filters) {
   const conds = []
   const binds = []
   const pc = playerCond(filters.playerIds)
@@ -52,7 +52,7 @@ function handFilters(filters) {
   return { clause: conds.length ? 'WHERE ' + conds.join(' AND ') : '', binds }
 }
 
-const ACC = (correct, total) => (total > 0 ? Math.round((correct / total) * 1000) / 10 : 0)
+export const ACC = (correct, total) => (total > 0 ? Math.round((correct / total) * 1000) / 10 : 0)
 
 export async function onRequest(context) {
   const { request, env } = context
@@ -280,23 +280,6 @@ export async function onRequest(context) {
     ).bind(...filters.playerIds).all()
 
     return json({ view, rows: res.results ?? [], users: usersRes.results ?? [] })
-  }
-
-  if (view === 'consult-hotspots') {
-    const conds = []
-    const binds = []
-    const pc = playerCond(filters.playerIds)
-    if (pc.sql) { conds.push(pc.sql); binds.push(...pc.binds) }
-    if (filters.rangeId !== null) { conds.push('range_id = ?'); binds.push(filters.rangeId) }
-    { const dc = dateCond('created_at', filters); conds.push(...dc.conds); binds.push(...dc.binds) }
-    const res = await env.DB.prepare(
-      `SELECT range_id AS rangeId, MAX(range_name) AS rangeName, hand, COUNT(*) AS count
-       FROM consult_events ${conds.length ? 'WHERE ' + conds.join(' AND ') : ''}
-       GROUP BY range_id, hand
-       ORDER BY count DESC
-       LIMIT 100`
-    ).bind(...binds).all()
-    return json({ view, rows: res.results ?? [] })
   }
 
   if (view === 'by-range') {

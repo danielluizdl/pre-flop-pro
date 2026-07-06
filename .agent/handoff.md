@@ -1,5 +1,37 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-05 (issues #6 e #36 — fechamento)
+
+- Daniel pediu pra resolver as duas issues "proposta" que ainda estavam abertas.
+- **Issue #6 (roteiro de hardening de segurança) — FECHADA sem código novo.** Auditoria linha
+  a linha confirmou que **todos os 4 níveis do roteiro (N1–N4) já estavam implementados**
+  (PR #5 + trabalho posterior): PBKDF2 100k iters + `equalizeTiming` p/ usuário inexistente +
+  compare constant-time + rehash progressivo (`login.js`/`_utils.js`); `checkRateLimitKV`
+  (persistente, KV) + Turnstile fail-**closed** quando o secret existe mas o siteverify falha
+  (só fail-open se o secret nem estiver configurado — política do projeto); `public/_headers`
+  completo (CSP/HSTS/X-Frame-Options/X-Content-Type-Options/Referrer-Policy/Permissions-Policy)
+  + CORS por allowlist (`functions/_middleware.js`, sem wildcard); `functions/api/me/devices.js`
+  (listar/revogar sessões) + Sentry `scrubEvent` no `beforeSend`. Issue estava desatualizada
+  (achados de 21/06, já corrigidos depois) — mesmo padrão de #37/#17/#15.
+- **Issue #36 (P2.6 testes + P3.7 endpoint morto) — RESOLVIDA nesta branch:**
+  - `functions/api/admin/analytics.js`: os 6 helpers puros (`parseIntParam`, `parsePlayerIds`,
+    `playerCond`, `dateCond`, `handFilters`, `ACC`) ganharam `export` (sem extrair pra módulo
+    separado — segue o padrão já usado em `create-user.js`/`update-user.js`/etc. desta sessão:
+    exportar direto do arquivo do endpoint e testar via import). Testes novos em
+    `analytics.test.js` (16 casos, sem D1 real).
+  - **Removido `?view=consult-hotspots`** (dead code confirmado — zero uso no front). `?view=foco`
+    já não existia mais (P3.7 estava parcialmente feito).
+- **975 testes verdes (83 arquivos)** (era 959), tsc limpo, build verde, SMOKE OK.
+- Branch `fix/analytics-helpers-tests` → PR pra `feature/auth-telemetry` (gate humano de
+  `functions/api` cumprido: mudança pequena, só refactor+testes+remoção de código morto,
+  sem alterar comportamento de nenhuma view em uso).
+
+### Pendente (Daniel)
+- [ ] Revisar/mergear a PR (branch `fix/analytics-helpers-tests`).
+- [ ] Fechar as issues #6 e #36 no GitHub (ou deixar o agente fechar ao mergear).
+
+---
+
 ## 2026-07-05 (PR #43 — rodada 2: modal de confirmação + editar dados + códigos de convite)
 
 - **Contexto:** Daniel pediu, antes do merge da PR #43, mais um ajuste na aba
