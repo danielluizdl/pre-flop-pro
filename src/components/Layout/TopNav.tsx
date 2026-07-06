@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useStore } from '../../store/useStore'
-import { LayoutDashboard, Layers, PlayCircle, Clock, Moon, Sun, Settings, Plus, LogOut } from 'lucide-react'
+import { LayoutDashboard, Layers, PlayCircle, Grid3x3, Clock, Moon, Sun, Settings, Plus, LogOut } from 'lucide-react'
 import { clsx } from 'clsx'
 import type { Page } from '../../types'
 import { AdminPanel } from '../Admin/AdminPanel'
@@ -12,6 +12,7 @@ const NAV_ICONS: { id: Page; icon: React.ElementType }[] = [
   { id: 'dashboard', icon: LayoutDashboard },
   { id: 'ranges',    icon: Layers },
   { id: 'drill',     icon: PlayCircle },
+  { id: 'exercise',  icon: Grid3x3 },
   { id: 'history',   icon: Clock },
 ]
 
@@ -26,7 +27,7 @@ export function TopNav() {
   const authLogout     = useStore(s => s.authLogout)
 
   const NAV_LABELS: Partial<Record<Page, string>> = {
-    dashboard: t.nav.dashboard, ranges: t.nav.ranges, drill: t.nav.drill, history: t.nav.history,
+    dashboard: t.nav.dashboard, ranges: t.nav.ranges, drill: t.nav.drill, exercise: t.exercise.navLabel, history: t.nav.history,
   }
   const NAV_ITEMS = NAV_ICONS.map(n => ({ ...n, label: NAV_LABELS[n.id] ?? n.id }))
 

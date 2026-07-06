@@ -1,5 +1,120 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-05 (issues #6 e #36 — fechamento)
+
+- Daniel pediu pra resolver as duas issues "proposta" que ainda estavam abertas.
+- **Issue #6 (roteiro de hardening de segurança) — FECHADA sem código novo.** Auditoria linha
+  a linha confirmou que **todos os 4 níveis do roteiro (N1–N4) já estavam implementados**
+  (PR #5 + trabalho posterior): PBKDF2 100k iters + `equalizeTiming` p/ usuário inexistente +
+  compare constant-time + rehash progressivo (`login.js`/`_utils.js`); `checkRateLimitKV`
+  (persistente, KV) + Turnstile fail-**closed** quando o secret existe mas o siteverify falha
+  (só fail-open se o secret nem estiver configurado — política do projeto); `public/_headers`
+  completo (CSP/HSTS/X-Frame-Options/X-Content-Type-Options/Referrer-Policy/Permissions-Policy)
+  + CORS por allowlist (`functions/_middleware.js`, sem wildcard); `functions/api/me/devices.js`
+  (listar/revogar sessões) + Sentry `scrubEvent` no `beforeSend`. Issue estava desatualizada
+  (achados de 21/06, já corrigidos depois) — mesmo padrão de #37/#17/#15.
+- **Issue #36 (P2.6 testes + P3.7 endpoint morto) — RESOLVIDA nesta branch:**
+  - `functions/api/admin/analytics.js`: os 6 helpers puros (`parseIntParam`, `parsePlayerIds`,
+    `playerCond`, `dateCond`, `handFilters`, `ACC`) ganharam `export` (sem extrair pra módulo
+    separado — segue o padrão já usado em `create-user.js`/`update-user.js`/etc. desta sessão:
+    exportar direto do arquivo do endpoint e testar via import). Testes novos em
+    `analytics.test.js` (16 casos, sem D1 real).
+  - **Removido `?view=consult-hotspots`** (dead code confirmado — zero uso no front). `?view=foco`
+    já não existia mais (P3.7 estava parcialmente feito).
+- **975 testes verdes (83 arquivos)** (era 959), tsc limpo, build verde, SMOKE OK.
+- Branch `fix/analytics-helpers-tests` → PR pra `feature/auth-telemetry` (gate humano de
+  `functions/api` cumprido: mudança pequena, só refactor+testes+remoção de código morto,
+  sem alterar comportamento de nenhuma view em uso).
+
+### Pendente (Daniel)
+- [ ] Revisar/mergear a PR (branch `fix/analytics-helpers-tests`).
+- [ ] Fechar as issues #6 e #36 no GitHub (ou deixar o agente fechar ao mergear).
+
+---
+
+## 2026-07-05 (PR #43 — rodada 2: modal de confirmação + editar dados + códigos de convite)
+
+- **Contexto:** Daniel pediu, antes do merge da PR #43, mais um ajuste na aba
+  "Funcionalidades de Admin": clicar na conta (em vez de botões soltos na linha) pra
+  revelar resetar senha/excluir/editar dados, com pop-up de confirmação enfatizando
+  risco/irreversibilidade em qualquer mudança, e um mecanismo de códigos únicos de
+  convite (substituindo o `TEAM_CODE` compartilhado) pra saber quem usou qual código.
+  Decisão confirmada com o Daniel: **substituir** o `TEAM_CODE`, não manter os dois.
+- **UX da conta**: linha da tabela agora é clicável (mesmo padrão do `OverviewTableRow` —
+  chevron ▸/▾, **sem `aria-expanded` no `<tr>`**, axe rejeita esse atributo fora de
+  `treegrid`) e expande **Editar dados** / **Resetar senha** / **Excluir**. As três passam
+  por **`ConfirmDangerModal`** (novo componente local, `useModalA11y`, `role="dialog"`)
+  antes de executar: mostra o que vai mudar (editar → diff nome/e-mail riscado→novo;
+  resetar/excluir → aviso vermelho "não pode ser desfeito") e só age no clique explícito
+  em Confirmar. Substituiu os `window.confirm()` nativos que existiam antes (só na
+  `PlayerQuickSummary`, aba Drill, o reset ainda usa `confirm()` nativo — não foi pedido
+  mexer lá).
+- **Editar dados**: novo endpoint `functions/api/admin/update-user.js` (coach-only, só
+  `role='player'`, valida nome/e-mail e duplicidade de e-mail).
+- **Códigos de convite** (`schema_v5.sql`, tabela `invite_codes`: `code` único,
+  `created_by`, `used_by`/`used_at` nullable `ON DELETE SET NULL`): `create-invite-code.js`
+  (coach-only, gera código de 8 hex maiúsculo com retry em colisão) e `invite-codes.js`
+  (lista com `LEFT JOIN users` mostrando quem usou cada um). **`signup.js` reescrito**:
+  `teamCode`/`TEAM_CODE` removidos, agora exige `inviteCode` válido e não-usado; ao
+  cadastrar, marca o código como usado (`used_by`/`used_at`). Front: `authSignup` e
+  `LoginPage` renomeados de `teamCode`→`inviteCode` (label "Código de convite:", chave
+  i18n `auth.inviteCodeLabel`). Nova seção "Códigos de convite" na aba Admin (botão
+  gerar + tabela com status).
+- **Migração `schema_v5.sql` JÁ APLICADA** no D1 remoto (tabela `invite_codes` criada,
+  9 tabelas no total agora). **IMPORTANTE:** a tabela está vazia — nenhum jogador
+  consegue se cadastrar no preview desta branch até o coach gerar pelo menos 1 código
+  na aba Admin.
+- **959 testes verdes (82 arquivos)** (era 946), tsc limpo, build verde, SMOKE OK.
+
+### Pendente (Daniel)
+- [ ] Gerar pelo menos 1 código de convite na aba Admin antes de testar cadastro novo
+      no preview (a tabela `invite_codes` está vazia após a migração).
+- [ ] Validar visualmente: modal de confirmação (editar/resetar/excluir), diff mostrado
+      antes de salvar edição, geração/listagem de códigos de convite.
+- [ ] Revisar/mergear a PR #43 para `feature/auth-telemetry` (era o próximo passo antes
+      deste pedido extra — agora inclui também estes ajustes).
+
+---
+
+## 2026-07-05 (PR #43 — 3 ajustes pós-revisão: contraste claro, nota decimal, aba Admin)
+
+- **Contexto:** PR #40 mergeada em `feature/auth-telemetry`; Dependabot #38/#39 (bumps de
+  patch/minor, testados e mergeados); issues #37/#17/#15 fechadas (concluídas). Daniel
+  revisou o preview e pediu 3 ajustes — branch `fix/coach-admin-tab` (a partir de
+  `feature/auth-telemetry` pós-merge), PR #43 aberta para `feature/auth-telemetry`.
+- **1. Contraste do claro no Range Check:** `ExercisePage.tsx` tinha `text-white` sobre
+  superfícies `warm-800` (cabeçalho de posição, nome dos ranges, linhas de confirmação/
+  resumo) — ilegível no claro porque foi escrito antes do sweep de tokens do tema.
+  Trocado para `text-warm-100` (padrão já usado em TrainerPage/SituationsPage).
+- **2. Nota decimal no histórico:** `StatsPage.tsx` usava `Math.round(s.avgScore)` na nota
+  principal da sessão de Range Check (escondia a precisão real, ex. 91.5→"92"). Agora
+  `toFixed(1)`, igual à nota por round.
+- **3. Nova aba "Funcionalidades de Admin" no CoachPanel** (`AdminView`, exportado p/
+  teste) — terceira aba ao lado de Drill/Range Check: lista de contas com busca, **criar
+  conta** (`POST /api/admin/create-user`, endpoint novo, coach-only, sem Turnstile, gera
+  senha temporária), **resetar senha** (reusa o endpoint existente) e **excluir conta**
+  (`POST /api/admin/delete-user`, endpoint novo, coach-only, recusa auto-exclusão e contas
+  não-`player`; cascade via FK). Reset de senha continua também no `PlayerQuickSummary`.
+- **946 testes verdes (80 arquivos)** (era 933), tsc limpo, build verde, **SMOKE OK**.
+
+### Pendente (Daniel)
+- [ ] Validar visualmente no preview (contraste claro, casa decimal, aba Admin: criar/
+      resetar/excluir conta) e revisar/mergear a PR #43.
+
+---
+
+## 2026-07-05 (merge manual — Range Check + tema claro + daily improvements integrados)
+
+- A pedido do Daniel: `feature/auth-telemetry` (já com tema claro + daily improvements
+  mergeados) foi trazida para dentro de `feature/build-range-exercise` (PR #40, modo
+  "Range Check"), pra tudo rodar junto antes do merge final. Conflitos só em
+  `.agent/handoff.md` (seções concorrentes, resolvido combinando) e `CoachPanel.tsx`
+  (abas "Drill"/"Range Check" do modo novo + qualquer ajuste de tema claro nas mesmas
+  linhas — resolvido preservando as duas mudanças). `npm test` + `npm run build` verdes
+  após o merge. Preview da branch: `feature-build-range-exercise.pre-flop-pro.pages.dev`.
+
+---
+
 ## 2026-07-05 (agente — ajustes do tema claro pedidos pelo Daniel)
 
 - Feedback do Daniel na PR #42: light estava claro demais e a área da mesa (drill +
@@ -48,67 +163,94 @@
   claro legível/consistente, dark inalterado. Scripts no scratchpad (não commitados).
 
 ### Pendências
-- [ ] **Daniel validar o tema claro no preview do Cloudflare Pages** (mudança ampla e visual —
-      teste+build+smoke verdes NÃO garantem estética) e mergear a PR.
+- [x] Tema claro validado e mergeado (PR #42, MERGEADA em `feature/auth-telemetry`).
 - [ ] Se aprovado, considerar honrar `prefers-color-scheme` no primeiro boot (hoje default é dark).
 
 ---
 
-## PENDENTE — Rodada 2 do modo "Montar Range" (PR #40 ainda NÃO mergeada)
+## 2026-07-04 (Rodada 2 do modo "Range Recall" — CONCLUÍDA)
 
-**Contexto:** PR #40 (`feature/build-range-exercise` → `feature/auth-telemetry`) entregou a v1 completa
-do modo (fórmula de nota, ExercisePage, endpoint D1 fail-open). 815 testes verdes, build verde, smoke OK.
-Daniel ainda não validou no preview nem mergeou — antes disso, pediu 7 ajustes. **NÃO lançar o agente
-ainda** (aguardando o Daniel liberar/ter orçamento) — isto é só o registro das decisões pra não perder.
+### Estado
+- **Branch `feature/build-range-exercise`**, PR #40 (→ `feature/auth-telemetry`) atualizada
+  (título + descrição refeitos com as opções de nome, os 7 ajustes e as pendências).
+- **827 testes verdes (75 arquivos)** (era 815), build verde, **SMOKE OK** (via
+  `SMOKE_CHROMIUM="C:/Program Files/Google/Chrome/Application/chrome.exe"` — o runner
+  não achou o Chromium do Playwright sozinho neste ambiente).
+- Os 7 ajustes da Rodada 2 estão TODOS entregues (commits `5b0f03d..f833b38`):
+  1. confirmação pré-rounds; 2. atalhos Pares/Suiteds/Offsuits; 3. múltiplas tentativas
+  (`attempt`); 4. resumo com detalhe por round; 5. renome para **"Range Recall"** (string
+  central no i18n); 6. aba Range Recall no Histórico do jogador; 7. painel coach (abaixo).
 
-### Decisões dos 7 ajustes pedidos pelo Daniel (2026-07-03)
-1. **Nome do modo:** "Montar Range" não convenceu — precisa de nome mais marcante. Daniel ainda NÃO
-   escolheu o nome final. O agente deve propor 3-4 opções curtas (estilo "Blind Spot", "Replay", "Memória
-   de Range" etc.) e usar a melhor, mas isso é decisão que idealmente o Daniel confirma antes do merge —
-   deixar fácil de trocar (não hardcodear em vários lugares, string central no i18n).
-2. **Tela de confirmação pré-rounds:** antes de entrar nos rounds, mostrar a lista de TODOS os ranges/
-   stacks selecionados (nome de cada um) com botão "Confirmar e começar" — hoje o fluxo vai direto da
-   seleção pro primeiro round.
-3. **Botões de preenchimento automático por grupo:** incluir atalhos tipo "Pares" / "Suited" / "Offsuit"
-   que preenchem essas mãos de uma vez com a ação/frequência do pincel atual (mesmo padrão do
-   `HandQuickSelect.tsx` já usado no editor — reusar, não duplicar).
-4. **Múltiplas tentativas por round:** depois de ver a nota de um round, oferecer botão "Tentar novamente"
-   (refaz o mesmo round do zero) ALÉM de avançar. TODAS as tentativas devem ser salvas no histórico (local
-   + D1), cada uma com um marcador de qual tentativa é (ex: "2ª tentativa") pra aparecer tanto no histórico
-   do jogador quanto no painel do coach.
-5. **Resumo com detalhe por round:** na tela de resumo final, cada round deve ser clicável e reabrir a
-   visualização completa daquele round (Seu range / Gabarito / heatmap de diferença), não só mostrar a nota.
-6. **Aba Histórico (StatsPage) precisa separar os dois modos:** hoje só mostra sessões de Drill. Adicionar
-   as sessões de Montar Range como uma seção/aba separada (não misturar sessão de Drill com tentativa de
-   Montar Range na mesma lista).
-7. **Painel Coach — reestruturar abas:** REMOVER a aba "Por jogador" inteira. Renomear "Visão do time" para
-   "Drill" (mantém tudo que já mostra hoje, sem mudança de conteúdo). Criar aba nova "Montar Range" com
-   analytics equivalente ao que "Drill" tem hoje (por jogador, por range, tentativas, notas) mas para os
-   dados desse modo novo.
+### Item 7 — Painel Coach reestruturado (`f833b38`)
+- Aba **"Por jogador" REMOVIDA** inteira (PlayersView + endpoints de detalhe seguem no
+  backend `admin/user/[id].js`, agora sem uso no front — candidato a limpeza futura).
+- **"Visão do time" → "Drill"** (só o rótulo; `tabDrill`/`tabRecall` no i18n).
+- Aba nova **"Range Recall"** (`RecallView`): seções **Por jogador** (linha do TIME +
+  jogadores com tentativas>0), **Por range** e **Tentativas recentes** (stack, nº da
+  tentativa, nota, data; 100 últimas). Mesmos filtros (MultiPlayerSelect/RangeSelect/
+  PeriodFilter) e padrões (`Section`, `useAnalytics`→`fetchAnalyticsCached`).
+- Backend: views `build-overview`/`build-by-range`/`build-events` em
+  `functions/api/admin/analytics.js` (aproveitou o diff uncommitted da sessão anterior),
+  todas em try/catch **fail-open** — sem a migração schema_v4 devolvem vazio ("Sem dados.").
+- **DECISÃO — reset de senha**: vivia na aba removida; foi movido para o
+  `PlayerQuickSummary` (expandir um jogador em "Resumo do time" na aba Drill), com o
+  mesmo endpoint `admin/reset-password`, confirm + senha temporária + copiar. Chave nova
+  `coach.resetConfirm` (o confirm era hardcoded PT).
+- i18n: chaves novas `tabDrill`/`tabRecall`/`recall*`/`resetConfirm` em pt/en/es; chaves
+  mortas da aba removida limpas (tabTeam/tabPlayer/tabHands/colAction/etc.).
+- Testes: CoachPanel.test atualizado (abas novas, 3 testes RecallView incl. fail-open),
+  reset de senha testado direto no `CoachPanelParts.test.tsx`; AppLayout.test e
+  `smoke/smoke.mjs` passaram a identificar o CoachPanel pelo botão de publicar
+  (os nomes "Drill"/"Range Recall" agora colidem com a navegação).
 
-### Próximo prompt para o agente Fable 5 (continuação da PR #40)
-Quando o Daniel autorizar, lançar um agente `general-purpose` com model `fable`, isolation `worktree`,
-`run_in_background: true`, continuando a partir da branch `feature/build-range-exercise` (PR #40 ainda
-aberta, NÃO mergeada — não abrir PR novo, seguir commitando na mesma branch/PR). Prompt deve conter:
-- Reler CLAUDE.md + `.agent/handoff.md` (esta seção) antes de começar.
-- Implementar os 7 itens acima, cada um em commit separado, testado (`npm test` + `npm run build` verdes
-  antes de cada commit).
-- Ponto 1 (nome): propor 3-4 opções no PR description antes de decidir, mas pode seguir implementando com
-  a melhor escolha — só não deve ficar bloqueado esperando resposta.
-- Ponto 3: reusar `HandQuickSelect.tsx` (já existe grupos Pares/Suited/Offsuit no editor) em vez de recriar.
-- Ponto 4: cuidado com o histórico local (`pfp-build-history-v1`) e o endpoint `range-build` — adicionar
-  campo de número da tentativa (ex: `attempt: number`) na entrada salva, tanto localStorage quanto payload
-  D1 (schema_v4.sql ainda não migrado — se precisar mudar coluna, ajustar o schema_v4.sql antes da migração
-  manual, que segue gate humano/Daniel).
-- Ponto 6/7: seguir os padrões existentes de StatsPage (SessionCard/SessionDetailView) e CoachPanel
-  (abas via estado local, `Section` component com loading/error/empty) — não recriar do zero.
-- Atualizar i18n (PT/EN/ES) para todas as strings novas.
-- Ao final: atualizar CLAUDE.md + `.agent/handoff.md`, rodar `npm run smoke`, e reportar no mesmo PR #40
-  (push na branch existente atualiza a PR automaticamente).
-- Lembrar: PR sempre para `feature/auth-telemetry`; nunca main; D1/schema = gate humano.
+### Extra pós-Rodada 2 (pedido do Daniel)
+- Tela "Confirme os rounds": ícone de olho por linha abre o **preview do gabarito do round**
+  reusando `RangePreviewModal` — o Range passado é sintético (grid = snapshot do round, sem
+  `stackGrids`), então round multi-stack abre direto na variante certa com o badge do stack.
+  Sem strings novas (reusa `t.ranges.viewRange`/`t.common.close`). **828 testes verdes (75 arquivos).**
+
+### PENDENTE (gate humano — Daniel)
+- [x] **Migração D1 APLICADA (04/07/2026)**: `schema_v4.sql` executado no remoto com sucesso
+      (4 queries, tabela `range_build_events` + índices criados) — telemetria/analytics do
+      modo já gravam no D1.
+- [ ] Validar visual no preview (nav "Range Recall" + página do modo + painel coach novo).
+- [ ] Confirmar o nome "Range Recall" (troca centralizada no i18n).
+- [ ] Revisar/mergear a PR #40 para `feature/auth-telemetry`.
 
 ---
 
+## 2026-07-03 (tarde — feature nova: modo "Montar Range")
+
+### Estado
+- **Branch `feature/build-range-exercise`** (a partir de `feature/auth-telemetry`), PR aberta para
+  `feature/auth-telemetry`. `main`/produção intactos.
+- Feature completa: novo modo de exercício **"Montar Range"** (reproduzir range de memória),
+  ao lado do Drill na navegação (page `'exercise'`, rota `/montar-range`).
+- Testes: 774 → **815 verdes (75 arquivos)** (9 buildScore + 11 store + 13 página + 8 endpoint).
+  Build verde. Smoke OK.
+
+### O que foi feito (fatias/commits)
+1. `src/utils/buildScore.ts` — nota por combos fora do lugar (fórmula travada da tarefa;
+   fold implícito; clamp [0,100]; `perHand` p/ heatmap de diferença) + 9 testes de borda.
+2. Store: `buildRounds` (1 round por stackGrid; snapshot do grid gabarito + customAction),
+   `startBuildSession`/`submitBuildRound`/`nextBuildRound`/`stopBuildSession`,
+   histórico local `pfp-build-history-v1` (trySave), telemetria `fireEvent('range-build', ...)`.
+   **Pintura reusa `rangeData.grid`** — HandMatrix/BrushControls sem mudança.
+3. `src/components/Exercise/ExercisePage.tsx` (lazy): seleção (acordeão igual ao drill) →
+   round (pintar às cegas + ComboCounter) → nota + "Seu range"/"Gabarito" (RangeActionGrid)
+   + DiffGrid → resumo (média + por round). i18n completo PT/EN/ES (namespace `exercise`).
+   Nav: TopNav/Sidebar (ícone Grid3x3) + RouterSync.
+4. `functions/api/events/range-build.js` + `schema_v4.sql`. **GOTCHA importante:** o INSERT
+   está em try/catch devolvendo 200 `{ok:false}` — sem isso, antes da migração o 500
+   travaria a fila FIFO de telemetria do cliente (flush para em erro != 400).
+
+### PENDENTE (gate humano — Daniel)
+- [ ] **Migração D1 manual**: `npx wrangler d1 execute preflop-db --file=schema_v4.sql --remote`
+      (sem ela a telemetria do modo é descartada no servidor; app funciona normal).
+- [ ] Validar visual no preview do Cloudflare (mudança visual nova: item de nav + página).
+- [ ] Revisar/mergear a PR para `feature/auth-telemetry`.
+
+---
 
 ## 2026-07-03 (run automático — cobertura incremental segura, 10 fatias)
 

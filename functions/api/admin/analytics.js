@@ -1,6 +1,6 @@
 import { getAuthUser, json, handleOptions } from '../_utils.js'
 
-function parseIntParam(raw, { min, max }) {
+export function parseIntParam(raw, { min, max }) {
   if (raw === null || raw === undefined || raw === '') return { ok: true, value: null }
   if (!/^-?\d+$/.test(raw)) return { ok: false }
   const v = parseInt(raw, 10)
@@ -9,7 +9,7 @@ function parseIntParam(raw, { min, max }) {
   return { ok: true, value: v }
 }
 
-function parsePlayerIds(raw) {
+export function parsePlayerIds(raw) {
   const parts = (raw ?? '').split(',').map(s => s.trim()).filter(Boolean)
   const out = []
   for (const p of parts) {
@@ -21,12 +21,12 @@ function parsePlayerIds(raw) {
   return out
 }
 
-function playerCond(playerIds) {
+export function playerCond(playerIds) {
   if (!playerIds.length) return { sql: '', binds: [] }
   return { sql: `user_id IN (${playerIds.map(() => '?').join(',')})`, binds: [...playerIds] }
 }
 
-function dateCond(field, { days, from, to }) {
+export function dateCond(field, { days, from, to }) {
   const conds = []
   const binds = []
   if (from !== null && to !== null) {
@@ -41,7 +41,7 @@ function dateCond(field, { days, from, to }) {
   return { conds, binds }
 }
 
-function handFilters(filters) {
+export function handFilters(filters) {
   const conds = []
   const binds = []
   const pc = playerCond(filters.playerIds)
@@ -52,7 +52,7 @@ function handFilters(filters) {
   return { clause: conds.length ? 'WHERE ' + conds.join(' AND ') : '', binds }
 }
 
-const ACC = (correct, total) => (total > 0 ? Math.round((correct / total) * 1000) / 10 : 0)
+export const ACC = (correct, total) => (total > 0 ? Math.round((correct / total) * 1000) / 10 : 0)
 
 export async function onRequest(context) {
   const { request, env } = context
@@ -282,23 +282,6 @@ export async function onRequest(context) {
     return json({ view, rows: res.results ?? [], users: usersRes.results ?? [] })
   }
 
-  if (view === 'consult-hotspots') {
-    const conds = []
-    const binds = []
-    const pc = playerCond(filters.playerIds)
-    if (pc.sql) { conds.push(pc.sql); binds.push(...pc.binds) }
-    if (filters.rangeId !== null) { conds.push('range_id = ?'); binds.push(filters.rangeId) }
-    { const dc = dateCond('created_at', filters); conds.push(...dc.conds); binds.push(...dc.binds) }
-    const res = await env.DB.prepare(
-      `SELECT range_id AS rangeId, MAX(range_name) AS rangeName, hand, COUNT(*) AS count
-       FROM consult_events ${conds.length ? 'WHERE ' + conds.join(' AND ') : ''}
-       GROUP BY range_id, hand
-       ORDER BY count DESC
-       LIMIT 100`
-    ).bind(...binds).all()
-    return json({ view, rows: res.results ?? [] })
-  }
-
   if (view === 'by-range') {
     const hf = handFilters(filters)
     const handRes = await env.DB.prepare(
@@ -471,6 +454,84 @@ export async function onRequest(context) {
       played: playedMap.get(r.hand) ?? { fold: 0, call: 0, raise: 0, allin: 0, extra: 0 },
     }))
     return json({ view, cells })
+  }
+
+  // Views do modo Range Check (range_build_events). Fail-open enquanto a
+  // migração schema_v4 não for aplicada: tabela ausente devolve dados vazios.
+  if (view === 'build-overview') {
+    const hf = handFilters(filters)
+    try {
+      const agg = await env.DB.prepare(
+        `SELECT user_id AS userId, COUNT(*) AS attempts, SUM(score) AS scoreSum,
+          MAX(score) AS bestScore, COUNT(DISTINCT range_id) AS ranges, MAX(created_at) AS lastActivity
+         FROM range_build_events ${hf.clause} GROUP BY user_id`
+      ).bind(...hf.binds).all()
+
+      const uPc = filters.playerIds.length ? ` AND id IN (${filters.playerIds.map(() => '?').join(',')})` : ''
+      const usersRes = await env.DB.prepare(
+        `SELECT id, username, name FROM users WHERE role = 'player'${uPc} ORDER BY name COLLATE NOCASE, username COLLATE NOCASE`
+      ).bind(...filters.playerIds).all()
+
+      const aMap = new Map((agg.results ?? []).map(r => [r.userId, r]))
+      const rows = (usersRes.results ?? []).map(u => {
+        const a = aMap.get(u.id)
+        const attempts = a?.attempts ?? 0
+        return {
+          userId: u.id,
+          username: u.username,
+          name: u.name,
+          attempts,
+          avgScore: attempts > 0 ? Math.round(((a?.scoreSum ?? 0) / attempts) * 10) / 10 : 0,
+          bestScore: Math.round((a?.bestScore ?? 0) * 10) / 10,
+          ranges: a?.ranges ?? 0,
+          lastActivity: a?.lastActivity ?? 0,
+        }
+      })
+
+      const totalAttempts = rows.reduce((s, r) => s + r.attempts, 0)
+      const totalScore = (agg.results ?? []).reduce((s, r) => s + (r.scoreSum ?? 0), 0)
+      const team = {
+        attempts: totalAttempts,
+        avgScore: totalAttempts > 0 ? Math.round((totalScore / totalAttempts) * 10) / 10 : 0,
+        bestScore: rows.reduce((s, r) => Math.max(s, r.bestScore), 0),
+        ranges: rows.reduce((s, r) => Math.max(s, r.ranges), 0),
+        lastActivity: rows.reduce((s, r) => Math.max(s, r.lastActivity), 0),
+      }
+      return json({ view, rows, team })
+    } catch {
+      return json({ view, rows: [], team: null })
+    }
+  }
+
+  if (view === 'build-by-range') {
+    const hf = handFilters(filters)
+    try {
+      const res = await env.DB.prepare(
+        `SELECT range_id AS rangeId, MAX(range_name) AS rangeName, COUNT(*) AS attempts,
+          ROUND(AVG(score), 1) AS avgScore, ROUND(MAX(score), 1) AS bestScore,
+          COUNT(DISTINCT user_id) AS players, MAX(created_at) AS lastActivity
+         FROM range_build_events ${hf.clause} GROUP BY range_id ORDER BY attempts DESC`
+      ).bind(...hf.binds).all()
+      return json({ view, rows: res.results ?? [] })
+    } catch {
+      return json({ view, rows: [] })
+    }
+  }
+
+  if (view === 'build-events') {
+    const hf = handFilters(filters)
+    try {
+      const res = await env.DB.prepare(
+        `SELECT user_id AS userId,
+          (SELECT COALESCE(NULLIF(u.name, ''), u.username) FROM users u WHERE u.id = user_id) AS playerName,
+          range_id AS rangeId, range_name AS rangeName, stack_range AS stackRange,
+          ROUND(score, 1) AS score, attempt, created_at AS createdAt
+         FROM range_build_events ${hf.clause} ORDER BY created_at DESC LIMIT 100`
+      ).bind(...hf.binds).all()
+      return json({ view, rows: res.results ?? [] })
+    } catch {
+      return json({ view, rows: [] })
+    }
   }
 
   return json({ error: 'view inválida' }, 400)

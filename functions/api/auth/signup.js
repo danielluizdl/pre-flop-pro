@@ -15,16 +15,17 @@ export async function onRequest(context) {
   } catch {
     return json({ error: 'Body inválido' }, 400)
   }
-  const { username, password, teamCode, name, email, turnstileToken } = body ?? {}
+  const { username, password, inviteCode, name, email, turnstileToken } = body ?? {}
   if (!(await verifyTurnstile(env, turnstileToken, ip))) return json({ error: 'Verificação anti-robô falhou' }, 403)
-  if (!username || !password || !teamCode || !name || !email) {
-    return json({ error: 'Campos obrigatórios: username, password, teamCode, name, email' }, 400)
+  if (!username || !password || !inviteCode || !name || !email) {
+    return json({ error: 'Campos obrigatórios: username, password, inviteCode, name, email' }, 400)
   }
-  if (!env.TEAM_CODE) return json({ error: 'Servidor sem TEAM_CODE configurado neste ambiente' }, 500)
   if (username.length < 6) return json({ error: 'Usuário deve ter ao menos 6 caracteres' }, 400)
   if (password.length < 8) return json({ error: 'Senha deve ter ao menos 8 caracteres' }, 400)
   if (!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/.test(email)) return json({ error: 'E-mail inválido' }, 400)
-  if (teamCode.toLowerCase() !== env.TEAM_CODE.toLowerCase()) return json({ error: 'Código do time inválido' }, 403)
+
+  const invite = await env.DB.prepare('SELECT id FROM invite_codes WHERE code = ? AND used_by IS NULL').bind(inviteCode).first()
+  if (!invite) return json({ error: 'Código de convite inválido ou já utilizado' }, 403)
   if (!(await emailDomainExists(email.split('@')[1]))) return json({ error: 'E-mail inválido: domínio não existe' }, 400)
 
   const existing = await env.DB.prepare('SELECT id FROM users WHERE username = ?').bind(username).first()
@@ -36,6 +37,9 @@ export async function onRequest(context) {
   const hash = await hashPassword(password, salt)
   const result = await env.DB.prepare('INSERT INTO users (username, name, email, password_hash, salt, first_login) VALUES (?, ?, ?, ?, ?, 0)')
     .bind(username, name, email, hash, salt).run()
+
+  await env.DB.prepare('UPDATE invite_codes SET used_by = ?, used_at = unixepoch() WHERE id = ?')
+    .bind(result.meta.last_row_id, invite.id).run()
 
   const token = randomHex(32)
   const tokenHash = await sha256Hex(token)

@@ -54,7 +54,7 @@ describe('AppLayout', () => {
     })
     renderLayout()
     expect(screen.getByRole('button', { name: 'Drill' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Visão do time' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Publicar ranges para o time/ })).not.toBeInTheDocument()
   })
 
   it('justSignedUp mostra o WelcomeModal', () => {
@@ -147,7 +147,7 @@ describe('AppLayout', () => {
       currentUser: { id: 1, username: 'coach', name: 'Coach', email: '', role: 'coach', firstLogin: false },
     })
     renderLayout('/coach')
-    expect(await screen.findByRole('button', { name: 'Visão do time' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /Publicar ranges para o time/ })).toBeInTheDocument()
     fetchSpy.mockRestore()
   })
 })

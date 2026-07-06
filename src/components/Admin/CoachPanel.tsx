@@ -3,11 +3,14 @@ import { countRender } from '../../test/renderCount'
 import { Skeleton } from '../ui/Skeleton'
 import { captureError } from '../../utils/sentry'
 import { fetchAnalyticsCached, invalidateAnalyticsCache } from '../../utils/analyticsCache'
+import { useModalA11y } from '../../utils/useModalA11y'
 import { useStore } from '../../store/useStore'
 import { RangeHeatGrid, type GridCell } from './RangeHeatGrid'
 import { RangeActionGrid, type ActionFreq } from './RangeActionGrid'
 import { rangeComboStats, TOTAL_COMBOS, type ComboStats } from '../../utils/rangeCombos'
 import { t } from '../../i18n'
+
+const ADMIN_EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/
 
 const ACTION_COLOR: Record<string, string> = { Raise: 'text-red-400', Call: 'text-emerald-400', 'All-in': 'text-purple-300', Extra: 'text-brand-300' }
 
@@ -244,30 +247,6 @@ interface CoachUser {
   correct_hands: number | null
 }
 
-type CoachTab = 'hands' | 'consults' | 'sessions'
-
-interface CoachDetailRow {
-  hand?: string
-  range_name?: string
-  range_names?: string
-  action_taken?: string
-  correct_action?: string
-  is_correct?: number | boolean
-  severity?: string
-  created_at?: number
-  count?: number
-  ended_at?: number
-  hands?: number
-  correct?: number
-  errors?: number
-  consults?: number
-  duration_seconds?: number
-}
-
-function tabLabel(tab: CoachTab): string {
-  return tab === 'hands' ? t.coach.tabHands : tab === 'consults' ? t.coach.tabConsults : t.coach.tabSessions
-}
-
 function formatDate(unix: number): string {
   if (!unix) return '—'
   const d = new Date(unix * 1000)
@@ -282,27 +261,12 @@ function formatDateShort(unix: number): string {
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`
 }
 
-function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60)
-  const s = seconds % 60
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-}
-
 function formatHours(seconds: number): string {
   const h = Math.floor(seconds / 3600)
   const m = Math.floor((seconds % 3600) / 60)
   if (h > 0) return `${h}h ${m}m`
   if (m > 0) return `${m}m`
   return `${seconds}s`
-}
-
-function parseRangeNames(raw: string): string {
-  try {
-    const arr = JSON.parse(raw)
-    return Array.isArray(arr) ? arr.join(', ') : String(raw)
-  } catch {
-    return String(raw)
-  }
 }
 
 function accColor(acc: number): string {
@@ -659,6 +623,34 @@ function severityHelp(c: SeverityClass): string {
 export function PlayerQuickSummary({ userId, days, from, to, token }: { userId: number; days: number | null; from: number | null; to: number | null; token: string | null }) {
   const [rows, setRows] = useState<ByRangeRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [resetting, setResetting] = useState(false)
+  const [tempPassword, setTempPassword] = useState<string | null>(null)
+  const [resetError, setResetError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  async function handleResetPassword() {
+    if (!token || resetting) return
+    if (!confirm(t.coach.resetConfirm)) return
+    setResetting(true)
+    setResetError(null)
+    setTempPassword(null)
+    setCopied(false)
+    try {
+      const res = await fetch('/api/admin/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ userId }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok || !data?.ok) { setResetError(data?.error ?? `Erro do servidor (${res.status})`); return }
+      setTempPassword(data.tempPassword)
+    } catch (e) {
+      captureError(e, { area: 'admin-reset-password' })
+      setResetError(t.coach.loadError)
+    } finally {
+      setResetting(false)
+    }
+  }
 
   useEffect(() => {
     if (!token) return
@@ -672,8 +664,51 @@ export function PlayerQuickSummary({ userId, days, from, to, token }: { userId: 
     return () => { cancelled = true }
   }, [userId, days, from, to, token])
 
-  if (loading) return <div className="px-4 py-3 text-xs text-warm-500">{t.coach.loadingSummary}</div>
-  if (rows.length === 0) return <div className="px-4 py-3 text-xs text-warm-500">{t.coach.noRangeDataPlayer}</div>
+  const resetBlock = (
+    <div className="space-y-2">
+      <div className="flex items-center gap-3 flex-wrap">
+        <button
+          onClick={handleResetPassword}
+          disabled={resetting}
+          className="px-2.5 py-1 text-xs rounded-lg border border-warm-600 text-warm-300 hover:bg-warm-800 hover:text-white disabled:opacity-40 transition-colors"
+        >
+          {resetting ? t.coach.resetting : t.coach.resetPassword}
+        </button>
+        {resetError && <span className="text-xs text-red-400">{resetError}</span>}
+      </div>
+      {tempPassword && (
+        <div className="rounded-xl border border-brand-600/50 bg-warm-800/60 p-3">
+          <p className="text-xs text-warm-400 mb-1.5">{t.coach.tempPassword}</p>
+          <div className="flex items-center gap-2">
+            <code className="text-lg font-bold tracking-widest text-brand-300 select-all">{tempPassword}</code>
+            <button
+              onClick={() => { navigator.clipboard?.writeText(tempPassword); setCopied(true) }}
+              className="px-2.5 py-1 text-xs rounded-lg border border-warm-600 text-warm-300 hover:bg-warm-800 transition-colors"
+            >
+              {copied ? t.coach.copied : t.coach.copy}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
+  if (loading) {
+    return (
+      <div className="px-4 py-3 space-y-3 bg-warm-900/50 border-t border-warm-700/60">
+        {resetBlock}
+        <p className="text-xs text-warm-500">{t.coach.loadingSummary}</p>
+      </div>
+    )
+  }
+  if (rows.length === 0) {
+    return (
+      <div className="px-4 py-3 space-y-3 bg-warm-900/50 border-t border-warm-700/60">
+        {resetBlock}
+        <p className="text-xs text-warm-500">{t.coach.noRangeDataPlayer}</p>
+      </div>
+    )
+  }
 
   const treinados = [...rows].sort((a, b) => b.hands - a.hands).slice(0, 5)
   const piores = [...rows].filter(r => r.hands >= 5).sort((a, b) => a.accuracy - b.accuracy).slice(0, 5)
@@ -696,10 +731,13 @@ export function PlayerQuickSummary({ userId, days, from, to, token }: { userId: 
   )
 
   return (
-    <div className="grid gap-5 md:grid-cols-3 px-4 py-3 bg-warm-900/50 border-t border-warm-700/60">
-      <Col title={t.coach.mostTrained} items={treinados} render={r => <span className="text-warm-200">{r.hands} {t.common.hands}</span>} />
-      <Col title={t.coach.whereErrsMost} items={piores} render={r => <span className={accColor(r.accuracy)}>{r.accuracy}%</span>} />
-      <Col title={t.coach.mostConsulted} items={consultados} render={r => <span className="text-purple-300">{r.consults}x</span>} />
+    <div className="px-4 py-3 space-y-3 bg-warm-900/50 border-t border-warm-700/60">
+      {resetBlock}
+      <div className="grid gap-5 md:grid-cols-3">
+        <Col title={t.coach.mostTrained} items={treinados} render={r => <span className="text-warm-200">{r.hands} {t.common.hands}</span>} />
+        <Col title={t.coach.whereErrsMost} items={piores} render={r => <span className={accColor(r.accuracy)}>{r.accuracy}%</span>} />
+        <Col title={t.coach.mostConsulted} items={consultados} render={r => <span className="text-purple-300">{r.consults}x</span>} />
+      </div>
     </div>
   )
 }
@@ -1403,219 +1441,156 @@ function TeamView({ token }: { token: string | null }) {
   )
 }
 
-function PlayersView({ token }: { token: string | null }) {
+interface RecallOverviewRow {
+  userId: number; username: string; name: string
+  attempts: number; avgScore: number; bestScore: number; ranges: number; lastActivity: number
+}
+interface RecallByRangeRow {
+  rangeId: number; rangeName: string
+  attempts: number; avgScore: number; bestScore: number; players: number; lastActivity: number
+}
+interface RecallEventRow {
+  userId: number; playerName: string; rangeId: number; rangeName: string
+  stackRange: string | null; score: number; attempt: number; createdAt: number
+}
+
+function RecallView({ token }: { token: string | null }) {
+  const ranges = useStore(s => s.ranges)
   const [users, setUsers] = useState<CoachUser[]>([])
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
-  const [activeTab, setActiveTab] = useState<CoachTab>('hands')
-  const [detail, setDetail] = useState<CoachDetailRow[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [resetting, setResetting] = useState(false)
-  const [resetResult, setResetResult] = useState<{ userId: number; tempPassword: string } | null>(null)
-  const [resetError, setResetError] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
+  const [filters, setFilters] = useState<Filters>({ playerIds: [], rangeId: null, days: null, from: null, to: null })
 
   useEffect(() => {
     if (!token) return
     fetch('/api/admin/users', { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => (res.ok ? res.json() : Promise.reject(new Error('Erro ao carregar usuários'))))
-      .then(data => setUsers(data.users ?? []))
-      .catch(() => setError('Erro ao carregar usuários'))
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
+      .then(d => setUsers(d.users ?? []))
+      .catch(() => {})
   }, [token])
 
-  useEffect(() => { setResetResult(null); setResetError(null); setCopied(false) }, [selectedUserId])
+  const sortedUsers = [...users].sort((a, b) => (a.name || a.username).localeCompare(b.name || b.username))
+  const rangeGroups = useMemo(() => groupRangesByPosition(ranges), [ranges])
 
-  async function handleResetPassword(userId: number) {
-    if (!token || resetting) return
-    if (!confirm('Resetar a senha deste jogador? A senha atual deixará de funcionar e ele precisará usar a senha temporária.')) return
-    setResetting(true)
-    setResetError(null)
-    setResetResult(null)
-    setCopied(false)
-    try {
-      const res = await fetch('/api/admin/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ userId }),
-      })
-      const data = await res.json().catch(() => null)
-      if (!res.ok || !data?.ok) { setResetError(data?.error ?? `Erro do servidor (${res.status})`); return }
-      setResetResult({ userId, tempPassword: data.tempPassword })
-    } catch (e) {
-      captureError(e, { area: 'admin-reset-password' })
-      setResetError('Erro de conexão')
-    } finally {
-      setResetting(false)
-    }
-  }
+  const overview = useAnalytics<RecallOverviewRow>('build-overview', filters, token)
+  const byRange = useAnalytics<RecallByRangeRow>('build-by-range', filters, token)
+  const events = useAnalytics<RecallEventRow>('build-events', filters, token)
 
-  useEffect(() => {
-    if (!token || selectedUserId === null) return
-    let cancelled = false
-    setLoading(true)
-    setError(null)
-    fetch(`/api/admin/user/${selectedUserId}?tab=${activeTab}`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => (res.ok ? res.json() : Promise.reject(new Error('Erro ao carregar dados'))))
-      .then(data => { if (!cancelled) setDetail(data.data ?? []) })
-      .catch(() => { if (!cancelled) setError('Erro ao carregar dados') })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
-  }, [token, selectedUserId, activeTab])
-
-  const selectedUser = users.find(u => u.id === selectedUserId)
-  const accuracyOf = (u: CoachUser) =>
-    u.total_hands > 0 ? `${Math.round(((u.correct_hands ?? 0) / u.total_hands) * 100)}%` : '-'
+  const overviewRows = useMemo(
+    () => overview.rows.filter(r => r.attempts > 0).sort((a, b) => b.attempts - a.attempts),
+    [overview.rows],
+  )
+  const team = overview.team
 
   return (
-    <div className="flex h-[calc(100vh-160px)] bg-warm-950 text-warm-100 rounded-2xl border border-warm-700/50 overflow-hidden">
-      <div className="w-64 border-r border-warm-700/50 overflow-y-auto">
-        <h2 className="px-4 py-3 text-sm font-semibold text-warm-300 border-b border-warm-700/50">{t.coach.players}</h2>
-        {users.length === 0 ? (
-          <p className="px-4 py-4 text-sm text-warm-500">{t.coach.noPlayersYet}</p>
-        ) : (
-          users.map(u => (
-            <button
-              key={u.id}
-              onClick={() => setSelectedUserId(u.id)}
-              className={`w-full text-left px-4 py-3 border-b border-warm-800 transition-colors ${selectedUserId === u.id ? 'bg-warm-800' : 'hover:bg-warm-900'}`}
-            >
-              <span className="block text-sm font-medium text-warm-100">{u.name || u.username}</span>
-              <span className="block text-xs text-warm-500">{u.username}</span>
-              <span className="block text-xs text-warm-400">{t.coach.handsAccSuffix(u.total_hands, accuracyOf(u))}</span>
-            </button>
-          ))
-        )}
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-wrap gap-3">
+        <MultiPlayerSelect
+          users={sortedUsers}
+          selected={filters.playerIds}
+          onChange={ids => setFilters(f => ({ ...f, playerIds: ids }))}
+        />
+        <RangeSelect
+          groups={rangeGroups}
+          value={filters.rangeId}
+          onChange={id => setFilters(f => ({ ...f, rangeId: id }))}
+        />
+        <PeriodFilter
+          days={filters.days}
+          from={filters.from}
+          to={filters.to}
+          onChange={d => setFilters(f => ({ ...f, ...d }))}
+        />
       </div>
 
-      <div className="flex-1 p-4 overflow-y-auto">
-        {!selectedUser ? (
-          <p className="text-sm text-warm-500">{t.coach.selectPlayer}</p>
-        ) : (
-          <>
-            <div className="flex items-start justify-between gap-3 flex-wrap">
-              <div>
-                <h2 className="text-xl font-semibold text-warm-100">{selectedUser.name || selectedUser.username}</h2>
-                <p className="text-sm text-warm-400 mb-3">{selectedUser.username}{selectedUser.email ? ` · ${selectedUser.email}` : ''}</p>
-              </div>
-              <button
-                onClick={() => handleResetPassword(selectedUser.id)}
-                disabled={resetting}
-                className="px-3 py-1.5 text-sm rounded-lg border border-warm-600 text-warm-300 hover:bg-warm-800 hover:text-warm-100 disabled:opacity-40 transition-colors"
-              >
-                {resetting ? t.coach.resetting : t.coach.resetPassword}
-              </button>
-            </div>
-
-            {resetError && <p className="text-sm text-red-400 mb-3">{resetError}</p>}
-            {resetResult && resetResult.userId === selectedUser.id && (
-              <div className="mb-4 rounded-xl border border-brand-600/50 bg-warm-800/60 p-3">
-                <p className="text-xs text-warm-400 mb-1.5">{t.coach.tempPassword}</p>
-                <div className="flex items-center gap-2">
-                  <code className="text-lg font-bold tracking-widest text-brand-300 select-all">{resetResult.tempPassword}</code>
-                  <button
-                    onClick={() => { navigator.clipboard?.writeText(resetResult.tempPassword); setCopied(true) }}
-                    className="px-2.5 py-1 text-xs rounded-lg border border-warm-600 text-warm-300 hover:bg-warm-800 transition-colors"
-                  >
-                    {copied ? t.coach.copied : t.coach.copy}
-                  </button>
-                </div>
-              </div>
+      <Section title={t.coach.recallByPlayer} loading={overview.loading} error={overview.error} empty={overviewRows.length === 0} onRetry={overview.reload}>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-warm-800 text-warm-400 text-xs uppercase select-none">
+              <th className={TH}>{t.coach.colPlayer}</th>
+              <th className={THR}>{t.coach.recallColAttempts}</th>
+              <th className={THR}>{t.coach.recallColAvg}</th>
+              <th className={THR}>{t.coach.recallColBest}</th>
+              <th className={THR}>{t.coach.colRanges}</th>
+              <th className={THR}>{t.coach.colLastActivity}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {team && (team.attempts ?? 0) > 0 && (
+              <tr className="border-t border-warm-700/60 bg-warm-800/40">
+                <td className={`${TD} text-brand-300 font-bold`}>{t.coach.colTeam}</td>
+                <td className={`${TDR} text-warm-200 font-semibold`}>{team.attempts}</td>
+                <td className={`${TDR} font-bold ${accColor(team.avgScore)}`}>{team.avgScore}</td>
+                <td className={`${TDR} text-warm-300`}>{team.bestScore}</td>
+                <td className={`${TDR} text-warm-400`}>{team.ranges}</td>
+                <td className={`${TDR} text-warm-500`}>{formatDateShort(team.lastActivity)}</td>
+              </tr>
             )}
+            {overviewRows.map(r => (
+              <tr key={r.userId} className="border-t border-warm-700/60">
+                <td className={`${TD} text-warm-100 font-semibold`}>{r.name || r.username}</td>
+                <td className={`${TDR} text-warm-300`}>{r.attempts}</td>
+                <td className={`${TDR} font-bold ${accColor(r.avgScore)}`}>{r.avgScore}</td>
+                <td className={`${TDR} text-warm-300`}>{r.bestScore}</td>
+                <td className={`${TDR} text-warm-400`}>{r.ranges}</td>
+                <td className={`${TDR} text-warm-500`}>{formatDateShort(r.lastActivity)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Section>
 
-            <div className="flex gap-1 mb-4">
-              {(['hands', 'consults', 'sessions'] as const).map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${activeTab === tab ? 'border-brand-500 text-brand-300 bg-warm-800' : 'border-warm-600 text-warm-300 hover:bg-warm-800'}`}
-                >
-                  {tabLabel(tab)}
-                </button>
-              ))}
-            </div>
+      <Section title={t.coach.sectionByRange} loading={byRange.loading} error={byRange.error} empty={byRange.rows.length === 0} onRetry={byRange.reload}>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-warm-800 text-warm-400 text-xs uppercase select-none">
+              <th className={TH}>{t.coach.colRange}</th>
+              <th className={THR}>{t.coach.recallColAttempts}</th>
+              <th className={THR}>{t.coach.recallColAvg}</th>
+              <th className={THR}>{t.coach.recallColBest}</th>
+              <th className={THR}>{t.coach.colPlayers}</th>
+              <th className={THR}>{t.coach.colLastActivity}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {byRange.rows.map(r => (
+              <tr key={r.rangeId} className="border-t border-warm-700/60">
+                <td className={`${TD} text-warm-100 font-semibold whitespace-nowrap`}>{r.rangeName}</td>
+                <td className={`${TDR} text-warm-300`}>{r.attempts}</td>
+                <td className={`${TDR} font-bold ${accColor(r.avgScore)}`}>{r.avgScore}</td>
+                <td className={`${TDR} text-warm-300`}>{r.bestScore}</td>
+                <td className={`${TDR} text-warm-400`}>{r.players}</td>
+                <td className={`${TDR} text-warm-500`}>{formatDateShort(r.lastActivity)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Section>
 
-            {error && <p className="text-sm text-red-400 mb-3">{error}</p>}
-            {loading ? (
-              <p className="text-sm text-warm-500">{t.coach.loadingDots}</p>
-            ) : detail.length === 0 ? (
-              <p className="text-sm text-warm-500">{t.coach.noData}</p>
-            ) : activeTab === 'hands' ? (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs text-warm-400 border-b border-warm-700">
-                    <th className="py-2 pr-3">{t.coach.colHand}</th>
-                    <th className="py-2 pr-3">{t.coach.colRange}</th>
-                    <th className="py-2 pr-3">{t.coach.colAction}</th>
-                    <th className="py-2 pr-3">{t.coach.colCorrect}</th>
-                    <th className="py-2 pr-3">{t.coach.colHit}</th>
-                    <th className="py-2 pr-3">{t.coach.colSeverity}</th>
-                    <th className="py-2">{t.coach.colDate}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {detail.map((row, i) => (
-                    <tr key={i} className="border-b border-warm-800">
-                      <td className="py-2 pr-3 font-medium">{row.hand}</td>
-                      <td className="py-2 pr-3 text-warm-300">{row.range_name}</td>
-                      <td className="py-2 pr-3">{row.action_taken}</td>
-                      <td className="py-2 pr-3">{row.correct_action}</td>
-                      <td className={`py-2 pr-3 ${row.is_correct ? 'text-green-400' : 'text-red-400'}`}>{row.is_correct ? t.coach.yes : t.coach.no}</td>
-                      <td className="py-2 pr-3 text-warm-400">{row.severity ?? ''}</td>
-                      <td className="py-2 text-warm-400">{formatDate(row.created_at ?? 0)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : activeTab === 'consults' ? (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs text-warm-400 border-b border-warm-700">
-                    <th className="py-2 pr-3">{t.coach.colRange}</th>
-                    <th className="py-2 pr-3">{t.coach.colHand}</th>
-                    <th className="py-2">{t.coach.colConsults}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {detail.map((row, i) => (
-                    <tr key={i} className="border-b border-warm-800">
-                      <td className="py-2 pr-3 text-warm-300">{row.range_name}</td>
-                      <td className="py-2 pr-3">{row.hand ?? '-'}</td>
-                      <td className="py-2">{row.count}x</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs text-warm-400 border-b border-warm-700">
-                    <th className="py-2 pr-3">{t.coach.colRanges}</th>
-                    <th className="py-2 pr-3">{t.coach.colHands}</th>
-                    <th className="py-2 pr-3">{t.coach.colHit2}</th>
-                    <th className="py-2 pr-3">{t.coach.colErrors}</th>
-                    <th className="py-2 pr-3">{t.coach.colConsults}</th>
-                    <th className="py-2 pr-3">{t.coach.colDuration}</th>
-                    <th className="py-2">{t.coach.colDate}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {detail.map((row, i) => (
-                    <tr key={i} className="border-b border-warm-800">
-                      <td className="py-2 pr-3 text-warm-300">{parseRangeNames(row.range_names ?? '')}</td>
-                      <td className="py-2 pr-3">{row.hands}</td>
-                      <td className="py-2 pr-3">{(row.hands ?? 0) > 0 ? `${Math.round(((row.correct ?? 0) / (row.hands ?? 1)) * 100)}%` : '-'}</td>
-                      <td className="py-2 pr-3">{row.errors}</td>
-                      <td className="py-2 pr-3">{row.consults}</td>
-                      <td className="py-2 pr-3">{formatDuration(row.duration_seconds ?? 0)}</td>
-                      <td className="py-2 text-warm-400">{formatDate(row.ended_at ?? 0)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </>
-        )}
-      </div>
+      <Section title={t.coach.recallSectionAttempts} loading={events.loading} error={events.error} empty={events.rows.length === 0} onRetry={events.reload}>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-warm-800 text-warm-400 text-xs uppercase select-none">
+              <th className={TH}>{t.coach.colPlayer}</th>
+              <th className={TH}>{t.coach.colRange}</th>
+              <th className={TH}>{t.coach.recallColStack}</th>
+              <th className={THR}>{t.coach.recallColAttempt}</th>
+              <th className={THR}>{t.coach.recallColScore}</th>
+              <th className={THR}>{t.coach.colDate}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {events.rows.map((r, i) => (
+              <tr key={i} className="border-t border-warm-700/60">
+                <td className={`${TD} text-warm-100 font-semibold`}>{r.playerName}</td>
+                <td className={`${TD} text-warm-300 whitespace-nowrap`}>{r.rangeName}</td>
+                <td className={`${TD} text-warm-400`}>{r.stackRange ?? '—'}</td>
+                <td className={`${TDR} text-warm-400`}>{r.attempt}</td>
+                <td className={`${TDR} font-bold ${accColor(r.score)}`}>{r.score}</td>
+                <td className={`${TDR} text-warm-500`}>{formatDate(r.createdAt)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Section>
     </div>
   )
 }
@@ -1652,17 +1627,535 @@ function PublishTeamRanges() {
   )
 }
 
+function ConfirmDangerModal({ title, description, confirmLabel, danger = true, busy, error, onConfirm, onCancel }: {
+  title: string
+  description: React.ReactNode
+  confirmLabel: string
+  danger?: boolean
+  busy: boolean
+  error?: string | null
+  onConfirm: () => void
+  onCancel: () => void
+}) {
+  const dialogRef = useModalA11y<HTMLDivElement>(true, onCancel)
+  return (
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={onCancel}>
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-danger-title"
+        onClick={e => e.stopPropagation()}
+        className={`bg-warm-900 border rounded-2xl p-5 max-w-sm w-full space-y-3 ${danger ? 'border-red-900/60' : 'border-warm-700'}`}
+      >
+        <h3 id="confirm-danger-title" className="text-base font-bold text-warm-100 flex items-center gap-2">
+          {danger && <span className="text-red-400" aria-hidden="true">⚠</span>} {title}
+        </h3>
+        <div className="text-sm text-warm-300 space-y-1.5">{description}</div>
+        {danger && <p className="text-xs font-semibold text-red-400">{t.coach.cannotUndo}</p>}
+        {error && <p className="text-xs font-semibold text-red-400">{error}</p>}
+        <div className="flex justify-end gap-2 pt-1">
+          <button
+            onClick={onCancel}
+            disabled={busy}
+            className="px-3.5 py-2 rounded-lg border border-warm-600 text-warm-300 hover:bg-warm-800 disabled:opacity-40 text-sm font-semibold transition-colors"
+          >
+            {t.coach.cancelAction}
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={busy}
+            className={`px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-40 text-white ${danger ? 'bg-red-600 hover:bg-red-500' : 'bg-brand-600 hover:bg-brand-500'}`}
+          >
+            {busy ? t.coach.confirming : confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+interface InviteCode {
+  id: number
+  code: string
+  created_at: number
+  used_at: number | null
+  used_by_id: number | null
+  used_by_username: string | null
+  used_by_name: string | null
+}
+
+type PendingAction =
+  | { type: 'reset'; userId: number; label: string }
+  | { type: 'delete'; userId: number; label: string }
+  | { type: 'edit'; userId: number; label: string; before: { name: string; email: string }; after: { name: string; email: string } }
+
+export function AdminView({ token }: { token: string | null }) {
+  const [users, setUsers] = useState<CoachUser[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const [search, setSearch] = useState('')
+
+  const [showCreate, setShowCreate] = useState(false)
+  const [createForm, setCreateForm] = useState({ username: '', name: '', email: '' })
+  const [creating, setCreating] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
+  const [createResult, setCreateResult] = useState<{ username: string; tempPassword: string } | null>(null)
+
+  const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [editForm, setEditForm] = useState<{ name: string; email: string } | null>(null)
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
+  const [actionBusy, setActionBusy] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
+  const [resetResult, setResetResult] = useState<{ userId: number; tempPassword: string } | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  const [codes, setCodes] = useState<InviteCode[]>([])
+  const [codesLoading, setCodesLoading] = useState(true)
+  const [codesError, setCodesError] = useState('')
+  const [generating, setGenerating] = useState(false)
+  const [generateError, setGenerateError] = useState<string | null>(null)
+  const [newCode, setNewCode] = useState<string | null>(null)
+
+  const loadUsers = useCallback(() => {
+    if (!token) return
+    setLoading(true)
+    setLoadError('')
+    fetch('/api/admin/users', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
+      .then(d => setUsers(d.users ?? []))
+      .catch(() => setLoadError(t.coach.loadError))
+      .finally(() => setLoading(false))
+  }, [token])
+
+  const loadCodes = useCallback(() => {
+    if (!token) return
+    setCodesLoading(true)
+    setCodesError('')
+    fetch('/api/admin/invite-codes', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error())))
+      .then(d => setCodes(d.codes ?? []))
+      .catch(() => setCodesError(t.coach.loadError))
+      .finally(() => setCodesLoading(false))
+  }, [token])
+
+  useEffect(() => { loadUsers() }, [loadUsers])
+  useEffect(() => { loadCodes() }, [loadCodes])
+
+  async function handleGenerateCode() {
+    if (!token || generating) return
+    setGenerating(true)
+    setGenerateError(null)
+    setNewCode(null)
+    try {
+      const res = await fetch('/api/admin/create-invite-code', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok || !data?.ok) { setGenerateError(data?.error ?? `${t.coach.loadError} (${res.status})`); return }
+      setNewCode(data.code)
+      loadCodes()
+    } catch (e) {
+      captureError(e, { area: 'admin-create-invite-code' })
+      setGenerateError(t.coach.loadError)
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault()
+    if (!token || creating) return
+    setCreating(true)
+    setCreateError(null)
+    setCreateResult(null)
+    try {
+      const res = await fetch('/api/admin/create-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(createForm),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok || !data?.ok) { setCreateError(data?.error ?? `${t.coach.loadError} (${res.status})`); return }
+      setCreateResult({ username: createForm.username, tempPassword: data.tempPassword })
+      setCreateForm({ username: '', name: '', email: '' })
+      loadUsers()
+    } catch (e) {
+      captureError(e, { area: 'admin-create-user' })
+      setCreateError(t.coach.loadError)
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  function toggleExpand(u: CoachUser) {
+    const opening = expandedId !== u.id
+    setExpandedId(opening ? u.id : null)
+    setEditForm(null)
+    setActionError(null)
+    if (opening) { setResetResult(null); setCopied(false) }
+  }
+
+  function startEdit(u: CoachUser) {
+    setEditForm({ name: u.name, email: u.email })
+    setActionError(null)
+  }
+
+  function requestSaveEdit(u: CoachUser) {
+    if (!editForm) return
+    if (!editForm.name.trim() || !ADMIN_EMAIL_RE.test(editForm.email)) return
+    setPendingAction({
+      type: 'edit', userId: u.id, label: u.name || u.username,
+      before: { name: u.name, email: u.email },
+      after: { name: editForm.name.trim(), email: editForm.email.trim() },
+    })
+  }
+
+  async function confirmPendingAction() {
+    if (!pendingAction || !token) return
+    setActionBusy(true)
+    setActionError(null)
+    try {
+      if (pendingAction.type === 'reset') {
+        const res = await fetch('/api/admin/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ userId: pendingAction.userId }),
+        })
+        const data = await res.json().catch(() => null)
+        if (!res.ok || !data?.ok) { setActionError(data?.error ?? `${t.coach.loadError} (${res.status})`); return }
+        setResetResult({ userId: pendingAction.userId, tempPassword: data.tempPassword })
+        setCopied(false)
+      } else if (pendingAction.type === 'delete') {
+        const res = await fetch('/api/admin/delete-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ userId: pendingAction.userId }),
+        })
+        const data = await res.json().catch(() => null)
+        if (!res.ok || !data?.ok) { setActionError(data?.error ?? `${t.coach.loadError} (${res.status})`); return }
+        setUsers(u => u.filter(x => x.id !== pendingAction.userId))
+        setExpandedId(null)
+      } else {
+        const res = await fetch('/api/admin/update-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ userId: pendingAction.userId, ...pendingAction.after }),
+        })
+        const data = await res.json().catch(() => null)
+        if (!res.ok || !data?.ok) { setActionError(data?.error ?? `${t.coach.loadError} (${res.status})`); return }
+        setUsers(u => u.map(x => x.id === pendingAction.userId ? { ...x, ...pendingAction.after } : x))
+        setEditForm(null)
+      }
+      setPendingAction(null)
+    } catch (e) {
+      captureError(e, { area: `admin-${pendingAction.type}` })
+      setActionError(t.coach.loadError)
+    } finally {
+      setActionBusy(false)
+    }
+  }
+
+  const filtered = users.filter(u => {
+    const q = search.trim().toLowerCase()
+    if (!q) return true
+    return u.username.toLowerCase().includes(q) || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+  })
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder={t.coach.searchPlaceholder}
+          className="px-3 py-2 rounded-lg bg-warm-800 border border-warm-700 text-warm-100 text-sm placeholder:text-warm-500 focus:outline-none focus:border-brand-500"
+        />
+        <button
+          onClick={() => { setShowCreate(o => !o); setCreateError(null); setCreateResult(null) }}
+          className="px-3.5 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold transition-colors"
+        >
+          {showCreate ? t.coach.cancelCreate : t.coach.createAccount}
+        </button>
+      </div>
+
+      {showCreate && (
+        <form onSubmit={handleCreate} className="rounded-xl border border-warm-700 bg-warm-800/40 p-4 flex flex-wrap items-end gap-3">
+          <div className="flex flex-col gap-1">
+            <label htmlFor="admin-new-username" className="text-[0.7rem] font-semibold text-warm-500 uppercase tracking-wide">{t.coach.newUsername}</label>
+            <input
+              id="admin-new-username"
+              required
+              value={createForm.username}
+              onChange={e => setCreateForm(f => ({ ...f, username: e.target.value }))}
+              className="px-2.5 py-1.5 rounded-lg bg-warm-800 border border-warm-600 text-warm-100 text-sm focus:outline-none focus:border-brand-500"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="admin-new-name" className="text-[0.7rem] font-semibold text-warm-500 uppercase tracking-wide">{t.coach.newName}</label>
+            <input
+              id="admin-new-name"
+              required
+              value={createForm.name}
+              onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))}
+              className="px-2.5 py-1.5 rounded-lg bg-warm-800 border border-warm-600 text-warm-100 text-sm focus:outline-none focus:border-brand-500"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="admin-new-email" className="text-[0.7rem] font-semibold text-warm-500 uppercase tracking-wide">{t.coach.newEmail}</label>
+            <input
+              id="admin-new-email"
+              type="email"
+              value={createForm.email}
+              onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))}
+              className="px-2.5 py-1.5 rounded-lg bg-warm-800 border border-warm-600 text-warm-100 text-sm focus:outline-none focus:border-brand-500"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={creating}
+            className="px-3.5 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-40 text-white text-sm font-semibold transition-colors"
+          >
+            {creating ? t.coach.creating : t.coach.confirmCreate}
+          </button>
+          {createError && <span className="text-xs text-red-400 w-full">{createError}</span>}
+          {createResult && (
+            <div className="w-full rounded-xl border border-brand-600/50 bg-warm-800/60 p-3">
+              <p className="text-xs text-warm-400 mb-1.5">{t.coach.accountCreated(createResult.username)}</p>
+              <div className="flex items-center gap-2">
+                <code className="text-lg font-bold tracking-widest text-brand-300 select-all">{createResult.tempPassword}</code>
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard?.writeText(createResult.tempPassword)}
+                  className="px-2.5 py-1 text-xs rounded-lg border border-warm-600 text-warm-300 hover:bg-warm-800 transition-colors"
+                >
+                  {t.coach.copy}
+                </button>
+              </div>
+            </div>
+          )}
+        </form>
+      )}
+
+      <Section title={t.coach.accountsTitle} loading={loading} error={loadError} empty={filtered.length === 0} onRetry={loadUsers}>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-warm-800 text-warm-400 text-xs uppercase select-none">
+              <th className={TH}>{t.coach.colPlayer}</th>
+              <th className={TH}>{t.coach.newEmail}</th>
+              <th className={THR}>{t.coach.colHands}</th>
+              <th className={THR}>{t.coach.colAccuracy}</th>
+              <th className={THR}>{t.coach.createdAt}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map(u => {
+              const acc = u.total_hands > 0 && u.correct_hands !== null ? Math.round((u.correct_hands / u.total_hands) * 100) : null
+              const isOpen = expandedId === u.id
+              const isEditing = isOpen && !!editForm
+              return (
+                <Fragment key={u.id}>
+                  <tr
+                    onClick={() => toggleExpand(u)}
+                    className={`border-t border-warm-700/60 cursor-pointer transition-colors ${isOpen ? 'bg-warm-800/70' : 'hover:bg-warm-800/50'}`}
+                  >
+                    <td className={`${TD} text-warm-100 font-semibold`}>
+                      <span className={`inline-block w-3 text-warm-600 text-[0.6rem] ${isOpen ? 'text-brand-400' : ''}`}>{isOpen ? '▾' : '▸'}</span>
+                      {u.name || u.username}
+                    </td>
+                    <td className={`${TD} text-warm-400`}>{u.email || '—'}</td>
+                    <td className={`${TDR} text-warm-300`}>{u.total_hands}</td>
+                    <td className={`${TDR} ${acc !== null ? accColor(acc) : 'text-warm-500'}`}>{acc !== null ? `${acc}%` : '—'}</td>
+                    <td className={`${TDR} text-warm-500`}>{formatDateShort(u.created_at)}</td>
+                  </tr>
+                  {isOpen && (
+                    <tr>
+                      <td colSpan={5} className="p-0">
+                        <div className="px-4 py-3 space-y-3 bg-warm-900/50 border-t border-warm-700/60" onClick={e => e.stopPropagation()}>
+                          {!isEditing ? (
+                            <div className="flex flex-wrap items-center gap-2">
+                              <button
+                                onClick={() => startEdit(u)}
+                                className="px-2.5 py-1.5 text-xs rounded-lg border border-warm-600 text-warm-300 hover:bg-warm-800 hover:text-warm-100 transition-colors"
+                              >
+                                {t.coach.editData}
+                              </button>
+                              <button
+                                onClick={() => setPendingAction({ type: 'reset', userId: u.id, label: u.name || u.username })}
+                                className="px-2.5 py-1.5 text-xs rounded-lg border border-warm-600 text-warm-300 hover:bg-warm-800 hover:text-warm-100 transition-colors"
+                              >
+                                {t.coach.resetPassword}
+                              </button>
+                              <button
+                                onClick={() => setPendingAction({ type: 'delete', userId: u.id, label: u.name || u.username })}
+                                className="px-2.5 py-1.5 text-xs rounded-lg border border-red-900/60 text-red-400 hover:bg-red-950/40 transition-colors"
+                              >
+                                {t.coach.deleteAccount}
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap items-end gap-3">
+                              <div className="flex flex-col gap-1">
+                                <label htmlFor={`admin-edit-name-${u.id}`} className="text-[0.7rem] font-semibold text-warm-500 uppercase tracking-wide">{t.coach.newName}</label>
+                                <input
+                                  id={`admin-edit-name-${u.id}`}
+                                  value={editForm.name}
+                                  onChange={e => setEditForm(f => f && ({ ...f, name: e.target.value }))}
+                                  className="px-2.5 py-1.5 rounded-lg bg-warm-800 border border-warm-600 text-warm-100 text-sm focus:outline-none focus:border-brand-500"
+                                />
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                <label htmlFor={`admin-edit-email-${u.id}`} className="text-[0.7rem] font-semibold text-warm-500 uppercase tracking-wide">{t.coach.newEmail}</label>
+                                <input
+                                  id={`admin-edit-email-${u.id}`}
+                                  type="email"
+                                  value={editForm.email}
+                                  onChange={e => setEditForm(f => f && ({ ...f, email: e.target.value }))}
+                                  className="px-2.5 py-1.5 rounded-lg bg-warm-800 border border-warm-600 text-warm-100 text-sm focus:outline-none focus:border-brand-500"
+                                />
+                              </div>
+                              <button
+                                onClick={() => requestSaveEdit(u)}
+                                disabled={!editForm.name.trim() || !ADMIN_EMAIL_RE.test(editForm.email)}
+                                className="px-3 py-1.5 text-xs rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-40 text-white font-semibold transition-colors"
+                              >
+                                {t.coach.saveChanges}
+                              </button>
+                              <button
+                                onClick={() => setEditForm(null)}
+                                className="px-3 py-1.5 text-xs rounded-lg border border-warm-600 text-warm-300 hover:bg-warm-800 transition-colors"
+                              >
+                                {t.coach.cancelEdit}
+                              </button>
+                            </div>
+                          )}
+                          {actionError && <p className="text-xs text-red-400">{actionError}</p>}
+                          {resetResult?.userId === u.id && (
+                            <div className="rounded-xl border border-brand-600/50 bg-warm-800/60 p-3 inline-flex items-center gap-2">
+                              <span className="text-xs text-warm-400">{t.coach.tempPassword}</span>
+                              <code className="text-lg font-bold tracking-widest text-brand-300 select-all">{resetResult.tempPassword}</code>
+                              <button
+                                onClick={() => { navigator.clipboard?.writeText(resetResult.tempPassword); setCopied(true) }}
+                                className="px-2.5 py-1 text-xs rounded-lg border border-warm-600 text-warm-300 hover:bg-warm-700 transition-colors"
+                              >
+                                {copied ? t.coach.copied : t.coach.copy}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              )
+            })}
+          </tbody>
+        </table>
+      </Section>
+
+      <Section title={t.coach.inviteCodesTitle} loading={codesLoading} error={codesError} empty={false} onRetry={loadCodes} defaultOpen={false}>
+        <div className="p-3 space-y-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={handleGenerateCode}
+              disabled={generating}
+              className="px-3.5 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-40 text-white text-sm font-semibold transition-colors"
+            >
+              {generating ? t.coach.generating : t.coach.generateCode}
+            </button>
+            {generateError && <span className="text-xs text-red-400">{generateError}</span>}
+            {newCode && (
+              <div className="rounded-xl border border-brand-600/50 bg-warm-800/60 px-3 py-1.5 inline-flex items-center gap-2">
+                <code className="text-base font-bold tracking-widest text-brand-300 select-all">{newCode}</code>
+                <button
+                  onClick={() => navigator.clipboard?.writeText(newCode)}
+                  className="px-2 py-0.5 text-xs rounded-lg border border-warm-600 text-warm-300 hover:bg-warm-700 transition-colors"
+                >
+                  {t.coach.copy}
+                </button>
+              </div>
+            )}
+          </div>
+          {codes.length === 0 ? <p className="text-sm text-warm-500">{t.coach.noData}</p> : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-warm-800 text-warm-400 text-xs uppercase select-none">
+                  <th className={TH}>{t.coach.colCode}</th>
+                  <th className={TH}>{t.coach.colStatus}</th>
+                  <th className={THR}>{t.coach.createdAt}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {codes.map(c => (
+                  <tr key={c.id} className="border-t border-warm-700/60">
+                    <td className={`${TD} font-mono text-warm-100 font-semibold tracking-wide`}>{c.code}</td>
+                    <td className={`${TD}`}>
+                      {c.used_by_id ? (
+                        <span className="text-warm-300">{t.coach.codeUsedBy(c.used_by_name || c.used_by_username || '')}</span>
+                      ) : (
+                        <span className="text-warm-500">{t.coach.codeUnused}</span>
+                      )}
+                    </td>
+                    <td className={`${TDR} text-warm-500`}>{formatDateShort(c.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </Section>
+
+      {pendingAction && (
+        <ConfirmDangerModal
+          title={
+            pendingAction.type === 'reset' ? t.coach.confirmResetTitle
+              : pendingAction.type === 'delete' ? t.coach.confirmDeleteTitle
+              : t.coach.confirmEditTitle
+          }
+          danger={pendingAction.type !== 'edit'}
+          confirmLabel={
+            pendingAction.type === 'reset' ? t.coach.resetPassword
+              : pendingAction.type === 'delete' ? t.coach.deleteAccount
+              : t.coach.saveChanges
+          }
+          busy={actionBusy}
+          error={actionError}
+          onCancel={() => { setPendingAction(null); setActionError(null) }}
+          onConfirm={confirmPendingAction}
+          description={
+            pendingAction.type === 'reset' ? <p>{t.coach.confirmResetDesc(pendingAction.label)}</p>
+              : pendingAction.type === 'delete' ? <p>{t.coach.confirmDeleteDesc(pendingAction.label)}</p>
+              : (
+                <div className="space-y-1">
+                  {pendingAction.before.name !== pendingAction.after.name && (
+                    <p>{t.coach.newName}: <span className="text-warm-500 line-through">{pendingAction.before.name}</span> → <span className="text-warm-100 font-semibold">{pendingAction.after.name}</span></p>
+                  )}
+                  {pendingAction.before.email !== pendingAction.after.email && (
+                    <p>{t.coach.newEmail}: <span className="text-warm-500 line-through">{pendingAction.before.email}</span> → <span className="text-warm-100 font-semibold">{pendingAction.after.email}</span></p>
+                  )}
+                </div>
+              )
+          }
+        />
+      )}
+    </div>
+  )
+}
+
 export default function CoachPanel() {
   const authToken = useStore(s => s.authToken)
-  const [area, setArea] = useState<'team' | 'players'>('team')
+  const [area, setArea] = useState<'drill' | 'recall' | 'admin'>('drill')
 
   return (
     <div className="space-y-4">
       <PublishTeamRanges />
       <div className="flex gap-1 border-b border-warm-700">
         {([
-          { key: 'team', label: t.coach.tabTeam },
-          { key: 'players', label: t.coach.tabPlayer },
+          { key: 'drill', label: t.coach.tabDrill },
+          { key: 'recall', label: t.coach.tabRecall },
+          { key: 'admin', label: t.coach.tabAdmin },
         ] as const).map(tab => (
           <button
             key={tab.key}
@@ -1677,7 +2170,7 @@ export default function CoachPanel() {
         ))}
       </div>
 
-      {area === 'team' ? <TeamView token={authToken} /> : <PlayersView token={authToken} />}
+      {area === 'drill' ? <TeamView token={authToken} /> : area === 'recall' ? <RecallView token={authToken} /> : <AdminView token={authToken} />}
     </div>
   )
 }
