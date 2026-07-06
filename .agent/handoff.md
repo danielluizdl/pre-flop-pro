@@ -1,5 +1,43 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-06 (cadastro: nome capitalizado, confirmar senha, tier/turma)
+
+- Daniel pediu 4 mudanças no formulário de cadastro (screenshot da tela real):
+  1. **Nome e Sobrenome** (renomeado de "Nome Completo") — capitaliza automaticamente a
+     primeira letra de cada palavra ao digitar. `capitalizeWords` (`LoginPage.tsx`, exportada
+     e testada) usa `/(^|\s)(\p{L})/gu` — **cuidado**: a primeira tentativa usava `\b\w`, que
+     quebra em nomes acentuados (`\w` não inclui `ã`/`ç`/etc, então `\b` cria uma fronteira
+     falsa logo depois da letra acentuada e capitaliza a letra seguinte também — "joão" virava
+     "JoãO"). A versão Unicode-aware só capitaliza após espaço/início da string.
+  2. **Senha mínima 6 caracteres** (era 8) + **Confirmar senha** obrigatória, bloqueia com
+     mensagem se não baterem (`auth.errors.passwordMismatch`). Os dois campos usam
+     `PasswordInput` (componente local reusável) com ícone de olho (Eye/EyeOff do lucide)
+     que alterna `type="password"`↔`"text"` — cada campo tem seu próprio estado de
+     visibilidade, independente.
+  3. Confirmado: código de convite já é de uso único por design (não precisou de mudança).
+  4. **Tier + Turma** (campos novos, obrigatórios): 4 botões — "Tier Fundamentals",
+     "Tier Evolution", "Tier Metamorphosis", "Main Team". Selecionar qualquer um EXCETO
+     "Main Team" revela uma segunda seleção "Turma" (A/B/C/D, botões). `canSubmit` exige
+     tier selecionado e (tier === 'main' OU turma selecionada).
+- **Backend**: `schema_v6.sql` adiciona `users.tier` (`NOT NULL DEFAULT ''`) e `users.turma`
+  (nullable) — **migração já aplicada no D1 remoto**. `signup.js` ganhou
+  `validateSignupFields` (pura, testada em `signup.test.js`) validando tier ∈
+  {fundamentals,evolution,metamorphosis,main}, turma ∈ {A,B,C,D} quando tier≠main, senha
+  ≥6 chars; grava tier/turma no INSERT.
+- **Store**: `authSignup` ganhou 2 parâmetros novos (`tier`, `turma`) entre `email` e
+  `turnstileToken` — todos os call sites de teste (`authActions.test.ts`,
+  `authGuards.test.ts`, `networkErrors.test.ts`) atualizados.
+- **994 testes verdes (84 arquivos)**, tsc limpo, build verde, SMOKE OK (precisou matar um
+  processo `vite preview` da porta 4173 que ficou preso de uma run anterior).
+- Branch `feat/signup-tier-fields` → PR pra `feature/auth-telemetry`.
+
+### Pendente (Daniel)
+- [ ] Revisar/mergear a PR (branch `feat/signup-tier-fields`).
+- [ ] Validar visualmente no preview: capitalização do nome, olho da senha nos 2 campos,
+      bloqueio de senha divergente, seleção de tier revelando/escondendo turma.
+
+---
+
 ## 2026-07-06 (PlayerQuickSummary vira somente-leitura — reset de senha só na aba Admin)
 
 - Daniel viu o "Resumo individual por jogador" (aba Drill) no preview e pediu pra tirar o

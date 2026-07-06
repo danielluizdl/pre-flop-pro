@@ -1,6 +1,24 @@
 import { sha256Hex, hashPassword, randomHex, json, handleOptions, emailDomainExists, checkRateLimitKV, verifyTurnstile } from '../_utils.js'
 import { sendEmail } from '../_email.js'
 
+const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/
+const TIERS = ['fundamentals', 'evolution', 'metamorphosis', 'main']
+const TURMAS = ['A', 'B', 'C', 'D']
+
+export function validateSignupFields(body) {
+  if (!body || typeof body !== 'object') return { ok: false, error: 'Body inválido' }
+  const { username, password, inviteCode, name, email, tier, turma } = body
+  if (!username || !password || !inviteCode || !name || !email || !tier) {
+    return { ok: false, error: 'Campos obrigatórios: username, password, inviteCode, name, email, tier' }
+  }
+  if (username.length < 6) return { ok: false, error: 'Usuário deve ter ao menos 6 caracteres' }
+  if (password.length < 6) return { ok: false, error: 'Senha deve ter ao menos 6 caracteres' }
+  if (!EMAIL_RE.test(email)) return { ok: false, error: 'E-mail inválido' }
+  if (!TIERS.includes(tier)) return { ok: false, error: 'Tier inválido' }
+  if (tier !== 'main' && !TURMAS.includes(turma)) return { ok: false, error: 'Turma inválida' }
+  return { ok: true, turma: tier === 'main' ? null : turma }
+}
+
 export async function onRequest(context) {
   const { request, env } = context
   if (request.method === 'OPTIONS') return handleOptions()
@@ -17,12 +35,11 @@ export async function onRequest(context) {
   }
   const { username, password, inviteCode, name, email, turnstileToken } = body ?? {}
   if (!(await verifyTurnstile(env, turnstileToken, ip))) return json({ error: 'Verificação anti-robô falhou' }, 403)
-  if (!username || !password || !inviteCode || !name || !email) {
-    return json({ error: 'Campos obrigatórios: username, password, inviteCode, name, email' }, 400)
-  }
-  if (username.length < 6) return json({ error: 'Usuário deve ter ao menos 6 caracteres' }, 400)
-  if (password.length < 8) return json({ error: 'Senha deve ter ao menos 8 caracteres' }, 400)
-  if (!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/.test(email)) return json({ error: 'E-mail inválido' }, 400)
+
+  const validated = validateSignupFields(body)
+  if (!validated.ok) return json({ error: validated.error }, 400)
+  const { tier } = body ?? {}
+  const turma = validated.turma
 
   const invite = await env.DB.prepare('SELECT id FROM invite_codes WHERE code = ? AND used_by IS NULL').bind(inviteCode).first()
   if (!invite) return json({ error: 'Código de convite inválido ou já utilizado' }, 403)
@@ -35,8 +52,8 @@ export async function onRequest(context) {
 
   const salt = randomHex(16)
   const hash = await hashPassword(password, salt)
-  const result = await env.DB.prepare('INSERT INTO users (username, name, email, password_hash, salt, first_login) VALUES (?, ?, ?, ?, ?, 0)')
-    .bind(username, name, email, hash, salt).run()
+  const result = await env.DB.prepare('INSERT INTO users (username, name, email, password_hash, salt, first_login, tier, turma) VALUES (?, ?, ?, ?, ?, 0, ?, ?)')
+    .bind(username, name, email, hash, salt, tier, turma).run()
 
   await env.DB.prepare('UPDATE invite_codes SET used_by = ?, used_at = unixepoch() WHERE id = ?')
     .bind(result.meta.last_row_id, invite.id).run()

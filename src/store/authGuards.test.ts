@@ -104,7 +104,7 @@ describe('store: authSignup falha', () => {
 
   it('signup com res não-ok retorna erro e não persiste token', async () => {
     mockFetch(() => ({ status: 409, body: { error: 'usuário já existe' } }))
-    const r = await useStore.getState().authSignup('ana', 'senha', 'CODE', 'Ana', 'a@x.com')
+    const r = await useStore.getState().authSignup('ana', 'senha', 'CODE', 'Ana', 'a@x.com', 'fundamentals', 'A')
     expect(r).toEqual({ ok: false, error: 'usuário já existe' })
     expect(sessionStorage.getItem('pfp-auth-token')).toBeNull()
     expect(useStore.getState().currentUser).toBeNull()
@@ -112,7 +112,7 @@ describe('store: authSignup falha', () => {
 
   it('signup com falha de rede vira {ok:false}', async () => {
     globalThis.fetch = vi.fn(async () => { throw new Error('offline') }) as unknown as typeof fetch
-    const r = await useStore.getState().authSignup('ana', 'senha', 'CODE', 'Ana', 'a@x.com')
+    const r = await useStore.getState().authSignup('ana', 'senha', 'CODE', 'Ana', 'a@x.com', 'fundamentals', 'A')
     expect(r.ok).toBe(false)
   })
 })
