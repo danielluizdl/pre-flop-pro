@@ -37,6 +37,16 @@ describe('WelcomeModal', () => {
     expect(useStore.getState().currentUser?.firstLogin).toBe(false)
   })
 
+  it('ao fechar, inicia o tour guiado (onboardingStep) e zera justSignedUp', () => {
+    vi.useFakeTimers()
+    useStore.setState({ currentUser: { ...USER, firstLogin: true }, justSignedUp: true, onboardingStep: null })
+    render(<WelcomeModal />)
+    fireEvent.click(screen.getByRole('button', { name: 'Bora treinar!' }))
+    act(() => { vi.advanceTimersByTime(400) })
+    expect(useStore.getState().justSignedUp).toBe(false)
+    expect(useStore.getState().onboardingStep).toBe(0)
+  })
+
   it('não tem violações de acessibilidade (axe)', async () => {
     useStore.setState({ currentUser: USER })
     const { container } = render(<WelcomeModal />)

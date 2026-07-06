@@ -309,6 +309,7 @@ interface AppState {
   currentUser: CurrentUser | null
   authToken: string | null
   justSignedUp: boolean
+  onboardingStep: number | null
   authLogin: (username: string, password: string, turnstileToken?: string | null) => Promise<{ ok: boolean; error?: string }>
   authSignup: (username: string, password: string, inviteCode: string, name: string, email: string, tier: string, turma: string | null, turnstileToken?: string | null) => Promise<{ ok: boolean; error?: string }>
   authLogout: () => Promise<void>
@@ -1442,6 +1443,7 @@ export const useStore = create<AppState>()(
       currentUser: null,
       authToken: null,
       justSignedUp: false,
+      onboardingStep: null,
       authLogin: async (username, password, turnstileToken) => {
         try {
           const res = await fetch('/api/auth/login', {
@@ -1457,6 +1459,7 @@ export const useStore = create<AppState>()(
             currentUser: { id: data.user.id, username: data.user.username, name: data.user.name ?? '', email: data.user.email ?? '', role: data.user.role, firstLogin: !!data.user.first_login },
             userMode: data.user.role === 'coach' ? 'admin' : 'visitor',
             justSignedUp: false,
+            onboardingStep: null,
           })
           addBreadcrumb('auth', 'login ok', { role: data.user.role })
           void flush(data.token)
@@ -1479,6 +1482,7 @@ export const useStore = create<AppState>()(
             currentUser: { id: data.user.id, username: data.user.username, name: data.user.name ?? '', email: data.user.email ?? '', role: data.user.role, firstLogin: !!data.user.first_login },
             userMode: data.user.role === 'coach' ? 'admin' : 'visitor',
             justSignedUp: true,
+            onboardingStep: null,
           })
           return { ok: true }
         } catch (e) { captureError(e, { area: 'auth-signup' }); return { ok: false, error: t.netErrors.connection } }
@@ -1495,7 +1499,7 @@ export const useStore = create<AppState>()(
         }
         sessionStorage.removeItem('pfp-auth-token')
         addBreadcrumb('auth', 'logout')
-        set({ currentUser: null, authToken: null, userMode: null, adminToken: null, justSignedUp: false })
+        set({ currentUser: null, authToken: null, userMode: null, adminToken: null, justSignedUp: false, onboardingStep: null })
       },
       changePassword: async (newPassword) => {
         const { authToken, currentUser } = get()
@@ -1567,6 +1571,7 @@ export const useStore = create<AppState>()(
             currentUser: { id: data.user.id, username: data.user.username, name: data.user.name ?? '', email: data.user.email ?? '', role: data.user.role, firstLogin: !!data.user.first_login },
             userMode: data.user.role === 'coach' ? 'admin' : 'visitor',
             justSignedUp: false,
+            onboardingStep: null,
           })
           void flush(token)
           void get().syncTeamRanges()

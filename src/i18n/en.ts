@@ -575,6 +575,17 @@ export const en: Messages = {
     bodyAfter: ' to study your ranges, train real table situations and level up your pre-flop. Happy studying and good luck at the tables!',
     cta: "Let's train!",
   },
+  tour: {
+    step1Title: 'This is the Drill',
+    step1Body: 'Train hand by hand against real table situations and get instant feedback — this is where you lock in the range in practice.',
+    step2Title: 'This is Range Check',
+    step2Body: 'Reproduce a range from memory, painting the matrix from scratch, and see your score compared to the answer key.',
+    step3Title: 'This is your History',
+    step3Body: 'All your training sessions are saved here, with your progress over time.',
+    skip: 'Skip tour',
+    next: 'Next',
+    finish: 'Finish',
+  },
   changePassword: {
     title: 'Set your password',
     subtitle: 'This is your first login. Choose a new password to continue.',
