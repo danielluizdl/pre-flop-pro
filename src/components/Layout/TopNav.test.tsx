@@ -1,12 +1,15 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { axe } from 'jest-axe'
 import { TopNav } from './TopNav'
 import { useStore } from '../../store/useStore'
+import { setLangDict } from '../../i18n'
 
 function setup() {
   useStore.setState({ page: 'dashboard', userMode: null, currentUser: null, darkMode: false })
 }
+
+afterEach(() => { setLangDict('pt'); useStore.setState({ lang: 'pt' }) })
 
 describe('TopNav', () => {
   it('renderiza a navegação, o botão de novo range e o perfil', () => {
@@ -55,6 +58,29 @@ describe('TopNav', () => {
     fireEvent.click(screen.getByText('daniel'))
     fireEvent.click(screen.getByRole('button', { name: /Sair/ }))
     expect(authLogout).toHaveBeenCalled()
+  })
+
+  it('menu do perfil mostra o idioma vigente e cicla ao clicar', () => {
+    setup()
+    useStore.setState({ currentUser: { id: 1, username: 'daniel', name: 'Daniel', email: '', role: 'player', firstLogin: false }, lang: 'pt' })
+    render(<TopNav />)
+    fireEvent.click(screen.getByText('daniel'))
+    expect(screen.getByText('PT')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /Idioma/ }))
+    expect(useStore.getState().lang).toBe('en')
+  })
+
+  it('menu do perfil: "Rever tutorial" inicia o onboarding e fecha o menu', () => {
+    setup()
+    useStore.setState({
+      currentUser: { id: 1, username: 'daniel', name: 'Daniel', email: '', role: 'player', firstLogin: false },
+      onboardingStep: null,
+    })
+    render(<TopNav />)
+    fireEvent.click(screen.getByText('daniel'))
+    fireEvent.click(screen.getByRole('button', { name: 'Rever tutorial' }))
+    expect(useStore.getState().onboardingStep).toBe(0)
+    expect(screen.queryByRole('button', { name: /Sair/ })).not.toBeInTheDocument()
   })
 
   it('mostra "Painel Coach" só para coach e navega para admin', () => {

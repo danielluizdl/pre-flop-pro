@@ -1,12 +1,17 @@
 import { useState, useRef, useEffect } from 'react'
 import { useStore } from '../../store/useStore'
-import { LayoutDashboard, Layers, PlayCircle, Grid3x3, Clock, Moon, Sun, Settings, Plus, LogOut } from 'lucide-react'
+import { LayoutDashboard, Layers, PlayCircle, Grid3x3, Clock, Moon, Sun, Settings, Plus, LogOut, Globe, GraduationCap } from 'lucide-react'
 import { clsx } from 'clsx'
 import type { Page } from '../../types'
 import { AdminPanel } from '../Admin/AdminPanel'
 import { RangeMark } from '../ui/RangeMark'
-import { LanguageSelect } from './LanguageSelect'
+import { LANGS, type Lang } from '../../i18n'
 import { t } from '../../i18n'
+
+function nextLang(current: Lang): Lang {
+  const idx = LANGS.findIndex(l => l.code === current)
+  return LANGS[(idx + 1) % LANGS.length].code
+}
 
 const NAV_ICONS: { id: Page; icon: React.ElementType }[] = [
   { id: 'dashboard', icon: LayoutDashboard },
@@ -25,6 +30,8 @@ export function TopNav() {
 
   const currentUser    = useStore(s => s.currentUser)
   const authLogout     = useStore(s => s.authLogout)
+  const lang           = useStore(s => s.lang)
+  const setLang        = useStore(s => s.setLang)
 
   const NAV_LABELS: Partial<Record<Page, string>> = {
     dashboard: t.nav.dashboard, ranges: t.nav.ranges, drill: t.nav.drill, exercise: t.exercise.navLabel, history: t.nav.history,
@@ -117,7 +124,6 @@ export function TopNav() {
 
         {/* Util buttons */}
         <div className="flex items-center gap-1">
-          <LanguageSelect />
           <button
             onClick={toggleDarkMode}
             className="w-9 h-9 flex items-center justify-center rounded-full text-warm-400 hover:bg-warm-800 hover:text-warm-100 transition-colors"
@@ -171,12 +177,26 @@ export function TopNav() {
           </button>
 
           {profileOpen && (
-            <div className="absolute right-0 top-full mt-2 w-36 bg-warm-900 border border-warm-700 rounded-xl shadow-xl overflow-hidden z-50">
+            <div className="absolute right-0 top-full mt-2 w-52 bg-warm-900 border border-warm-700 rounded-xl shadow-xl overflow-hidden z-50">
+              <button
+                onClick={() => setLang(nextLang(lang))}
+                className="w-full flex items-center justify-between gap-2.5 px-4 py-3 text-sm text-warm-300 hover:bg-warm-800 hover:text-warm-100 transition-colors"
+              >
+                <span className="flex items-center gap-2.5"><Globe size={15} className="flex-shrink-0" />{t.nav.language}</span>
+                <span className="text-xs font-bold text-warm-500">{LANGS.find(l => l.code === lang)?.label}</span>
+              </button>
+              <button
+                onClick={() => { setProfileOpen(false); useStore.setState({ onboardingStep: 0 }) }}
+                className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-warm-300 hover:bg-warm-800 hover:text-warm-100 transition-colors border-t border-warm-700/60"
+              >
+                <GraduationCap size={15} className="flex-shrink-0" />
+                {t.nav.replayTutorial}
+              </button>
               <button
                 onClick={() => { setProfileOpen(false); authLogout() }}
-                className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-warm-300 hover:bg-warm-800 hover:text-warm-100 transition-colors"
+                className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-warm-300 hover:bg-warm-800 hover:text-warm-100 transition-colors border-t border-warm-700/60"
               >
-                <LogOut size={15} />
+                <LogOut size={15} className="flex-shrink-0" />
                 {t.nav.logout}
               </button>
             </div>

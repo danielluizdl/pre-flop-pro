@@ -449,6 +449,8 @@ export const pt = {
     createRange: 'Criar Range',
     expandSidebar: 'Expandir sidebar',
     collapseSidebar: 'Recolher sidebar',
+    language: 'Idioma',
+    replayTutorial: 'Rever tutorial',
   },
   dashboard: {
     eyebrow: 'Comece agora',
