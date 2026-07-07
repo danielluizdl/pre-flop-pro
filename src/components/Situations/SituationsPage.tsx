@@ -187,6 +187,7 @@ export function SituationsPage() {
           <p className="text-xs text-warm-400 mt-0.5">{t.ranges.createdCount(ranges.length)}</p>
         </div>
         <button
+          data-tour="ranges-new"
           onClick={() => setPage('range-setup')}
           className="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-sm font-semibold transition-colors"
         >

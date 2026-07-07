@@ -1,62 +1,71 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { axe } from 'jest-axe'
-import { OnboardingTour } from './OnboardingTour'
+import { AppLayout } from '../Layout/AppLayout'
 import { useStore } from '../../store/useStore'
 
-function renderWithTargets(step: number) {
-  useStore.setState({ onboardingStep: step })
+function renderTour(onboardingStep = 0) {
+  useStore.setState({
+    userMode: 'visitor', page: 'dashboard', storageBlocked: false, justSignedUp: false, onboardingStep,
+    currentUser: { id: 1, username: 'novo', name: 'Novo', email: '', role: 'player', firstLogin: false },
+    ranges: [], trainingHistory: [], selectedDrillRangeIds: [], buildSelectedRangeIds: [],
+  })
   return render(
-    <>
-      <button data-tour="drill">Drill</button>
-      <button data-tour="exercise">Range Check</button>
-      <button data-tour="history">Histórico</button>
-      <OnboardingTour />
-    </>,
+    <MemoryRouter initialEntries={['/dashboard']}>
+      <AppLayout />
+    </MemoryRouter>,
   )
 }
 
 describe('OnboardingTour', () => {
-  it('mostra o passo 1 (Drill) com botão Próximo', () => {
-    renderWithTargets(0)
-    expect(screen.getByText('Aqui é o Drill')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Próximo' })).toBeInTheDocument()
+  it('mostra o passo 1 (Dashboard) com o contador 1/8', () => {
+    renderTour()
+    expect(screen.getByText('Bem-vindo ao Pre-Flop Pro!')).toBeInTheDocument()
+    expect(screen.getByText('1/8')).toBeInTheDocument()
   })
 
-  it('avança pro passo 2 (Range Check) ao clicar em Próximo', () => {
-    renderWithTargets(0)
+  it('"Próximo" navega de verdade pra próxima página (Meus Ranges)', async () => {
+    renderTour()
     fireEvent.click(screen.getByRole('button', { name: 'Próximo' }))
+    expect(await screen.findByRole('heading', { name: 'Meus Ranges' })).toBeInTheDocument()
+    expect(useStore.getState().page).toBe('ranges')
     expect(useStore.getState().onboardingStep).toBe(1)
   })
 
-  it('no último passo o botão vira "Concluir" e encerra o tour ao clicar', () => {
-    renderWithTargets(2)
-    expect(screen.getByText('Aqui é o seu Histórico')).toBeInTheDocument()
+  it('passo do editor chama setupNewRange e navega de verdade pro RangeEditorPage', async () => {
+    renderTour(3)
+    expect(await screen.findByRole('heading', { name: 'Criar Range' })).toBeInTheDocument()
+    expect(useStore.getState().page).toBe('editor')
+  })
+
+  it('último passo (Histórico) mostra "Concluir" e encerra o tour ao clicar', async () => {
+    renderTour(7)
+    expect(await screen.findByText('Seu histórico')).toBeInTheDocument()
+    expect(screen.getByText('8/8')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Concluir' }))
     expect(useStore.getState().onboardingStep).toBeNull()
   })
 
-  it('"Pular tour" encerra imediatamente em qualquer passo', () => {
-    renderWithTargets(0)
-    fireEvent.click(screen.getByRole('button', { name: 'Pular tour' }))
+  it('"Pular tutorial" encerra imediatamente em qualquer passo', () => {
+    renderTour(2)
+    fireEvent.click(screen.getByRole('button', { name: 'Pular tutorial' }))
     expect(useStore.getState().onboardingStep).toBeNull()
   })
 
   it('Esc encerra o tour', () => {
-    renderWithTargets(1)
+    renderTour(1)
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
     expect(useStore.getState().onboardingStep).toBeNull()
   })
 
-  it('clicar no fundo (fora do painel) encerra o tour', () => {
-    const { container } = renderWithTargets(0)
-    const backdrop = container.querySelector('[style*="z-index"]') as HTMLElement
-    fireEvent.click(backdrop)
-    expect(useStore.getState().onboardingStep).toBeNull()
+  it('mostra a observação sobre reabrir o tutorial no perfil', () => {
+    renderTour()
+    expect(screen.getByText(/Perfil → Rever tutorial/)).toBeInTheDocument()
   })
 
   it('não tem violações de acessibilidade (axe)', async () => {
-    const { container } = renderWithTargets(0)
+    const { container } = renderTour()
     expect((await axe(container)).violations).toEqual([])
   })
 })

@@ -267,7 +267,7 @@ export function TableEditorPage() {
         {/* Right: table visual + scenario buffer */}
         <div className="flex-1 space-y-4">
           {/* Table */}
-          <div className="flex justify-center">
+          <div className="flex justify-center" data-tour="table-editor-table">
             <div className="w-full" style={{ maxWidth: 575 }}>
               <div
                 className="rounded-2xl border border-warm-800 px-10 pt-8 pb-16"

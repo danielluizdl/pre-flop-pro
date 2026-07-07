@@ -1,5 +1,57 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-06 (onboarding — tour elaborado de 8 passos, navega páginas reais)
+
+- Daniel pediu pra elaborar bem mais o tour: "mostrando tudo do site e como usar,
+  principalmente navegando por todas as páginas do site e mostrando como criar ou treinar
+  tudo", com a opção de pular sempre visível e um aviso de que dá pra reativar no perfil.
+  Isso substitui o tour simples anterior (3 passos parados no `TopNav`).
+- **`OnboardingTour` reescrito**: agora são **8 passos que navegam de verdade por 6
+  páginas** — Dashboard → Meus Ranges → Configurar Mesa (range-setup) → Editor (pintar a
+  grade) → Configurar Mesa/cenários (table-editor) → Drill → Range Check → Histórico. Cada
+  passo chama `setPage(...)` de verdade (e nos passos de criar range, `setupNewRange(8,
+  true, 0.5)`/`initTableConfig()` — os MESMOS actions que os botões reais "Continuar"/
+  "Avançar" chamam, então é navegação honesta, não uma encenação separada).
+- **Novos `data-tour="<chave>"`** espalhados pelas páginas reais (não mais só no `TopNav`):
+  `dashboard-hero` (Dashboard.tsx), `ranges-new` (SituationsPage.tsx), `setup-tablesize`
+  (RangeSetupPage.tsx), `editor-matrix` (RangeEditorPage.tsx), `table-editor-table`
+  (TableEditorPage.tsx), `drill-select` (TrainerPage.tsx), `exercise-select`
+  (ExercisePage.tsx), `stats-header` (StatsPage.tsx). Removidos os antigos `data-tour`
+  genéricos no `TopNav` (ficaram órfãos com a reescrita).
+- **Medição com polling + fallback**: como as páginas são lazy/Suspense, o elemento-alvo só
+  existe depois do chunk carregar — `getBoundingClientRect` é tentado a cada 100ms por até
+  2.5s; se não achar a tempo (ex.: alguém desconectado de rede lenta), cai num fallback sem
+  spotlight (painel centralizado) em vez de travar o tour pra sempre.
+- **Painel sempre interativo desde o primeiro frame**: na versão anterior o painel só
+  ficava visível/clicável depois de medir o alvo (opacity-0 + pointer-events:none
+  enquanto isso) — o que contradizia o pedido de "sempre aparecendo a opção de
+  desativar". Redesenhado pra o painel (com Pular/Próximo) aparecer imediatamente numa
+  posição neutra e só *animar* pra cima do alvo quando medido, garantindo Pular sempre
+  clicável desde o passo 1. Nota fixa no rodapé: "Você pode reabrir este tutorial quando
+  quiser em Perfil → Rever tutorial."
+- **Risco aceito de propósito, documentado no CLAUDE.md**: os passos de criar range
+  sobrescrevem `rangeData`/`selectedEditorPositions`/etc via `setupNewRange`. Se alguém
+  clicar "Rever tutorial" no meio de uma edição real não salva, esse progresso se perde —
+  mas isso é idêntico ao que já acontece se a pessoa navegasse manualmente pelo mesmo
+  fluxo (o app não tem nenhum aviso de "alterações não salvas"), não é risco novo.
+- **i18n**: chave `tour` reescrita inteira (20 chaves: 8 pares título/corpo + skip/next/
+  finish/replayNote) nos 3 idiomas — **529 chaves no total agora**.
+- **Verificação em browser real**: além dos testes RTL (que agora renderizam o `AppLayout`
+  inteiro, não só o componente isolado — como ele dirige navegação de verdade, precisa das
+  páginas reais montadas), rodei um script Playwright ad-hoc (mesmo padrão de
+  `scripts/verify*.cjs`) que logou como jogador, abriu o tour pelo menu de perfil e clicou
+  "Próximo" nos 8 passos, conferindo que cada título aparece e não há erro de console.
+  Passou limpo; script descartado depois (não é permanente, só validação pontual).
+- **1014 testes verdes (85 arquivos)** (era 1013): `OnboardingTour.test.tsx` reescrito (8
+  testes cobrindo navegação real, contador de passos, "Concluir" no último passo, pular,
+  Esc, nota de reabrir, axe). tsc limpo, build verde, smoke verde.
+
+### Pendente (Daniel)
+- [ ] Revisar/mergear a PR desta reescrita do tour.
+- [ ] Do backlog de produto (não pedido ainda): filtro Tier/Turma no painel do coach.
+
+---
+
 ## 2026-07-06 (onboarding — tour guiado no primeiro acesso, 3 idiomas)
 
 - Da parte "Oportunidades de produto" do relatório de revisão sênior, Daniel escolheu só

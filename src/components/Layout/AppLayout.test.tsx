@@ -72,7 +72,7 @@ describe('AppLayout', () => {
       currentUser: { id: 1, username: 'novo', name: 'Novo', email: '', role: 'player', firstLogin: true },
     })
     renderLayout()
-    expect(screen.getByText('Aqui é o Drill')).toBeInTheDocument()
+    expect(screen.getByText('Bem-vindo ao Pre-Flop Pro!')).toBeInTheDocument()
     expect(screen.queryByText('Defina sua senha')).not.toBeInTheDocument()
   })
 

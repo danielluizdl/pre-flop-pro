@@ -480,7 +480,7 @@ export function StatsPage() {
   return (
     <div className="space-y-4 max-w-2xl">
       {/* Cabeçalho */}
-      <div>
+      <div data-tour="stats-header">
         <h1 className="font-display uppercase text-warm-100 text-[28px] leading-none tracking-wide">{t.stats.title}</h1>
         <p className="text-xs text-warm-400">{t.stats.sessionsCount(sessions.length)}</p>
       </div>
