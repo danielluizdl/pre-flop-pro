@@ -540,7 +540,7 @@ function DrillRangeSelect() {
     return (
       <>
       <div className="space-y-4 max-w-2xl mx-auto">
-        <div>
+        <div data-tour="drill-select">
           <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">{t.drill.title}</h2>
           <p className="text-warm-400 text-sm">{t.drill.selectIntro}</p>
         </div>

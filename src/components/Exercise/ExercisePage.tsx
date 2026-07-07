@@ -54,7 +54,7 @@ function BuildRangeSelect() {
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
-      <div>
+      <div data-tour="exercise-select">
         <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">{t.exercise.title}</h2>
         <p className="text-warm-400 text-sm">{t.exercise.selectIntro}</p>
       </div>

@@ -40,7 +40,7 @@ export function RangeSetupPage() {
       </div>
 
       {/* Q1: Table size */}
-      <div className="bg-warm-800 border border-warm-700 rounded-xl p-5 space-y-3">
+      <div data-tour="setup-tablesize" className="bg-warm-800 border border-warm-700 rounded-xl p-5 space-y-3">
         <p className="font-semibold text-warm-100 text-sm">{t.rangeSetup.howManyPlayers}</p>
         <div className="flex gap-3">
           <OptionButton selected={tableSize === 6} onClick={() => { setTableSize(6); setHasStraddle(false) }}>

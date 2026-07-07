@@ -309,7 +309,7 @@ export function RangeEditorPage() {
           </div>
 
           {/* Matrix */}
-          <div>
+          <div data-tour="editor-matrix">
             <label className="block text-xs font-semibold text-warm-400 mb-1.5 uppercase tracking-wider">
               {t.editor.handGrid}
             </label>

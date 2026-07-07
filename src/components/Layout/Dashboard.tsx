@@ -65,7 +65,7 @@ export function Dashboard() {
           <p className="text-warm-300 text-base mb-6 max-w-md leading-relaxed">
             {t.dashboard.subtitle}
           </p>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap" data-tour="dashboard-hero">
             <button
               onClick={() => setPage('drill')}
               className="btn-commit"
