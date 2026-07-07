@@ -47,6 +47,20 @@ describe('OnboardingTour', () => {
     expect(useStore.getState().onboardingStep).toBeNull()
   })
 
+  it('não mostra "Voltar" no primeiro passo', () => {
+    renderTour(0)
+    expect(screen.queryByRole('button', { name: 'Voltar' })).not.toBeInTheDocument()
+  })
+
+  it('"Voltar" retorna ao passo anterior e roda o run() dele de novo', async () => {
+    renderTour(1)
+    expect(await screen.findByRole('heading', { name: 'Meus Ranges' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Voltar' }))
+    expect(useStore.getState().onboardingStep).toBe(0)
+    expect(useStore.getState().page).toBe('dashboard')
+    expect(screen.getByText('1/8')).toBeInTheDocument()
+  })
+
   it('"Pular tutorial" encerra imediatamente em qualquer passo', () => {
     renderTour(2)
     fireEvent.click(screen.getByRole('button', { name: 'Pular tutorial' }))

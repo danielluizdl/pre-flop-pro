@@ -599,6 +599,7 @@ export const en: Messages = {
     historyTitle: 'Your history',
     historyBody: 'All your training sessions are saved here, with your progress over time.',
     skip: 'Skip tutorial',
+    back: 'Back',
     next: 'Next',
     finish: 'Finish',
     replayNote: 'You can reopen this tutorial anytime in Profile → Replay tutorial.',

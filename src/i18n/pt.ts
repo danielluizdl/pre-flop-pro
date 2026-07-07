@@ -597,6 +597,7 @@ export const pt = {
     historyTitle: 'Seu histórico',
     historyBody: 'Todas as suas sessões de treino ficam salvas aqui, com sua evolução ao longo do tempo.',
     skip: 'Pular tutorial',
+    back: 'Voltar',
     next: 'Próximo',
     finish: 'Concluir',
     replayNote: 'Você pode reabrir este tutorial quando quiser em Perfil → Rever tutorial.',

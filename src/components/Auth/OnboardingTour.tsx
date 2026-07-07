@@ -78,6 +78,9 @@ export function OnboardingTour() {
     if (stepIndex + 1 >= total) finish()
     else useStore.setState({ onboardingStep: stepIndex + 1 })
   }
+  function back() {
+    if (stepIndex > 0) useStore.setState({ onboardingStep: stepIndex - 1 })
+  }
 
   const dialogRef = useModalA11y<HTMLDivElement>(true, finish)
 
@@ -132,6 +135,14 @@ export function OnboardingTour() {
           </button>
           <div className="flex items-center gap-3">
             <span className="text-[0.65rem] text-warm-500 tabular-nums">{stepIndex + 1}/{total}</span>
+            {stepIndex > 0 && (
+              <button
+                onClick={back}
+                className="px-3 py-1.5 rounded-lg bg-warm-800 hover:bg-warm-700 text-warm-100 text-xs font-semibold transition-colors whitespace-nowrap"
+              >
+                {t.tour.back}
+              </button>
+            )}
             <button
               onClick={next}
               className="px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold transition-colors whitespace-nowrap"
