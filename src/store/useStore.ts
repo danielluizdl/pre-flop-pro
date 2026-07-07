@@ -276,7 +276,7 @@ interface AppState {
   startDrillSession: () => void
   nextDrillHand: () => boolean
   checkDrillAnswer: (action: string) => { correct: boolean; message: string; severity?: 'grave' | 'impreciso' }
-  stopDrill: () => void
+  stopDrill: (awayMs?: number) => void
   incrementConsults: () => void
 
   // ── Montar Range (exercício) ─────────────────────────────────────────────────
@@ -1219,7 +1219,7 @@ export const useStore = create<AppState>()(
         return { correct, message, severity }
       },
 
-      stopDrill: () => {
+      stopDrill: (awayMs = 0) => {
         const { sessionStats, selectedDrillRangeIds, ranges, currentTableSize, sessionStartTime, trainingHistory, sessionHandPerf } = get()
         let newHistory = trainingHistory
         if (sessionStats.hands > 0) {
@@ -1236,7 +1236,7 @@ export const useStore = create<AppState>()(
             correct: sessionStats.correct,
             errors: sessionStats.errors,
             consults: sessionStats.consults,
-            durationSeconds: sessionStartTime > 0 ? Math.round((Date.now() - sessionStartTime) / 1000) : 0,
+            durationSeconds: sessionStartTime > 0 ? Math.max(0, Math.round((Date.now() - sessionStartTime) / 1000) - Math.round(awayMs / 1000)) : 0,
             handPerf,
           }
           newHistory = upsertSession(trainingHistory, session)

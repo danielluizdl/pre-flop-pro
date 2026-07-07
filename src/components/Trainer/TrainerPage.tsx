@@ -9,6 +9,8 @@ import { Eye } from 'lucide-react'
 import { RANKS, SUIT_ICONS } from '../../types'
 import { ALL_HANDS, getRngBands, formatRngBands } from '../../utils/hands'
 import { useModalA11y } from '../../utils/useModalA11y'
+import { useAwayGuard } from '../../utils/useAwayGuard'
+import { AwayResumeModal } from '../ui/AwayResumeModal'
 import { t, dateLocale } from '../../i18n'
 import type { CSSProperties } from 'react'
 import type { HandData, HandHistoryEntry, Range, TrainingSession } from '../../types'
@@ -1030,6 +1032,11 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
   const incrementConsults      = useStore(s => s.incrementConsults)
   const logConsult             = useStore(s => s.logConsult)
   const stats                  = useStore(s => s.sessionStats)
+  const setPage                = useStore(s => s.setPage)
+
+  const { prompting: awayPrompting, remainingMs: awayRemainingMs, dismiss: dismissAway, getAwayMs } = useAwayGuard({
+    onExpire: () => { stopDrill(getAwayMs()); setPage('dashboard') },
+  })
 
   const heroStack = Object.values(currentScenario).find(p => p.isHero)?.stack ?? 100
 
@@ -1350,7 +1357,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                 </div>
                 <div className="pt-1 border-t border-warm-700 space-y-1.5">
                   <button
-                    onClick={stopDrill}
+                    onClick={() => stopDrill(getAwayMs())}
                     className="w-full py-1.5 text-xs border border-warm-700 bg-warm-900 text-warm-500 rounded-lg hover:bg-warm-700 hover:text-warm-200 font-semibold transition-colors"
                   >
                     {t.drill.finishTraining}
@@ -1390,6 +1397,10 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
           </div>
         )
       })()}
+
+      {awayPrompting && (
+        <AwayResumeModal remainingMs={awayRemainingMs} onContinue={dismissAway} />
+      )}
     </div>
   )
 }

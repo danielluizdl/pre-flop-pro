@@ -51,6 +51,38 @@ describe('TrainerPage', () => {
     expect(screen.getByRole('button', { name: /FOLD/ })).toBeInTheDocument()
   })
 
+  it('ausência prolongada mostra o modal e, sem resposta, encerra o treino salvando o progresso', () => {
+    vi.useFakeTimers()
+    const setPage = vi.fn()
+    useStore.setState({
+      ranges: [RANGE],
+      activeDrillRange: RANGE,
+      activeDrillStackRange: '',
+      activeDrillStackGridIdx: 0,
+      activeHand: 'AA',
+      currentHandSuits: ['s', 'h'],
+      currentScenario: {},
+      currentRng: 50,
+      currentHeroRaiseSize: 0,
+      sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 },
+      setPage,
+    })
+    render(<TrainerPage />)
+
+    Object.defineProperty(document, 'hidden', { value: true, configurable: true })
+    fireEvent(document, new Event('visibilitychange'))
+    act(() => { vi.advanceTimersByTime(130_000) })
+    Object.defineProperty(document, 'hidden', { value: false, configurable: true })
+    fireEvent(document, new Event('visibilitychange'))
+    expect(screen.getByText('Ainda está aí?')).toBeInTheDocument()
+
+    act(() => { vi.advanceTimersByTime(310_000) })
+    expect(setPage).toHaveBeenCalledWith('dashboard')
+    expect(useStore.getState().activeDrillRange).toBeNull()
+
+    vi.useRealTimers()
+  })
+
   it('responder a ação errada mostra feedback de Blunder', () => {
     const g = makeEmptyGrid()
     g['KK'] = { fold: 0, call: 0, raise: 100, allin: 0 }

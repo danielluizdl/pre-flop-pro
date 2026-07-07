@@ -111,6 +111,23 @@ describe('stopDrill', () => {
     expect(s.page).toBe('drill')
   })
 
+  it('com awayMs, subtrai o tempo ausente da duração persistida', () => {
+    useStore.setState({
+      ranges: [rangeWith(makeEmptyGrid())],
+      selectedDrillRangeIds: [1],
+      currentTableSize: 6,
+      trainingHistory: [],
+      sessionStartTime: Date.now() - 60_000,
+      sessionHandPerf: {},
+      sessionStats: { hands: 3, correct: 2, errors: 1, consults: 0 },
+      activeDrillRange: rangeWith(makeEmptyGrid()),
+    })
+    useStore.getState().stopDrill(45_000)
+    const s = useStore.getState()
+    expect(s.trainingHistory[0].durationSeconds).toBeLessThanOrEqual(16)
+    expect(s.trainingHistory[0].durationSeconds).toBeGreaterThanOrEqual(14)
+  })
+
   it('sem mãos, não grava sessão mas limpa o drill ativo', () => {
     useStore.setState({
       trainingHistory: [],

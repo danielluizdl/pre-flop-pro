@@ -8,6 +8,8 @@ import { ComboCounter } from '../ui/ComboCounter'
 import { HandQuickSelect } from '../ui/HandQuickSelect'
 import { RANKS } from '../../utils/hands'
 import { rangeComboStats, TOTAL_COMBOS } from '../../utils/rangeCombos'
+import { useAwayGuard } from '../../utils/useAwayGuard'
+import { AwayResumeModal } from '../ui/AwayResumeModal'
 import { t } from '../../i18n'
 import type { HandData } from '../../types'
 
@@ -342,9 +344,14 @@ function BuildRound() {
   const retryRound    = useStore(s => s.retryBuildRound)
   const nextRound     = useStore(s => s.nextBuildRound)
   const stopBuild     = useStore(s => s.stopBuildSession)
+  const setPage       = useStore(s => s.setPage)
   const buildResults  = useStore(s => s.buildResults)
   const userGrid      = useStore(s => s.rangeData.grid)
   const brush         = useStore(s => s.brush)
+
+  const { prompting: awayPrompting, remainingMs: awayRemainingMs, dismiss: dismissAway } = useAwayGuard({
+    onExpire: () => { stopBuild(); setPage('dashboard') },
+  })
 
   const round = rounds[roundIdx]
   if (!round) return null
@@ -437,6 +444,10 @@ function BuildRound() {
             </button>
           </div>
         </>
+      )}
+
+      {awayPrompting && (
+        <AwayResumeModal remainingMs={awayRemainingMs} onContinue={dismissAway} />
       )}
     </div>
   )

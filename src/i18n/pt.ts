@@ -602,6 +602,11 @@ export const pt = {
     finish: 'Concluir',
     replayNote: 'Você pode reabrir este tutorial quando quiser em Perfil → Rever tutorial.',
   },
+  awayGuard: {
+    title: 'Ainda está aí?',
+    body: 'Detectamos que você ficou ausente. Se não responder a tempo, o treino será encerrado automaticamente e seu progresso será salvo.',
+    continueBtn: 'Continuar treinando',
+  },
   changePassword: {
     title: 'Defina sua senha',
     subtitle: 'Este é seu primeiro acesso. Escolha uma nova senha para continuar.',

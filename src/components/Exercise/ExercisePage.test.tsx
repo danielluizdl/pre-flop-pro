@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { axe } from 'jest-axe'
 
 vi.mock('../../utils/sentry', () => ({
@@ -206,6 +206,26 @@ describe('ExercisePage — round ativo', () => {
     fireEvent.click(screen.getByText('Encerrar exercício'))
     expect(screen.getByText(/Selecione os ranges que você quer reproduzir/)).toBeInTheDocument()
     expect(useStore.getState().buildHistory).toHaveLength(0)
+  })
+
+  it('ausência prolongada mostra o modal e, sem resposta, encerra a sessão e volta ao dashboard', () => {
+    vi.useFakeTimers()
+    const setPage = vi.fn()
+    useStore.setState({ setPage })
+    render(<ExercisePage />)
+
+    Object.defineProperty(document, 'hidden', { value: true, configurable: true })
+    fireEvent(document, new Event('visibilitychange'))
+    act(() => { vi.advanceTimersByTime(130_000) })
+    Object.defineProperty(document, 'hidden', { value: false, configurable: true })
+    fireEvent(document, new Event('visibilitychange'))
+    expect(screen.getByText('Ainda está aí?')).toBeInTheDocument()
+
+    act(() => { vi.advanceTimersByTime(310_000) })
+    expect(setPage).toHaveBeenCalledWith('dashboard')
+    expect(useStore.getState().buildRounds).toHaveLength(0)
+
+    vi.useRealTimers()
   })
 
   it('não tem violações de acessibilidade (axe)', async () => {

@@ -604,6 +604,11 @@ export const es: Messages = {
     finish: 'Finalizar',
     replayNote: 'Puedes volver a abrir este tutorial cuando quieras en Perfil → Repetir tutorial.',
   },
+  awayGuard: {
+    title: '¿Sigues ahí?',
+    body: 'Detectamos que estuviste ausente. Si no respondes a tiempo, el entrenamiento se cerrará automáticamente y tu progreso se guardará.',
+    continueBtn: 'Seguir entrenando',
+  },
   changePassword: {
     title: 'Define tu contraseña',
     subtitle: 'Este es tu primer acceso. Elige una nueva contraseña para continuar.',

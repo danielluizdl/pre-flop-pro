@@ -604,6 +604,11 @@ export const en: Messages = {
     finish: 'Finish',
     replayNote: 'You can reopen this tutorial anytime in Profile → Replay tutorial.',
   },
+  awayGuard: {
+    title: 'Still there?',
+    body: 'We noticed you were away. If you don’t respond in time, the session will end automatically and your progress will be saved.',
+    continueBtn: 'Keep training',
+  },
   changePassword: {
     title: 'Set your password',
     subtitle: 'This is your first login. Choose a new password to continue.',
