@@ -1,5 +1,51 @@
 # Handoff — Agente Diário (Pre-Flop Pro)
 
+## 2026-07-07 (drill — tela de configurações antes do filtro de mãos + simplifica RNG/aceitar freq.)
+
+- Daniel pediu (via conversa "explique antes de implementar", duas idas e vindas): uma tela
+  **antes do filtro de mãos** explicando a diferença entre RNG Sim/Não e "Focar erros",
+  deixando escolher ali. Depois de eu explicar, ele decidiu **simplificar o modelo**:
+  - **RNG Sim**: mantém como já era — sorteia 1-100, respeita as faixas de frequência por
+    agressividade (Allin > Raise > Call > extra > Fold).
+  - **RNG Não**: a ação de maior frequência é a "certa", mas **qualquer ação com frequência
+    > 0 no range também conta como acerto** (feedback avisa que não era a principal). Só é
+    erro (blunder) responder uma ação com **0% de frequência** na mão. Isso **remove o
+    toggle `acceptAnyFreq`** — antes era opcional (ligar/desligar "aceitar freq. > 0"),
+    agora é o único comportamento do modo RNG=Não, sem chave pra voltar ao modo estrito.
+  - **Focar erros**: comportamento intacto, mas fica **desligado por padrão** com uma nota
+    fixa recomendando só ligar depois de já ter algumas sessões de treino registradas.
+- **Novo `DrillSettingsStep`** (`TrainerPage.tsx`): novo passo no fluxo do Drill —
+  `DrillRangeSelect (CONTINUAR) → DrillSettingsStep (Continuar) → HandFilterGrid (INICIAR
+  TREINO) → DrillActive`; "Voltar" desce um passo de cada vez. Os controles de RNG/Focar
+  erros **saíram do `HandFilterGrid`** (que ficou só com quick-select + Tudo/Nada + grid) e
+  foram pra essa tela nova, cada um com card próprio: explicação em texto + **exemplo
+  calculado ao vivo** via `formatRngBands(getRngBands({fold:30,call:0,raise:50,allin:20}))`
+  pro RNG (garante que o exemplo nunca fica desatualizado em relação ao algoritmo real).
+- **Store**: removido `acceptAnyFreq`/`setAcceptAnyFreq` (campo + action). `checkDrillAnswer`
+  simplificado: `validNotPrincipal = !isPrincipal && !useRngForFrequency && freqOf(action) >
+  0` (tirou o `&& acceptAnyFreq`). Efeito colateral correto: `severity: 'impreciso'` só pode
+  mais acontecer no modo **RNG=Sim** (quase acertou o sorteio); no modo RNG=Não, esse caso
+  agora conta como acerto válido, não como erro.
+- **i18n**: removidas `drill.acceptFreq`/`acceptFreqTitle`/`rngLabel` (mortas), adicionadas
+  `drill.settingsTitle`/`settingsIntro`/`rngSectionTitle`/`rngSimBody`/`rngExampleLabel`/
+  `rngNaoBody`/`focusErrorsNote` nos 3 idiomas — **533 chaves no total agora**.
+- **Refactor grande de testes**: `acceptAnyFreq` aparecia em 7 arquivos de teste (a maioria
+  só como filler de estado default — removido mecanicamente). Os que testavam o
+  comportamento em si foram reescritos pra refletir a nova semântica (`store.test.ts`,
+  `drillSession.test.ts`, `drillFeatures.test.ts`, `scenarioBetBranches.test.ts`,
+  `TrainerPage.test.tsx` — este último também precisou de um clique extra em "CONTINUAR"
+  em todo teste que atravessa o fluxo até o filtro de mãos, já que agora tem 3 passos em
+  vez de 2). **`smoke/smoke.mjs` também precisou do clique extra** (mesmo motivo) — só foi
+  pego rodando o smoke de verdade, tsc+testes+build não acusaram nada.
+- **1015 testes verdes (85 arquivos)** (era 1014): tsc limpo, build verde, smoke verde.
+
+### Pendente (Daniel)
+- [ ] Revisar/mergear a PR desta mudança (branch ainda não aberta no momento de escrever
+      este handoff).
+- [ ] Do backlog de produto (não pedido ainda): filtro Tier/Turma no painel do coach.
+
+---
+
 ## 2026-07-06 (onboarding — tour elaborado de 8 passos, navega páginas reais)
 
 - Daniel pediu pra elaborar bem mais o tour: "mostrando tudo do site e como usar,

@@ -263,8 +263,6 @@ interface AppState {
 
   useRngForFrequency: boolean
   setUseRng: (val: boolean) => void
-  acceptAnyFreq: boolean
-  setAcceptAnyFreq: (val: boolean) => void
   focusErrors: boolean
   setFocusErrors: (val: boolean) => void
   sessionHandPerf: HandPerfMap
@@ -878,8 +876,6 @@ export const useStore = create<AppState>()(
       // ── Drill ─────────────────────────────────────────────────────────────────
       useRngForFrequency: false,
       setUseRng: (val) => set({ useRngForFrequency: val }),
-      acceptAnyFreq: false,
-      setAcceptAnyFreq: (val) => set({ acceptAnyFreq: val }),
       focusErrors: false,
       setFocusErrors: (val) => set({ focusErrors: val }),
       sessionHandPerf: {},
@@ -1078,7 +1074,7 @@ export const useStore = create<AppState>()(
       checkDrillAnswer: (action) => {
         const {
           activeDrillRange, activeDrillStackGridIdx, activeHand, sessionStats,
-          currentRng, currentHandSuits, handHistory, useRngForFrequency, acceptAnyFreq,
+          currentRng, currentHandSuits, handHistory, useRngForFrequency,
         } = get()
         if (!activeDrillRange) return { correct: false, message: '' }
 
@@ -1111,8 +1107,10 @@ export const useStore = create<AppState>()(
         }
 
         const isPrincipal = correctActions.includes(action)
-        // Modo menos binário (RNG off): qualquer ação com frequência > 0 é aceita.
-        const validNotPrincipal = !isPrincipal && !useRngForFrequency && acceptAnyFreq && freqOf(action) > 0
+        // Com RNG desligado, qualquer ação com frequência > 0 no range é aceita como
+        // acerto (só avisa que não é a principal) — só erra (blunder) quem responde uma
+        // ação com 0% de frequência na mão.
+        const validNotPrincipal = !isPrincipal && !useRngForFrequency && freqOf(action) > 0
         const correct = isPrincipal || validNotPrincipal
 
         // Severidade do erro: 'grave' = ação respondida tem 0% na mão; 'impreciso' = freq > 0 mas não é a principal.

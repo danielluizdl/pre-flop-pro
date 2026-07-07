@@ -11,7 +11,7 @@ import { ALL_HANDS, getRngBands, formatRngBands } from '../../utils/hands'
 import { useModalA11y } from '../../utils/useModalA11y'
 import { t, dateLocale } from '../../i18n'
 import type { CSSProperties } from 'react'
-import type { HandHistoryEntry, Range, TrainingSession } from '../../types'
+import type { HandData, HandHistoryEntry, Range, TrainingSession } from '../../types'
 
 /* ── Label helpers (compartilhados entre mão atual e replay do histórico) ─── */
 function gridForRange(range: Range, stackGridIdx: number): Record<string, import('../../types').HandData> {
@@ -334,12 +334,6 @@ function HistoryModal({ onClose }: { onClose: () => void }) {
 function HandFilterGrid() {
   const excluded = useStore(s => s.drillExcludedHands)
   const setExcluded = useStore(s => s.setDrillExcluded)
-  const useRng = useStore(s => s.useRngForFrequency)
-  const setUseRng = useStore(s => s.setUseRng)
-  const acceptAnyFreq = useStore(s => s.acceptAnyFreq)
-  const setAcceptAnyFreq = useStore(s => s.setAcceptAnyFreq)
-  const focusErrors = useStore(s => s.focusErrors)
-  const setFocusErrors = useStore(s => s.setFocusErrors)
   const isDrawing    = useRef(false)
   const drawAction   = useRef<'exclude' | 'include'>('exclude')
   const paintedHands = useRef<Set<string>>(new Set())
@@ -374,53 +368,6 @@ function HandFilterGrid() {
           className="px-2.5 py-1 text-xs border border-warm-600 bg-warm-800 rounded-md hover:bg-warm-700 text-warm-300 transition-colors"
         >
           {t.drill.none}
-        </button>
-
-        <div className="h-4 border-l border-warm-600 mx-0.5" />
-
-        {/* RNG */}
-        <span className="text-xs text-warm-500">{t.drill.rngLabel}</span>
-        <button
-          onClick={() => setUseRng(true)}
-          className={['px-2.5 py-1 text-xs rounded-md border font-semibold transition-colors',
-            useRng ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:bg-warm-700',
-          ].join(' ')}
-        >
-          {t.drill.yes}
-        </button>
-        <button
-          onClick={() => setUseRng(false)}
-          className={['px-2.5 py-1 text-xs rounded-md border font-semibold transition-colors',
-            !useRng ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:bg-warm-700',
-          ].join(' ')}
-        >
-          {t.drill.no}
-        </button>
-
-        {!useRng && (
-          <>
-            <div className="h-4 border-l border-warm-600 mx-0.5" />
-            <button
-              onClick={() => setAcceptAnyFreq(!acceptAnyFreq)}
-              title={t.drill.acceptFreqTitle}
-              className={['px-2.5 py-1 text-xs rounded-md border font-semibold transition-colors',
-                acceptAnyFreq ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:bg-warm-700',
-              ].join(' ')}
-            >
-              {t.drill.acceptFreq}
-            </button>
-          </>
-        )}
-
-        <div className="h-4 border-l border-warm-600 mx-0.5" />
-        <button
-          onClick={() => setFocusErrors(!focusErrors)}
-          title={t.drill.focusErrorsTitle}
-          className={['px-2.5 py-1 text-xs rounded-md border font-semibold transition-colors',
-            focusErrors ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:bg-warm-700',
-          ].join(' ')}
-        >
-          {t.drill.focusErrors}
         </button>
       </div>
 
@@ -491,6 +438,71 @@ function HandFilterGrid() {
 }
 
 
+const EXAMPLE_HAND_DATA: HandData = { fold: 30, call: 0, raise: 50, allin: 20 }
+
+/* ── Configurações de treino (RNG / Focar erros) ─────────────────────────────── */
+function DrillSettingsStep({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
+  const useRng = useStore(s => s.useRngForFrequency)
+  const setUseRng = useStore(s => s.setUseRng)
+  const focusErrors = useStore(s => s.focusErrors)
+  const setFocusErrors = useStore(s => s.setFocusErrors)
+
+  const exampleBands = formatRngBands(getRngBands(EXAMPLE_HAND_DATA))
+
+  const optionCls = (active: boolean) =>
+    ['px-3 py-1.5 text-xs rounded-md border font-semibold transition-colors',
+      active ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:bg-warm-700',
+    ].join(' ')
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-5">
+      <div className="text-center">
+        <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">{t.drill.settingsTitle}</h2>
+        <p className="text-warm-400 text-sm">{t.drill.settingsIntro}</p>
+      </div>
+
+      <div className="border border-warm-700 rounded-xl bg-warm-800/60 p-4 space-y-3">
+        <h3 className="font-bold text-sm text-warm-100">{t.drill.rngSectionTitle}</h3>
+        <div className="flex gap-2">
+          <button onClick={() => setUseRng(true)} className={optionCls(useRng)}>{t.drill.yes}</button>
+          <button onClick={() => setUseRng(false)} className={optionCls(!useRng)}>{t.drill.no}</button>
+        </div>
+        {useRng ? (
+          <div className="text-xs text-warm-300 space-y-1.5">
+            <p>{t.drill.rngSimBody}</p>
+            <p className="text-warm-400"><span className="font-semibold text-warm-200">{t.drill.rngExampleLabel}</span> {exampleBands}</p>
+          </div>
+        ) : (
+          <p className="text-xs text-warm-300">{t.drill.rngNaoBody}</p>
+        )}
+      </div>
+
+      <div className="border border-warm-700 rounded-xl bg-warm-800/60 p-4 space-y-3">
+        <button
+          onClick={() => setFocusErrors(!focusErrors)}
+          className={`font-bold text-sm px-3 py-1.5 rounded-md border transition-colors ${
+            focusErrors ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-100 hover:bg-warm-700'
+          }`}
+        >
+          {t.drill.focusErrors}
+        </button>
+        <p className="text-xs text-warm-300">{t.drill.focusErrorsTitle}</p>
+        <p className="text-xs text-amber-400/90">{t.drill.focusErrorsNote}</p>
+      </div>
+
+      <div className="flex gap-3 justify-center">
+        <button onClick={onNext} className="btn-commit">{t.drill.continue}</button>
+        <button
+          onClick={onBack}
+          className="px-4 py-2 border border-warm-600 bg-warm-800 text-warm-300 rounded-lg text-sm font-semibold hover:bg-warm-700"
+        >
+          {t.drill.back}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'UTG']
 
 /* ── Range select screen ────────────────────────────────────────────────────── */
@@ -502,7 +514,7 @@ function DrillRangeSelect() {
   const nextDrillHand      = useStore(s => s.nextDrillHand)
   const setPage            = useStore(s => s.setPage)
 
-  const [step, setStep]             = useState<'select' | 'filter'>('select')
+  const [step, setStep]             = useState<'select' | 'settings' | 'filter'>('select')
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
   const [previewId, setPreviewId]   = useState<number | null>(null)
   const [notice, setNotice]         = useState('')
@@ -674,7 +686,7 @@ function DrillRangeSelect() {
                 onClick={() => {
                   if (selectedIds.length === 0) { setNotice(t.drill.selectAtLeastOne); return }
                   setNotice('')
-                  setStep('filter')
+                  setStep('settings')
                 }}
                 className="btn-commit"
               >
@@ -689,6 +701,15 @@ function DrillRangeSelect() {
         return r ? <RangePreviewModal range={r} onClose={() => setPreviewId(null)} /> : null
       })()}
       </>
+    )
+  }
+
+  if (step === 'settings') {
+    return (
+      <DrillSettingsStep
+        onNext={() => setStep('filter')}
+        onBack={() => setStep('select')}
+      />
     )
   }
 
@@ -708,7 +729,7 @@ function DrillRangeSelect() {
           {t.drill.startTraining}
         </button>
         <button
-          onClick={() => setStep('select')}
+          onClick={() => setStep('settings')}
           className="px-4 py-2 border border-warm-600 bg-warm-800 text-warm-300 rounded-lg text-sm font-semibold hover:bg-warm-700"
         >
           {t.drill.back}

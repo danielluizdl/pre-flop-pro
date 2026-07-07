@@ -36,7 +36,6 @@ describe('amostragem ponderada "Focar erros" (D1)', () => {
       focusErrors: focus,
       handPerformance: { 1: { AA: { c: 0, t: 10 }, KK: { c: 10, t: 10 } } },
       useRngForFrequency: false,
-      acceptAnyFreq: false,
     })
     const counts = { AA: 0, KK: 0 }
     for (let i = 0; i < 2000; i++) {
@@ -73,7 +72,6 @@ describe('severidade do erro (D2)', () => {
       currentRng: 50,
       currentHandSuits: ['h', 's'],
       useRngForFrequency: false,
-      acceptAnyFreq: false,
       handHistory: [],
       sessionHandPerf: {},
       handPerformance: {},
@@ -89,13 +87,13 @@ describe('severidade do erro (D2)', () => {
     expect(r.severity).toBeUndefined()
   })
 
-  it('ação com freq > 0 mas não principal é impreciso', () => {
+  it('ação com freq > 0 mas não principal é válida (avisa que não é a principal)', () => {
     useStore.setState({ activeHand: 'AA' })
     const r = useStore.getState().checkDrillAnswer('Call')
-    expect(r.correct).toBe(false)
-    expect(r.severity).toBe('impreciso')
-    expect(r.message).toContain('Impreciso')
-    expect(r.message).toContain('25%')
+    expect(r.correct).toBe(true)
+    expect(r.severity).toBeUndefined()
+    expect(r.message).toContain('Válido')
+    expect(r.message).toContain('Raise 75%')
   })
 
   it('ação com 0% é erro grave', () => {
@@ -107,14 +105,14 @@ describe('severidade do erro (D2)', () => {
     expect(r.message).toContain('0%')
   })
 
-  it('acumula contagem em sessionSeverity', () => {
+  it('acumula contagem de graves em sessionSeverity', () => {
     useStore.setState({ activeHand: 'KK' })
     useStore.getState().checkDrillAnswer('Call')
-    useStore.setState({ activeHand: 'AA' })
-    useStore.getState().checkDrillAnswer('Call')
+    useStore.setState({ activeHand: 'KK' })
+    useStore.getState().checkDrillAnswer('Allin')
     const sev = useStore.getState().sessionSeverity
-    expect(sev.grave).toBe(1)
-    expect(sev.impreciso).toBe(1)
+    expect(sev.grave).toBe(2)
+    expect(sev.impreciso).toBe(0)
   })
 })
 
@@ -139,7 +137,6 @@ describe('nextDrillHand — prereq', () => {
       focusErrors: false,
       handPerformance: {},
       useRngForFrequency: false,
-      acceptAnyFreq: false,
     })
 
     const result = useStore.getState().nextDrillHand()
@@ -163,7 +160,6 @@ describe('nextDrillHand — prereq', () => {
       focusErrors: false,
       handPerformance: {},
       useRngForFrequency: false,
-      acceptAnyFreq: false,
     })
 
     const result = useStore.getState().nextDrillHand()
@@ -201,7 +197,6 @@ describe('nextDrillHand — multi-stack', () => {
       focusErrors: false,
       handPerformance: {},
       useRngForFrequency: false,
-      acceptAnyFreq: false,
     })
 
     const result = useStore.getState().nextDrillHand()
@@ -226,7 +221,6 @@ describe('checkDrillAnswer — RNG ligado', () => {
       currentRng: 10, // cai no raise (1-20)
       currentHandSuits: ['h', 's'],
       useRngForFrequency: true,
-      acceptAnyFreq: false,
       handHistory: [],
       sessionHandPerf: {},
       handPerformance: {},
@@ -251,7 +245,6 @@ describe('checkDrillAnswer — RNG ligado', () => {
       currentRng: 50,
       currentHandSuits: ['h', 's'],
       useRngForFrequency: true,
-      acceptAnyFreq: false,
       handHistory: [],
       sessionHandPerf: {},
       handPerformance: {},

@@ -58,7 +58,7 @@ describe('TrainerPage', () => {
     useStore.setState({
       ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
       activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
-      useRngForFrequency: false, acceptAnyFreq: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      useRngForFrequency: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
       sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
     })
     render(<TrainerPage />)
@@ -73,7 +73,7 @@ describe('TrainerPage', () => {
     useStore.setState({
       ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
       activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 2.5, currentScenario: {},
-      useRngForFrequency: false, acceptAnyFreq: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      useRngForFrequency: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
       sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
     })
     render(<TrainerPage />)
@@ -88,7 +88,7 @@ describe('TrainerPage', () => {
     useStore.setState({
       ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
       activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
-      useRngForFrequency: false, acceptAnyFreq: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      useRngForFrequency: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
       sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
     })
     render(<TrainerPage />)
@@ -121,7 +121,7 @@ describe('TrainerPage', () => {
     useStore.setState({
       ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
       activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 2.5, currentScenario: {},
-      useRngForFrequency: false, acceptAnyFreq: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      useRngForFrequency: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
       sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
     })
     render(<TrainerPage />)
@@ -136,7 +136,7 @@ describe('TrainerPage', () => {
     useStore.setState({
       ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
       activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 2.5, currentScenario: {},
-      useRngForFrequency: true, acceptAnyFreq: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      useRngForFrequency: true, handHistory: [], sessionHandPerf: {}, handPerformance: {},
       sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
     })
     render(<TrainerPage />)
@@ -144,14 +144,14 @@ describe('TrainerPage', () => {
     expect(screen.getByText(/Raise!/)).toBeInTheDocument()
   })
 
-  it('acceptAnyFreq: responder ação secundária com frequência > 0 é "Válido"', () => {
+  it('RNG desligado: responder ação secundária com frequência > 0 é "Válido"', () => {
     const g = makeEmptyGrid()
     g['KK'] = { fold: 0, call: 40, raise: 60, allin: 0 }
     const range: Range = { ...RANGE, grid: g }
     useStore.setState({
       ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
       activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 2.5, currentScenario: {},
-      useRngForFrequency: false, acceptAnyFreq: true, handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      useRngForFrequency: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
       sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
     })
     render(<TrainerPage />)
@@ -166,7 +166,7 @@ describe('TrainerPage', () => {
     useStore.setState({
       ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
       activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
-      useRngForFrequency: false, acceptAnyFreq: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      useRngForFrequency: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
       sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
     })
     render(<TrainerPage />)
@@ -196,7 +196,7 @@ describe('TrainerPage', () => {
     useStore.setState({
       ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
       activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 2.5, currentScenario: {},
-      useRngForFrequency: true, acceptAnyFreq: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      useRngForFrequency: true, handHistory: [], sessionHandPerf: {}, handPerformance: {},
       sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
     })
     render(<TrainerPage />)
@@ -292,7 +292,7 @@ describe('TrainerPage', () => {
     useStore.setState({
       ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
       activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 0, currentScenario: {},
-      useRngForFrequency: false, acceptAnyFreq: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      useRngForFrequency: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
       sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
       nextDrillHand,
     })
@@ -460,9 +460,11 @@ describe('TrainerPage', () => {
     expect(useStore.getState().selectedDrillRangeIds).toEqual([1])
   })
 
-  it('selecionar um range e CONTINUAR avança para o filtro de mãos', () => {
+  it('selecionar um range e CONTINUAR avança pelas configurações até o filtro de mãos', () => {
     useStore.setState({ ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [1] })
     render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
+    expect(screen.getByText('Configurações de treino')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
     expect(screen.getByRole('button', { name: 'INICIAR TREINO' })).toBeInTheDocument()
   })
@@ -474,6 +476,7 @@ describe('TrainerPage', () => {
     })
     render(<TrainerPage />)
     fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
+    fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
     fireEvent.click(screen.getByRole('button', { name: 'INICIAR TREINO' }))
     expect(screen.getByRole('alert')).toHaveTextContent(/Nenhuma mão selecionada/)
   })
@@ -481,6 +484,27 @@ describe('TrainerPage', () => {
   it('não tem violações de acessibilidade na seleção de ranges (axe)', async () => {
     useStore.setState({ ranges: [RANGE], activeDrillRange: null })
     const { container } = render(<TrainerPage />)
+    expect((await axe(container)).violations).toEqual([])
+  })
+
+  it('Configurações de treino: explica RNG com exemplo e mostra a nota de "Focar erros"', () => {
+    useStore.setState({ ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [1], useRngForFrequency: true })
+    render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
+    expect(screen.getByText('Configurações de treino')).toBeInTheDocument()
+    // Exemplo do RNG (20% All-in / 50% Raise / 30% Fold) com RNG=Sim (default)
+    expect(screen.getByText(/21–70 Raise/)).toBeInTheDocument()
+    // RNG=Não explica que só freq=0 é blunder
+    fireEvent.click(screen.getByRole('button', { name: 'Não' }))
+    expect(screen.getByText(/Só é erro \(blunder\)/)).toBeInTheDocument()
+    // Nota sobre "Focar erros" sempre visível
+    expect(screen.getByText(/Recomendamos manter desligado/)).toBeInTheDocument()
+  })
+
+  it('não tem violações de acessibilidade nas configurações de treino (axe)', async () => {
+    useStore.setState({ ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [1] })
+    const { container } = render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
     expect((await axe(container)).violations).toEqual([])
   })
 
@@ -517,11 +541,14 @@ describe('TrainerPage', () => {
     expect(screen.getByText('40-60')).toBeInTheDocument()
   })
 
-  it('no filtro de mãos, "Voltar" retorna à seleção de ranges', () => {
+  it('navegação "Voltar": filtro de mãos → configurações → seleção de ranges', () => {
     useStore.setState({ ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [1] })
     render(<TrainerPage />)
     fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
+    fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
     expect(screen.getByRole('button', { name: 'INICIAR TREINO' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Voltar' }))
+    expect(screen.getByText('Configurações de treino')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Voltar' }))
     expect(screen.getByRole('button', { name: /CONTINUAR/ })).toBeInTheDocument()
   })
@@ -529,6 +556,7 @@ describe('TrainerPage', () => {
   it('HandFilterGrid: clicar numa mão a exclui e arrastar exclui as seguintes', () => {
     useStore.setState({ ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [1], drillExcludedHands: [] })
     render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
     fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
     fireEvent.mouseDown(screen.getByText('AA'))
     expect(useStore.getState().drillExcludedHands).toContain('AA')
@@ -545,14 +573,15 @@ describe('TrainerPage', () => {
     useStore.setState({ ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [1], drillExcludedHands: ['AA'] })
     render(<TrainerPage />)
     fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
+    fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
     fireEvent.mouseDown(screen.getByText('AA'))
     expect(useStore.getState().drillExcludedHands).not.toContain('AA')
   })
 
-  it('HandFilterGrid: alterna RNG e "Focar erros"', () => {
+  it('Configurações de treino: alterna RNG e "Focar erros"', () => {
     useStore.setState({
       ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [1],
-      useRngForFrequency: false, focusErrors: false, acceptAnyFreq: false,
+      useRngForFrequency: false, focusErrors: false,
     })
     render(<TrainerPage />)
     fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
@@ -573,6 +602,7 @@ describe('TrainerPage', () => {
     })
     render(<TrainerPage />)
     fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
+    fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Tudo ✓' }))
     expect(useStore.getState().drillExcludedHands).toEqual([])
   })
@@ -583,6 +613,7 @@ describe('TrainerPage', () => {
       drillExcludedHands: [],
     })
     render(<TrainerPage />)
+    fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
     fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Nada ✗' }))
     expect(useStore.getState().drillExcludedHands.length).toBeGreaterThan(0)
@@ -674,7 +705,7 @@ describe('TrainerPage', () => {
     return {
       ranges: [range], activeDrillRange: range, activeDrillStackGridIdx: -1, activeDrillStackRange: '',
       activeHand: 'KK', currentHandSuits: ['h', 's'], currentRng: 50, currentHeroRaiseSize: 2.5, currentScenario: {},
-      useRngForFrequency: false, acceptAnyFreq: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
+      useRngForFrequency: false, handHistory: [], sessionHandPerf: {}, handPerformance: {},
       sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, sessionSeverity: { grave: 0, impreciso: 0 },
       ...over,
     }
@@ -720,11 +751,4 @@ describe('TrainerPage', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('toggle "Aceitar freq. > 0" liga o acceptAnyFreq no filtro de mãos', () => {
-    useStore.setState({ ranges: [RANGE], activeDrillRange: null, selectedDrillRangeIds: [1], useRngForFrequency: false, acceptAnyFreq: false })
-    render(<TrainerPage />)
-    fireEvent.click(screen.getByRole('button', { name: /CONTINUAR/ }))
-    fireEvent.click(screen.getByRole('button', { name: 'Aceitar freq. > 0' }))
-    expect(useStore.getState().acceptAnyFreq).toBe(true)
-  })
 })
