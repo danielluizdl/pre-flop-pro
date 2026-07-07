@@ -7,7 +7,7 @@
 - Deploy: GitHub Pages via GitHub Actions ao fazer push para `main` (`https://github.com/danielluizdl/pre-flop-pro`)
 - **CI** (`.github/workflows/`): `deploy.yml` builda em push pra `main` (sem rodar testes). **`pr-checks.yml` (06/07, novo)** roda `npm test` + `npm run build` em todo Pull Request mirando `main` **ou** `feature/auth-telemetry` — antes disso os 994+ testes só rodavam quando alguém lembrava de rodar `npm test` manualmente antes de mergear.
 - **POLÍTICA DE PRODUÇÃO (CONGELADA):** o link em uso pelos jogadores é **`https://danielluizdl.github.io/pre-flop-pro/`** (GitHub Pages, deploy do `main`). Ele deve ficar **INTACTO** até o site novo estar completo. Portanto: **NÃO mergear nada no `main`** e **NÃO mexer no que afeta o GitHub Pages** até liberação explícita do Daniel. Todo o desenvolvimento do "site completo" acontece na branch dedicada **`feature/auth-telemetry`** (e branches derivadas, ex.: `auto/daily-improvements` do agente), validadas no preview do Cloudflare Pages. Obs.: `public/_headers` (CSP/headers) só vale no Cloudflare Pages — o GitHub Pages o ignora, então mexer nele nunca afeta o link de produção.
-- Testes: **Vitest** (`npm test` → `vitest run`), ambiente jsdom. Specs em `src/**/*.test.ts`, **`src/**/*.test.tsx`** (componentes), `worker/**/*.test.js`, `functions/**/*.test.js` (ver `vitest.config.ts`). Testes de componente com **React Testing Library** + `@testing-library/jest-dom` + **`jest-axe`** (a11y); setup em `src/test/setup.ts`; exemplo-padrão `src/components/ui/ComboCounter.test.tsx`. **1014 testes verdes (85 arquivos)** — suíte de testes + a11y já coberta. Ver `.agent/handoff.md` para o estado atual do agente diário e próximas fatias. **Smoke de render:** `npm run smoke` (`smoke/smoke.mjs`) builda, serve o dist e verifica no Chromium headless (playwright-core, browser do ambiente/`SMOKE_CHROMIUM`) que o app renderiza de verdade: #root monta, RouterSync (clique/back/F5), drill completo com ranges seedados e painel coach (backend stubado via page.route, rede externa bloqueada). Rodar antes de mergear mudanças de dependência/chunks/router — teste+build verdes NÃO garantem render (já houve 2 telas brancas).
+- Testes: **Vitest** (`npm test` → `vitest run`), ambiente jsdom. Specs em `src/**/*.test.ts`, **`src/**/*.test.tsx`** (componentes), `worker/**/*.test.js`, `functions/**/*.test.js` (ver `vitest.config.ts`). Testes de componente com **React Testing Library** + `@testing-library/jest-dom` + **`jest-axe`** (a11y); setup em `src/test/setup.ts`; exemplo-padrão `src/components/ui/ComboCounter.test.tsx`. **1015 testes verdes (85 arquivos)** — suíte de testes + a11y já coberta. Ver `.agent/handoff.md` para o estado atual do agente diário e próximas fatias. **Smoke de render:** `npm run smoke` (`smoke/smoke.mjs`) builda, serve o dist e verifica no Chromium headless (playwright-core, browser do ambiente/`SMOKE_CHROMIUM`) que o app renderiza de verdade: #root monta, RouterSync (clique/back/F5), drill completo com ranges seedados e painel coach (backend stubado via page.route, rede externa bloqueada). Rodar antes de mergear mudanças de dependência/chunks/router — teste+build verdes NÃO garantem render (já houve 2 telas brancas).
 - Bundle: `adminRanges.json` (1.4MB) é separado em chunk próprio via `manualChunks` (`vite.config.ts`), que também separa vendors (`vendor-react` = react/react-dom/scheduler **apenas** — react-router fica em `vendor` pois incluí-lo aqui cria ciclo vendor↔vendor-react → tela branca; `vendor-sentry`; `vendor` = restante). Chunk principal do app ~265KB (gzip ~38KB); o único chunk acima de 500KB é o JSON `admin-ranges` (dados, separado de propósito).
 
 ## Estrutura de Pastas
@@ -36,7 +36,7 @@ src/
                   pasta+index.tsx resolve igual a um .tsx antigo)
     ui/           PokerTableEditor.tsx, HandQuickSelect.tsx, RangePreviewModal.tsx,
                   ComboCounter.tsx, PrereqRangePicker.tsx, RangeMark.tsx, tableGeometry.ts, PokerTable.module.css
-  i18n/           index.ts (Proxy reativo `t`; dicionários pt.ts/en.ts/es.ts — 529 chaves; `setLangDict`+`LANGS`; `LanguageSelect` em Sidebar/LoginPage — no `TopNav` o idioma virou um botão cíclico dentro do menu de perfil, ver seção de nuvem)
+  i18n/           index.ts (Proxy reativo `t`; dicionários pt.ts/en.ts/es.ts — 533 chaves; `setLangDict`+`LANGS`; `LanguageSelect` em Sidebar/LoginPage — no `TopNav` o idioma virou um botão cíclico dentro do menu de perfil, ver seção de nuvem)
   store/          useStore.ts  (toda a lógica de estado)
   types/          index.ts     (tipos, constantes de posições/slots)
   utils/          hands.ts     (ALL_HANDS, makeEmptyGrid, getRngCorrectAction, getRngBands, formatRngBands, getTopFrequencyActions, stackMatchesRange, generateSuits, focusWeight, weightedPick)
@@ -121,7 +121,7 @@ Cloudflare **Pages Functions** (serverless, cada arquivo exporta `onRequest(cont
 
 ### Frontend de nuvem
 - **Store**: `currentUser`, `authToken` (sessionStorage `pfp-auth-token`), `justSignedUp`, ações `authLogin`/`authSignup`/`authLogout`/`changePassword`/`restoreSession` (em `main.tsx` antes do render), `syncTeamRanges`/`publishTeamRanges` (ranges D1). Telemetria via `fireEvent()` → `src/utils/eventQueue.ts` (fila localStorage `pfp-event-queue`, cap 500, retry/flush). `startDrillSession` gera `session_uuid`; cada `hand` envia `client_event_id`.
-- **i18n** (`src/i18n/`): `t` é um **Proxy** que lê o dicionário do idioma vigente (`pt`/`en`/`es`, 529 chaves). Trocar idioma via `setLang` re-renderiza via `key={lang}` no `AppLayout`. `lang` persistido em `fbr-ui-state`. **Não capturar `t.x.y` em constantes de módulo** — congela o idioma do boot. Tokens de domínio não traduzidos (FOLD/CALL/RAISE/ALL-IN, BB, RNG, posições). Para adicionar chave: editar `pt.ts`, `en.ts` e `es.ts` (tsc força completude).
+- **i18n** (`src/i18n/`): `t` é um **Proxy** que lê o dicionário do idioma vigente (`pt`/`en`/`es`, 533 chaves). Trocar idioma via `setLang` re-renderiza via `key={lang}` no `AppLayout`. `lang` persistido em `fbr-ui-state`. **Não capturar `t.x.y` em constantes de módulo** — congela o idioma do boot. Tokens de domínio não traduzidos (FOLD/CALL/RAISE/ALL-IN, BB, RNG, posições). Para adicionar chave: editar `pt.ts`, `en.ts` e `es.ts` (tsc força completude).
 - **Rotas** (`react-router-dom` v6 + `src/components/Layout/RouterSync.tsx`): espelha URL↔`page` do store (`/dashboard`, `/ranges`, `/drill`, `/historico`, `/coach`); `public/_redirects` (`/* /index.html 200`). Lazy/Suspense em CoachPanel/TrainerPage/StatsPage + fluxo de edição (RangeSetup/RangeEditor/TableEditor/CategoryDetail). **GOTCHA React 19:** RouterSync usa ref `lastSynced` p/ evitar loop infinito ping-pong URL↔store — não simplificar.
 - **Observabilidade (`src/utils/sentry.ts`)**: init só com `VITE_SENTRY_DSN` (fail-open: tudo vira no-op sem o DSN). API: `captureError(err, {extra})`, `captureMessage(msg, level)`, `addBreadcrumb(category, message, data?)`. **Privacidade**: `beforeSend` faz `scrubEvent` (redige e-mail/token via `redactString`, dropa headers `Authorization`/`Cookie`); `captureError`/`addBreadcrumb`/`captureMessage` também redigem antes de enviar — **nunca** logam senha/token/e-mail crus. **O que é capturado**: crashes de render (`ErrorBoundary`, raiz e por área), erros silenciosos de rede (`MyAccountStats` + hooks do `CoachPanel`, publish), e estados degradados via `captureMessage('warning')` (cota de localStorage estourada, `validateRanges` achando problemas no load). **Breadcrumbs**: navegação (`setPage`), início de drill, login/logout, publish — reconstroem o caminho até um erro. `sendDefaultPii:false`, `tracesSampleRate:0`.
 - **LoginPage** (login/signup/forgot + widget `Turnstile.tsx` se `VITE_TURNSTILE_KEY`), **WelcomeModal**, **OnboardingTour** (07/06, `src/components/Auth/OnboardingTour.tsx`), **ChangePasswordModal**. Ao fechar o `WelcomeModal`, em vez de só zerar `currentUser.firstLogin` (o que deixava o overlay montado-porém-invisível — `fixed inset-0` sem `justSignedUp` virar `false` mantinha o componente na árvore), agora zera `justSignedUp` **e** seta `onboardingStep: 0` no store, disparando o tour guiado só para quem acabou de criar conta.
@@ -169,9 +169,8 @@ Estado relevante (não persistido entre sessões, exceto darkMode):
 - `activeDrillRange` / `activeDrillStackRange` / `activeDrillStackGridIdx`
 - `activeHand` / `sessionStats` / `handHistory` / `currentRng`
 - `correctActionForCurrentHand` / `correctActionsForCurrentHand` / `currentHandSuits`
-- `useRngForFrequency` — true=RNG, false=ação de maior frequência
-- `acceptAnyFreq` — (RNG off) aceita qualquer ação com frequência > 0 como acerto (feedback "Válido — ação principal: ...")
-- `focusErrors` — (D1) liga amostragem ponderada do nível 2 do `nextDrillHand` (mão dentro do range) por `handPerformance`: peso `3` para mãos nunca treinadas, `1 + 4*(1 - acerto)` para treinadas. Nível 1 (entre ranges) segue uniforme. Desligado (default) = sorteio uniforme atual intacto.
+- `useRngForFrequency` — true=RNG (sorteia 1-100 e usa as faixas de frequência, agressividade primeiro: Allin>Raise>Call>extra>Fold), false=ação de maior frequência é sempre a "certa", mas qualquer ação com frequência > 0 no range também é aceita como acerto (feedback "Válido — ação principal: X Y%"); só é errado (blunder) responder uma ação com 0% na mão. **07/07: removido o toggle `acceptAnyFreq`** — esse comportamento "aceita qualquer freq>0" era opcional (só ligava com o toggle); agora é o único comportamento do modo RNG=Não, sem chave pra desligar (decisão do Daniel, ver `DrillSettingsStep` abaixo).
+- `focusErrors` — (D1) liga amostragem ponderada do nível 2 do `nextDrillHand` (mão dentro do range) por `handPerformance`: peso `3` para mãos nunca treinadas, `1 + 4*(1 - acerto)` para treinadas. Nível 1 (entre ranges) segue uniforme. Desligado (default) = sorteio uniforme atual intacto. **Fica desligado por padrão de propósito** — o `DrillSettingsStep` explica que só vale a pena ligar depois de já ter algumas sessões de treino registradas (senão não há dado suficiente pra saber onde o jogador realmente erra mais).
 - `sessionSeverity: { grave, impreciso }` — (D2) contadores da sessão; reset em `startDrillSession`, incrementado em `checkDrillAnswer`. `DrillSummary` exibe as contagens.
 - `sessionHandPerf: HandPerfMap` — acumulador por id da sessão atual (fora do `handHistory`, que tem cap de 50). `stopDrill`/`DrillSummary` usam ele para stats por range; `TrainingSession.handPerf` é gravado por id (leitura com fallback por nome para sessões antigas)
 - `handPerformance: HandPerfMap` — carregado do localStorage na inicialização
@@ -193,7 +192,7 @@ dashboard
           → table-editor  (TableEditorPage: configurar roles/bets/stacks + cenários)
               → ranges     (após finalizeRange())
   → ranges        (SituationsPage: acordeão por posição com RangeCards)
-  → drill         (TrainerPage: DrillRangeSelect → HandFilterGrid → DrillActive)
+  → drill         (TrainerPage: DrillRangeSelect → DrillSettingsStep → HandFilterGrid → DrillActive)
   → exercise      (ExercisePage "Range Check": BuildRangeSelect → BuildRound → BuildSummary)
   → history       (StatsPage)
 ```
@@ -263,14 +262,29 @@ else                  → <DrillRangeSelect>
 - Acordeão por posição idêntico ao SituationsPage
 - `POSITION_ORDER = ['STR','BB','SB','BTN','CO','HJ','MP','EP','LJ','UTG']`
 - Badge mostra quantos ranges selecionados por grupo
-- "CONTINUAR →" → step 'filter' (HandFilterGrid) sem modificar `drillExcludedHands`
-- HandFilterGrid → "INICIAR TREINO" → `startDrillSession()` + `nextDrillHand()`
+- "CONTINUAR →" → step 'settings' (`DrillSettingsStep`) sem modificar `drillExcludedHands`
+- `DrillSettingsStep` → "Continuar →" → step 'filter' (HandFilterGrid); "Voltar" → 'select'
+- HandFilterGrid → "INICIAR TREINO" → `startDrillSession()` + `nextDrillHand()`; "Voltar" → 'settings'
+
+### DrillSettingsStep (07/07, novo — antes os controles ficavam dentro do HandFilterGrid)
+- Tela dedicada **antes** do filtro de mãos, com explicação + exemplo de cada opção (pedido
+  do Daniel: "explique a diferença e deixe selecionar antes do filtro de mãos").
+- **RNG** (`useRngForFrequency`, botões Sim/Não): card explica os dois modos com um exemplo
+  computado ao vivo via `formatRngBands(getRngBands({fold:30,call:0,raise:50,allin:20}))` —
+  garante que o texto do exemplo nunca fica desatualizado em relação ao algoritmo real.
+- **Focar erros** (`focusErrors`, botão único que muda de cor — mesmo padrão visual de
+  antes, só que agora numa seção própria com explicação): fica **desligado por padrão** e
+  o card tem uma observação fixa recomendando só ligar depois de já ter algumas sessões de
+  treino registradas.
+- `EXAMPLE_HAND_DATA` é uma constante de módulo em `TrainerPage.tsx` (não captura `t.x.y`,
+  só dados numéricos — sem violar o gotcha de i18n).
 
 ### HandFilterGrid
 - Mostra grid 13×13 com todas as 169 mãos
 - Usuário exclui manualmente as mãos que não quer treinar
 - **Nunca é modificado automaticamente** ao selecionar ranges
 - Só se aplica a ranges SEM `prereqRangeId` (ver lógica de `nextDrillHand` abaixo)
+- **Não tem mais os controles de RNG/Focar erros** (movidos pro `DrillSettingsStep`, passo anterior)
 
 ### nextDrillHand — Lógica de candidatos
 ```
@@ -313,8 +327,8 @@ Container: `w-full h-[calc(100vh-90px)] overflow-auto`
 - **Atalhos de teclado (D3)** via `keyHandlerRef` (mesmo pattern do `goNextRef`, listener montado uma vez): `F`=Fold, `C`=Call, `R`=Raise (se visível), `A`=All-in, inicial do `customAction` (resolvida por `pickHotkey` evitando colisão com F/C/R/A), `Espaço`=próxima, `ArrowLeft`=anterior, `V`=abre/fecha Ver Range. Ignorados com foco em input/select/textarea ou modal aberto (exceto V para fechar). Legenda discreta da tecla em cada `DrillActionButton`.
 
 ### checkDrillAnswer — severidade (D2)
-- Erro `grave` = ação respondida tem 0% na mão; `impreciso` = freq > 0 mas não é a principal (só com `acceptAnyFreq` desligado).
-- Feedback: `✗ Erro grave — Call tinha 0%. Correto: Raise` / `✗ Impreciso — Call tinha 25%. Principal: Raise 75%`.
+- Erro `grave` = ação respondida tem 0% na mão (blunder, único jeito de errar com RNG=Não desde a remoção do `acceptAnyFreq`); `impreciso` = freq > 0 mas não é a ação sorteada — só ocorre no modo **RNG=Sim** (responder uma ação que existe no range mas não foi a que o RNG sorteou); com RNG=Não, freq>0-mas-não-principal **conta como acerto válido**, não gera mais `impreciso`.
+- Feedback: `✗ Erro grave — Call tinha 0%. Correto: Raise` (RNG=Não) / `✗ Impreciso — Call tinha 25%. Principal: Raise 75%` (RNG=Sim, próximo de acertar).
 - Retorna `{ correct, message, severity? }`; grava `severity` no `HandHistoryEntry` e incrementa `sessionSeverity`.
 
 ### DrillSummary
@@ -397,7 +411,7 @@ Estado completo em `.agent/handoff.md`. Resumo consolidado:
 - **PR #24 (30/06):** **React 18 → 19** (verificado no browser via Playwright; fix `RouterSync` loop infinito com ref `lastSynced`; fix ciclo `manualChunks` → `vendor-react` só react/react-dom/scheduler) + 13 fatias de cobertura → **560 testes verdes (63 arquivos)**.
 
 ### Estado atual (06/07/2026)
-- **1014 testes verdes (85 arquivos)**, build verde, smoke verde (Chromium headless: render, navegação, drill, painel coach).
+- **1015 testes verdes (85 arquivos)**, build verde, smoke verde (Chromium headless: render, navegação, drill, painel coach).
 - **Dependabot #20/#21 já mergeados** (commits dedicados `feat(deps): migra ...`, um por dependência, cada um testado+smoke antes do próximo): Tailwind 3→4, Vite 6→8 (+`@vitejs/plugin-react` 6), TypeScript 5→6, react-router-dom 6→7, lucide-react 0.47→1.22. Sem mudança de API/comportamento visual observada. Versões atuais em uso: React 19, Tailwind 4, Vite 8, TS 6, react-router 7, lucide-react 1.x — todas estáveis nesta branch.
 - **06/07:** pacote de segurança (PR #48 — CI em PR, rate limit KV nos 5 endpoints de admin com `scope='admin'`, log de auditoria `admin_audit_log`, `escapeHtml` nos e-mails) + proteção de branch no `main` (PR-only, `enforce_admins:true`) + arquitetura (`CoachPanel.tsx` dividido em `CoachPanel/`, helper `requireCoach()` nos 5 endpoints de admin, `README.md` na raiz).
 

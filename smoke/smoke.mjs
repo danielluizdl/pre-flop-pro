@@ -89,6 +89,7 @@ try {
     await page.getByRole('button', { name: /^STR/ }).first().click()
     await page.getByRole('button', { name: 'Selecionar todos' }).first().click()
     await page.getByRole('button', { name: /CONTINUAR/ }).click()
+    await page.getByRole('button', { name: /CONTINUAR/ }).click() // passo de configurações (RNG/Focar erros)
     await page.getByRole('button', { name: 'INICIAR TREINO' }).click()
     await page.getByRole('button', { name: /FOLD/ }).first().click({ timeout: 8000 })
     await page.waitForFunction(() => /✓|✗|~/.test(document.body.innerText), undefined, { timeout: 5000 })

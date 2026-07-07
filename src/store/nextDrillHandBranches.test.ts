@@ -21,7 +21,6 @@ describe('nextDrillHand — ramos de candidatos', () => {
   beforeEach(() => {
     useStore.setState({
       useRngForFrequency: false,
-      acceptAnyFreq: false,
       focusErrors: false,
       drillExcludedHands: [],
     })
@@ -92,7 +91,6 @@ describe('checkDrillAnswer — freqOf quando a mão não está no grid', () => {
       correctActionForCurrentHand: 'Fold',
       correctActionsForCurrentHand: ['Fold'],
       useRngForFrequency: false,
-      acceptAnyFreq: false,
       sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 },
       sessionSeverity: { grave: 0, impreciso: 0 },
       handHistory: [],

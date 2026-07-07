@@ -30,7 +30,6 @@ function resetDrill(ranges: Range[], ids: number[], extra: Partial<ReturnType<ty
     selectedDrillRangeIds: ids,
     drillExcludedHands: [],
     useRngForFrequency: false,
-    acceptAnyFreq: false,
     sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 },
     handHistory: [],
     sessionHandPerf: {},
@@ -66,17 +65,17 @@ describe('drill — consistência sorteio ↔ check (RNG ligado)', () => {
 })
 
 describe('drill — modo frequência (RNG desligado)', () => {
-  it('ação principal acerta; secundária erra por padrão', () => {
+  it('ação principal acerta', () => {
     const r = range({ id: 1, grid: uniformGrid({ raise: 75, call: 25 }) })
     resetDrill([r], [1])
     useStore.getState().nextDrillHand()
     expect(useStore.getState().correctActionsForCurrentHand).toEqual(['Raise'])
-    expect(useStore.getState().checkDrillAnswer('Call').correct).toBe(false)
+    expect(useStore.getState().checkDrillAnswer('Raise').correct).toBe(true)
   })
 
-  it('acceptAnyFreq aceita ação com frequência > 0 como acerto', () => {
+  it('ação secundária com frequência > 0 também acerta (avisa que não é a principal)', () => {
     const r = range({ id: 1, grid: uniformGrid({ raise: 75, call: 25 }) })
-    resetDrill([r], [1], { acceptAnyFreq: true })
+    resetDrill([r], [1])
     useStore.getState().nextDrillHand()
     const res = useStore.getState().checkDrillAnswer('Call')
     expect(res.correct).toBe(true)
@@ -84,11 +83,13 @@ describe('drill — modo frequência (RNG desligado)', () => {
     expect(res.message).toContain('Raise 75%')
   })
 
-  it('acceptAnyFreq não aceita ação com frequência zero', () => {
+  it('ação com frequência zero é erro grave (blunder)', () => {
     const r = range({ id: 1, grid: uniformGrid({ raise: 75, call: 25 }) })
-    resetDrill([r], [1], { acceptAnyFreq: true })
+    resetDrill([r], [1])
     useStore.getState().nextDrillHand()
-    expect(useStore.getState().checkDrillAnswer('Allin').correct).toBe(false)
+    const res = useStore.getState().checkDrillAnswer('Allin')
+    expect(res.correct).toBe(false)
+    expect(res.severity).toBe('grave')
   })
 })
 

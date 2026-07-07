@@ -84,11 +84,9 @@ describe('setupNewRange e setters simples', () => {
     expect(s().currentHeroRaiseSize).toBe(3)
   })
 
-  it('setRangesFilter / setAcceptAnyFreq / setFocusErrors / setUseRng', () => {
+  it('setRangesFilter / setFocusErrors / setUseRng', () => {
     s().setRangesFilter('CUSTOM')
     expect(s().rangesFilter).toBe('CUSTOM')
-    s().setAcceptAnyFreq(true)
-    expect(s().acceptAnyFreq).toBe(true)
     s().setFocusErrors(true)
     expect(s().focusErrors).toBe(true)
     s().setUseRng(true)

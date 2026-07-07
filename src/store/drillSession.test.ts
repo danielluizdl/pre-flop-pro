@@ -15,7 +15,6 @@ function drillState(grid: Record<string, HandData>, over: Record<string, unknown
     currentRng: 50,
     currentHandSuits: ['h', 's'],
     useRngForFrequency: false,
-    acceptAnyFreq: false,
     handHistory: [],
     sessionHandPerf: {},
     handPerformance: {},
@@ -25,12 +24,12 @@ function drillState(grid: Record<string, HandData>, over: Record<string, unknown
   })
 }
 
-describe('checkDrillAnswer — acceptAnyFreq (modo menos binário)', () => {
+describe('checkDrillAnswer — RNG desligado aceita qualquer frequência > 0', () => {
   beforeEach(() => {
     const g = makeEmptyGrid()
     // AA: 25% call, 75% raise (principal = Raise)
     g['AA'] = { fold: 0, call: 25, raise: 75, allin: 0, size: 0 }
-    drillState(g, { activeHand: 'AA', acceptAnyFreq: true })
+    drillState(g, { activeHand: 'AA' })
   })
 
   it('ação secundária com freq>0 é aceita como válida e vira mensagem "Válido"', () => {
@@ -41,7 +40,7 @@ describe('checkDrillAnswer — acceptAnyFreq (modo menos binário)', () => {
     expect(r.message).toContain('Raise')
   })
 
-  it('ação com 0% ainda é erro grave mesmo com acceptAnyFreq', () => {
+  it('ação com 0% ainda é erro grave (blunder)', () => {
     const r = useStore.getState().checkDrillAnswer('Allin')
     expect(r.correct).toBe(false)
     expect(r.severity).toBe('grave')
