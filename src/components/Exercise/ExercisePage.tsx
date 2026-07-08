@@ -392,7 +392,7 @@ function BuildRound() {
       {!lastResult ? (
         <>
           <p className="text-warm-500 text-sm">{t.exercise.paintIntro}</p>
-          <div className="flex flex-col xl:flex-row gap-6 items-start">
+          <div className="flex flex-col xl:flex-row gap-6 items-start" data-tour="exercise-active">
             <div className="flex-1 min-w-0 w-full">
               <HandMatrix />
             </div>

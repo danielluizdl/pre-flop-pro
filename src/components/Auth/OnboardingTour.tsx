@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { useModalA11y } from '../../utils/useModalA11y'
 import { t } from '../../i18n'
@@ -22,14 +22,51 @@ export function OnboardingTour() {
   const setupNewRange = useStore(s => s.setupNewRange)
   const initTableConfig = useStore(s => s.initTableConfig)
 
+  // Sessões de demonstração ao vivo no Drill/Range Check: só iniciam uma sessão
+  // nova se não houver nenhuma em andamento (não pisa num treino real do
+  // usuário) e marcam a ref pra o finish() só encerrar o que o próprio tour
+  // criou.
+  const startedDrillDemo = useRef(false)
+  const startedBuildDemo = useRef(false)
+
+  function startDrillDemo() {
+    setPage('drill')
+    const s = useStore.getState()
+    if (s.activeDrillRange) return
+    const r = s.ranges.find(x => x.scenarios && x.scenarios.length > 0) ?? s.ranges[0]
+    if (!r) return
+    useStore.setState({ selectedDrillRangeIds: [r.id], drillExcludedHands: [] })
+    useStore.getState().startDrillSession()
+    useStore.getState().nextDrillHand()
+    startedDrillDemo.current = true
+  }
+
+  function startExerciseDemo() {
+    setPage('exercise')
+    const s = useStore.getState()
+    if (s.buildRounds.length > 0) return
+    const r = s.ranges[0]
+    if (!r) return
+    useStore.setState({ buildSelectedRangeIds: [r.id] })
+    if (useStore.getState().startBuildSession()) {
+      useStore.getState().confirmBuildSession()
+      startedBuildDemo.current = true
+    }
+  }
+
   const steps: TourStep[] = [
     { target: 'dashboard-hero', run: () => setPage('dashboard'), title: t.tour.dashboardTitle, body: t.tour.dashboardBody },
     { target: 'ranges-new', run: () => setPage('ranges'), title: t.tour.rangesTitle, body: t.tour.rangesBody },
     { target: 'setup-tablesize', run: () => setPage('range-setup'), title: t.tour.setupTitle, body: t.tour.setupBody },
-    { target: 'editor-matrix', run: () => setupNewRange(8, true, 0.5), title: t.tour.editorTitle, body: t.tour.editorBody },
+    { target: 'editor-position', run: () => setupNewRange(8, true, 0.5), title: t.tour.editorPositionTitle, body: t.tour.editorPositionBody },
+    { target: 'editor-name', run: () => setPage('editor'), title: t.tour.editorNameTitle, body: t.tour.editorNameBody },
+    { target: 'editor-matrix', run: () => setPage('editor'), title: t.tour.editorMatrixTitle, body: t.tour.editorMatrixBody },
     { target: 'table-editor-table', run: () => { initTableConfig(); setPage('table-editor') }, title: t.tour.tableEditorTitle, body: t.tour.tableEditorBody },
+    { target: 'table-editor-scenarios', run: () => setPage('table-editor'), title: t.tour.tableEditorScenariosTitle, body: t.tour.tableEditorScenariosBody },
     { target: 'drill-select', run: () => setPage('drill'), title: t.tour.drillTitle, body: t.tour.drillBody },
+    { target: 'drill-active', run: startDrillDemo, title: t.tour.drillActiveTitle, body: t.tour.drillActiveBody },
     { target: 'exercise-select', run: () => setPage('exercise'), title: t.tour.exerciseTitle, body: t.tour.exerciseBody },
+    { target: 'exercise-active', run: startExerciseDemo, title: t.tour.exerciseActiveTitle, body: t.tour.exerciseActiveBody },
     { target: 'stats-header', run: () => setPage('history'), title: t.tour.historyTitle, body: t.tour.historyBody },
   ]
   const total = steps.length
@@ -73,7 +110,11 @@ export function OnboardingTour() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stepIndex])
 
-  function finish() { useStore.setState({ onboardingStep: null }) }
+  function finish() {
+    if (startedDrillDemo.current) useStore.getState().stopDrill()
+    if (startedBuildDemo.current) useStore.getState().stopBuildSession()
+    useStore.setState({ onboardingStep: null })
+  }
   function next() {
     if (stepIndex + 1 >= total) finish()
     else useStore.setState({ onboardingStep: stepIndex + 1 })

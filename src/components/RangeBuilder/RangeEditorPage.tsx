@@ -206,7 +206,7 @@ export function RangeEditorPage() {
         {/* Left: positions + name + matrix */}
         <div className="flex-1 min-w-0 space-y-3">
           {/* Posição do HERO — single select */}
-          <div>
+          <div data-tour="editor-position">
             <label className="eyebrow mb-2 block">{t.editor.heroPosition}</label>
             <div className="flex gap-1.5 flex-wrap">
               {activePositions.map(p => {
@@ -233,7 +233,7 @@ export function RangeEditorPage() {
           </div>
 
           {/* Nome */}
-          <div className="flex items-center gap-2 max-w-xs">
+          <div className="flex items-center gap-2 max-w-xs" data-tour="editor-name">
             <label className="text-xs font-semibold text-warm-400 whitespace-nowrap flex-shrink-0">
               {t.editor.name}
             </label>

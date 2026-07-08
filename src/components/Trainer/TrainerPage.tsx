@@ -1194,6 +1194,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
 
           {/* Dark box: botões, mesa, cartas, resposta, ações */}
           <div
+            data-tour="drill-active"
             className="rounded-2xl border border-warm-800 flex flex-col"
             style={{ background: 'var(--table-box-bg, #16140f)', boxShadow: 'var(--table-box-shadow, inset 0 0 60px rgba(0,0,0,0.9))' }}
           >

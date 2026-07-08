@@ -278,65 +278,67 @@ export function TableEditorPage() {
             </div>
           </div>
 
-          {/* Add / Save buttons */}
-          {editingIdx !== null ? (
-            <div className="flex gap-2">
-              <button
-                onClick={handleSaveEdit}
-                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold transition-colors"
-              >
-                {t.tableEditor.saveChangesTo(editingIdx + 1)}
-              </button>
-              <button
-                onClick={() => setEditingIdx(null)}
-                className="px-4 py-3 bg-warm-700 hover:bg-warm-600 text-warm-100 rounded-lg font-bold transition-colors"
-              >
-                {t.tableEditor.cancel}
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={handleAddScenario}
-              className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold transition-colors"
-            >
-              {t.tableEditor.addScenario}
-            </button>
-          )}
-
-          {/* Saved scenarios */}
-          {tempScenarios.length > 0 && (
-            <div className="space-y-1.5">
-              <h3 className="text-xs font-bold text-warm-400 uppercase tracking-wider">
-                {t.tableEditor.savedScenarios(tempScenarios.length)}
-              </h3>
-              {tempScenarios.map((scen, idx) => (
-                <div
-                  key={scen.id}
-                  onClick={() => { loadScenario(idx); setEditingIdx(idx) }}
-                  className={[
-                    'border p-2.5 rounded-lg text-sm flex justify-between items-center cursor-pointer transition-colors',
-                    editingIdx === idx
-                      ? 'bg-emerald-900/20 border-emerald-600/60'
-                      : 'bg-warm-800 border-warm-700 hover:border-warm-500',
-                  ].join(' ')}
+          {/* Add / Save buttons + saved scenarios */}
+          <div data-tour="table-editor-scenarios" className="space-y-3">
+            {editingIdx !== null ? (
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSaveEdit}
+                  className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold transition-colors"
                 >
-                  <span className="text-warm-200">
-                    <span className="font-bold text-warm-400">#{idx + 1}</span>{' '}
-                    {scen.summary}{' '}
-                    <span className="text-warm-500">{t.tableEditor.pot(scen.pot)}</span>
-                    {!!scen.heroRaiseSize && <span className="text-amber-500">{t.tableEditor.raise(scen.heroRaiseSize)}</span>}
-                    <span className="text-blue-400"> · {getStackLabel(scen.data)}</span>
-                  </span>
-                  <button
-                    onClick={e => { e.stopPropagation(); removeScenario(idx); if (editingIdx === idx) setEditingIdx(null) }}
-                    className="text-red-400 hover:text-red-300 font-bold px-2 ml-2 flex-shrink-0"
+                  {t.tableEditor.saveChangesTo(editingIdx + 1)}
+                </button>
+                <button
+                  onClick={() => setEditingIdx(null)}
+                  className="px-4 py-3 bg-warm-700 hover:bg-warm-600 text-warm-100 rounded-lg font-bold transition-colors"
+                >
+                  {t.tableEditor.cancel}
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleAddScenario}
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold transition-colors"
+              >
+                {t.tableEditor.addScenario}
+              </button>
+            )}
+
+            {/* Saved scenarios */}
+            {tempScenarios.length > 0 && (
+              <div className="space-y-1.5">
+                <h3 className="text-xs font-bold text-warm-400 uppercase tracking-wider">
+                  {t.tableEditor.savedScenarios(tempScenarios.length)}
+                </h3>
+                {tempScenarios.map((scen, idx) => (
+                  <div
+                    key={scen.id}
+                    onClick={() => { loadScenario(idx); setEditingIdx(idx) }}
+                    className={[
+                      'border p-2.5 rounded-lg text-sm flex justify-between items-center cursor-pointer transition-colors',
+                      editingIdx === idx
+                        ? 'bg-emerald-900/20 border-emerald-600/60'
+                        : 'bg-warm-800 border-warm-700 hover:border-warm-500',
+                    ].join(' ')}
                   >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+                    <span className="text-warm-200">
+                      <span className="font-bold text-warm-400">#{idx + 1}</span>{' '}
+                      {scen.summary}{' '}
+                      <span className="text-warm-500">{t.tableEditor.pot(scen.pot)}</span>
+                      {!!scen.heroRaiseSize && <span className="text-amber-500">{t.tableEditor.raise(scen.heroRaiseSize)}</span>}
+                      <span className="text-blue-400"> · {getStackLabel(scen.data)}</span>
+                    </span>
+                    <button
+                      onClick={e => { e.stopPropagation(); removeScenario(idx); if (editingIdx === idx) setEditingIdx(null) }}
+                      className="text-red-400 hover:text-red-300 font-bold px-2 ml-2 flex-shrink-0"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t border-warm-700">
