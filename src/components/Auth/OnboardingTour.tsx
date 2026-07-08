@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { useModalA11y } from '../../utils/useModalA11y'
 import { t } from '../../i18n'
+import type { Range } from '../../types'
 
 const PANEL_MARGIN = 12
 const PANEL_WIDTH_MAX = 340
@@ -16,11 +17,25 @@ interface TourStep {
   body: string
 }
 
+// Range real usado como exemplo nos passos de faixa de stack / pré-requisito /
+// mesa preenchida: "BTN vs 3B OOP" tem as 3 coisas ao mesmo tempo (3 faixas de
+// stack, prereq em "RFI BTN", cenário real Open vs 3-Bet) — um único exemplo
+// coerente em vez de 3 fragmentos inventados. Se o catálogo mudar e esse id
+// sumir, cai pra qualquer range que sirva pro que aquele passo específico
+// precisa (nunca quebra, só perde a narrativa unificada).
+const STACKRANGE_PREREQ_DEMO_ID = 1778104119544
+
+function findStackRangeDemo(ranges: Range[]): Range | undefined {
+  return ranges.find(r => r.id === STACKRANGE_PREREQ_DEMO_ID)
+    ?? ranges.find(r => (r.stackGrids?.length ?? 0) > 1 && r.prereqRangeId !== undefined)
+    ?? ranges.find(r => (r.stackGrids?.length ?? 0) > 1)
+    ?? ranges.find(r => r.prereqRangeId !== undefined)
+}
+
 export function OnboardingTour() {
   const stepIndex = useStore(s => s.onboardingStep) ?? 0
   const setPage = useStore(s => s.setPage)
   const setupNewRange = useStore(s => s.setupNewRange)
-  const initTableConfig = useStore(s => s.initTableConfig)
 
   // Sessões de demonstração ao vivo no Drill/Range Check: só iniciam uma sessão
   // nova se não houver nenhuma em andamento (não pisa num treino real do
@@ -54,15 +69,43 @@ export function OnboardingTour() {
     }
   }
 
+  // Passos de faixa de stack / pré-requisito: carrega um range real existente
+  // (loadRangeForEdit já popula sessionGrids com as faixas salvas + prereqRangeId
+  // quando houver, e seta page:'editor' sozinho).
+  function loadStackRangeDemo() {
+    const r = findStackRangeDemo(useStore.getState().ranges)
+    if (r) useStore.getState().loadRangeForEdit(r.id)
+    else setPage('editor')
+  }
+
+  // Passos da mesa/cenário: reaproveita o primeiro cenário real bufferizado
+  // pelo loadStackRangeDemo (tempScenarios vem de r.scenarios) em vez do
+  // scaffold em branco do initTableConfig — mostra a mesa com ações de verdade.
+  // Chama loadStackRangeDemo() de novo se tempScenarios ainda estiver vazio
+  // (ex: usuário chega direto nesse passo sem ter passado pelos anteriores),
+  // pro passo garantir sozinho seu próprio estado.
+  function loadTableDemo() {
+    if (useStore.getState().tempScenarios.length === 0) loadStackRangeDemo()
+    const s = useStore.getState()
+    if (s.tempScenarios.length > 0) useStore.getState().loadScenarioFromBuffer(0)
+    else if (Object.keys(s.currentScenario).length === 0) useStore.getState().initTableConfig()
+    setPage('table-editor')
+  }
+
   const steps: TourStep[] = [
     { target: 'dashboard-hero', run: () => setPage('dashboard'), title: t.tour.dashboardTitle, body: t.tour.dashboardBody },
     { target: 'ranges-new', run: () => setPage('ranges'), title: t.tour.rangesTitle, body: t.tour.rangesBody },
     { target: 'setup-tablesize', run: () => setPage('range-setup'), title: t.tour.setupTitle, body: t.tour.setupBody },
+    { target: 'setup-straddle', run: () => setPage('range-setup'), title: t.tour.setupStraddleTitle, body: t.tour.setupStraddleBody },
+    { target: 'setup-ante', run: () => setPage('range-setup'), title: t.tour.setupAnteTitle, body: t.tour.setupAnteBody },
     { target: 'editor-position', run: () => setupNewRange(8, true, 0.5), title: t.tour.editorPositionTitle, body: t.tour.editorPositionBody },
     { target: 'editor-name', run: () => setPage('editor'), title: t.tour.editorNameTitle, body: t.tour.editorNameBody },
     { target: 'editor-matrix', run: () => setPage('editor'), title: t.tour.editorMatrixTitle, body: t.tour.editorMatrixBody },
-    { target: 'table-editor-table', run: () => { initTableConfig(); setPage('table-editor') }, title: t.tour.tableEditorTitle, body: t.tour.tableEditorBody },
-    { target: 'table-editor-scenarios', run: () => setPage('table-editor'), title: t.tour.tableEditorScenariosTitle, body: t.tour.tableEditorScenariosBody },
+    { target: 'editor-stackrange', run: loadStackRangeDemo, title: t.tour.editorStackRangeTitle, body: t.tour.editorStackRangeBody },
+    { target: 'editor-prereq', run: loadStackRangeDemo, title: t.tour.editorPrereqTitle, body: t.tour.editorPrereqBody },
+    { target: 'table-editor-roles', run: loadTableDemo, title: t.tour.tableEditorRolesTitle, body: t.tour.tableEditorRolesBody },
+    { target: 'table-editor-table', run: loadTableDemo, title: t.tour.tableEditorTitle, body: t.tour.tableEditorBody },
+    { target: 'table-editor-scenarios', run: loadTableDemo, title: t.tour.tableEditorScenariosTitle, body: t.tour.tableEditorScenariosBody },
     { target: 'drill-select', run: () => setPage('drill'), title: t.tour.drillTitle, body: t.tour.drillBody },
     { target: 'drill-active', run: startDrillDemo, title: t.tour.drillActiveTitle, body: t.tour.drillActiveBody },
     { target: 'exercise-select', run: () => setPage('exercise'), title: t.tour.exerciseTitle, body: t.tour.exerciseBody },
@@ -129,12 +172,28 @@ export function OnboardingTour() {
   let panelTop = 88
   let panelLeft = Math.max(PANEL_MARGIN, (window.innerWidth - panelWidth) / 2)
   if (rect) {
-    panelTop = rect.bottom + 14
-    if (panelTop + PANEL_EST_HEIGHT > window.innerHeight - PANEL_MARGIN) {
-      panelTop = Math.max(window.innerHeight - PANEL_EST_HEIGHT - PANEL_MARGIN, PANEL_MARGIN)
+    // Prefere encostar o painel do lado (direita, depois esquerda) do alvo —
+    // formulários verticais (ex: RangeSetupPage) têm a próxima pergunta logo
+    // abaixo, e um painel "embaixo" tapa exatamente o que vem a seguir.
+    // Só cai para cima/baixo do alvo quando não há espaço lateral (ex: matriz
+    // 13×13, mesa de poker — alvos que já ocupam a largura disponível).
+    const spaceRight = window.innerWidth - rect.right - PANEL_MARGIN
+    const spaceLeft = rect.left - PANEL_MARGIN
+    const clampedTop = Math.min(Math.max(rect.top, PANEL_MARGIN), window.innerHeight - PANEL_EST_HEIGHT - PANEL_MARGIN)
+    if (spaceRight >= panelWidth) {
+      panelLeft = rect.right + 14
+      panelTop = clampedTop
+    } else if (spaceLeft >= panelWidth) {
+      panelLeft = rect.left - 14 - panelWidth
+      panelTop = clampedTop
+    } else {
+      panelTop = rect.bottom + 14
+      if (panelTop + PANEL_EST_HEIGHT > window.innerHeight - PANEL_MARGIN) {
+        panelTop = Math.max(window.innerHeight - PANEL_EST_HEIGHT - PANEL_MARGIN, PANEL_MARGIN)
+      }
+      const rawLeft = rect.left + rect.width / 2 - panelWidth / 2
+      panelLeft = Math.min(Math.max(rawLeft, PANEL_MARGIN), window.innerWidth - panelWidth - PANEL_MARGIN)
     }
-    const rawLeft = rect.left + rect.width / 2 - panelWidth / 2
-    panelLeft = Math.min(Math.max(rawLeft, PANEL_MARGIN), window.innerWidth - panelWidth - PANEL_MARGIN)
   }
 
   return (

@@ -175,6 +175,7 @@ export function TableEditorPage() {
             </div>
           </div>
 
+          <div data-tour="table-editor-roles" className="space-y-1.5">
           {/* Column headers */}
           <div className="grid items-center gap-1 px-2" style={{ gridTemplateColumns: '20px 44px 1fr 56px 56px' }}>
             <span className="text-[10px] text-amber-400 font-bold text-center" title={t.tableEditor.setAsHero}>H</span>
@@ -257,6 +258,7 @@ export function TableEditorPage() {
               </div>
             )
           })}
+          </div>
 
           {/* Summary */}
           <div className="text-xs text-warm-500 pt-1 border-t border-warm-700">

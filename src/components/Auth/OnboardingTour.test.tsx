@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { axe } from 'jest-axe'
 import { AppLayout } from '../Layout/AppLayout'
@@ -7,13 +7,49 @@ import { useStore } from '../../store/useStore'
 import { makeEmptyGrid } from '../../utils/hands'
 import type { Range } from '../../types'
 
-const DEMO_RANGE: Range = {
-  id: 99,
-  name: 'BTN RFI Demo',
+// Espelha o range real usado pelo tour em produção ("BTN vs 3B OOP"): mesmo id
+// (pra bater com o STACKRANGE_PREREQ_DEMO_ID hardcoded no componente), 3 faixas
+// de stack, prereq e um cenário real (BTN Open vs SB 3-Bet).
+const PREREQ_RANGE: Range = {
+  id: 500, name: 'RFI BTN', positions: ['BTN'], grid: makeEmptyGrid(), scenarios: [], tableSize: 8,
+}
+
+const STACKRANGE_DEMO: Range = {
+  id: 1778104119544,
+  name: 'BTN vs 3B OOP',
   positions: ['BTN'],
-  grid: { ...makeEmptyGrid(), AA: { fold: 0, call: 0, raise: 100, allin: 0 } },
-  scenarios: [],
-  tableSize: 6,
+  grid: makeEmptyGrid(),
+  tableSize: 8,
+  prereqRangeId: 500,
+  stackGrids: [
+    { stackRange: '<=250bb', grid: makeEmptyGrid() },
+    { stackRange: '251-300bb', grid: makeEmptyGrid() },
+    { stackRange: '>300bb', grid: makeEmptyGrid() },
+  ],
+  scenarios: [
+    {
+      id: 1,
+      pot: '37.0',
+      ante: 0.5,
+      summary: 'SB 3bet (24bb) → BTN Open (6bb)',
+      heroRaiseSize: 65,
+      data: {
+        sb: { role: '3bet', bet: 24, isHero: false, stack: 200 },
+        bb: { role: 'fold', bet: 1, isHero: false, stack: 200 },
+        str: { role: 'fold', bet: 2, isHero: false, stack: 200 },
+        utg: { role: 'fold', bet: 0, isHero: false, stack: 200 },
+        utg1: { role: 'fold', bet: 0, isHero: false, stack: 200 },
+        mp: { role: 'fold', bet: 0, isHero: false, stack: 200 },
+        co: { role: 'fold', bet: 0, isHero: false, stack: 200 },
+        btn: { role: 'open', bet: 6, isHero: true, stack: 200 },
+      },
+    },
+  ],
+}
+
+const SIMPLE_RANGE: Range = {
+  id: 1, name: 'BTN RFI', positions: ['BTN'], grid: { ...makeEmptyGrid(), AA: { fold: 0, call: 0, raise: 100, allin: 0 } },
+  scenarios: [], tableSize: 6,
 }
 
 function renderTour(onboardingStep = 0, extra: Record<string, unknown> = {}) {
@@ -21,7 +57,7 @@ function renderTour(onboardingStep = 0, extra: Record<string, unknown> = {}) {
     userMode: 'visitor', page: 'dashboard', storageBlocked: false, justSignedUp: false, onboardingStep,
     currentUser: { id: 1, username: 'novo', name: 'Novo', email: '', role: 'player', firstLogin: false },
     ranges: [], trainingHistory: [], selectedDrillRangeIds: [], buildSelectedRangeIds: [],
-    activeDrillRange: null, buildRounds: [], buildConfirmed: false,
+    activeDrillRange: null, buildRounds: [], buildConfirmed: false, tempScenarios: [], currentScenario: {},
     ...extra,
   })
   return render(
@@ -32,10 +68,10 @@ function renderTour(onboardingStep = 0, extra: Record<string, unknown> = {}) {
 }
 
 describe('OnboardingTour', () => {
-  it('mostra o passo 1 (Dashboard) com o contador 1/13', () => {
+  it('mostra o passo 1 (Dashboard) com o contador 1/18', () => {
     renderTour()
     expect(screen.getByText('Bem-vindo ao Pre-Flop Pro!')).toBeInTheDocument()
-    expect(screen.getByText('1/13')).toBeInTheDocument()
+    expect(screen.getByText('1/18')).toBeInTheDocument()
   })
 
   it('"Próximo" navega de verdade pra próxima página (Meus Ranges)', async () => {
@@ -46,55 +82,109 @@ describe('OnboardingTour', () => {
     expect(useStore.getState().onboardingStep).toBe(1)
   })
 
-  it('passo 4 (posição do herói) chama setupNewRange e navega pro RangeEditorPage', async () => {
+  it('passo do formato da mesa mostra a tela "Novo Range"', async () => {
+    renderTour(2)
+    expect(await screen.findByRole('heading', { name: 'Novo Range' })).toBeInTheDocument()
+    expect(useStore.getState().page).toBe('range-setup')
+  })
+
+  it('passo do straddle continua em "Novo Range" e explica o padrão de 2bb', async () => {
     renderTour(3)
+    await screen.findByRole('heading', { name: 'Novo Range' })
+    expect(screen.getByText('Terá straddle?')).toBeInTheDocument()
+    expect(screen.getByText(/padrão de 2bb/)).toBeInTheDocument()
+    expect(useStore.getState().page).toBe('range-setup')
+  })
+
+  it('passo do ante continua em "Novo Range" e explica o padrão de 0,5bb', async () => {
+    renderTour(4)
+    await screen.findByRole('heading', { name: 'Novo Range' })
+    expect(screen.getByText(/0,5bb/)).toBeInTheDocument()
+    expect(useStore.getState().page).toBe('range-setup')
+  })
+
+  it('passo da posição do herói chama setupNewRange e navega pro RangeEditorPage', async () => {
+    renderTour(5)
     expect(await screen.findByRole('heading', { name: 'Criar Range' })).toBeInTheDocument()
     expect(useStore.getState().page).toBe('editor')
   })
 
-  it('passos 5 e 6 (nome / matriz) continuam no RangeEditorPage sem resetar o range', async () => {
-    renderTour(3)
+  it('passos de nome e matriz continuam no RangeEditorPage sem resetar o range', async () => {
+    renderTour(5)
     await screen.findByRole('heading', { name: 'Criar Range' })
     fireEvent.click(screen.getByRole('button', { name: 'Próximo' }))
-    expect(await screen.findByText('Passo 3: nome do range')).toBeInTheDocument()
+    expect(await screen.findByText('Nome do range')).toBeInTheDocument()
     expect(useStore.getState().page).toBe('editor')
     fireEvent.click(screen.getByRole('button', { name: 'Próximo' }))
-    expect(await screen.findByText('Passo 4: pintando as mãos')).toBeInTheDocument()
+    expect(await screen.findByText('Pintando as mãos')).toBeInTheDocument()
     expect(useStore.getState().page).toBe('editor')
   })
 
-  it('passo 7 (mesa) chama initTableConfig e navega pro TableEditorPage', async () => {
-    renderTour(6)
-    expect(await screen.findByRole('heading', { name: 'Configurar Cenários' })).toBeInTheDocument()
-    expect(useStore.getState().page).toBe('table-editor')
+  it('passo de faixas de stack carrega um range real e mostra as faixas salvas', async () => {
+    renderTour(8, { ranges: [STACKRANGE_DEMO, PREREQ_RANGE] })
+    await screen.findByRole('heading', { name: 'Editar Range' })
+    await waitFor(() => expect(useStore.getState().sessionGrids).toHaveLength(3))
+    // '<=250bb' também é um dos botões de atalho do campo Stack Efetivo —
+    // usa getAllByText pra não colidir com o chip da faixa salva.
+    expect(screen.getAllByText('<=250bb').length).toBeGreaterThan(0)
+    expect(screen.getByText('251-300bb')).toBeInTheDocument()
+    expect(screen.getByText('>300bb')).toBeInTheDocument()
   })
 
-  it('passo 8 (cenários) continua no TableEditorPage', async () => {
-    renderTour(7)
-    expect(await screen.findByRole('heading', { name: 'Configurar Cenários' })).toBeInTheDocument()
-    expect(useStore.getState().page).toBe('table-editor')
+  it('passo de pré-requisito mostra o range-pré-requisito real já selecionado', async () => {
+    renderTour(9, { ranges: [STACKRANGE_DEMO, PREREQ_RANGE] })
+    // Carrega um range EXISTENTE pra edição (loadRangeForEdit), por isso o
+    // título é "Editar Range", não "Criar Range".
+    await screen.findByRole('heading', { name: 'Editar Range' })
+    await waitFor(() => expect(useStore.getState().rangeData.prereqRangeId).toBe(500))
+    expect(screen.getByText('RFI BTN')).toBeInTheDocument()
   })
 
-  it('voltar do passo 7 (mesa) pro passo 6 (matriz) navega de volta pro RangeEditorPage', async () => {
-    renderTour(6)
+  it('passo de escolher a ação mostra o cenário real (BTN Open, SB 3-Bet)', async () => {
+    renderTour(10, { ranges: [STACKRANGE_DEMO, PREREQ_RANGE] })
+    await screen.findByRole('heading', { name: 'Configurar Cenários' })
+    await waitFor(() => expect((screen.getByLabelText('Ação de BTN') as HTMLSelectElement).value).toBe('open'))
+    expect((screen.getByLabelText('Ação de SB') as HTMLSelectElement).value).toBe('3bet')
+  })
+
+  it('passo da mesa e passo de cenários continuam mostrando o mesmo cenário real', async () => {
+    renderTour(11, { ranges: [STACKRANGE_DEMO, PREREQ_RANGE] })
+    await screen.findByRole('heading', { name: 'Configurar Cenários' })
+    await waitFor(() => expect((screen.getByLabelText('Ação de BTN') as HTMLSelectElement).value).toBe('open'))
+    fireEvent.click(screen.getByRole('button', { name: 'Próximo' }))
+    expect(await screen.findByText('Salvando cenários e finalizando')).toBeInTheDocument()
+    await waitFor(() => expect((screen.getByLabelText('Ação de BTN') as HTMLSelectElement).value).toBe('open'))
+  })
+
+  it('voltar do passo da mesa (índice 10) pro passo da matriz (índice 7) navega de volta pro RangeEditorPage', async () => {
+    renderTour(10, { ranges: [STACKRANGE_DEMO, PREREQ_RANGE] })
     await screen.findByRole('heading', { name: 'Configurar Cenários' })
     fireEvent.click(screen.getByRole('button', { name: 'Voltar' }))
-    expect(await screen.findByRole('heading', { name: 'Criar Range' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Voltar' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Voltar' }))
+    // O range de exemplo já carregado (loadRangeForEdit) mantém rangeData.id
+    // setado ao voltar só até o passo da matriz — por isso a página mostra
+    // "Editar Range", não "Criar Range" (só reseta de volta ao voltar até a
+    // posição do herói, que chama setupNewRange de novo).
+    expect(await screen.findByRole('heading', { name: 'Editar Range' })).toBeInTheDocument()
     expect(useStore.getState().page).toBe('editor')
   })
 
   it('passo do Drill ao vivo inicia uma sessão de demonstração com uma mão real', async () => {
-    renderTour(8, { ranges: [DEMO_RANGE] })
+    renderTour(13, { ranges: [STACKRANGE_DEMO] })
     await screen.findByText('Drill: escolha o que treinar')
     fireEvent.click(screen.getByRole('button', { name: 'Próximo' }))
-    expect(await screen.findByRole('button', { name: /FOLD/ })).toBeInTheDocument()
-    expect(useStore.getState().activeDrillRange?.id).toBe(99)
+    await waitFor(() => {
+      expect(useStore.getState().activeDrillRange?.id).toBe(1778104119544)
+      expect(useStore.getState().activeHand).toBeTruthy()
+    })
+    expect(await screen.findByRole('button', { name: /FOLD/ }, { timeout: 5000 })).toBeInTheDocument()
   })
 
   it('passo do Drill ao vivo não reinicia uma sessão real já em andamento', async () => {
-    renderTour(9, {
-      ranges: [DEMO_RANGE],
-      activeDrillRange: DEMO_RANGE,
+    renderTour(14, {
+      ranges: [STACKRANGE_DEMO],
+      activeDrillRange: STACKRANGE_DEMO,
       activeHand: 'KK',
       activeDrillStackGridIdx: -1,
       activeDrillStackRange: '',
@@ -110,23 +200,23 @@ describe('OnboardingTour', () => {
   })
 
   it('passo do Range Check ao vivo inicia uma rodada de demonstração pra pintar', async () => {
-    renderTour(10, { ranges: [DEMO_RANGE] })
+    renderTour(15, { ranges: [SIMPLE_RANGE] })
     await screen.findByText('Range Check: escolha o que reproduzir')
     fireEvent.click(screen.getByRole('button', { name: 'Próximo' }))
+    await waitFor(() => expect(useStore.getState().buildRounds).toHaveLength(1))
     expect(await screen.findByText('Combos por ação')).toBeInTheDocument()
-    expect(useStore.getState().buildRounds).toHaveLength(1)
   })
 
   it('último passo (Histórico) mostra "Concluir" e encerra o tour ao clicar', async () => {
-    renderTour(12)
+    renderTour(17)
     expect(await screen.findByText('Seu histórico')).toBeInTheDocument()
-    expect(screen.getByText('13/13')).toBeInTheDocument()
+    expect(screen.getByText('18/18')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Concluir' }))
     expect(useStore.getState().onboardingStep).toBeNull()
   })
 
   it('encerrar o tour depois do passo de Drill ao vivo para a sessão de demonstração que ele criou', async () => {
-    renderTour(9, { ranges: [DEMO_RANGE] })
+    renderTour(14, { ranges: [STACKRANGE_DEMO] })
     await screen.findByRole('button', { name: /FOLD/ })
     fireEvent.click(screen.getByRole('button', { name: 'Pular tutorial' }))
     expect(useStore.getState().activeDrillRange).toBeNull()
@@ -143,7 +233,7 @@ describe('OnboardingTour', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Voltar' }))
     expect(useStore.getState().onboardingStep).toBe(0)
     expect(useStore.getState().page).toBe('dashboard')
-    expect(screen.getByText('1/13')).toBeInTheDocument()
+    expect(screen.getByText('1/18')).toBeInTheDocument()
   })
 
   it('"Pular tutorial" encerra imediatamente em qualquer passo', () => {

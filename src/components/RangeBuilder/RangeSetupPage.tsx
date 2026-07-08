@@ -54,7 +54,7 @@ export function RangeSetupPage() {
 
       {/* Q2: Straddle — only for 8-max */}
       {tableSize === 8 && (
-        <div className="bg-warm-800 border border-warm-700 rounded-xl p-5 space-y-3">
+        <div data-tour="setup-straddle" className="bg-warm-800 border border-warm-700 rounded-xl p-5 space-y-3">
           <p className="font-semibold text-warm-100 text-sm">{t.rangeSetup.straddleQuestion}</p>
           <div className="flex gap-3">
             <OptionButton selected={hasStraddle} onClick={() => setHasStraddle(true)}>{t.rangeSetup.yes}</OptionButton>
@@ -64,7 +64,7 @@ export function RangeSetupPage() {
       )}
 
       {/* Q3: Ante */}
-      <div className="bg-warm-800 border border-warm-700 rounded-xl p-5 space-y-3">
+      <div data-tour="setup-ante" className="bg-warm-800 border border-warm-700 rounded-xl p-5 space-y-3">
         <p className="font-semibold text-warm-100 text-sm">{t.rangeSetup.anteQuestion}</p>
         <div className="flex gap-3">
           <OptionButton selected={hasAnte} onClick={() => setHasAnte(true)}>{t.rangeSetup.yes}</OptionButton>

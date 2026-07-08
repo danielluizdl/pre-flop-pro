@@ -157,7 +157,7 @@ export function RangeEditorPage() {
 
       {/* Preview da sessão */}
       {sessionGrids.length > 0 && (
-        <div className="card-surface p-3 space-y-2">
+        <div data-tour="editor-stackrange" className="card-surface p-3 space-y-2">
           <p className="text-xs font-semibold text-warm-400 uppercase tracking-wide">
             {t.editor.savedThisSession(sessionGrids.length)}
           </p>
@@ -287,7 +287,7 @@ export function RangeEditorPage() {
           </div>
 
           {/* Pré-requisito */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" data-tour="editor-prereq">
             <Link2 size={13} className="text-warm-500 flex-shrink-0" />
             <label className="text-xs font-semibold text-warm-400 whitespace-nowrap flex-shrink-0">
               {t.editor.prereq}
