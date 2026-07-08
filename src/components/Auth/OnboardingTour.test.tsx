@@ -22,7 +22,7 @@ const STACKRANGE_DEMO: Range = {
   tableSize: 8,
   prereqRangeId: 500,
   stackGrids: [
-    { stackRange: '<=250bb', grid: makeEmptyGrid() },
+    { stackRange: '<=250bb', grid: { ...makeEmptyGrid(), AA: { fold: 0, call: 0, raise: 100, allin: 0 } } },
     { stackRange: '251-300bb', grid: makeEmptyGrid() },
     { stackRange: '>300bb', grid: makeEmptyGrid() },
   ],
@@ -103,21 +103,22 @@ describe('OnboardingTour', () => {
     expect(useStore.getState().page).toBe('range-setup')
   })
 
-  it('passo da posição do herói chama setupNewRange e navega pro RangeEditorPage', async () => {
-    renderTour(5)
-    expect(await screen.findByRole('heading', { name: 'Criar Range' })).toBeInTheDocument()
+  it('passo da posição do herói carrega o range real e destaca a posição BTN', async () => {
+    renderTour(5, { ranges: [STACKRANGE_DEMO, PREREQ_RANGE] })
+    expect(await screen.findByRole('heading', { name: 'Editar Range' })).toBeInTheDocument()
     expect(useStore.getState().page).toBe('editor')
+    await waitFor(() => expect(useStore.getState().selectedEditorPositions).toEqual(['BTN']))
   })
 
-  it('passos de nome e matriz continuam no RangeEditorPage sem resetar o range', async () => {
-    renderTour(5)
-    await screen.findByRole('heading', { name: 'Criar Range' })
+  it('passos de nome e matriz continuam mostrando o mesmo range real (BTN vs 3B OOP) já pintado', async () => {
+    renderTour(5, { ranges: [STACKRANGE_DEMO, PREREQ_RANGE] })
+    await screen.findByRole('heading', { name: 'Editar Range' })
     fireEvent.click(screen.getByRole('button', { name: 'Próximo' }))
     expect(await screen.findByText('Nome do range')).toBeInTheDocument()
-    expect(useStore.getState().page).toBe('editor')
+    expect(useStore.getState().rangeData.name).toBe('BTN vs 3B OOP')
     fireEvent.click(screen.getByRole('button', { name: 'Próximo' }))
     expect(await screen.findByText('Pintando as mãos')).toBeInTheDocument()
-    expect(useStore.getState().page).toBe('editor')
+    expect(useStore.getState().rangeData.grid.AA.raise).toBe(100)
   })
 
   it('passo de faixas de stack carrega um range real e mostra as faixas salvas', async () => {
@@ -162,10 +163,9 @@ describe('OnboardingTour', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Voltar' }))
     fireEvent.click(screen.getByRole('button', { name: 'Voltar' }))
     fireEvent.click(screen.getByRole('button', { name: 'Voltar' }))
-    // O range de exemplo já carregado (loadRangeForEdit) mantém rangeData.id
-    // setado ao voltar só até o passo da matriz — por isso a página mostra
-    // "Editar Range", não "Criar Range" (só reseta de volta ao voltar até a
-    // posição do herói, que chama setupNewRange de novo).
+    // Todo passo do Editor (posição/nome/matriz/faixas/prereq) carrega o mesmo
+    // range real — por isso a página mostra "Editar Range" o tempo todo nessa
+    // seção, sem transição pra "Criar Range".
     expect(await screen.findByRole('heading', { name: 'Editar Range' })).toBeInTheDocument()
     expect(useStore.getState().page).toBe('editor')
   })

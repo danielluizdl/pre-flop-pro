@@ -35,7 +35,6 @@ function findStackRangeDemo(ranges: Range[]): Range | undefined {
 export function OnboardingTour() {
   const stepIndex = useStore(s => s.onboardingStep) ?? 0
   const setPage = useStore(s => s.setPage)
-  const setupNewRange = useStore(s => s.setupNewRange)
 
   // Sessões de demonstração ao vivo no Drill/Range Check: só iniciam uma sessão
   // nova se não houver nenhuma em andamento (não pisa num treino real do
@@ -48,7 +47,7 @@ export function OnboardingTour() {
     setPage('drill')
     const s = useStore.getState()
     if (s.activeDrillRange) return
-    const r = s.ranges.find(x => x.scenarios && x.scenarios.length > 0) ?? s.ranges[0]
+    const r = findStackRangeDemo(s.ranges) ?? s.ranges[0]
     if (!r) return
     useStore.setState({ selectedDrillRangeIds: [r.id], drillExcludedHands: [] })
     useStore.getState().startDrillSession()
@@ -60,7 +59,7 @@ export function OnboardingTour() {
     setPage('exercise')
     const s = useStore.getState()
     if (s.buildRounds.length > 0) return
-    const r = s.ranges[0]
+    const r = findStackRangeDemo(s.ranges) ?? s.ranges[0]
     if (!r) return
     useStore.setState({ buildSelectedRangeIds: [r.id] })
     if (useStore.getState().startBuildSession()) {
@@ -69,13 +68,26 @@ export function OnboardingTour() {
     }
   }
 
-  // Passos de faixa de stack / pré-requisito: carrega um range real existente
+  // Passos do Editor (posição / nome / matriz / faixas de stack / pré-requisito):
+  // em vez de um rascunho em branco, carrega o MESMO range real existente
   // (loadRangeForEdit já popula sessionGrids com as faixas salvas + prereqRangeId
-  // quando houver, e seta page:'editor' sozinho).
+  // quando houver, e seta page:'editor' sozinho) e simula o clique na primeira
+  // faixa salva — mesmo efeito de loadSessionForEdit(0) no componente, só que
+  // disparado pelo tour — pra a matriz mostrar esse range JÁ pintado de
+  // verdade, não uma grade vazia. Um único fio narrativo: o mesmo range que
+  // aparece aqui é o que o tour depois treina no Drill e no Range Check.
   function loadStackRangeDemo() {
     const r = findStackRangeDemo(useStore.getState().ranges)
-    if (r) useStore.getState().loadRangeForEdit(r.id)
-    else setPage('editor')
+    if (!r) { setPage('editor'); return }
+    useStore.getState().loadRangeForEdit(r.id)
+    const s = useStore.getState()
+    const sg = s.sessionGrids[0]
+    if (sg) {
+      useStore.setState({
+        rangeData: { ...s.rangeData, name: sg.name, stackRange: sg.stackRange, grid: sg.grid },
+        selectedEditorPositions: [...sg.positions],
+      })
+    }
   }
 
   // Passos da mesa/cenário: reaproveita o primeiro cenário real bufferizado
@@ -98,9 +110,9 @@ export function OnboardingTour() {
     { target: 'setup-tablesize', run: () => setPage('range-setup'), title: t.tour.setupTitle, body: t.tour.setupBody },
     { target: 'setup-straddle', run: () => setPage('range-setup'), title: t.tour.setupStraddleTitle, body: t.tour.setupStraddleBody },
     { target: 'setup-ante', run: () => setPage('range-setup'), title: t.tour.setupAnteTitle, body: t.tour.setupAnteBody },
-    { target: 'editor-position', run: () => setupNewRange(8, true, 0.5), title: t.tour.editorPositionTitle, body: t.tour.editorPositionBody },
-    { target: 'editor-name', run: () => setPage('editor'), title: t.tour.editorNameTitle, body: t.tour.editorNameBody },
-    { target: 'editor-matrix', run: () => setPage('editor'), title: t.tour.editorMatrixTitle, body: t.tour.editorMatrixBody },
+    { target: 'editor-position', run: loadStackRangeDemo, title: t.tour.editorPositionTitle, body: t.tour.editorPositionBody },
+    { target: 'editor-name', run: loadStackRangeDemo, title: t.tour.editorNameTitle, body: t.tour.editorNameBody },
+    { target: 'editor-matrix', run: loadStackRangeDemo, title: t.tour.editorMatrixTitle, body: t.tour.editorMatrixBody },
     { target: 'editor-stackrange', run: loadStackRangeDemo, title: t.tour.editorStackRangeTitle, body: t.tour.editorStackRangeBody },
     { target: 'editor-prereq', run: loadStackRangeDemo, title: t.tour.editorPrereqTitle, body: t.tour.editorPrereqBody },
     { target: 'table-editor-roles', run: loadTableDemo, title: t.tour.tableEditorRolesTitle, body: t.tour.tableEditorRolesBody },
