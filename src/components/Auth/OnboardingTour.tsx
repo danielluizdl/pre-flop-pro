@@ -249,7 +249,6 @@ export function OnboardingTour() {
     { target: 'drill-settings', run: startDrillSettingsDemo, title: t.tour.drillSettingsTitle, body: t.tour.drillSettingsBody },
     { target: 'drill-handfilter', run: startDrillFilterDemo, title: t.tour.drillHandFilterTitle, body: t.tour.drillHandFilterBody },
     { target: 'drill-active', run: startDrillDemo, title: t.tour.drillActiveTitle, body: t.tour.drillActiveBody },
-    { target: 'drill-rangename', run: startDrillDemo, title: t.tour.drillRangenameTitle, body: t.tour.drillRangenameBody },
     { target: 'drill-scoreboard', run: startDrillDemo, title: t.tour.drillScoreboardTitle, body: t.tour.drillScoreboardBody },
     { target: 'drill-history', run: startDrillDemo, title: t.tour.drillHistoryTitle, body: t.tour.drillHistoryBody },
     { target: 'drill-summary', run: startDrillSummaryDemo, title: t.tour.drillSummaryTitle, body: t.tour.drillSummaryBody },
