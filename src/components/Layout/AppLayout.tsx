@@ -21,6 +21,7 @@ const RangeSetupPage = lazy(() => import('../RangeBuilder/RangeSetupPage').then(
 const RangeEditorPage = lazy(() => import('../RangeBuilder/RangeEditorPage').then(m => ({ default: m.RangeEditorPage })))
 const TableEditorPage = lazy(() => import('../TableEditor/TableEditorPage').then(m => ({ default: m.TableEditorPage })))
 const CategoryDetailPage = lazy(() => import('../Situations/CategoryDetailPage').then(m => ({ default: m.CategoryDetailPage })))
+const AccountPage = lazy(() => import('../Auth/AccountPage').then(m => ({ default: m.AccountPage })))
 
 export function AppLayout() {
   const { page, darkMode, userMode, lang } = useStore()
@@ -48,6 +49,7 @@ export function AppLayout() {
       case 'exercise':     return <ExercisePage />
       case 'history':         return <StatsPage />
       case 'category-detail': return <CategoryDetailPage />
+      case 'account':         return <AccountPage />
       case 'admin':           return currentUser?.role === 'coach' ? <CoachPanel /> : <Dashboard />
       default:                return <Dashboard />
     }

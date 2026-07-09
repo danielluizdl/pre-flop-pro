@@ -50,7 +50,7 @@ describe('AppLayout', () => {
   it('page "admin" sem coach cai no dashboard (fallback)', () => {
     useStore.setState({
       userMode: 'visitor', page: 'admin', justSignedUp: false, onboardingStep: null, storageBlocked: false,
-      currentUser: { id: 1, username: 'p', name: 'P', email: '', role: 'player', firstLogin: false },
+      currentUser: { id: 1, username: 'p', name: 'P', email: '', role: 'player', firstLogin: false, tier: '', turma: null },
     })
     renderLayout()
     expect(screen.getByRole('button', { name: 'Drill' })).toBeInTheDocument()
@@ -60,7 +60,7 @@ describe('AppLayout', () => {
   it('justSignedUp mostra o WelcomeModal', () => {
     useStore.setState({
       userMode: 'visitor', page: 'dashboard', storageBlocked: false, justSignedUp: true, onboardingStep: null,
-      currentUser: { id: 1, username: 'novo', name: 'Novo', email: '', role: 'player', firstLogin: false },
+      currentUser: { id: 1, username: 'novo', name: 'Novo', email: '', role: 'player', firstLogin: false, tier: '', turma: null },
     })
     renderLayout()
     expect(screen.getByText(/Bem-vindo/)).toBeInTheDocument()
@@ -69,7 +69,7 @@ describe('AppLayout', () => {
   it('onboardingStep mostra o OnboardingTour em vez do ChangePasswordModal', () => {
     useStore.setState({
       userMode: 'visitor', page: 'dashboard', storageBlocked: false, justSignedUp: false, onboardingStep: 0,
-      currentUser: { id: 1, username: 'novo', name: 'Novo', email: '', role: 'player', firstLogin: true },
+      currentUser: { id: 1, username: 'novo', name: 'Novo', email: '', role: 'player', firstLogin: true, tier: '', turma: null },
     })
     renderLayout()
     expect(screen.getByText('Bem-vindo ao Pre-Flop Pro!')).toBeInTheDocument()
@@ -79,7 +79,7 @@ describe('AppLayout', () => {
   it('firstLogin força o ChangePasswordModal', () => {
     useStore.setState({
       userMode: 'visitor', page: 'dashboard', storageBlocked: false, justSignedUp: false, onboardingStep: null,
-      currentUser: { id: 1, username: 'reset', name: 'Reset', email: '', role: 'player', firstLogin: true },
+      currentUser: { id: 1, username: 'reset', name: 'Reset', email: '', role: 'player', firstLogin: true, tier: '', turma: null },
     })
     renderLayout()
     expect(screen.getByText('Defina sua senha')).toBeInTheDocument()
@@ -154,7 +154,7 @@ describe('AppLayout', () => {
     })
     useStore.setState({
       userMode: 'admin', page: 'admin', justSignedUp: false, onboardingStep: null, storageBlocked: false, authToken: 'tok',
-      currentUser: { id: 1, username: 'coach', name: 'Coach', email: '', role: 'coach', firstLogin: false },
+      currentUser: { id: 1, username: 'coach', name: 'Coach', email: '', role: 'coach', firstLogin: false, tier: '', turma: null },
     })
     renderLayout('/coach')
     expect(await screen.findByRole('button', { name: /Publicar ranges para o time/ })).toBeInTheDocument()

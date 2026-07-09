@@ -8,5 +8,5 @@ export async function onRequest(context) {
   const user = await getAuthUser(request, env)
   if (!user) return json({ error: 'Não autenticado' }, 401)
 
-  return json({ user: { id: user.id, username: user.username, name: user.name, email: user.email, role: user.role, first_login: user.first_login } })
+  return json({ user: { id: user.id, username: user.username, name: user.name, email: user.email, role: user.role, first_login: user.first_login, tier: user.tier, turma: user.turma } })
 }

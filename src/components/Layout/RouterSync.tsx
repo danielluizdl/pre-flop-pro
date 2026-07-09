@@ -14,6 +14,7 @@ const PAGE_TO_PATH: Record<Page, string> = {
   editor: '/editor',
   'table-editor': '/table-editor',
   'category-detail': '/categoria',
+  account: '/conta',
 }
 
 const PATH_TO_PAGE: Record<string, Page> = Object.fromEntries(

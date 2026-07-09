@@ -457,6 +457,7 @@ export const es: Messages = {
     collapseSidebar: 'Contraer barra lateral',
     language: 'Idioma',
     replayTutorial: 'Repetir tutorial',
+    editAccount: 'Editar cuenta',
   },
   dashboard: {
     eyebrow: 'Empieza ahora',
@@ -668,6 +669,23 @@ export const es: Messages = {
     errors: {
       min: 'La contraseña debe tener al menos 8 caracteres',
       mismatch: 'Las contraseñas no coinciden',
+    },
+  },
+  account: {
+    title: 'Editar cuenta',
+    subtitle: 'Actualiza tus datos personales.',
+    back: '← Volver',
+    usernameLabel: 'Usuario',
+    nameLabel: 'Nombre:',
+    emailLabel: 'Correo electrónico:',
+    save: 'Guardar cambios',
+    saving: 'Guardando...',
+    saveSuccess: 'Datos actualizados con éxito.',
+    passwordTitle: 'Cambiar contraseña',
+    passwordSubtitle: 'Define una nueva contraseña para tu cuenta.',
+    errors: {
+      name: 'Ingresa tu nombre.',
+      email: 'Ingresa un correo electrónico válido.',
     },
   },
   auth: {

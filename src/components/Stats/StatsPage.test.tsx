@@ -172,7 +172,7 @@ describe('StatsPage', () => {
     useStore.setState({ trainingHistory: [SESSION], currentUser: null })
     const { rerender } = render(<StatsPage />)
     expect(screen.queryByRole('button', { name: 'Meus dados na nuvem' })).not.toBeInTheDocument()
-    useStore.setState({ currentUser: { id: 1, username: 'p1', name: 'P1', email: '', role: 'player', firstLogin: false } })
+    useStore.setState({ currentUser: { id: 1, username: 'p1', name: 'P1', email: '', role: 'player', firstLogin: false, tier: '', turma: null } })
     rerender(<StatsPage />)
     expect(screen.getByRole('button', { name: 'Meus dados na nuvem' })).toBeInTheDocument()
   })

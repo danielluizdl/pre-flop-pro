@@ -6,7 +6,7 @@ import { useStore } from '../../store/useStore'
 import type { CurrentUser } from '../../types'
 
 const USER: CurrentUser = {
-  id: 1, username: 'admin001', name: 'Daniel Loureiro', email: 'd@x.com', role: 'coach', firstLogin: true,
+  id: 1, username: 'admin001', name: 'Daniel Loureiro', email: 'd@x.com', role: 'coach', firstLogin: true, tier: '', turma: null,
 }
 
 afterEach(() => vi.useRealTimers())

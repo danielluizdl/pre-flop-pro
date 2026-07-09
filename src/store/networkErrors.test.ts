@@ -23,7 +23,7 @@ describe('store: erros de rede capturados (#15 FASE 2)', () => {
   })
 
   it('changePassword: falha de rede → {ok:false} e captureError', async () => {
-    useStore.setState({ authToken: 'tok', currentUser: { id: 1, username: 'u', name: '', email: '', role: 'player', firstLogin: false } })
+    useStore.setState({ authToken: 'tok', currentUser: { id: 1, username: 'u', name: '', email: '', role: 'player', firstLogin: false, tier: '', turma: null } })
     const r = await useStore.getState().changePassword('novasenha')
     expect(r.ok).toBe(false)
     expect(captureError).toHaveBeenCalledWith(expect.any(Error), { area: 'change-password' })

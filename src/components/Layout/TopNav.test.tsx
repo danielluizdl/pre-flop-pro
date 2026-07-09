@@ -52,7 +52,7 @@ describe('TopNav', () => {
   it('abre o menu de perfil e "Sair" faz logout', () => {
     setup()
     const authLogout = vi.fn()
-    useStore.setState({ authLogout, currentUser: { id: 1, username: 'daniel', name: 'Daniel', email: '', role: 'player', firstLogin: false } })
+    useStore.setState({ authLogout, currentUser: { id: 1, username: 'daniel', name: 'Daniel', email: '', role: 'player', firstLogin: false, tier: '', turma: null } })
     render(<TopNav />)
     expect(screen.queryByRole('button', { name: /Sair/ })).not.toBeInTheDocument()
     fireEvent.click(screen.getByText('daniel'))
@@ -62,7 +62,7 @@ describe('TopNav', () => {
 
   it('menu do perfil mostra o idioma vigente e cicla ao clicar', () => {
     setup()
-    useStore.setState({ currentUser: { id: 1, username: 'daniel', name: 'Daniel', email: '', role: 'player', firstLogin: false }, lang: 'pt' })
+    useStore.setState({ currentUser: { id: 1, username: 'daniel', name: 'Daniel', email: '', role: 'player', firstLogin: false, tier: '', turma: null }, lang: 'pt' })
     render(<TopNav />)
     fireEvent.click(screen.getByText('daniel'))
     expect(screen.getByText('PT')).toBeInTheDocument()
@@ -73,7 +73,7 @@ describe('TopNav', () => {
   it('menu do perfil: "Rever tutorial" inicia o onboarding e fecha o menu', () => {
     setup()
     useStore.setState({
-      currentUser: { id: 1, username: 'daniel', name: 'Daniel', email: '', role: 'player', firstLogin: false },
+      currentUser: { id: 1, username: 'daniel', name: 'Daniel', email: '', role: 'player', firstLogin: false, tier: '', turma: null },
       onboardingStep: null,
     })
     render(<TopNav />)
@@ -83,10 +83,24 @@ describe('TopNav', () => {
     expect(screen.queryByRole('button', { name: /Sair/ })).not.toBeInTheDocument()
   })
 
+  it('menu do perfil: "Editar conta" navega pra página de conta e fecha o menu', () => {
+    setup()
+    const setPage = vi.fn()
+    useStore.setState({
+      setPage,
+      currentUser: { id: 1, username: 'daniel', name: 'Daniel', email: '', role: 'player', firstLogin: false, tier: '', turma: null },
+    })
+    render(<TopNav />)
+    fireEvent.click(screen.getByText('daniel'))
+    fireEvent.click(screen.getByRole('button', { name: 'Editar conta' }))
+    expect(setPage).toHaveBeenCalledWith('account')
+    expect(screen.queryByRole('button', { name: /Sair/ })).not.toBeInTheDocument()
+  })
+
   it('mostra "Painel Coach" só para coach e navega para admin', () => {
     setup()
     const setPage = vi.fn()
-    useStore.setState({ setPage, currentUser: { id: 1, username: 'coach', name: 'Coach', email: '', role: 'coach', firstLogin: false } })
+    useStore.setState({ setPage, currentUser: { id: 1, username: 'coach', name: 'Coach', email: '', role: 'coach', firstLogin: false, tier: '', turma: null } })
     render(<TopNav />)
     fireEvent.click(screen.getByRole('button', { name: 'Painel Coach' }))
     expect(setPage).toHaveBeenCalledWith('admin')
@@ -94,7 +108,7 @@ describe('TopNav', () => {
 
   it('clicar fora fecha o menu de perfil', () => {
     setup()
-    useStore.setState({ currentUser: { id: 1, username: 'daniel', name: 'Daniel', email: '', role: 'player', firstLogin: false } })
+    useStore.setState({ currentUser: { id: 1, username: 'daniel', name: 'Daniel', email: '', role: 'player', firstLogin: false, tier: '', turma: null } })
     render(<TopNav />)
     fireEvent.click(screen.getByText('daniel'))
     expect(screen.getByRole('button', { name: /Sair/ })).toBeInTheDocument()

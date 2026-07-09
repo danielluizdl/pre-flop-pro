@@ -62,7 +62,7 @@ const SIMPLE_RANGE: Range = {
 function renderTour(onboardingStep = 0, extra: Record<string, unknown> = {}) {
   useStore.setState({
     userMode: 'visitor', page: 'dashboard', storageBlocked: false, justSignedUp: false, onboardingStep,
-    currentUser: { id: 1, username: 'novo', name: 'Novo', email: '', role: 'player', firstLogin: false },
+    currentUser: { id: 1, username: 'novo', name: 'Novo', email: '', role: 'player', firstLogin: false, tier: '', turma: null },
     ranges: [], trainingHistory: [], selectedDrillRangeIds: [], buildSelectedRangeIds: [],
     activeDrillRange: null, buildRounds: [], buildConfirmed: false, tempScenarios: [], currentScenario: {},
     ...extra,

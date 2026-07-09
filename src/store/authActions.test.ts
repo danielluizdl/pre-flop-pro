@@ -87,7 +87,7 @@ describe('store: ações de auth (caminho feliz)', () => {
   })
 
   it('authLogout com token: chama /api/auth/logout, limpa sessionStorage e estado', async () => {
-    useStore.setState({ authToken: 'tok', currentUser: { id: 1, username: 'u', name: '', email: '', role: 'player', firstLogin: false }, userMode: 'visitor' })
+    useStore.setState({ authToken: 'tok', currentUser: { id: 1, username: 'u', name: '', email: '', role: 'player', firstLogin: false, tier: '', turma: null }, userMode: 'visitor' })
     sessionStorage.setItem('pfp-auth-token', 'tok')
     const calls: string[] = []
     mockFetch((url) => { calls.push(url); return { body: {} } })
@@ -101,7 +101,7 @@ describe('store: ações de auth (caminho feliz)', () => {
   })
 
   it('changePassword sucesso: zera firstLogin do currentUser', async () => {
-    useStore.setState({ authToken: 'tok', currentUser: { id: 1, username: 'u', name: '', email: '', role: 'player', firstLogin: true } })
+    useStore.setState({ authToken: 'tok', currentUser: { id: 1, username: 'u', name: '', email: '', role: 'player', firstLogin: true, tier: '', turma: null } })
     mockFetch(() => ({ body: { ok: true } }))
     const r = await useStore.getState().changePassword('novasenhaforte')
     expect(r.ok).toBe(true)
@@ -113,6 +113,41 @@ describe('store: ações de auth (caminho feliz)', () => {
     const spy = vi.fn()
     globalThis.fetch = spy as unknown as typeof fetch
     const r = await useStore.getState().changePassword('x')
+    expect(r.ok).toBe(false)
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('updateMyAccount sucesso: atualiza nome/email/tier/turma do currentUser', async () => {
+    useStore.setState({
+      authToken: 'tok',
+      currentUser: { id: 1, username: 'u', name: 'Velho', email: 'velho@x.com', role: 'player', firstLogin: false, tier: 'fundamentals', turma: 'A' },
+    })
+    mockFetch(() => ({ body: { ok: true, user: { id: 1, name: 'Novo Nome', email: 'novo@x.com', tier: 'evolution', turma: 'C' } } }))
+    const r = await useStore.getState().updateMyAccount('Novo Nome', 'novo@x.com', 'evolution', 'C')
+    expect(r.ok).toBe(true)
+    const cu = useStore.getState().currentUser
+    expect(cu?.name).toBe('Novo Nome')
+    expect(cu?.email).toBe('novo@x.com')
+    expect(cu?.tier).toBe('evolution')
+    expect(cu?.turma).toBe('C')
+    expect(cu?.username).toBe('u')
+  })
+
+  it('updateMyAccount falha do servidor: não altera currentUser e retorna o erro', async () => {
+    const original = { id: 1, username: 'u', name: 'Velho', email: 'velho@x.com', role: 'player' as const, firstLogin: false, tier: 'fundamentals', turma: 'A' }
+    useStore.setState({ authToken: 'tok', currentUser: original })
+    mockFetch(() => ({ status: 409, body: { error: 'E-mail já cadastrado em outra conta' } }))
+    const r = await useStore.getState().updateMyAccount('Novo Nome', 'novo@x.com', 'evolution', 'C')
+    expect(r.ok).toBe(false)
+    expect(r.error).toBe('E-mail já cadastrado em outra conta')
+    expect(useStore.getState().currentUser).toEqual(original)
+  })
+
+  it('updateMyAccount sem token: retorna erro sem chamar rede', async () => {
+    useStore.setState({ authToken: null })
+    const spy = vi.fn()
+    globalThis.fetch = spy as unknown as typeof fetch
+    const r = await useStore.getState().updateMyAccount('N', 'n@x.com', 'main', null)
     expect(r.ok).toBe(false)
     expect(spy).not.toHaveBeenCalled()
   })
@@ -170,7 +205,7 @@ describe('store: ações de auth (caminho feliz)', () => {
   })
 
   it('changePassword falha do servidor: retorna o erro do body', async () => {
-    useStore.setState({ authToken: 'tok', currentUser: { id: 1, username: 'u', name: '', email: '', role: 'player', firstLogin: false } })
+    useStore.setState({ authToken: 'tok', currentUser: { id: 1, username: 'u', name: '', email: '', role: 'player', firstLogin: false, tier: '', turma: null } })
     mockFetch(() => ({ status: 400, body: { error: 'senha fraca' } }))
     const r = await useStore.getState().changePassword('123')
     expect(r.ok).toBe(false)

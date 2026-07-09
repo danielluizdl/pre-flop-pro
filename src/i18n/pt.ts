@@ -455,6 +455,7 @@ export const pt = {
     collapseSidebar: 'Recolher sidebar',
     language: 'Idioma',
     replayTutorial: 'Rever tutorial',
+    editAccount: 'Editar conta',
   },
   dashboard: {
     eyebrow: 'Comece agora',
@@ -666,6 +667,23 @@ export const pt = {
     errors: {
       min: 'Senha deve ter ao menos 8 caracteres',
       mismatch: 'As senhas não coincidem',
+    },
+  },
+  account: {
+    title: 'Editar conta',
+    subtitle: 'Atualize seus dados pessoais.',
+    back: '← Voltar',
+    usernameLabel: 'Usuário',
+    nameLabel: 'Nome:',
+    emailLabel: 'E-mail:',
+    save: 'Salvar alterações',
+    saving: 'Salvando...',
+    saveSuccess: 'Dados atualizados com sucesso.',
+    passwordTitle: 'Alterar senha',
+    passwordSubtitle: 'Defina uma nova senha para sua conta.',
+    errors: {
+      name: 'Informe seu nome.',
+      email: 'Informe um e-mail válido.',
     },
   },
   auth: {

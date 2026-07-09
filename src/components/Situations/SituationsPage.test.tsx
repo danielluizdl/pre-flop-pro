@@ -197,7 +197,7 @@ describe('SituationsPage', () => {
     useStore.setState({
       ranges: [RANGE],
       teamRangeIds: [1],
-      currentUser: { id: 5, username: 'p1', name: 'P', email: '', role: 'player', firstLogin: false },
+      currentUser: { id: 5, username: 'p1', name: 'P', email: '', role: 'player', firstLogin: false, tier: '', turma: null },
     })
     render(<SituationsPage />)
     fireEvent.click(screen.getByRole('button', { name: /BTN/ }))
@@ -211,7 +211,7 @@ describe('SituationsPage', () => {
     useStore.setState({
       ranges: [RANGE],
       teamRangeIds: [1],
-      currentUser: { id: 1, username: 'coach1', name: 'C', email: '', role: 'coach', firstLogin: false },
+      currentUser: { id: 1, username: 'coach1', name: 'C', email: '', role: 'coach', firstLogin: false, tier: '', turma: null },
     })
     render(<SituationsPage />)
     fireEvent.click(screen.getByRole('button', { name: /BTN/ }))
@@ -223,7 +223,7 @@ describe('SituationsPage', () => {
     useStore.setState({
       ranges: [RANGE],
       teamRangeIds: [999],
-      currentUser: { id: 5, username: 'p1', name: 'P', email: '', role: 'player', firstLogin: false },
+      currentUser: { id: 5, username: 'p1', name: 'P', email: '', role: 'player', firstLogin: false, tier: '', turma: null },
     })
     render(<SituationsPage />)
     fireEvent.click(screen.getByRole('button', { name: /BTN/ }))

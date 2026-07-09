@@ -75,5 +75,5 @@ export async function onRequest(context) {
     })
   } catch { /* best-effort, nunca falha o cadastro */ }
 
-  return json({ ok: true, token, user: { id: result.meta.last_row_id, username, name, email, role: 'player', first_login: 0 } })
+  return json({ ok: true, token, user: { id: result.meta.last_row_id, username, name, email, role: 'player', first_login: 0, tier, turma } })
 }

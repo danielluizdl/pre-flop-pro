@@ -314,6 +314,7 @@ interface AppState {
   authSignup: (username: string, password: string, inviteCode: string, name: string, email: string, tier: string, turma: string | null, turnstileToken?: string | null) => Promise<{ ok: boolean; error?: string }>
   authLogout: () => Promise<void>
   changePassword: (newPassword: string) => Promise<{ ok: boolean; error?: string }>
+  updateMyAccount: (name: string, email: string, tier: string, turma: string | null) => Promise<{ ok: boolean; error?: string }>
   listDevices: () => Promise<{ ok: boolean; devices?: DeviceSession[]; error?: string }>
   revokeDevice: (id: number) => Promise<{ ok: boolean; error?: string }>
   revokeOtherDevices: () => Promise<{ ok: boolean; error?: string }>
@@ -1458,7 +1459,7 @@ export const useStore = create<AppState>()(
           sessionStorage.setItem('pfp-auth-token', data.token)
           set({
             authToken: data.token,
-            currentUser: { id: data.user.id, username: data.user.username, name: data.user.name ?? '', email: data.user.email ?? '', role: data.user.role, firstLogin: !!data.user.first_login },
+            currentUser: { id: data.user.id, username: data.user.username, name: data.user.name ?? '', email: data.user.email ?? '', role: data.user.role, firstLogin: !!data.user.first_login, tier: data.user.tier ?? '', turma: data.user.turma ?? null },
             userMode: data.user.role === 'coach' ? 'admin' : 'visitor',
             justSignedUp: false,
             onboardingStep: null,
@@ -1481,7 +1482,7 @@ export const useStore = create<AppState>()(
           sessionStorage.setItem('pfp-auth-token', data.token)
           set({
             authToken: data.token,
-            currentUser: { id: data.user.id, username: data.user.username, name: data.user.name ?? '', email: data.user.email ?? '', role: data.user.role, firstLogin: !!data.user.first_login },
+            currentUser: { id: data.user.id, username: data.user.username, name: data.user.name ?? '', email: data.user.email ?? '', role: data.user.role, firstLogin: !!data.user.first_login, tier: data.user.tier ?? '', turma: data.user.turma ?? null },
             userMode: data.user.role === 'coach' ? 'admin' : 'visitor',
             justSignedUp: true,
             onboardingStep: null,
@@ -1517,6 +1518,21 @@ export const useStore = create<AppState>()(
           if (currentUser) set({ currentUser: { ...currentUser, firstLogin: false } })
           return { ok: true }
         } catch (e) { captureError(e, { area: 'change-password' }); return { ok: false, error: t.netErrors.connection } }
+      },
+      updateMyAccount: async (name, email, tier, turma) => {
+        const { authToken, currentUser } = get()
+        if (!authToken) return { ok: false, error: 'Não autenticado' }
+        try {
+          const res = await fetch('/api/me/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+            body: JSON.stringify({ name, email, tier, turma }),
+          })
+          const data = await res.json().catch(() => null)
+          if (!res.ok || !data) return { ok: false, error: data?.error ?? t.netErrors.server(res.status) }
+          if (currentUser) set({ currentUser: { ...currentUser, name, email, tier, turma } })
+          return { ok: true }
+        } catch (e) { captureError(e, { area: 'update-my-account' }); return { ok: false, error: t.netErrors.connection } }
       },
       listDevices: async () => {
         const { authToken } = get()
@@ -1570,7 +1586,7 @@ export const useStore = create<AppState>()(
           const data = await res.json()
           set({
             authToken: token,
-            currentUser: { id: data.user.id, username: data.user.username, name: data.user.name ?? '', email: data.user.email ?? '', role: data.user.role, firstLogin: !!data.user.first_login },
+            currentUser: { id: data.user.id, username: data.user.username, name: data.user.name ?? '', email: data.user.email ?? '', role: data.user.role, firstLogin: !!data.user.first_login, tier: data.user.tier ?? '', turma: data.user.turma ?? null },
             userMode: data.user.role === 'coach' ? 'admin' : 'visitor',
             justSignedUp: false,
             onboardingStep: null,

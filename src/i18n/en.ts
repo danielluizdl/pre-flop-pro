@@ -457,6 +457,7 @@ export const en: Messages = {
     collapseSidebar: 'Collapse sidebar',
     language: 'Language',
     replayTutorial: 'Replay tutorial',
+    editAccount: 'Edit account',
   },
   dashboard: {
     eyebrow: 'Start now',
@@ -668,6 +669,23 @@ export const en: Messages = {
     errors: {
       min: 'Password must be at least 8 characters',
       mismatch: 'Passwords do not match',
+    },
+  },
+  account: {
+    title: 'Edit account',
+    subtitle: 'Update your personal data.',
+    back: '← Back',
+    usernameLabel: 'Username',
+    nameLabel: 'Name:',
+    emailLabel: 'Email:',
+    save: 'Save changes',
+    saving: 'Saving...',
+    saveSuccess: 'Data updated successfully.',
+    passwordTitle: 'Change password',
+    passwordSubtitle: 'Set a new password for your account.',
+    errors: {
+      name: 'Enter your name.',
+      email: 'Enter a valid email.',
     },
   },
   auth: {

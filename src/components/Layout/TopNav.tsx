@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useStore } from '../../store/useStore'
-import { LayoutDashboard, Layers, PlayCircle, Grid3x3, Clock, Moon, Sun, Settings, Plus, LogOut, Globe, GraduationCap } from 'lucide-react'
+import { LayoutDashboard, Layers, PlayCircle, Grid3x3, Clock, Moon, Sun, Settings, Plus, LogOut, Globe, GraduationCap, UserCog } from 'lucide-react'
 import { clsx } from 'clsx'
 import type { Page } from '../../types'
 import { AdminPanel } from '../Admin/AdminPanel'
@@ -183,6 +183,13 @@ export function TopNav() {
               >
                 <span className="flex items-center gap-2.5"><Globe size={15} className="flex-shrink-0" />{t.nav.language}</span>
                 <span className="text-xs font-bold text-warm-500">{LANGS.find(l => l.code === lang)?.label}</span>
+              </button>
+              <button
+                onClick={() => { setProfileOpen(false); setPage('account') }}
+                className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-warm-300 hover:bg-warm-800 hover:text-warm-100 transition-colors border-t border-warm-700/60"
+              >
+                <UserCog size={15} className="flex-shrink-0" />
+                {t.nav.editAccount}
               </button>
               <button
                 onClick={() => { setProfileOpen(false); useStore.setState({ onboardingStep: 0 }) }}
