@@ -184,7 +184,7 @@ function SessionCard({ session, onView }: { session: TrainingSession; onView: ()
 
   return (
     <div className="card-surface p-4 flex gap-4 items-start">
-      <div className={`font-stat font-black tabular-nums text-3xl w-14 text-center flex-shrink-0 leading-none ${color}`}>
+      <div className={`font-stat font-black tabular-nums text-3xl w-16 text-center flex-shrink-0 leading-none ${color}`}>
         {accuracy}%
       </div>
       <div className="flex-1 min-w-0">

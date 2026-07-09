@@ -101,6 +101,10 @@ export function TableEditorPage() {
   }
 
   function handleFinalize() {
+    if (modalEntries.length === 0) {
+      alert(t.tableEditor.alertEmptyRange)
+      return
+    }
     if (tempScenarios.length === 0) {
       if (!confirm(t.tableEditor.confirmSaveCurrent)) return
       const summary = getScenarioSummary(currentScenario, activePositions)

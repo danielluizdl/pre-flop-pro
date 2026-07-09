@@ -15,11 +15,17 @@ function fullScenario(): Record<string, PositionConfig> {
   return s
 }
 
+function paintedGrid() {
+  const g = makeEmptyGrid()
+  g.AA = { fold: 0, call: 0, raise: 100, allin: 0 }
+  return g
+}
+
 function setup(over: Record<string, unknown> = {}) {
   useStore.setState({
     activePositions: POS_8MAX, activeSlots: SLOTS_8MAX, currentTableSize: 8,
     currentScenario: fullScenario(), currentAnte: 0.5, tempScenarios: [], currentHeroRaiseSize: 0,
-    rangeData: { id: null, name: 'BTN RFI', grid: makeEmptyGrid(), positions: ['BTN'], tableSize: 8, stackRange: '' },
+    rangeData: { id: null, name: 'BTN RFI', grid: paintedGrid(), positions: ['BTN'], tableSize: 8, stackRange: '' },
     sessionGrids: [],
     ...over,
   })
@@ -95,6 +101,25 @@ describe('TableEditorPage', () => {
     expect(finalizeRange).toHaveBeenCalled()
   })
 
+  it('finalizar sem nenhuma mão pintada alerta e não finaliza nem pede confirmação de cenário', () => {
+    const finalizeRange = vi.fn()
+    const addScenarioToBuffer = vi.fn()
+    setup({
+      finalizeRange,
+      addScenarioToBuffer,
+      tempScenarios: [],
+      rangeData: { id: null, name: 'BTN RFI', grid: makeEmptyGrid(), positions: ['BTN'], tableSize: 8, stackRange: '' },
+    })
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<TableEditorPage />)
+    fireEvent.click(screen.getByRole('button', { name: /Finalizar/ }))
+    expect(alertSpy).toHaveBeenCalledWith('Pinte pelo menos uma mão na matriz antes de finalizar — um range sem mãos não é salvo.')
+    expect(confirmSpy).not.toHaveBeenCalled()
+    expect(addScenarioToBuffer).not.toHaveBeenCalled()
+    expect(finalizeRange).not.toHaveBeenCalled()
+  })
+
   it('"Voltar" navega para o editor', () => {
     const setPage = vi.fn()
     setup({ setPage })
@@ -121,7 +146,7 @@ describe('TableEditorPage', () => {
     setup({
       finalizeRange,
       tempScenarios: [{ id: 1, data: fullScenario(), pot: '5.0', ante: 0.5, summary: 'BTN Open (2bb)' }],
-      sessionGrids: [{ name: 'BTN 100bb', stackRange: '<=100bb', grid: makeEmptyGrid(), positions: ['BTN'] }],
+      sessionGrids: [{ name: 'BTN 100bb', stackRange: '<=100bb', grid: paintedGrid(), positions: ['BTN'] }],
     })
     render(<TableEditorPage />)
     fireEvent.click(screen.getByRole('button', { name: /Finalizar/ }))
@@ -140,7 +165,7 @@ describe('TableEditorPage', () => {
     setup({
       finalizeRange,
       tempScenarios: [{ id: 1, data: fullScenario(), pot: '5.0', ante: 0.5, summary: 'BTN Open (2bb)' }],
-      sessionGrids: [{ name: '', stackRange: '<=100bb', grid: makeEmptyGrid(), positions: ['BTN'] }],
+      sessionGrids: [{ name: '', stackRange: '<=100bb', grid: paintedGrid(), positions: ['BTN'] }],
       rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: ['BTN'], tableSize: 8, stackRange: '' },
     })
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
@@ -220,7 +245,7 @@ describe('TableEditorPage', () => {
     setup({
       finalizeRange,
       tempScenarios: [{ id: 1, data: fullScenario(), pot: '5.0', ante: 0.5, summary: 'BTN Open (2bb)' }],
-      sessionGrids: [{ name: 'BTN 100bb', stackRange: '<=100bb', grid: makeEmptyGrid(), positions: ['BTN'] }],
+      sessionGrids: [{ name: 'BTN 100bb', stackRange: '<=100bb', grid: paintedGrid(), positions: ['BTN'] }],
     })
     render(<TableEditorPage />)
     fireEvent.click(screen.getByRole('button', { name: /Finalizar/ }))
@@ -234,7 +259,7 @@ describe('TableEditorPage', () => {
     setup({
       finalizeRange,
       tempScenarios: [{ id: 1, data: fullScenario(), pot: '5.0', ante: 0.5, summary: 'BTN Open (2bb)' }],
-      sessionGrids: [{ name: 'BTN 100bb', stackRange: '<=100bb', grid: makeEmptyGrid(), positions: ['BTN'] }],
+      sessionGrids: [{ name: 'BTN 100bb', stackRange: '<=100bb', grid: paintedGrid(), positions: ['BTN'] }],
     })
     render(<TableEditorPage />)
     fireEvent.click(screen.getByRole('button', { name: /Finalizar/ }))
@@ -298,7 +323,7 @@ describe('TableEditorPage', () => {
       rangeData: { id: 42, name: 'BTN RFI', grid: makeEmptyGrid(), positions: ['BTN'], tableSize: 8, stackRange: '' },
       ranges: [{ id: 42, name: 'Range existente', positions: ['BTN'], grid: makeEmptyGrid(), scenarios: [], tableSize: 8 }],
       tempScenarios: [{ id: 1, data: fullScenario(), pot: '5.0', ante: 0.5, summary: 'BTN Open (2bb)' }],
-      sessionGrids: [{ name: 'BTN 100bb', stackRange: '<=100bb', grid: makeEmptyGrid(), positions: ['BTN'] }],
+      sessionGrids: [{ name: 'BTN 100bb', stackRange: '<=100bb', grid: paintedGrid(), positions: ['BTN'] }],
     })
     render(<TableEditorPage />)
     fireEvent.click(screen.getByRole('button', { name: /Finalizar/ }))
