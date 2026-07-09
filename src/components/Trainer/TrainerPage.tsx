@@ -5,6 +5,7 @@ import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import { PokerTableEditor } from '../ui/PokerTableEditor'
 import { HandQuickSelect } from '../ui/HandQuickSelect'
 import { RangePreviewModal } from '../ui/RangePreviewModal'
+import { PageTutorialButton } from '../ui/PageTutorialButton'
 import { Eye } from 'lucide-react'
 import { RANKS, SUIT_ICONS } from '../../types'
 import { ALL_HANDS, getRngBands, formatRngBands } from '../../utils/hands'
@@ -565,9 +566,12 @@ function DrillRangeSelect() {
     return (
       <>
       <div className="space-y-4 max-w-2xl mx-auto">
-        <div>
-          <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">{t.drill.title}</h2>
-          <p className="text-warm-400 text-sm">{t.drill.selectIntro}</p>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">{t.drill.title}</h2>
+            <p className="text-warm-400 text-sm">{t.drill.selectIntro}</p>
+          </div>
+          <PageTutorialButton scope="drill" />
         </div>
 
         {ranges.length === 0 ? (

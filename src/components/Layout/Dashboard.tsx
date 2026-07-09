@@ -1,6 +1,7 @@
 import { useStore } from '../../store/useStore'
 import { countNonFoldHands } from '../../utils/hands'
 import { RangeMark } from '../ui/RangeMark'
+import { PageTutorialButton } from '../ui/PageTutorialButton'
 import { MyAccountStats } from '../Stats/MyAccountStats'
 import { AccuracySparkline } from '../Stats/AccuracySparkline'
 import { t } from '../../i18n'
@@ -53,6 +54,9 @@ export function Dashboard() {
       <section className="relative overflow-hidden rounded-3xl bg-warm-900 mb-4" style={{ minHeight: 300 }}>
         <div className="absolute -right-12 -top-8 opacity-25 pointer-events-none">
           <RangeMark size={280} />
+        </div>
+        <div className="absolute top-4 right-4 z-10">
+          <PageTutorialButton scope="dashboard" />
         </div>
         <div className="relative h-full flex flex-col justify-end p-10">
           <div className="text-brand-500 mb-3 uppercase" style={{ fontWeight: 700, fontSize: 11, letterSpacing: '0.25em' }}>

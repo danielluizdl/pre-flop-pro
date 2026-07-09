@@ -651,6 +651,7 @@ export const pt = {
     exitConfirmBody: 'Seu progresso nesse tour será perdido, mas nada do que você já criou ou treinou é afetado. Você pode reabrir o tutorial quando quiser em Perfil → Rever tutorial.',
     exitConfirmYes: 'Sim, sair',
     exitConfirmNo: 'Continuar tutorial',
+    tutorialButton: 'Tutorial',
   },
   awayGuard: {
     title: 'Ainda está aí?',

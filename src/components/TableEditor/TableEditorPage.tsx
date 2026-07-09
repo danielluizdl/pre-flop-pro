@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { PokerTableEditor } from '../ui/PokerTableEditor'
+import { PageTutorialButton } from '../ui/PageTutorialButton'
 import { SEAT_ROLE_LABELS } from '../../types'
 import type { PositionConfig } from '../../types'
 import { countNonFoldHands } from '../../utils/hands'
@@ -124,11 +125,14 @@ export function TableEditorPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display uppercase text-warm-100 text-[28px] leading-none tracking-wide">{t.tableEditor.title}</h1>
-        <p className="text-xs text-warm-400 mt-0.5">
-          Configure as ações de cada posição na mesa. Você pode salvar múltiplos cenários por range.
-        </p>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <h1 className="font-display uppercase text-warm-100 text-[28px] leading-none tracking-wide">{t.tableEditor.title}</h1>
+          <p className="text-xs text-warm-400 mt-0.5">
+            Configure as ações de cada posição na mesa. Você pode salvar múltiplos cenários por range.
+          </p>
+        </div>
+        <PageTutorialButton scope="novo-range" />
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">

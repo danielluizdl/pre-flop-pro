@@ -5,6 +5,7 @@ import { Edit3, Trash2, PlayCircle, BarChart2, Eye, Link2 } from 'lucide-react'
 
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import { RangePreviewModal } from '../ui/RangePreviewModal'
+import { PageTutorialButton } from '../ui/PageTutorialButton'
 import { useModalA11y } from '../../utils/useModalA11y'
 import { t } from '../../i18n'
 import type { Range } from '../../types'
@@ -186,13 +187,16 @@ export function SituationsPage() {
           <h1 className="font-display uppercase text-warm-100 text-[28px] leading-none tracking-wide">{t.ranges.title}</h1>
           <p className="text-xs text-warm-400 mt-0.5">{t.ranges.createdCount(ranges.length)}</p>
         </div>
-        <button
-          data-tour="ranges-new"
-          onClick={() => setPage('range-setup')}
-          className="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-sm font-semibold transition-colors"
-        >
-          {t.ranges.newRange}
-        </button>
+        <div className="flex items-center gap-2">
+          <PageTutorialButton scope="ranges" />
+          <button
+            data-tour="ranges-new"
+            onClick={() => setPage('range-setup')}
+            className="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-sm font-semibold transition-colors"
+          >
+            {t.ranges.newRange}
+          </button>
+        </div>
       </div>
 
       {ranges.length === 0 ? (

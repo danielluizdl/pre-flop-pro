@@ -653,6 +653,7 @@ export const en: Messages = {
     exitConfirmBody: 'Your progress in this tour will be lost, but nothing you\'ve already created or trained is affected. You can reopen the tutorial anytime in Profile → Replay tutorial.',
     exitConfirmYes: 'Yes, exit',
     exitConfirmNo: 'Keep going',
+    tutorialButton: 'Tutorial',
   },
   awayGuard: {
     title: 'Still there?',

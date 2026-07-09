@@ -7,6 +7,7 @@ import { ComboCounter } from '../ui/ComboCounter'
 import { countNonFoldHands, stackRangesOverlap } from '../../utils/hands'
 import { Link2, X, HelpCircle } from 'lucide-react'
 import { PrereqRangePicker } from '../ui/PrereqRangePicker'
+import { PageTutorialButton } from '../ui/PageTutorialButton'
 import { t } from '../../i18n'
 import type { SessionGrid } from '../../types'
 
@@ -184,13 +185,16 @@ export function RangeEditorPage() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div>
-        <h1 className="font-display uppercase text-warm-100 text-[28px] leading-none tracking-wide">
-          {rangeData.id !== null ? t.editor.titleEdit : t.editor.titleCreate}
-        </h1>
-        <p className="text-xs text-warm-500 mt-0.5">
-          {t.editor.subtitle}
-        </p>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <h1 className="font-display uppercase text-warm-100 text-[28px] leading-none tracking-wide">
+            {rangeData.id !== null ? t.editor.titleEdit : t.editor.titleCreate}
+          </h1>
+          <p className="text-xs text-warm-500 mt-0.5">
+            {t.editor.subtitle}
+          </p>
+        </div>
+        <PageTutorialButton scope="novo-range" />
       </div>
 
       {/* Preview da sessão */}

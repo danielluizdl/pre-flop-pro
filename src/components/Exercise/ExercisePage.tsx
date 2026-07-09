@@ -6,6 +6,7 @@ import { BrushControls } from '../RangeBuilder/BrushControls'
 import { RangeActionGrid } from '../Admin/RangeActionGrid'
 import { ComboCounter } from '../ui/ComboCounter'
 import { HandQuickSelect } from '../ui/HandQuickSelect'
+import { PageTutorialButton } from '../ui/PageTutorialButton'
 import { RANKS } from '../../utils/hands'
 import { rangeComboStats, TOTAL_COMBOS } from '../../utils/rangeCombos'
 import { useAwayGuard } from '../../utils/useAwayGuard'
@@ -56,9 +57,12 @@ function BuildRangeSelect() {
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
-      <div data-tour="exercise-select">
-        <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">{t.exercise.title}</h2>
-        <p className="text-warm-400 text-sm">{t.exercise.selectIntro}</p>
+      <div data-tour="exercise-select" className="flex items-start justify-between gap-2">
+        <div>
+          <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">{t.exercise.title}</h2>
+          <p className="text-warm-400 text-sm">{t.exercise.selectIntro}</p>
+        </div>
+        <PageTutorialButton scope="exercise" />
       </div>
 
       {ranges.length === 0 ? (

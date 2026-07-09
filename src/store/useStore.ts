@@ -308,8 +308,10 @@ interface AppState {
   authToken: string | null
   justSignedUp: boolean
   onboardingStep: number | null
+  onboardingScope: string | null
   onboardingDrillOverride: { step: 'select' | 'settings' | 'filter'; openPositions?: string[] } | null
   onboardingForceDrillSummary: boolean
+  startPageTutorial: (scope: string) => void
   authLogin: (username: string, password: string, turnstileToken?: string | null) => Promise<{ ok: boolean; error?: string }>
   authSignup: (username: string, password: string, inviteCode: string, name: string, email: string, tier: string, turma: string | null, turnstileToken?: string | null) => Promise<{ ok: boolean; error?: string }>
   authLogout: () => Promise<void>
@@ -1445,8 +1447,13 @@ export const useStore = create<AppState>()(
       authToken: null,
       justSignedUp: false,
       onboardingStep: null,
+      onboardingScope: null,
       onboardingDrillOverride: null,
       onboardingForceDrillSummary: false,
+      // Tutorial de página (data-tour com o mesmo scope): sempre reinicia do
+      // passo 0 dentro dos passos filtrados por esse scope — "Rever tutorial"
+      // do perfil continua rodando a sequência completa (onboardingScope:null).
+      startPageTutorial: (scope) => set({ onboardingStep: 0, onboardingScope: scope }),
       authLogin: async (username, password, turnstileToken) => {
         try {
           const res = await fetch('/api/auth/login', {

@@ -1,5 +1,6 @@
 ﻿import { useState } from 'react'
 import { useStore } from '../../store/useStore'
+import { PageTutorialButton } from '../ui/PageTutorialButton'
 import { t } from '../../i18n'
 import type { TableSize } from '../../types'
 
@@ -34,9 +35,12 @@ export function RangeSetupPage() {
 
   return (
     <div className="max-w-md mx-auto space-y-5 pt-2">
-      <div>
-        <h1 className="font-display uppercase text-warm-100 text-[28px] leading-none tracking-wide">{t.rangeSetup.title}</h1>
-        <p className="text-xs text-warm-400 mt-0.5">{t.rangeSetup.subtitle}</p>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <h1 className="font-display uppercase text-warm-100 text-[28px] leading-none tracking-wide">{t.rangeSetup.title}</h1>
+          <p className="text-xs text-warm-400 mt-0.5">{t.rangeSetup.subtitle}</p>
+        </div>
+        <PageTutorialButton scope="novo-range" />
       </div>
 
       {/* Q1: Table size */}

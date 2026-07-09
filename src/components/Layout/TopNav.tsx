@@ -192,7 +192,7 @@ export function TopNav() {
                 {t.nav.editAccount}
               </button>
               <button
-                onClick={() => { setProfileOpen(false); useStore.setState({ onboardingStep: 0 }) }}
+                onClick={() => { setProfileOpen(false); useStore.setState({ onboardingStep: 0, onboardingScope: null }) }}
                 className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-warm-300 hover:bg-warm-800 hover:text-warm-100 transition-colors border-t border-warm-700/60"
               >
                 <GraduationCap size={15} className="flex-shrink-0" />

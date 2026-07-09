@@ -11,8 +11,15 @@ const PANEL_EST_HEIGHT = 220
 const MEASURE_TIMEOUT_MS = 2500
 const MEASURE_INTERVAL_MS = 100
 
+// Cada página com tutorial próprio (botão "Tutorial" na página + item "Rever
+// tutorial" no perfil, que roda a sequência completa) mapeia pra um desses
+// scopes. "novo-range" cobre as 3 telas do fluxo de criação (setup/editor/
+// table-editor) como um só tutorial — são passos de uma única tarefa contínua.
+export type TourScope = 'dashboard' | 'ranges' | 'novo-range' | 'drill' | 'exercise' | 'stats'
+
 interface TourStep {
   target: string
+  scope: TourScope
   run: () => void
   title: string
   body: string
@@ -35,6 +42,7 @@ function findStackRangeDemo(ranges: Range[]): Range | undefined {
 
 export function OnboardingTour() {
   const stepIndex = useStore(s => s.onboardingStep) ?? 0
+  const scope = useStore(s => s.onboardingScope) as TourScope | null
   const setPage = useStore(s => s.setPage)
 
   // Sessões de demonstração ao vivo no Drill/Range Check: só iniciam uma sessão
@@ -228,38 +236,43 @@ export function OnboardingTour() {
   }
 
   const steps: TourStep[] = [
-    { target: 'dashboard-hero', run: () => setPage('dashboard'), title: t.tour.dashboardTitle, body: t.tour.dashboardBody },
-    { target: 'ranges-new', run: () => setPage('ranges'), title: t.tour.rangesTitle, body: t.tour.rangesBody },
-    { target: 'setup-tablesize', run: () => setPage('range-setup'), title: t.tour.setupTitle, body: t.tour.setupBody },
-    { target: 'setup-straddle', run: () => setPage('range-setup'), title: t.tour.setupStraddleTitle, body: t.tour.setupStraddleBody },
-    { target: 'setup-ante', run: () => setPage('range-setup'), title: t.tour.setupAnteTitle, body: t.tour.setupAnteBody },
-    { target: 'editor-position', run: loadStackRangeDemo, title: t.tour.editorPositionTitle, body: t.tour.editorPositionBody },
-    { target: 'editor-name', run: loadStackRangeDemo, title: t.tour.editorNameTitle, body: t.tour.editorNameBody },
-    { target: 'editor-stackfield', run: loadStackRangeDemo, title: t.tour.editorStackFieldTitle, body: t.tour.editorStackFieldBody },
-    { target: 'editor-actionsfreq', run: loadActionsFreqDemo, title: t.tour.editorActionsFreqTitle, body: t.tour.editorActionsFreqBody },
-    { target: 'editor-matrix', run: loadActionsFreqDemo, title: t.tour.editorMatrixTitle, body: t.tour.editorMatrixBody },
-    { target: 'editor-stackrange', run: loadStackRangeDemo, title: t.tour.editorStackRangeTitle, body: t.tour.editorStackRangeBody },
-    { target: 'editor-prereq', run: loadStackRangeDemo, title: t.tour.editorPrereqTitle, body: t.tour.editorPrereqBody },
-    { target: 'table-editor-roles', run: loadTableDemo, title: t.tour.tableEditorRolesTitle, body: t.tour.tableEditorRolesBody },
-    { target: 'table-editor-raisefuture', run: loadTableDemo, title: t.tour.tableEditorRaiseFutureTitle, body: t.tour.tableEditorRaiseFutureBody },
-    { target: 'table-editor-table', run: loadTableDemo, title: t.tour.tableEditorTitle, body: t.tour.tableEditorBody },
-    { target: 'table-editor-scenarios', run: loadTableDemo, title: t.tour.tableEditorScenariosTitle, body: t.tour.tableEditorScenariosBody },
-    { target: 'table-editor-finalize', run: loadTableDemo, title: t.tour.tableEditorFinalizeTitle, body: t.tour.tableEditorFinalizeBody },
-    { target: 'drill-select', run: startDrillMultiDemo, title: t.tour.drillTitle, body: t.tour.drillBody },
-    { target: 'drill-settings', run: startDrillSettingsDemo, title: t.tour.drillSettingsTitle, body: t.tour.drillSettingsBody },
-    { target: 'drill-handfilter', run: startDrillFilterDemo, title: t.tour.drillHandFilterTitle, body: t.tour.drillHandFilterBody },
-    { target: 'drill-active', run: startDrillDemo, title: t.tour.drillActiveTitle, body: t.tour.drillActiveBody },
-    { target: 'drill-scoreboard', run: startDrillDemo, title: t.tour.drillScoreboardTitle, body: t.tour.drillScoreboardBody },
-    { target: 'drill-history', run: startDrillDemo, title: t.tour.drillHistoryTitle, body: t.tour.drillHistoryBody },
-    { target: 'drill-summary', run: startDrillSummaryDemo, title: t.tour.drillSummaryTitle, body: t.tour.drillSummaryBody },
-    { target: 'exercise-select', run: () => setPage('exercise'), title: t.tour.exerciseTitle, body: t.tour.exerciseBody },
-    { target: 'exercise-active', run: startExerciseDemo, title: t.tour.exerciseActiveTitle, body: t.tour.exerciseActiveBody },
-    { target: 'exercise-result', run: startExerciseResultDemo, title: t.tour.exerciseResultTitle, body: t.tour.exerciseResultBody },
-    { target: 'exercise-summary', run: startExerciseSummaryDemo, title: t.tour.exerciseSummaryTitle, body: t.tour.exerciseSummaryBody },
-    { target: 'stats-header', run: () => setPage('history'), title: t.tour.historyTitle, body: t.tour.historyBody },
+    { target: 'dashboard-hero', scope: 'dashboard', run: () => setPage('dashboard'), title: t.tour.dashboardTitle, body: t.tour.dashboardBody },
+    { target: 'ranges-new', scope: 'ranges', run: () => setPage('ranges'), title: t.tour.rangesTitle, body: t.tour.rangesBody },
+    { target: 'setup-tablesize', scope: 'novo-range', run: () => setPage('range-setup'), title: t.tour.setupTitle, body: t.tour.setupBody },
+    { target: 'setup-straddle', scope: 'novo-range', run: () => setPage('range-setup'), title: t.tour.setupStraddleTitle, body: t.tour.setupStraddleBody },
+    { target: 'setup-ante', scope: 'novo-range', run: () => setPage('range-setup'), title: t.tour.setupAnteTitle, body: t.tour.setupAnteBody },
+    { target: 'editor-position', scope: 'novo-range', run: loadStackRangeDemo, title: t.tour.editorPositionTitle, body: t.tour.editorPositionBody },
+    { target: 'editor-name', scope: 'novo-range', run: loadStackRangeDemo, title: t.tour.editorNameTitle, body: t.tour.editorNameBody },
+    { target: 'editor-stackfield', scope: 'novo-range', run: loadStackRangeDemo, title: t.tour.editorStackFieldTitle, body: t.tour.editorStackFieldBody },
+    { target: 'editor-actionsfreq', scope: 'novo-range', run: loadActionsFreqDemo, title: t.tour.editorActionsFreqTitle, body: t.tour.editorActionsFreqBody },
+    { target: 'editor-matrix', scope: 'novo-range', run: loadActionsFreqDemo, title: t.tour.editorMatrixTitle, body: t.tour.editorMatrixBody },
+    { target: 'editor-stackrange', scope: 'novo-range', run: loadStackRangeDemo, title: t.tour.editorStackRangeTitle, body: t.tour.editorStackRangeBody },
+    { target: 'editor-prereq', scope: 'novo-range', run: loadStackRangeDemo, title: t.tour.editorPrereqTitle, body: t.tour.editorPrereqBody },
+    { target: 'table-editor-roles', scope: 'novo-range', run: loadTableDemo, title: t.tour.tableEditorRolesTitle, body: t.tour.tableEditorRolesBody },
+    { target: 'table-editor-raisefuture', scope: 'novo-range', run: loadTableDemo, title: t.tour.tableEditorRaiseFutureTitle, body: t.tour.tableEditorRaiseFutureBody },
+    { target: 'table-editor-table', scope: 'novo-range', run: loadTableDemo, title: t.tour.tableEditorTitle, body: t.tour.tableEditorBody },
+    { target: 'table-editor-scenarios', scope: 'novo-range', run: loadTableDemo, title: t.tour.tableEditorScenariosTitle, body: t.tour.tableEditorScenariosBody },
+    { target: 'table-editor-finalize', scope: 'novo-range', run: loadTableDemo, title: t.tour.tableEditorFinalizeTitle, body: t.tour.tableEditorFinalizeBody },
+    { target: 'drill-select', scope: 'drill', run: startDrillMultiDemo, title: t.tour.drillTitle, body: t.tour.drillBody },
+    { target: 'drill-settings', scope: 'drill', run: startDrillSettingsDemo, title: t.tour.drillSettingsTitle, body: t.tour.drillSettingsBody },
+    { target: 'drill-handfilter', scope: 'drill', run: startDrillFilterDemo, title: t.tour.drillHandFilterTitle, body: t.tour.drillHandFilterBody },
+    { target: 'drill-active', scope: 'drill', run: startDrillDemo, title: t.tour.drillActiveTitle, body: t.tour.drillActiveBody },
+    { target: 'drill-scoreboard', scope: 'drill', run: startDrillDemo, title: t.tour.drillScoreboardTitle, body: t.tour.drillScoreboardBody },
+    { target: 'drill-history', scope: 'drill', run: startDrillDemo, title: t.tour.drillHistoryTitle, body: t.tour.drillHistoryBody },
+    { target: 'drill-summary', scope: 'drill', run: startDrillSummaryDemo, title: t.tour.drillSummaryTitle, body: t.tour.drillSummaryBody },
+    { target: 'exercise-select', scope: 'exercise', run: () => setPage('exercise'), title: t.tour.exerciseTitle, body: t.tour.exerciseBody },
+    { target: 'exercise-active', scope: 'exercise', run: startExerciseDemo, title: t.tour.exerciseActiveTitle, body: t.tour.exerciseActiveBody },
+    { target: 'exercise-result', scope: 'exercise', run: startExerciseResultDemo, title: t.tour.exerciseResultTitle, body: t.tour.exerciseResultBody },
+    { target: 'exercise-summary', scope: 'exercise', run: startExerciseSummaryDemo, title: t.tour.exerciseSummaryTitle, body: t.tour.exerciseSummaryBody },
+    { target: 'stats-header', scope: 'stats', run: () => setPage('history'), title: t.tour.historyTitle, body: t.tour.historyBody },
   ]
-  const total = steps.length
-  const step = steps[Math.min(stepIndex, total - 1)]
+  // onboardingScope=null → tour completo (signup / "Rever tutorial" no
+  // perfil); com um scope, filtra só os passos daquela página — usado pelo
+  // botão de tutorial de cada página, que sempre recomeça do passo 0 dentro
+  // do subconjunto filtrado.
+  const activeSteps = scope ? steps.filter(s => s.scope === scope) : steps
+  const total = activeSteps.length
+  const step = activeSteps[Math.min(stepIndex, total - 1)]
 
   const [rect, setRect] = useState<DOMRect | null>(null)
   const [fallback, setFallback] = useState(false)
@@ -321,7 +334,7 @@ export function OnboardingTour() {
     // clearBuildDemo (não stopBuildSession): a demo nunca deve gravar as
     // notas fake no histórico real do Range Check.
     if (startedBuildDemo.current) clearBuildDemo()
-    useStore.setState({ onboardingStep: null, onboardingDrillOverride: null, onboardingForceDrillSummary: false })
+    useStore.setState({ onboardingStep: null, onboardingScope: null, onboardingDrillOverride: null, onboardingForceDrillSummary: false })
   }
   function next() {
     if (stepIndex + 1 >= total) finish()
@@ -340,8 +353,12 @@ export function OnboardingTour() {
   }
   function confirmExit() {
     setConfirmingExit(false)
+    // Tutorial de página (scope): o usuário provavelmente já estava exatamente
+    // onde queria estar, então sair não deve arrastá-lo pro Dashboard — só o
+    // tour completo (scope null) volta pra lá ao ser interrompido.
+    const wasScoped = scope !== null
     finish()
-    setPage('dashboard')
+    if (!wasScoped) setPage('dashboard')
   }
 
   const dialogRef = useModalA11y<HTMLDivElement>(true, requestExit)

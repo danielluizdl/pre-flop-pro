@@ -653,6 +653,7 @@ export const es: Messages = {
     exitConfirmBody: 'Tu progreso en este tour se va a perder, pero nada de lo que ya creaste o entrenaste se ve afectado. Puedes volver a abrir el tutorial cuando quieras en Perfil → Repetir tutorial.',
     exitConfirmYes: 'Sí, salir',
     exitConfirmNo: 'Seguir con el tutorial',
+    tutorialButton: 'Tutorial',
   },
   awayGuard: {
     title: '¿Sigues ahí?',

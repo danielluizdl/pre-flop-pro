@@ -83,6 +83,20 @@ describe('TopNav', () => {
     expect(screen.queryByRole('button', { name: /Sair/ })).not.toBeInTheDocument()
   })
 
+  it('"Rever tutorial" sempre roda a sequência completa, mesmo vindo de um tutorial de página (scope) anterior', () => {
+    setup()
+    useStore.setState({
+      currentUser: { id: 1, username: 'daniel', name: 'Daniel', email: '', role: 'player', firstLogin: false, tier: '', turma: null },
+      onboardingStep: null,
+      onboardingScope: 'drill',
+    })
+    render(<TopNav />)
+    fireEvent.click(screen.getByText('daniel'))
+    fireEvent.click(screen.getByRole('button', { name: 'Rever tutorial' }))
+    expect(useStore.getState().onboardingStep).toBe(0)
+    expect(useStore.getState().onboardingScope).toBeNull()
+  })
+
   it('menu do perfil: "Editar conta" navega pra página de conta e fecha o menu', () => {
     setup()
     const setPage = vi.fn()

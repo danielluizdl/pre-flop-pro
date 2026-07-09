@@ -61,7 +61,7 @@ const SIMPLE_RANGE: Range = {
 
 function renderTour(onboardingStep = 0, extra: Record<string, unknown> = {}) {
   useStore.setState({
-    userMode: 'visitor', page: 'dashboard', storageBlocked: false, justSignedUp: false, onboardingStep,
+    userMode: 'visitor', page: 'dashboard', storageBlocked: false, justSignedUp: false, onboardingStep, onboardingScope: null,
     currentUser: { id: 1, username: 'novo', name: 'Novo', email: '', role: 'player', firstLogin: false, tier: '', turma: null },
     ranges: [], trainingHistory: [], selectedDrillRangeIds: [], buildSelectedRangeIds: [],
     activeDrillRange: null, buildRounds: [], buildConfirmed: false, tempScenarios: [], currentScenario: {},
@@ -374,6 +374,50 @@ describe('OnboardingTour', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Pular tutorial' }))
     fireEvent.click(screen.getByRole('button', { name: 'Sim, sair' }))
     expect(useStore.getState().activeDrillRange).toBeNull()
+  })
+
+  describe('tutorial de página (onboardingScope)', () => {
+    it('scope="drill" mostra só os 7 passos do Drill, começando pela seleção', async () => {
+      renderTour(0, { onboardingScope: 'drill', ranges: [STACKRANGE_DEMO] })
+      await screen.findByText('Drill: escolha o que treinar')
+      expect(screen.getByText('1/7')).toBeInTheDocument()
+      expect(useStore.getState().page).toBe('drill')
+    })
+
+    it('scope="novo-range" mostra só os 15 passos do fluxo de criação de range', async () => {
+      renderTour(0, { onboardingScope: 'novo-range', ranges: [STACKRANGE_DEMO, PREREQ_RANGE] })
+      await screen.findByRole('heading', { name: 'Novo Range' })
+      expect(screen.getByText('1/15')).toBeInTheDocument()
+      // Avança até o fim do subconjunto — não deve vazar pro drill-select da
+      // sequência completa (só existiria se o filtro estivesse quebrado).
+      for (let i = 0; i < 14; i++) fireEvent.click(screen.getByRole('button', { name: 'Próximo' }))
+      expect(await screen.findByText('Finalizando e salvando o range')).toBeInTheDocument()
+      expect(screen.getByText('15/15')).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Concluir' }))
+      expect(useStore.getState().onboardingStep).toBeNull()
+      expect(useStore.getState().onboardingScope).toBeNull()
+    })
+
+    it('scope="stats" (1 passo): sair não navega pro Dashboard, diferente do tour completo', async () => {
+      renderTour(0, { onboardingScope: 'stats' })
+      await screen.findByText('Seu histórico')
+      expect(screen.getByText('1/1')).toBeInTheDocument()
+      expect(useStore.getState().page).toBe('history')
+      fireEvent.click(screen.getByRole('button', { name: 'Pular tutorial' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Sim, sair' }))
+      expect(useStore.getState().onboardingStep).toBeNull()
+      expect(useStore.getState().onboardingScope).toBeNull()
+      expect(useStore.getState().page).toBe('history')
+    })
+
+    it('concluir naturalmente um tutorial de página também não navega pro Dashboard', async () => {
+      renderTour(0, { onboardingScope: 'ranges' })
+      await waitFor(() => expect(useStore.getState().page).toBe('ranges'))
+      fireEvent.click(screen.getByRole('button', { name: 'Concluir' }))
+      expect(useStore.getState().onboardingStep).toBeNull()
+      expect(useStore.getState().onboardingScope).toBeNull()
+      expect(useStore.getState().page).toBe('ranges')
+    })
   })
 
   it('não mostra "Voltar" no primeiro passo', () => {
