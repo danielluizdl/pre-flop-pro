@@ -90,6 +90,21 @@ export function OnboardingTour() {
     }
   }
 
+  // Passo de Ações & Frequências: além de carregar o range real, "pinta" KK
+  // com 50% Call / 50% Raise (ajustando o pincel pro mesmo valor) — um
+  // exemplo redondo e fácil de explicar pra mostrar mistura de frequências,
+  // não uma ação 100%. Reaproveitado pelo passo da matriz logo em seguida
+  // (loadActionsFreqDemo de novo é idempotente), pra o KK continuar pintado
+  // quando a grade aparece.
+  function loadActionsFreqDemo() {
+    loadStackRangeDemo()
+    const s = useStore.getState()
+    useStore.setState({
+      brush: { ...s.brush, call: 50, raise: 50, allin: 0, extra: 0 },
+      rangeData: { ...s.rangeData, grid: { ...s.rangeData.grid, KK: { fold: 0, call: 50, raise: 50, allin: 0 } } },
+    })
+  }
+
   // Passos da mesa/cenário: reaproveita o primeiro cenário real bufferizado
   // pelo loadStackRangeDemo (tempScenarios vem de r.scenarios) em vez do
   // scaffold em branco do initTableConfig — mostra a mesa com ações de verdade.
@@ -112,7 +127,9 @@ export function OnboardingTour() {
     { target: 'setup-ante', run: () => setPage('range-setup'), title: t.tour.setupAnteTitle, body: t.tour.setupAnteBody },
     { target: 'editor-position', run: loadStackRangeDemo, title: t.tour.editorPositionTitle, body: t.tour.editorPositionBody },
     { target: 'editor-name', run: loadStackRangeDemo, title: t.tour.editorNameTitle, body: t.tour.editorNameBody },
-    { target: 'editor-matrix', run: loadStackRangeDemo, title: t.tour.editorMatrixTitle, body: t.tour.editorMatrixBody },
+    { target: 'editor-stackfield', run: loadStackRangeDemo, title: t.tour.editorStackFieldTitle, body: t.tour.editorStackFieldBody },
+    { target: 'editor-actionsfreq', run: loadActionsFreqDemo, title: t.tour.editorActionsFreqTitle, body: t.tour.editorActionsFreqBody },
+    { target: 'editor-matrix', run: loadActionsFreqDemo, title: t.tour.editorMatrixTitle, body: t.tour.editorMatrixBody },
     { target: 'editor-stackrange', run: loadStackRangeDemo, title: t.tour.editorStackRangeTitle, body: t.tour.editorStackRangeBody },
     { target: 'editor-prereq', run: loadStackRangeDemo, title: t.tour.editorPrereqTitle, body: t.tour.editorPrereqBody },
     { target: 'table-editor-roles', run: loadTableDemo, title: t.tour.tableEditorRolesTitle, body: t.tour.tableEditorRolesBody },
@@ -162,6 +179,23 @@ export function OnboardingTour() {
       window.removeEventListener('resize', onViewportChange)
       window.removeEventListener('scroll', onViewportChange, true)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stepIndex])
+
+  // Passo "faixas salvas": troca sozinho entre as faixas de stack a cada
+  // 1.8s (chip 0 já foi mostrado pelo run() do passo, então começa do 1) —
+  // demonstra visualmente que cada faixa tem sua própria matriz pintada.
+  useEffect(() => {
+    if (step.target !== 'editor-stackrange') return
+    let idx = 1
+    const id = setInterval(() => {
+      const s = useStore.getState()
+      if (s.sessionGrids.length === 0) return
+      const sg = s.sessionGrids[idx % s.sessionGrids.length]
+      useStore.setState({ rangeData: { ...s.rangeData, name: sg.name, stackRange: sg.stackRange, grid: sg.grid } })
+      idx++
+    }, 1800)
+    return () => clearInterval(id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stepIndex])
 

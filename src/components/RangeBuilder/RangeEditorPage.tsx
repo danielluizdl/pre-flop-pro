@@ -1,14 +1,52 @@
-﻿import { useState } from 'react'
+﻿import { useState, useRef, useEffect } from 'react'
 import { useStore } from '../../store/useStore'
 import { HandMatrix } from './HandMatrix'
 import { BrushControls } from './BrushControls'
 import { HandQuickSelect } from '../ui/HandQuickSelect'
 import { ComboCounter } from '../ui/ComboCounter'
 import { countNonFoldHands, stackRangesOverlap } from '../../utils/hands'
-import { Link2, X } from 'lucide-react'
+import { Link2, X, HelpCircle } from 'lucide-react'
 import { PrereqRangePicker } from '../ui/PrereqRangePicker'
 import { t } from '../../i18n'
 import type { SessionGrid } from '../../types'
+
+function StackHelpButton() {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDoc = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [open])
+
+  return (
+    <div className="relative flex-shrink-0" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-label={t.editor.stackHelpAria}
+        className="w-5 h-5 flex items-center justify-center rounded-full text-warm-500 hover:text-warm-200 hover:bg-warm-800 transition-colors"
+      >
+        <HelpCircle size={15} />
+      </button>
+      {open && (
+        <div
+          role="dialog"
+          aria-label={t.editor.stackHelpTitle}
+          onKeyDown={e => { if (e.key === 'Escape') { e.preventDefault(); setOpen(false) } }}
+          className="absolute left-0 top-full mt-2 w-64 bg-warm-900 border border-warm-600 rounded-lg shadow-xl p-3 z-30"
+        >
+          <p className="text-xs font-bold text-warm-100 mb-1">{t.editor.stackHelpTitle}</p>
+          <p className="text-xs text-warm-300 leading-relaxed">{t.editor.stackHelpBody}</p>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export function RangeEditorPage() {
   const activePositions   = useStore(s => s.activePositions)
@@ -247,11 +285,12 @@ export function RangeEditorPage() {
           </div>
 
           {/* Stack Efetivo */}
-          <div className="space-y-1.5">
+          <div className="space-y-1.5" data-tour="editor-stackfield">
             <div className="flex items-center gap-2">
               <label className="text-xs font-semibold text-warm-400 whitespace-nowrap flex-shrink-0">
                 {t.editor.stack}
               </label>
+              <StackHelpButton />
               <input
                 type="text"
                 className="input w-52"
@@ -319,7 +358,7 @@ export function RangeEditorPage() {
 
         {/* Right: ações + frequências */}
         <div className="xl:w-80 space-y-3 flex-shrink-0">
-          <div className="bg-warm-800/60 rounded-xl p-4 border border-warm-700 space-y-3">
+          <div data-tour="editor-actionsfreq" className="bg-warm-800/60 rounded-xl p-4 border border-warm-700 space-y-3">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <h2 className="font-bold text-xs text-warm-400 uppercase tracking-wider whitespace-nowrap">
                 {t.editor.actionsFreq}

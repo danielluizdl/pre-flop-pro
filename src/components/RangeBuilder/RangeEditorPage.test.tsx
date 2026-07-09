@@ -49,6 +49,17 @@ describe('RangeEditorPage', () => {
     expect(useStore.getState().rangeData.stackRange).toBe('')
   })
 
+  it('botão de ajuda do stack abre e fecha o popover explicando o formato', () => {
+    setup()
+    render(<RangeEditorPage />)
+    expect(screen.queryByText('Como escrever a faixa de stack')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Ajuda sobre o formato do stack' }))
+    expect(screen.getByRole('dialog', { name: 'Como escrever a faixa de stack' })).toBeInTheDocument()
+    expect(screen.getByText(/valor exato como 200bb/)).toBeInTheDocument()
+    fireEvent.keyDown(screen.getByRole('dialog', { name: 'Como escrever a faixa de stack' }), { key: 'Escape' })
+    expect(screen.queryByText('Como escrever a faixa de stack')).not.toBeInTheDocument()
+  })
+
   it('"Salvar e criar" sem nome dispara alerta de validação', () => {
     setup()
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
