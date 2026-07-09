@@ -75,10 +75,10 @@ function renderTour(onboardingStep = 0, extra: Record<string, unknown> = {}) {
 }
 
 describe('OnboardingTour', () => {
-  it('mostra o passo 1 (Dashboard) com o contador 1/21', () => {
+  it('mostra o passo 1 (Dashboard) com o contador 1/24', () => {
     renderTour()
     expect(screen.getByText('Bem-vindo ao Pre-Flop Pro!')).toBeInTheDocument()
-    expect(screen.getByText('1/21')).toBeInTheDocument()
+    expect(screen.getByText('1/24')).toBeInTheDocument()
   })
 
   it('"Próximo" navega de verdade pra próxima página (Meus Ranges)', async () => {
@@ -194,8 +194,15 @@ describe('OnboardingTour', () => {
     await screen.findByRole('heading', { name: 'Configurar Cenários' })
     await waitFor(() => expect((screen.getByLabelText('Ação de BTN') as HTMLSelectElement).value).toBe('open'))
     fireEvent.click(screen.getByRole('button', { name: 'Próximo' }))
-    expect(await screen.findByText('Salvando cenários e finalizando')).toBeInTheDocument()
+    expect(await screen.findByText('Salvando cenários')).toBeInTheDocument()
     await waitFor(() => expect((screen.getByLabelText('Ação de BTN') as HTMLSelectElement).value).toBe('open'))
+  })
+
+  it('novo passo destaca o botão de finalizar e salvar o range', async () => {
+    renderTour(16, { ranges: [STACKRANGE_DEMO, PREREQ_RANGE] })
+    expect(await screen.findByText('Finalizando e salvando o range')).toBeInTheDocument()
+    await waitFor(() => expect((screen.getByLabelText('Ação de BTN') as HTMLSelectElement).value).toBe('open'))
+    expect(screen.getByRole('button', { name: '✅ Finalizar e Salvar Range' })).toBeInTheDocument()
   })
 
   it('voltar do passo de escolher ação (índice 12) pro passo da matriz (índice 9) navega de volta pro RangeEditorPage', async () => {
@@ -211,10 +218,30 @@ describe('OnboardingTour', () => {
     expect(useStore.getState().page).toBe('editor')
   })
 
-  it('passo do Drill ao vivo inicia uma sessão de demonstração com uma mão real', async () => {
-    renderTour(16, { ranges: [STACKRANGE_DEMO] })
+  it('passo de seleção do Drill marca ranges de 2 posições diferentes automaticamente', async () => {
+    const rangeBtn: Range = { id: 101, name: 'BTN RFI demo', positions: ['BTN'], grid: makeEmptyGrid(), scenarios: [], tableSize: 8 }
+    const rangeSb: Range = { id: 102, name: 'SB vs 3-bet demo', positions: ['SB'], grid: makeEmptyGrid(), scenarios: [], tableSize: 8 }
+    renderTour(17, { ranges: [rangeBtn, rangeSb] })
     await screen.findByText('Drill: escolha o que treinar')
-    fireEvent.click(screen.getByRole('button', { name: 'Próximo' }))
+    await waitFor(() => expect(useStore.getState().selectedDrillRangeIds.slice().sort((a, b) => a - b)).toEqual([101, 102]))
+    expect(await screen.findByText('BTN RFI demo')).toBeInTheDocument()
+    expect(screen.getByText('SB vs 3-bet demo')).toBeInTheDocument()
+  })
+
+  it('passo "como você quer jogar" mostra a tela de configurações do Drill', async () => {
+    renderTour(18, { ranges: [STACKRANGE_DEMO] })
+    expect(await screen.findByRole('heading', { name: 'Configurações de treino' })).toBeInTheDocument()
+    expect(screen.getByText('Como você quer jogar')).toBeInTheDocument()
+  })
+
+  it('passo de filtro de mãos mostra a grade de exclusão do Drill', async () => {
+    renderTour(19, { ranges: [STACKRANGE_DEMO] })
+    expect(await screen.findByRole('heading', { name: 'Filtro de Mãos' })).toBeInTheDocument()
+    expect(screen.getByText('Filtrando quais mãos entram')).toBeInTheDocument()
+  })
+
+  it('passo do Drill ao vivo inicia uma sessão de demonstração com uma mão real', async () => {
+    renderTour(20, { ranges: [STACKRANGE_DEMO] })
     await waitFor(() => {
       expect(useStore.getState().activeDrillRange?.id).toBe(1778104119544)
       expect(useStore.getState().activeHand).toBeTruthy()
@@ -223,7 +250,7 @@ describe('OnboardingTour', () => {
   })
 
   it('passo do Drill ao vivo não reinicia uma sessão real já em andamento', async () => {
-    renderTour(17, {
+    renderTour(20, {
       ranges: [STACKRANGE_DEMO],
       activeDrillRange: STACKRANGE_DEMO,
       activeHand: 'KK',
@@ -240,8 +267,24 @@ describe('OnboardingTour', () => {
     expect(useStore.getState().sessionStats.hands).toBe(3)
   })
 
+  it('atalho de teclado do Drill não responde a mão de demonstração durante o tour', async () => {
+    renderTour(20, { ranges: [STACKRANGE_DEMO], sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, handHistory: [] })
+    await waitFor(() => expect(useStore.getState().activeHand).toBeTruthy())
+    fireEvent.keyDown(window, { key: 'f' })
+    expect(useStore.getState().sessionStats.hands).toBe(0)
+    expect(useStore.getState().handHistory).toHaveLength(0)
+  })
+
+  it('clicar num botão de ação do Drill não conta a mão de demonstração como resposta real', async () => {
+    renderTour(20, { ranges: [STACKRANGE_DEMO], sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 }, handHistory: [] })
+    const foldBtn = await screen.findByRole('button', { name: /FOLD/ }, { timeout: 5000 })
+    fireEvent.click(foldBtn)
+    expect(useStore.getState().sessionStats.hands).toBe(0)
+    expect(useStore.getState().handHistory).toHaveLength(0)
+  })
+
   it('passo do Range Check ao vivo inicia uma rodada de demonstração pra pintar', async () => {
-    renderTour(18, { ranges: [SIMPLE_RANGE] })
+    renderTour(21, { ranges: [SIMPLE_RANGE] })
     await screen.findByText('Range Check: escolha o que reproduzir')
     fireEvent.click(screen.getByRole('button', { name: 'Próximo' }))
     await waitFor(() => expect(useStore.getState().buildRounds).toHaveLength(1))
@@ -249,17 +292,18 @@ describe('OnboardingTour', () => {
   })
 
   it('último passo (Histórico) mostra "Concluir" e encerra o tour ao clicar', async () => {
-    renderTour(20)
+    renderTour(23)
     expect(await screen.findByText('Seu histórico')).toBeInTheDocument()
-    expect(screen.getByText('21/21')).toBeInTheDocument()
+    expect(screen.getByText('24/24')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Concluir' }))
     expect(useStore.getState().onboardingStep).toBeNull()
   })
 
-  it('encerrar o tour depois do passo de Drill ao vivo para a sessão de demonstração que ele criou', async () => {
-    renderTour(17, { ranges: [STACKRANGE_DEMO] })
+  it('confirmar saída depois do passo de Drill ao vivo para a sessão de demonstração que ele criou', async () => {
+    renderTour(20, { ranges: [STACKRANGE_DEMO] })
     await screen.findByRole('button', { name: /FOLD/ })
     fireEvent.click(screen.getByRole('button', { name: 'Pular tutorial' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sim, sair' }))
     expect(useStore.getState().activeDrillRange).toBeNull()
   })
 
@@ -274,18 +318,44 @@ describe('OnboardingTour', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Voltar' }))
     expect(useStore.getState().onboardingStep).toBe(0)
     expect(useStore.getState().page).toBe('dashboard')
-    expect(screen.getByText('1/21')).toBeInTheDocument()
+    expect(screen.getByText('1/24')).toBeInTheDocument()
   })
 
-  it('"Pular tutorial" encerra imediatamente em qualquer passo', () => {
+  it('"Pular tutorial" pede confirmação em vez de encerrar na hora', () => {
     renderTour(2)
     fireEvent.click(screen.getByRole('button', { name: 'Pular tutorial' }))
-    expect(useStore.getState().onboardingStep).toBeNull()
+    expect(screen.getByText('Sair do tutorial?')).toBeInTheDocument()
+    expect(useStore.getState().onboardingStep).toBe(2)
   })
 
-  it('Esc encerra o tour', () => {
+  it('cancelar a confirmação de saída mantém o tour no mesmo passo', () => {
+    renderTour(2)
+    fireEvent.click(screen.getByRole('button', { name: 'Pular tutorial' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar tutorial' }))
+    expect(screen.queryByText('Sair do tutorial?')).not.toBeInTheDocument()
+    expect(useStore.getState().onboardingStep).toBe(2)
+  })
+
+  it('confirmar a saída encerra o tour e volta pro Dashboard', () => {
+    renderTour(3)
+    fireEvent.click(screen.getByRole('button', { name: 'Pular tutorial' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sim, sair' }))
+    expect(useStore.getState().onboardingStep).toBeNull()
+    expect(useStore.getState().page).toBe('dashboard')
+  })
+
+  it('clicar fora do painel do tour também pede confirmação, sem encerrar na hora', () => {
+    renderTour(2)
+    fireEvent.click(screen.getByRole('dialog').parentElement!)
+    expect(screen.getByText('Sair do tutorial?')).toBeInTheDocument()
+    expect(useStore.getState().onboardingStep).toBe(2)
+  })
+
+  it('Esc pede confirmação em vez de encerrar o tour na hora', () => {
     renderTour(1)
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+    expect(screen.getByText('Sair do tutorial?')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Sim, sair' }))
     expect(useStore.getState().onboardingStep).toBeNull()
   })
 

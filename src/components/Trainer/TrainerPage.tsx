@@ -457,7 +457,7 @@ function DrillSettingsStep({ onNext, onBack }: { onNext: () => void; onBack: () 
     ].join(' ')
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5">
+    <div data-tour="drill-settings" className="max-w-2xl mx-auto space-y-5">
       <div className="text-center">
         <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">{t.drill.settingsTitle}</h2>
         <p className="text-warm-400 text-sm">{t.drill.settingsIntro}</p>
@@ -521,6 +521,17 @@ function DrillRangeSelect() {
   const [previewId, setPreviewId]   = useState<number | null>(null)
   const [notice, setNotice]         = useState('')
 
+  // O tour de onboarding navega essa tela por fora (não tem como clicar,
+  // interação fica bloqueada durante o tour) — onboardingDrillOverride é o
+  // canal pelo qual ele força qual sub-tela mostrar e quais grupos de posição
+  // ficam abertos, já que `step`/`openGroups` são estado local do componente.
+  const drillOverride = useStore(s => s.onboardingDrillOverride)
+  useEffect(() => {
+    if (!drillOverride) return
+    setStep(drillOverride.step)
+    if (drillOverride.openPositions) setOpenGroups(new Set(drillOverride.openPositions))
+  }, [drillOverride])
+
   function toggleGroup(pos: string) {
     setOpenGroups(prev => {
       const next = new Set(prev)
@@ -554,7 +565,7 @@ function DrillRangeSelect() {
     return (
       <>
       <div className="space-y-4 max-w-2xl mx-auto">
-        <div data-tour="drill-select">
+        <div>
           <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">{t.drill.title}</h2>
           <p className="text-warm-400 text-sm">{t.drill.selectIntro}</p>
         </div>
@@ -571,7 +582,7 @@ function DrillRangeSelect() {
           </div>
         ) : (
           <>
-            <div className="space-y-2">
+            <div data-tour="drill-select" className="space-y-2">
               {orderedKeys.map(pos => {
                 const group = grouped[pos]
                 const isOpen = openGroups.has(pos)
@@ -716,7 +727,7 @@ function DrillRangeSelect() {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
+    <div data-tour="drill-handfilter" className="space-y-6 max-w-2xl mx-auto">
       <div className="text-center">
         <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">{t.drill.handFilter}</h2>
         <p className="text-warm-400 text-sm">{t.drill.handFilterIntro}</p>
@@ -1142,6 +1153,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
 
   function handleAction(act: string) {
     if (answeredRef.current || viewingPrev) return
+    if (useStore.getState().onboardingStep !== null) return
     answeredRef.current = true
     setPressedAction(act)
     const { correct, message } = checkAnswer(act)
@@ -1169,6 +1181,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
   actionBtns.forEach(b => { if (b.hotkey) hotkeyMap[b.hotkey.toLowerCase()] = b.action })
 
   keyHandlerRef.current = (e: KeyboardEvent) => {
+    if (useStore.getState().onboardingStep !== null) return
     const el = e.target as HTMLElement | null
     if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return
     const key = e.key.toLowerCase()

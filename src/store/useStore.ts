@@ -308,6 +308,7 @@ interface AppState {
   authToken: string | null
   justSignedUp: boolean
   onboardingStep: number | null
+  onboardingDrillOverride: { step: 'select' | 'settings' | 'filter'; openPositions?: string[] } | null
   authLogin: (username: string, password: string, turnstileToken?: string | null) => Promise<{ ok: boolean; error?: string }>
   authSignup: (username: string, password: string, inviteCode: string, name: string, email: string, tier: string, turma: string | null, turnstileToken?: string | null) => Promise<{ ok: boolean; error?: string }>
   authLogout: () => Promise<void>
@@ -1442,6 +1443,7 @@ export const useStore = create<AppState>()(
       authToken: null,
       justSignedUp: false,
       onboardingStep: null,
+      onboardingDrillOverride: null,
       authLogin: async (username, password, turnstileToken) => {
         try {
           const res = await fetch('/api/auth/login', {

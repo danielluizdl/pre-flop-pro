@@ -43,8 +43,53 @@ export function OnboardingTour() {
   const startedDrillDemo = useRef(false)
   const startedBuildDemo = useRef(false)
 
+  // Passos do Drill anteriores à mesa (select/settings/filter) mexem no `step`
+  // interno de DrillRangeSelect, que é estado local do componente — sem jeito
+  // de navegar até ele só via store (setPage). Se um passo anterior a esses já
+  // tiver deixado uma sessão de demo ativa (usuário foi até drill-active e
+  // voltou), encerra ela antes, senão TrainerPage continua renderizando
+  // DrillActive em vez de DrillRangeSelect e o alvo do passo não é encontrado.
+  function resetDrillDemoIfActive() {
+    if (useStore.getState().activeDrillRange) {
+      useStore.getState().stopDrill()
+      startedDrillDemo.current = false
+    }
+  }
+
+  function startDrillMultiDemo() {
+    setPage('drill')
+    resetDrillDemoIfActive()
+    const s = useStore.getState()
+    const grouped: Record<string, number[]> = {}
+    for (const r of s.ranges) {
+      for (const pos of r.positions) {
+        if (!grouped[pos]) grouped[pos] = []
+        grouped[pos].push(r.id)
+      }
+    }
+    const openPositions = Object.keys(grouped).slice(0, 2)
+    const ids = openPositions.map(p => grouped[p][0])
+    useStore.setState({
+      selectedDrillRangeIds: ids,
+      onboardingDrillOverride: { step: 'select', openPositions },
+    })
+  }
+
+  function startDrillSettingsDemo() {
+    setPage('drill')
+    resetDrillDemoIfActive()
+    useStore.setState({ onboardingDrillOverride: { step: 'settings' } })
+  }
+
+  function startDrillFilterDemo() {
+    setPage('drill')
+    resetDrillDemoIfActive()
+    useStore.setState({ onboardingDrillOverride: { step: 'filter' } })
+  }
+
   function startDrillDemo() {
     setPage('drill')
+    useStore.setState({ onboardingDrillOverride: null })
     const s = useStore.getState()
     if (s.activeDrillRange) return
     const r = findStackRangeDemo(s.ranges) ?? s.ranges[0]
@@ -136,7 +181,10 @@ export function OnboardingTour() {
     { target: 'table-editor-raisefuture', run: loadTableDemo, title: t.tour.tableEditorRaiseFutureTitle, body: t.tour.tableEditorRaiseFutureBody },
     { target: 'table-editor-table', run: loadTableDemo, title: t.tour.tableEditorTitle, body: t.tour.tableEditorBody },
     { target: 'table-editor-scenarios', run: loadTableDemo, title: t.tour.tableEditorScenariosTitle, body: t.tour.tableEditorScenariosBody },
-    { target: 'drill-select', run: () => setPage('drill'), title: t.tour.drillTitle, body: t.tour.drillBody },
+    { target: 'table-editor-finalize', run: loadTableDemo, title: t.tour.tableEditorFinalizeTitle, body: t.tour.tableEditorFinalizeBody },
+    { target: 'drill-select', run: startDrillMultiDemo, title: t.tour.drillTitle, body: t.tour.drillBody },
+    { target: 'drill-settings', run: startDrillSettingsDemo, title: t.tour.drillSettingsTitle, body: t.tour.drillSettingsBody },
+    { target: 'drill-handfilter', run: startDrillFilterDemo, title: t.tour.drillHandFilterTitle, body: t.tour.drillHandFilterBody },
     { target: 'drill-active', run: startDrillDemo, title: t.tour.drillActiveTitle, body: t.tour.drillActiveBody },
     { target: 'exercise-select', run: () => setPage('exercise'), title: t.tour.exerciseTitle, body: t.tour.exerciseBody },
     { target: 'exercise-active', run: startExerciseDemo, title: t.tour.exerciseActiveTitle, body: t.tour.exerciseActiveBody },
@@ -203,7 +251,7 @@ export function OnboardingTour() {
   function finish() {
     if (startedDrillDemo.current) useStore.getState().stopDrill()
     if (startedBuildDemo.current) useStore.getState().stopBuildSession()
-    useStore.setState({ onboardingStep: null })
+    useStore.setState({ onboardingStep: null, onboardingDrillOverride: null })
   }
   function next() {
     if (stepIndex + 1 >= total) finish()
@@ -213,7 +261,21 @@ export function OnboardingTour() {
     if (stepIndex > 0) useStore.setState({ onboardingStep: stepIndex - 1 })
   }
 
-  const dialogRef = useModalA11y<HTMLDivElement>(true, finish)
+  // Sair do tour (clique fora, Pular ou Esc) nunca encerra na hora — sempre
+  // pede confirmação, pra não perder o lugar por um clique acidental fora do
+  // painel. Só "Sim, sair" chama finish() de verdade e volta pro Dashboard.
+  const [confirmingExit, setConfirmingExit] = useState(false)
+  function requestExit() {
+    setConfirmingExit(true)
+  }
+  function confirmExit() {
+    setConfirmingExit(false)
+    finish()
+    setPage('dashboard')
+  }
+
+  const dialogRef = useModalA11y<HTMLDivElement>(true, requestExit)
+  const confirmDialogRef = useModalA11y<HTMLDivElement>(confirmingExit, () => setConfirmingExit(false))
 
   const panelWidth = Math.min(PANEL_WIDTH_MAX, window.innerWidth - PANEL_MARGIN * 2)
   let panelTop = 88
@@ -244,7 +306,7 @@ export function OnboardingTour() {
   }
 
   return (
-    <div className="fixed inset-0" style={{ zIndex: 60 }} onClick={finish}>
+    <div className="fixed inset-0" style={{ zIndex: 60 }} onClick={requestExit}>
       {rect && !fallback && (
         <div
           aria-hidden="true"
@@ -275,7 +337,7 @@ export function OnboardingTour() {
         <p className="text-xs text-warm-300 leading-relaxed mb-3">{step.body}</p>
         <div className="flex items-center justify-between gap-3">
           <button
-            onClick={finish}
+            onClick={requestExit}
             className="text-[0.7rem] text-warm-500 hover:text-warm-300 transition-colors whitespace-nowrap"
           >
             {t.tour.skip}
@@ -300,6 +362,39 @@ export function OnboardingTour() {
         </div>
         <p className="text-[0.62rem] text-warm-600 mt-2 leading-snug">{t.tour.replayNote}</p>
       </div>
+      {confirmingExit && (
+        <div
+          className="fixed inset-0 flex items-center justify-center p-4"
+          style={{ background: 'rgba(3,7,18,0.75)' }}
+          onClick={e => { e.stopPropagation(); setConfirmingExit(false) }}
+        >
+          <div
+            ref={confirmDialogRef}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="tour-exit-title"
+            onClick={e => e.stopPropagation()}
+            className="bg-warm-900 border border-warm-700 rounded-2xl p-5 max-w-xs w-full space-y-3 shadow-2xl"
+          >
+            <p id="tour-exit-title" className="text-sm font-bold text-warm-100">{t.tour.exitConfirmTitle}</p>
+            <p className="text-xs text-warm-300 leading-relaxed">{t.tour.exitConfirmBody}</p>
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                onClick={() => setConfirmingExit(false)}
+                className="px-3.5 py-2 rounded-lg border border-warm-600 text-warm-300 hover:bg-warm-800 text-sm font-semibold transition-colors"
+              >
+                {t.tour.exitConfirmNo}
+              </button>
+              <button
+                onClick={confirmExit}
+                className="px-3.5 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-semibold transition-colors"
+              >
+                {t.tour.exitConfirmYes}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

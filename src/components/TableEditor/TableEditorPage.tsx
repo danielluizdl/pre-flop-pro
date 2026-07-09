@@ -343,7 +343,7 @@ export function TableEditorPage() {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4 border-t border-warm-700">
+          <div data-tour="table-editor-finalize" className="flex gap-3 pt-4 border-t border-warm-700">
             <button
               onClick={handleFinalize}
               className="flex-1 py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-lg font-bold transition-colors"
