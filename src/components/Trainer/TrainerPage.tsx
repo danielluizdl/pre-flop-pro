@@ -89,7 +89,7 @@ const HandHistorySidebar = memo(function HandHistorySidebar({ onOpenModal, onRep
   const history = useStore(s => s.handHistory)
   const reversed = [...history].reverse()
   return (
-    <div className="flex-1 min-h-0 bg-warm-800 rounded-xl border border-warm-700 p-3 flex flex-col">
+    <div data-tour="drill-history" className="flex-1 min-h-0 bg-warm-800 rounded-xl border border-warm-700 p-3 flex flex-col">
       <button
         onClick={onOpenModal}
         className="text-xs font-bold text-warm-400 mb-2 flex-shrink-0 text-left hover:text-warm-100 transition-colors"
@@ -802,7 +802,7 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
     : null
 
   return (
-    <div className="space-y-4 max-w-2xl mx-auto">
+    <div data-tour="drill-summary" className="space-y-4 max-w-2xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">{t.drill.summaryTitle}</h2>
@@ -1236,6 +1236,29 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
               </div>
             </div>
 
+            {/* Placar: range ativo + acertos/erros (dentro do quadrado da mesa) */}
+            <div
+              data-tour="drill-scoreboard"
+              className="flex-shrink-0 flex items-center justify-between gap-3 px-3 pb-1.5 flex-wrap"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-xs font-bold text-warm-100 truncate" title={activeDrillRange.name}>
+                  {activeDrillRange.name}
+                </span>
+                {!!activeDrillStackRange && (
+                  <span className="shrink-0 px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-500/10 border border-brand-500/40 text-brand-400 leading-tight">
+                    {activeDrillStackRange}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-3 text-[0.7rem] shrink-0">
+                <span className="text-warm-400">{t.stats.hands} <span className="text-warm-100 font-bold">{stats.hands}</span></span>
+                <span className="text-emerald-400">{t.stats.correct} <span className="font-bold">{stats.correct}</span></span>
+                <span className="text-red-400">{t.stats.errors} <span className="font-bold">{stats.errors}</span></span>
+                <span className="text-warm-400">{t.drill.consults} <span className="text-warm-100 font-bold">{stats.consults}</span></span>
+              </div>
+            </div>
+
             {/* Mesa com cartas do hero */}
             <div className="flex justify-center px-8 sm:px-10 pt-1 pb-[60px]">
               <div
@@ -1349,40 +1372,20 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                 >‹</button>
               </div>
 
-              {/* Stats + info */}
-              <div className="flex-shrink-0 bg-warm-800 border border-warm-700 rounded-xl p-3 space-y-2">
-                <div className="text-xs font-bold text-warm-100 leading-tight truncate" title={activeDrillRange.name}>
-                  {activeDrillRange.name}
-                </div>
-                {!!activeDrillStackRange && (
-                  <span className="inline-block px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-500/10 border border-brand-500/40 text-brand-400 leading-tight">
-                    {activeDrillStackRange}
-                  </span>
-                )}
-                <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
-                  <span className="text-warm-400">{t.stats.hands}</span>
-                  <span className="text-warm-100 font-bold text-right">{stats.hands}</span>
-                  <span className="text-emerald-400">{t.stats.correct}</span>
-                  <span className="text-emerald-400 font-bold text-right">{stats.correct}</span>
-                  <span className="text-red-400">{t.stats.errors}</span>
-                  <span className="text-red-400 font-bold text-right">{stats.errors}</span>
-                  <span className="text-warm-400">{t.drill.consults}</span>
-                  <span className="text-warm-100 font-bold text-right">{stats.consults}</span>
-                </div>
-                <div className="pt-1 border-t border-warm-700 space-y-1.5">
-                  <button
-                    onClick={() => stopDrill(getAwayMs())}
-                    className="w-full py-1.5 text-xs border border-warm-700 bg-warm-900 text-warm-500 rounded-lg hover:bg-warm-700 hover:text-warm-200 font-semibold transition-colors"
-                  >
-                    {t.drill.finishTraining}
-                  </button>
-                  <button
-                    onClick={onShowSummary}
-                    className="w-full py-1.5 text-xs border border-brand-700/50 bg-brand-900/20 text-brand-400 rounded-lg hover:bg-brand-900/40 font-semibold transition-colors"
-                  >
-                    {t.drill.finishAndSummary}
-                  </button>
-                </div>
+              {/* Encerrar */}
+              <div className="flex-shrink-0 bg-warm-800 border border-warm-700 rounded-xl p-3 space-y-1.5">
+                <button
+                  onClick={() => stopDrill(getAwayMs())}
+                  className="w-full py-1.5 text-xs border border-warm-700 bg-warm-900 text-warm-500 rounded-lg hover:bg-warm-700 hover:text-warm-200 font-semibold transition-colors"
+                >
+                  {t.drill.finishTraining}
+                </button>
+                <button
+                  onClick={onShowSummary}
+                  className="w-full py-1.5 text-xs border border-brand-700/50 bg-brand-900/20 text-brand-400 rounded-lg hover:bg-brand-900/40 font-semibold transition-colors"
+                >
+                  {t.drill.finishAndSummary}
+                </button>
               </div>
             </>
           )}
@@ -1423,11 +1426,16 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
 export function TrainerPage() {
   const activeDrillRange = useStore(s => s.activeDrillRange)
   const stopDrill        = useStore(s => s.stopDrill)
+  // O tour de onboarding não consegue clicar em "Encerrar e ver resumo" (clique
+  // é capturado pelo overlay do tour) — onboardingForceDrillSummary é o canal
+  // pelo qual ele força a tela de resumo a aparecer sem passar por showSummary,
+  // que é estado local. Mesmo padrão de onboardingDrillOverride no DrillRangeSelect.
+  const forceSummary     = useStore(s => s.onboardingForceDrillSummary)
   const [showSummary, setShowSummary]   = useState(false)
   const [showHistory, setShowHistory]   = useState(false)
 
   if (showHistory) return <HistoryModal onClose={() => setShowHistory(false)} />
-  if (showSummary) return (
+  if (showSummary || forceSummary) return (
     <DrillSummary
       onClose={() => { stopDrill(); setShowSummary(false) }}
       onBack={activeDrillRange ? () => setShowSummary(false) : undefined}
