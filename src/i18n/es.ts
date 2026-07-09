@@ -630,7 +630,7 @@ export const es: Messages = {
     drillRangenameTitle: 'El range de turno, bien visible',
     drillRangenameBody: 'El nombre del range (y su tramo de stack, cuando el range tiene más de uno) aparece en letras grandes arriba de la mesa — para que siempre sepas de un vistazo qué situación estás entrenando, sin abrir nada.',
     drillScoreboardTitle: 'El cuadrante de aciertos y errores',
-    drillScoreboardBody: 'Al lado de la mesa está el marcador de la sesión: cuántas manos ya jugaste, cuántas acertaste, cuántas fallaste y cuántas veces consultaste el range. Se actualiza con cada mano nueva, siempre visible mientras juegas.',
+    drillScoreboardBody: 'En la esquina de la mesa está el marcador de la sesión: cuántas manos ya jugaste, cuántas acertaste, cuántas fallaste y cuántas veces consultaste el range. Se actualiza con cada mano nueva, siempre visible mientras juegas.',
     drillHistoryTitle: 'Historial al lado',
     drillHistoryBody: 'Cada mano que respondes entra en esta lista, con la carta repartida y tu respuesta — en rojo cuando fallas, junto con la acción correcta. Haz clic en una mano de la lista para revisar esa jugada sin salir del entrenamiento.',
     drillSummaryTitle: 'El resumen al terminar',

@@ -1211,9 +1211,9 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
             className="rounded-2xl border border-warm-800 flex flex-col"
             style={{ background: 'var(--table-box-bg, #16140f)', boxShadow: 'var(--table-box-shadow, inset 0 0 60px rgba(0,0,0,0.9))' }}
           >
-            {/* Cabeçalho: nome do range em destaque (esquerda) + RNG/ações (direita) */}
-            <div className="flex-shrink-0 flex items-center justify-between gap-2 pt-2 px-3 flex-wrap">
-              <div data-tour="drill-rangename" className="flex items-center gap-2 min-w-0">
+            {/* Cabeçalho: nome do range (esquerda) + quadrante de acertos/erros (direita) */}
+            <div className="flex-shrink-0 flex items-start justify-between gap-3 pt-2 px-3 flex-wrap">
+              <div data-tour="drill-rangename" className="flex items-center gap-2 min-w-0 pt-1.5">
                 <span className="text-lg font-extrabold text-warm-100 leading-tight truncate" title={activeDrillRange.name}>
                   {activeDrillRange.name}
                 </span>
@@ -1223,25 +1223,47 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                {useRng && (
-                  <span className="bg-warm-800 border border-warm-600 text-warm-100 text-xs rounded-full font-bold px-2.5 py-1 tracking-wider whitespace-nowrap">
-                    RNG {displayRng}
-                  </span>
-                )}
-                <button
-                  onClick={() => setModalViewMode('heatmap')}
-                  className="px-2 py-0.5 text-xs border border-warm-600 bg-warm-900/80 text-warm-300 rounded-lg hover:bg-warm-700 transition-colors"
-                >
-                  {t.matrix.errorMode}
-                </button>
-                <button
-                  onClick={() => { setModalViewMode('actions'); incrementConsults(); if (activeDrillRange) logConsult(activeDrillRange.id, activeDrillRange.name, activeHand) }}
-                  className="px-2 py-0.5 text-xs border border-warm-600 bg-warm-900/80 text-warm-300 rounded-lg hover:bg-warm-700 transition-colors"
-                >
-                  {t.stats.viewRange}
-                </button>
+              <div data-tour="drill-scoreboard" className="shrink-0 bg-warm-900/70 border border-warm-700 rounded-xl px-3 py-2">
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-center">
+                  <div>
+                    <div className="text-warm-100 font-extrabold text-base leading-none">{stats.hands}</div>
+                    <div className="text-warm-400 text-[0.6rem] mt-0.5 whitespace-nowrap">{t.stats.hands}</div>
+                  </div>
+                  <div>
+                    <div className="text-emerald-400 font-extrabold text-base leading-none">{stats.correct}</div>
+                    <div className="text-warm-400 text-[0.6rem] mt-0.5 whitespace-nowrap">{t.stats.correct}</div>
+                  </div>
+                  <div>
+                    <div className="text-red-400 font-extrabold text-base leading-none">{stats.errors}</div>
+                    <div className="text-warm-400 text-[0.6rem] mt-0.5 whitespace-nowrap">{t.stats.errors}</div>
+                  </div>
+                  <div>
+                    <div className="text-warm-100 font-extrabold text-base leading-none">{stats.consults}</div>
+                    <div className="text-warm-400 text-[0.6rem] mt-0.5 whitespace-nowrap">{t.drill.consults}</div>
+                  </div>
+                </div>
               </div>
+            </div>
+
+            {/* RNG / ações da mesa */}
+            <div className="flex-shrink-0 flex items-center justify-end gap-1.5 px-3 pt-1.5">
+              {useRng && (
+                <span className="bg-warm-800 border border-warm-600 text-warm-100 text-xs rounded-full font-bold px-2.5 py-1 tracking-wider whitespace-nowrap">
+                  RNG {displayRng}
+                </span>
+              )}
+              <button
+                onClick={() => setModalViewMode('heatmap')}
+                className="px-2 py-0.5 text-xs border border-warm-600 bg-warm-900/80 text-warm-300 rounded-lg hover:bg-warm-700 transition-colors"
+              >
+                {t.matrix.errorMode}
+              </button>
+              <button
+                onClick={() => { setModalViewMode('actions'); incrementConsults(); if (activeDrillRange) logConsult(activeDrillRange.id, activeDrillRange.name, activeHand) }}
+                className="px-2 py-0.5 text-xs border border-warm-600 bg-warm-900/80 text-warm-300 rounded-lg hover:bg-warm-700 transition-colors"
+              >
+                {t.stats.viewRange}
+              </button>
             </div>
 
             {/* Mesa com cartas do hero */}
@@ -1355,28 +1377,6 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                   className="absolute top-2 right-2 z-10 w-5 h-5 rounded-full bg-warm-700 text-warm-400 hover:text-warm-100 hover:bg-warm-600 flex items-center justify-center text-xs transition-colors"
                   title={t.drill.minimizeHistory}
                 >‹</button>
-              </div>
-
-              {/* Quadrante: acertos/erros da sessão */}
-              <div data-tour="drill-scoreboard" className="flex-shrink-0 bg-warm-800 border border-warm-700 rounded-xl p-3">
-                <div className="grid grid-cols-2 gap-x-2 gap-y-2.5 text-center">
-                  <div>
-                    <div className="text-warm-100 font-extrabold text-lg leading-none">{stats.hands}</div>
-                    <div className="text-warm-400 text-[0.65rem] mt-1">{t.stats.hands}</div>
-                  </div>
-                  <div>
-                    <div className="text-emerald-400 font-extrabold text-lg leading-none">{stats.correct}</div>
-                    <div className="text-warm-400 text-[0.65rem] mt-1">{t.stats.correct}</div>
-                  </div>
-                  <div>
-                    <div className="text-red-400 font-extrabold text-lg leading-none">{stats.errors}</div>
-                    <div className="text-warm-400 text-[0.65rem] mt-1">{t.stats.errors}</div>
-                  </div>
-                  <div>
-                    <div className="text-warm-100 font-extrabold text-lg leading-none">{stats.consults}</div>
-                    <div className="text-warm-400 text-[0.65rem] mt-1">{t.drill.consults}</div>
-                  </div>
-                </div>
               </div>
 
               {/* Encerrar */}

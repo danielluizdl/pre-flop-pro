@@ -628,7 +628,7 @@ export const pt = {
     drillRangenameTitle: 'O range da vez, em destaque',
     drillRangenameBody: 'O nome do range (e a faixa de stack, quando o range tiver mais de uma) fica em letras grandes no topo da mesa — pra você sempre saber de cara qual situação está treinando, sem precisar abrir nada.',
     drillScoreboardTitle: 'O quadrante de acertos e erros',
-    drillScoreboardBody: 'Ao lado da mesa fica o placar da sessão: quantas mãos você já jogou, quantas acertou, quantas errou e quantas vezes consultou o range. Ele é atualizado a cada mão nova, sempre visível enquanto você joga.',
+    drillScoreboardBody: 'No canto da mesa fica o placar da sessão: quantas mãos você já jogou, quantas acertou, quantas errou e quantas vezes consultou o range. Ele é atualizado a cada mão nova, sempre visível enquanto você joga.',
     drillHistoryTitle: 'Histórico ao lado',
     drillHistoryBody: 'Cada mão que você responde entra nessa lista, com a carta sorteada e sua resposta — em vermelho quando erra, junto com a ação correta. Clique numa mão da lista pra rever aquela jogada sem sair do treino.',
     drillSummaryTitle: 'O resumo ao encerrar',

@@ -290,7 +290,7 @@ describe('OnboardingTour', () => {
     expect(await screen.findByText('BTN vs 3B OOP')).toBeInTheDocument()
   })
 
-  it('passo do quadrante mostra os contadores da sessão ao lado da mesa (fora do quadro da mesa)', async () => {
+  it('passo do quadrante mostra os contadores da sessão no canto do quadro da mesa', async () => {
     renderTour(22, { ranges: [STACKRANGE_DEMO] })
     await waitFor(() => expect(useStore.getState().activeDrillRange?.id).toBe(1778104119544))
     expect(screen.getByText('O quadrante de acertos e erros')).toBeInTheDocument()

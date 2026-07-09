@@ -630,7 +630,7 @@ export const en: Messages = {
     drillRangenameTitle: 'The active range, front and center',
     drillRangenameBody: "The range name (and its stack bracket, when the range has more than one) shows up in big letters at the top of the table — so you always know at a glance which situation you're training, without opening anything.",
     drillScoreboardTitle: 'The accuracy quadrant',
-    drillScoreboardBody: "Next to the table sits the session scoreboard: how many hands you've played, how many you got right, how many wrong, and how many times you consulted the range. It updates with every new hand, always visible while you play.",
+    drillScoreboardBody: "In the corner of the table sits the session scoreboard: how many hands you've played, how many you got right, how many wrong, and how many times you consulted the range. It updates with every new hand, always visible while you play.",
     drillHistoryTitle: 'History on the side',
     drillHistoryBody: "Every hand you answer gets added to this list, with the dealt cards and your answer — shown in red when you're wrong, next to the correct action. Click a hand in the list to review that play without leaving training.",
     drillSummaryTitle: 'The summary when you finish',
