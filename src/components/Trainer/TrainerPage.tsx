@@ -790,8 +790,6 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
     }
   }, [openId])
 
-  const trainedRanges = ranges.filter(r => selectedIds.includes(r.id))
-
   // Stats por range vêm do acumulador da sessão (não limitado ao cap de 50 do histórico visual).
   const sessionByRange = Object.entries(sessionHandPerf).reduce((acc, [key, hands]) => {
     if (key.includes('|||')) return acc
@@ -800,6 +798,12 @@ function DrillSummary({ onClose, onBack }: { onClose: () => void; onBack?: () =>
     acc[key] = { total, correct }
     return acc
   }, {} as Record<string, { total: number; correct: number }>)
+
+  // Ranges com mãos jogadas na sessão primeiro — quem selecionou vários ranges
+  // não precisa rolar passando pelos "sem dados" pra achar o que treinou de fato.
+  const trainedRanges = ranges
+    .filter(r => selectedIds.includes(r.id))
+    .sort((a, b) => (sessionByRange[String(b.id)]?.total ?? 0) - (sessionByRange[String(a.id)]?.total ?? 0))
 
   const sessionAccuracy = sessionStats.hands > 0
     ? Math.round(sessionStats.correct / sessionStats.hands * 100)
@@ -1232,6 +1236,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                   {t.matrix.errorMode}
                 </button>
                 <button
+                  data-tour="drill-viewrange"
                   onClick={() => { setModalViewMode('actions'); incrementConsults(); if (activeDrillRange) logConsult(activeDrillRange.id, activeDrillRange.name, activeHand) }}
                   className="px-2 py-0.5 text-xs border border-warm-600 bg-warm-900/80 text-warm-300 rounded-lg hover:bg-warm-700 transition-colors"
                 >

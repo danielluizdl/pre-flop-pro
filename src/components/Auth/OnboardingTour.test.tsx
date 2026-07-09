@@ -75,10 +75,10 @@ function renderTour(onboardingStep = 0, extra: Record<string, unknown> = {}) {
 }
 
 describe('OnboardingTour', () => {
-  it('mostra o passo 1 (Dashboard) com o contador 1/29', () => {
+  it('mostra o passo 1 (Dashboard) com o contador 1/30', () => {
     renderTour()
     expect(screen.getByText('Bem-vindo ao Pre-Flop Pro!')).toBeInTheDocument()
-    expect(screen.getByText('1/29')).toBeInTheDocument()
+    expect(screen.getByText('1/30')).toBeInTheDocument()
   })
 
   it('"Próximo" navega de verdade pra próxima página (Meus Ranges)', async () => {
@@ -283,8 +283,16 @@ describe('OnboardingTour', () => {
     expect(useStore.getState().handHistory).toHaveLength(0)
   })
 
-  it('passo do quadrante mostra o nome do range e os contadores da sessão do lado dos botões de ação', async () => {
+  it('passo "Ver Range" destaca o botão de consulta, sem abrir o modal nem contar como consulta real', async () => {
     renderTour(21, { ranges: [STACKRANGE_DEMO] })
+    await waitFor(() => expect(useStore.getState().activeDrillRange?.id).toBe(1778104119544))
+    expect(screen.getByText('Consultando o range')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Ver Range' })).toBeInTheDocument()
+    expect(useStore.getState().sessionStats.consults).toBe(0)
+  })
+
+  it('passo do quadrante mostra o nome do range e os contadores da sessão do lado dos botões de ação', async () => {
+    renderTour(22, { ranges: [STACKRANGE_DEMO] })
     await waitFor(() => expect(useStore.getState().activeDrillRange?.id).toBe(1778104119544))
     expect(screen.getByText('O quadrante de acertos e erros')).toBeInTheDocument()
     expect(await screen.findByText('BTN vs 3B OOP')).toBeInTheDocument()
@@ -293,22 +301,26 @@ describe('OnboardingTour', () => {
   })
 
   it('passo do histórico destaca a lista de mãos respondidas ao lado da mesa', async () => {
-    renderTour(22, { ranges: [STACKRANGE_DEMO] })
+    renderTour(23, { ranges: [STACKRANGE_DEMO] })
     await waitFor(() => expect(useStore.getState().activeDrillRange?.id).toBe(1778104119544))
     expect(screen.getByText('Histórico ao lado')).toBeInTheDocument()
     expect(await screen.findByText('Sem mãos ainda')).toBeInTheDocument()
   })
 
-  it('passo do resumo força a tela de resumo pós-treino, sem perder a sessão de demonstração', async () => {
-    renderTour(23, { ranges: [STACKRANGE_DEMO] })
+  it('passo do resumo força a tela de resumo pós-treino com placar preenchido, sem perder a sessão de demonstração', async () => {
+    renderTour(24, { ranges: [STACKRANGE_DEMO] })
     expect(await screen.findByRole('heading', { name: 'Resumo do Treino' })).toBeInTheDocument()
     expect(screen.getByText('O resumo ao encerrar')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '← Voltar ao treino' })).toBeInTheDocument()
     expect(useStore.getState().activeDrillRange?.id).toBe(1778104119544)
+    // Fix: antes o resumo aparecia zerado (0 mãos) por não ter respondido
+    // nenhuma mão de verdade — agora mostra números fixos só pra exibição.
+    await waitFor(() => expect(useStore.getState().sessionStats.hands).toBe(3))
+    expect(useStore.getState().sessionStats.correct).toBe(2)
   })
 
   it('"Voltar" do passo de resumo pro histórico volta a mostrar o Drill ativo, sem ficar preso no resumo', async () => {
-    renderTour(23, { ranges: [STACKRANGE_DEMO] })
+    renderTour(24, { ranges: [STACKRANGE_DEMO] })
     await screen.findByRole('heading', { name: 'Resumo do Treino' })
     fireEvent.click(screen.getByRole('button', { name: 'Voltar' }))
     expect(await screen.findByText('Histórico ao lado')).toBeInTheDocument()
@@ -316,8 +328,19 @@ describe('OnboardingTour', () => {
     expect(useStore.getState().activeDrillRange?.id).toBe(1778104119544)
   })
 
+  it('sair do tour depois do resumo do Drill não grava a sessão de demonstração no histórico real de treinos', async () => {
+    renderTour(24, { ranges: [STACKRANGE_DEMO], trainingHistory: [] })
+    await screen.findByRole('heading', { name: 'Resumo do Treino' })
+    await waitFor(() => expect(useStore.getState().sessionStats.hands).toBe(3))
+    fireEvent.click(screen.getByRole('button', { name: 'Pular tutorial' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sim, sair' }))
+    expect(useStore.getState().trainingHistory).toHaveLength(0)
+    expect(useStore.getState().activeDrillRange).toBeNull()
+    expect(useStore.getState().sessionStats.hands).toBe(0)
+  })
+
   it('passo do Range Check ao vivo inicia uma rodada de demonstração pra pintar', async () => {
-    renderTour(24, { ranges: [SIMPLE_RANGE] })
+    renderTour(25, { ranges: [SIMPLE_RANGE] })
     await screen.findByText('Range Check: escolha o que reproduzir')
     fireEvent.click(screen.getByRole('button', { name: 'Próximo' }))
     await waitFor(() => expect(useStore.getState().buildRounds).toHaveLength(1))
@@ -325,14 +348,14 @@ describe('OnboardingTour', () => {
   })
 
   it('passo do resultado da rodada preenche o gabarito da demo e mostra nota 100', async () => {
-    renderTour(26, { ranges: [SIMPLE_RANGE] })
+    renderTour(27, { ranges: [SIMPLE_RANGE] })
     await waitFor(() => expect(useStore.getState().buildLastResult).not.toBeNull())
     expect(screen.getByText('A nota de cada rodada')).toBeInTheDocument()
     expect(await screen.findByText('100/100')).toBeInTheDocument()
   })
 
   it('passo do resumo do exercício preenche as 3 rodadas do range multi-stack e mostra o resumo final', async () => {
-    renderTour(27, { ranges: [STACKRANGE_DEMO] })
+    renderTour(28, { ranges: [STACKRANGE_DEMO] })
     await waitFor(() => expect(useStore.getState().buildResults).toHaveLength(3))
     expect(useStore.getState().buildRoundIdx).toBe(3)
     expect(screen.getByRole('heading', { name: 'Resumo do Exercício' })).toBeInTheDocument()
@@ -342,7 +365,7 @@ describe('OnboardingTour', () => {
 
   it('passo do resultado do exercício não mexe numa sessão real do usuário já em andamento', async () => {
     const realRound = { rangeId: 999, rangeName: 'Sessão real', stackRange: '', label: 'Sessão real', grid: makeEmptyGrid() }
-    renderTour(26, {
+    renderTour(27, {
       ranges: [SIMPLE_RANGE],
       buildRounds: [realRound], buildRoundIdx: 0, buildConfirmed: true, buildResults: [], buildLastResult: null,
     })
@@ -352,7 +375,7 @@ describe('OnboardingTour', () => {
   })
 
   it('encerrar o tour depois do resumo do exercício não grava a sessão de demonstração no histórico real do Range Check', async () => {
-    renderTour(27, { ranges: [STACKRANGE_DEMO], buildHistory: [] })
+    renderTour(28, { ranges: [STACKRANGE_DEMO], buildHistory: [] })
     await waitFor(() => expect(useStore.getState().buildResults).toHaveLength(3))
     fireEvent.click(screen.getByRole('button', { name: 'Pular tutorial' }))
     fireEvent.click(screen.getByRole('button', { name: 'Sim, sair' }))
@@ -361,9 +384,9 @@ describe('OnboardingTour', () => {
   })
 
   it('último passo (Histórico) mostra "Concluir" e encerra o tour ao clicar', async () => {
-    renderTour(28)
+    renderTour(29)
     expect(await screen.findByText('Seu histórico')).toBeInTheDocument()
-    expect(screen.getByText('29/29')).toBeInTheDocument()
+    expect(screen.getByText('30/30')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Concluir' }))
     expect(useStore.getState().onboardingStep).toBeNull()
   })
@@ -377,10 +400,10 @@ describe('OnboardingTour', () => {
   })
 
   describe('tutorial de página (onboardingScope)', () => {
-    it('scope="drill" mostra só os 7 passos do Drill, começando pela seleção', async () => {
+    it('scope="drill" mostra só os 8 passos do Drill, começando pela seleção', async () => {
       renderTour(0, { onboardingScope: 'drill', ranges: [STACKRANGE_DEMO] })
       await screen.findByText('Drill: escolha o que treinar')
-      expect(screen.getByText('1/7')).toBeInTheDocument()
+      expect(screen.getByText('1/8')).toBeInTheDocument()
       expect(useStore.getState().page).toBe('drill')
     })
 
@@ -431,7 +454,7 @@ describe('OnboardingTour', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Voltar' }))
     expect(useStore.getState().onboardingStep).toBe(0)
     expect(useStore.getState().page).toBe('dashboard')
-    expect(screen.getByText('1/29')).toBeInTheDocument()
+    expect(screen.getByText('1/30')).toBeInTheDocument()
   })
 
   it('"Pular tutorial" pede confirmação em vez de encerrar na hora', () => {

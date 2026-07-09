@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { useModalA11y } from '../../utils/useModalA11y'
 import { scoreBuild } from '../../utils/buildScore'
@@ -52,16 +52,35 @@ export function OnboardingTour() {
   const startedDrillDemo = useRef(false)
   const startedBuildDemo = useRef(false)
 
+  // Encerra a sessão de demo do Drill sem passar por stopDrill(): o passo do
+  // resumo (startDrillSummaryDemo) preenche sessionStats/sessionHandPerf com
+  // números falsos só pra tela não aparecer zerada — se isso passasse pelo
+  // stopDrill() real, sessionStats.hands>0 salvaria essa sessão inventada no
+  // trainingHistory de verdade do usuário. Reseta só os campos que a demo
+  // pode ter sujado, sem tocar em localStorage/telemetria.
+  function resetDrillDemoState() {
+    useStore.setState({
+      activeDrillRange: null, activeDrillStackRange: '', activeDrillStackGridIdx: -1, activeHand: '',
+      sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 },
+      sessionSeverity: { grave: 0, impreciso: 0 },
+      handHistory: [], sessionHandPerf: {},
+    })
+  }
+
   // Passos do Drill anteriores à mesa (select/settings/filter) mexem no `step`
   // interno de DrillRangeSelect, que é estado local do componente — sem jeito
   // de navegar até ele só via store (setPage). Se um passo anterior a esses já
   // tiver deixado uma sessão de demo ativa (usuário foi até drill-active e
   // voltou), encerra ela antes, senão TrainerPage continua renderizando
   // DrillActive em vez de DrillRangeSelect e o alvo do passo não é encontrado.
+  // Só usa o reset local (sem salvar) quando a sessão ativa foi criada pelo
+  // próprio tour — uma sessão real do usuário que já estava em andamento
+  // quando ele abriu "Rever tutorial" continua sendo encerrada de verdade.
   function resetDrillDemoIfActive() {
     useStore.setState({ onboardingForceDrillSummary: false })
     if (useStore.getState().activeDrillRange) {
-      useStore.getState().stopDrill()
+      if (startedDrillDemo.current) resetDrillDemoState()
+      else useStore.getState().stopDrill()
       startedDrillDemo.current = false
     }
   }
@@ -117,10 +136,22 @@ export function OnboardingTour() {
   // estado local do componente, fora do alcance do tour). Garante que existe
   // uma sessão de demo (mesmo range/mãos zeradas dos passos anteriores) pra
   // "Por range" do resumo ter o que listar mesmo se o usuário pular direto
-  // pra esse passo.
+  // pra esse passo. Se essa sessão foi criada pelo próprio tour e ainda não
+  // tem mão respondida, preenche sessionStats/sessionHandPerf com números
+  // fixos (nunca passa por checkDrillAnswer) só pra a tela de resumo não
+  // aparecer com tudo zerado — resetDrillDemoState (não stopDrill) desfaz
+  // isso ao sair, então esses números nunca chegam no trainingHistory real.
   function startDrillSummaryDemo() {
     setPage('drill')
     if (!useStore.getState().activeDrillRange) startDrillDemo()
+    const s = useStore.getState()
+    if (startedDrillDemo.current && s.activeDrillRange && s.sessionStats.hands === 0) {
+      useStore.setState({
+        sessionStats: { hands: 3, correct: 2, errors: 1, consults: 0 },
+        sessionSeverity: { grave: 1, impreciso: 0 },
+        sessionHandPerf: { [String(s.activeDrillRange.id)]: { [s.activeHand || 'AA']: { c: 2, t: 3 } } },
+      })
+    }
     useStore.setState({ onboardingForceDrillSummary: true })
   }
 
@@ -257,6 +288,7 @@ export function OnboardingTour() {
     { target: 'drill-settings', scope: 'drill', run: startDrillSettingsDemo, title: t.tour.drillSettingsTitle, body: t.tour.drillSettingsBody },
     { target: 'drill-handfilter', scope: 'drill', run: startDrillFilterDemo, title: t.tour.drillHandFilterTitle, body: t.tour.drillHandFilterBody },
     { target: 'drill-active', scope: 'drill', run: startDrillDemo, title: t.tour.drillActiveTitle, body: t.tour.drillActiveBody },
+    { target: 'drill-viewrange', scope: 'drill', run: startDrillDemo, title: t.tour.drillViewRangeTitle, body: t.tour.drillViewRangeBody },
     { target: 'drill-scoreboard', scope: 'drill', run: startDrillDemo, title: t.tour.drillScoreboardTitle, body: t.tour.drillScoreboardBody },
     { target: 'drill-history', scope: 'drill', run: startDrillDemo, title: t.tour.drillHistoryTitle, body: t.tour.drillHistoryBody },
     { target: 'drill-summary', scope: 'drill', run: startDrillSummaryDemo, title: t.tour.drillSummaryTitle, body: t.tour.drillSummaryBody },
@@ -286,6 +318,10 @@ export function OnboardingTour() {
     const timer = setInterval(() => {
       const el = document.querySelector<HTMLElement>(`[data-tour="${step.target}"]`)
       if (el) {
+        // Alvos abaixo da dobra (ex: botão Finalizar numa lista longa de
+        // cenários) ficam fora da viewport se não rolarmos até eles antes de
+        // medir — sem isso, o spotlight nunca aparece nesses passos.
+        el.scrollIntoView({ block: 'center', inline: 'nearest' })
         setRect(el.getBoundingClientRect())
         clearInterval(timer)
         return
@@ -330,7 +366,10 @@ export function OnboardingTour() {
   }, [stepIndex])
 
   function finish() {
-    if (startedDrillDemo.current) useStore.getState().stopDrill()
+    // resetDrillDemoState (não stopDrill): mesmo motivo do clearBuildDemo
+    // abaixo — a demo nunca deve gravar os números fake no trainingHistory
+    // real do Drill.
+    if (startedDrillDemo.current) resetDrillDemoState()
     // clearBuildDemo (não stopBuildSession): a demo nunca deve gravar as
     // notas fake no histórico real do Range Check.
     if (startedBuildDemo.current) clearBuildDemo()
@@ -364,6 +403,15 @@ export function OnboardingTour() {
   const dialogRef = useModalA11y<HTMLDivElement>(true, requestExit)
   const confirmDialogRef = useModalA11y<HTMLDivElement>(confirmingExit, () => setConfirmingExit(false))
 
+  // PANEL_EST_HEIGHT é só o chute inicial pro primeiro paint — passos com
+  // corpo de texto longo (ex: "Raise futuro") são mais altos que isso e
+  // estouravam a borda inferior da tela. Mede a altura real do painel já
+  // renderizado a cada commit e usa ela daqui pra frente.
+  const [panelHeight, setPanelHeight] = useState(PANEL_EST_HEIGHT)
+  useLayoutEffect(() => {
+    if (dialogRef.current) setPanelHeight(dialogRef.current.offsetHeight)
+  })
+
   const panelWidth = Math.min(PANEL_WIDTH_MAX, window.innerWidth - PANEL_MARGIN * 2)
   let panelTop = 88
   let panelLeft = Math.max(PANEL_MARGIN, (window.innerWidth - panelWidth) / 2)
@@ -375,7 +423,7 @@ export function OnboardingTour() {
     // 13×13, mesa de poker — alvos que já ocupam a largura disponível).
     const spaceRight = window.innerWidth - rect.right - PANEL_MARGIN
     const spaceLeft = rect.left - PANEL_MARGIN
-    const clampedTop = Math.min(Math.max(rect.top, PANEL_MARGIN), window.innerHeight - PANEL_EST_HEIGHT - PANEL_MARGIN)
+    const clampedTop = Math.min(Math.max(rect.top, PANEL_MARGIN), window.innerHeight - panelHeight - PANEL_MARGIN)
     if (spaceRight >= panelWidth) {
       panelLeft = rect.right + 14
       panelTop = clampedTop
@@ -384,8 +432,8 @@ export function OnboardingTour() {
       panelTop = clampedTop
     } else {
       panelTop = rect.bottom + 14
-      if (panelTop + PANEL_EST_HEIGHT > window.innerHeight - PANEL_MARGIN) {
-        panelTop = Math.max(window.innerHeight - PANEL_EST_HEIGHT - PANEL_MARGIN, PANEL_MARGIN)
+      if (panelTop + panelHeight > window.innerHeight - PANEL_MARGIN) {
+        panelTop = Math.max(window.innerHeight - panelHeight - PANEL_MARGIN, PANEL_MARGIN)
       }
       const rawLeft = rect.left + rect.width / 2 - panelWidth / 2
       panelLeft = Math.min(Math.max(rawLeft, PANEL_MARGIN), window.innerWidth - panelWidth - PANEL_MARGIN)
