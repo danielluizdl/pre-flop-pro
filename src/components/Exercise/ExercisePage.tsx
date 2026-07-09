@@ -409,7 +409,7 @@ function BuildRound() {
           </div>
         </>
       ) : (
-        <>
+        <div data-tour="exercise-result" className="space-y-4">
           <div className="bg-warm-800 border border-warm-700 rounded-xl p-4 flex items-center justify-center gap-3">
             <span className="text-xs font-bold text-warm-400 uppercase tracking-wider">{t.exercise.scoreLabel}</span>
             <span className={`text-3xl font-extrabold tabular-nums ${scoreColor(lastResult.score)}`}>
@@ -443,7 +443,7 @@ function BuildRound() {
               {isLast ? t.exercise.viewSummary : t.exercise.nextRound}
             </button>
           </div>
-        </>
+        </div>
       )}
 
       {awayPrompting && (
@@ -465,7 +465,7 @@ function BuildSummary() {
     : null
 
   return (
-    <div className="space-y-4 max-w-5xl mx-auto">
+    <div data-tour="exercise-summary" className="space-y-4 max-w-5xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">{t.exercise.summaryTitle}</h2>

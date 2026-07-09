@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { useModalA11y } from '../../utils/useModalA11y'
+import { scoreBuild } from '../../utils/buildScore'
 import { t } from '../../i18n'
-import type { Range } from '../../types'
+import type { Range, HandData } from '../../types'
 
 const PANEL_MARGIN = 12
 const PANEL_WIDTH_MAX = 340
@@ -115,16 +116,63 @@ export function OnboardingTour() {
     useStore.setState({ onboardingForceDrillSummary: true })
   }
 
+  function clearBuildDemo() {
+    useStore.setState({ buildRounds: [], buildRoundIdx: 0, buildResults: [], buildLastResult: null, buildConfirmed: false, buildAttempt: 1 })
+  }
+
+  // Reinicia a demo do Range Check do zero (round 0, gabarito ainda não
+  // respondido) — cada passo exercise-* parte desse estado conhecido e avança
+  // só o quanto precisar, então funciona igual indo pra frente ou voltando
+  // "Voltar" entre eles (sem depender de qual passo rodou por último). Se já
+  // existe uma sessão real do usuário (não criada pelo tour), não mexe nela —
+  // mesmo princípio de nunca pisar num treino real, só que aqui checado antes
+  // de qualquer reset, já que Range Check grava nota no histórico de verdade.
+  function resetExerciseDemo(): boolean {
+    if (useStore.getState().buildRounds.length > 0 && !startedBuildDemo.current) return false
+    clearBuildDemo()
+    const s = useStore.getState()
+    const r = findStackRangeDemo(s.ranges) ?? s.ranges[0]
+    if (!r) return false
+    useStore.setState({ buildSelectedRangeIds: [r.id] })
+    if (!useStore.getState().startBuildSession()) return false
+    useStore.getState().confirmBuildSession()
+    startedBuildDemo.current = true
+    return true
+  }
+
+  // Preenche a rodada atual copiando o próprio gabarito (nota 100) e grava só
+  // buildResults/buildLastResult localmente — nunca passa pela ação real
+  // submitBuildRound, que gravaria no histórico local do Range Check e
+  // disparia telemetria pra um round que o usuário não jogou de verdade.
+  function submitDemoRound() {
+    const s = useStore.getState()
+    const round = s.buildRounds[s.buildRoundIdx]
+    if (!round || s.buildLastResult) return
+    const userGrid: Record<string, HandData> = JSON.parse(JSON.stringify(round.grid))
+    const { score, perHand } = scoreBuild(round.grid, userGrid)
+    useStore.setState({
+      buildResults: [...s.buildResults, { roundIdx: s.buildRoundIdx, label: round.label, score, attempt: s.buildAttempt, userGrid, perHand }],
+      buildLastResult: { score, perHand, userGrid },
+    })
+  }
+
   function startExerciseDemo() {
     setPage('exercise')
-    const s = useStore.getState()
-    if (s.buildRounds.length > 0) return
-    const r = findStackRangeDemo(s.ranges) ?? s.ranges[0]
-    if (!r) return
-    useStore.setState({ buildSelectedRangeIds: [r.id] })
-    if (useStore.getState().startBuildSession()) {
-      useStore.getState().confirmBuildSession()
-      startedBuildDemo.current = true
+    resetExerciseDemo()
+  }
+
+  function startExerciseResultDemo() {
+    setPage('exercise')
+    if (!resetExerciseDemo()) return
+    submitDemoRound()
+  }
+
+  function startExerciseSummaryDemo() {
+    setPage('exercise')
+    if (!resetExerciseDemo()) return
+    while (useStore.getState().buildRoundIdx < useStore.getState().buildRounds.length) {
+      submitDemoRound()
+      useStore.getState().nextBuildRound()
     }
   }
 
@@ -201,11 +249,14 @@ export function OnboardingTour() {
     { target: 'drill-settings', run: startDrillSettingsDemo, title: t.tour.drillSettingsTitle, body: t.tour.drillSettingsBody },
     { target: 'drill-handfilter', run: startDrillFilterDemo, title: t.tour.drillHandFilterTitle, body: t.tour.drillHandFilterBody },
     { target: 'drill-active', run: startDrillDemo, title: t.tour.drillActiveTitle, body: t.tour.drillActiveBody },
+    { target: 'drill-rangename', run: startDrillDemo, title: t.tour.drillRangenameTitle, body: t.tour.drillRangenameBody },
     { target: 'drill-scoreboard', run: startDrillDemo, title: t.tour.drillScoreboardTitle, body: t.tour.drillScoreboardBody },
     { target: 'drill-history', run: startDrillDemo, title: t.tour.drillHistoryTitle, body: t.tour.drillHistoryBody },
     { target: 'drill-summary', run: startDrillSummaryDemo, title: t.tour.drillSummaryTitle, body: t.tour.drillSummaryBody },
     { target: 'exercise-select', run: () => setPage('exercise'), title: t.tour.exerciseTitle, body: t.tour.exerciseBody },
     { target: 'exercise-active', run: startExerciseDemo, title: t.tour.exerciseActiveTitle, body: t.tour.exerciseActiveBody },
+    { target: 'exercise-result', run: startExerciseResultDemo, title: t.tour.exerciseResultTitle, body: t.tour.exerciseResultBody },
+    { target: 'exercise-summary', run: startExerciseSummaryDemo, title: t.tour.exerciseSummaryTitle, body: t.tour.exerciseSummaryBody },
     { target: 'stats-header', run: () => setPage('history'), title: t.tour.historyTitle, body: t.tour.historyBody },
   ]
   const total = steps.length
@@ -268,7 +319,9 @@ export function OnboardingTour() {
 
   function finish() {
     if (startedDrillDemo.current) useStore.getState().stopDrill()
-    if (startedBuildDemo.current) useStore.getState().stopBuildSession()
+    // clearBuildDemo (não stopBuildSession): a demo nunca deve gravar as
+    // notas fake no histórico real do Range Check.
+    if (startedBuildDemo.current) clearBuildDemo()
     useStore.setState({ onboardingStep: null, onboardingDrillOverride: null, onboardingForceDrillSummary: false })
   }
   function next() {
