@@ -1211,16 +1211,24 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
             className="rounded-2xl border border-warm-800 flex flex-col"
             style={{ background: 'var(--table-box-bg, #16140f)', boxShadow: 'var(--table-box-shadow, inset 0 0 60px rgba(0,0,0,0.9))' }}
           >
-            {/* Botões topo */}
-            <div className="flex-shrink-0 flex items-center justify-between gap-1.5 pt-1.5 px-2">
-              <div>
+            {/* Cabeçalho: nome do range em destaque (esquerda) + RNG/ações (direita) */}
+            <div className="flex-shrink-0 flex items-center justify-between gap-2 pt-2 px-3 flex-wrap">
+              <div data-tour="drill-rangename" className="flex items-center gap-2 min-w-0">
+                <span className="text-lg font-extrabold text-warm-100 leading-tight truncate" title={activeDrillRange.name}>
+                  {activeDrillRange.name}
+                </span>
+                {!!activeDrillStackRange && (
+                  <span className="shrink-0 px-2 py-0.5 rounded-full text-xs font-bold bg-brand-500/15 border border-brand-500/50 text-brand-400 leading-tight">
+                    {activeDrillStackRange}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
                 {useRng && (
                   <span className="bg-warm-800 border border-warm-600 text-warm-100 text-xs rounded-full font-bold px-2.5 py-1 tracking-wider whitespace-nowrap">
                     RNG {displayRng}
                   </span>
                 )}
-              </div>
-              <div className="flex gap-1.5">
                 <button
                   onClick={() => setModalViewMode('heatmap')}
                   className="px-2 py-0.5 text-xs border border-warm-600 bg-warm-900/80 text-warm-300 rounded-lg hover:bg-warm-700 transition-colors"
@@ -1233,29 +1241,6 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                 >
                   {t.stats.viewRange}
                 </button>
-              </div>
-            </div>
-
-            {/* Placar: range ativo + acertos/erros (dentro do quadrado da mesa) */}
-            <div
-              data-tour="drill-scoreboard"
-              className="flex-shrink-0 flex items-center justify-between gap-3 px-3 pb-1.5 flex-wrap"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="text-xs font-bold text-warm-100 truncate" title={activeDrillRange.name}>
-                  {activeDrillRange.name}
-                </span>
-                {!!activeDrillStackRange && (
-                  <span className="shrink-0 px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-500/10 border border-brand-500/40 text-brand-400 leading-tight">
-                    {activeDrillStackRange}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-3 text-[0.7rem] shrink-0">
-                <span className="text-warm-400">{t.stats.hands} <span className="text-warm-100 font-bold">{stats.hands}</span></span>
-                <span className="text-emerald-400">{t.stats.correct} <span className="font-bold">{stats.correct}</span></span>
-                <span className="text-red-400">{t.stats.errors} <span className="font-bold">{stats.errors}</span></span>
-                <span className="text-warm-400">{t.drill.consults} <span className="text-warm-100 font-bold">{stats.consults}</span></span>
               </div>
             </div>
 
@@ -1370,6 +1355,28 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                   className="absolute top-2 right-2 z-10 w-5 h-5 rounded-full bg-warm-700 text-warm-400 hover:text-warm-100 hover:bg-warm-600 flex items-center justify-center text-xs transition-colors"
                   title={t.drill.minimizeHistory}
                 >‹</button>
+              </div>
+
+              {/* Quadrante: acertos/erros da sessão */}
+              <div data-tour="drill-scoreboard" className="flex-shrink-0 bg-warm-800 border border-warm-700 rounded-xl p-3">
+                <div className="grid grid-cols-2 gap-x-2 gap-y-2.5 text-center">
+                  <div>
+                    <div className="text-warm-100 font-extrabold text-lg leading-none">{stats.hands}</div>
+                    <div className="text-warm-400 text-[0.65rem] mt-1">{t.stats.hands}</div>
+                  </div>
+                  <div>
+                    <div className="text-emerald-400 font-extrabold text-lg leading-none">{stats.correct}</div>
+                    <div className="text-warm-400 text-[0.65rem] mt-1">{t.stats.correct}</div>
+                  </div>
+                  <div>
+                    <div className="text-red-400 font-extrabold text-lg leading-none">{stats.errors}</div>
+                    <div className="text-warm-400 text-[0.65rem] mt-1">{t.stats.errors}</div>
+                  </div>
+                  <div>
+                    <div className="text-warm-100 font-extrabold text-lg leading-none">{stats.consults}</div>
+                    <div className="text-warm-400 text-[0.65rem] mt-1">{t.drill.consults}</div>
+                  </div>
+                </div>
               </div>
 
               {/* Encerrar */}
