@@ -50,6 +50,7 @@ export function OnboardingTour() {
   // voltou), encerra ela antes, senão TrainerPage continua renderizando
   // DrillActive em vez de DrillRangeSelect e o alvo do passo não é encontrado.
   function resetDrillDemoIfActive() {
+    useStore.setState({ onboardingForceDrillSummary: false })
     if (useStore.getState().activeDrillRange) {
       useStore.getState().stopDrill()
       startedDrillDemo.current = false
@@ -89,7 +90,7 @@ export function OnboardingTour() {
 
   function startDrillDemo() {
     setPage('drill')
-    useStore.setState({ onboardingDrillOverride: null })
+    useStore.setState({ onboardingDrillOverride: null, onboardingForceDrillSummary: false })
     const s = useStore.getState()
     if (s.activeDrillRange) return
     const r = findStackRangeDemo(s.ranges) ?? s.ranges[0]
@@ -98,6 +99,20 @@ export function OnboardingTour() {
     useStore.getState().startDrillSession()
     useStore.getState().nextDrillHand()
     startedDrillDemo.current = true
+  }
+
+  // Passo do resumo pós-treino: o painel do tour cobre a tela inteira (clique
+  // é capturado pelo overlay pra confirmar saída), então não dá pra clicar em
+  // "Encerrar e ver resumo" de verdade — força a troca via
+  // onboardingForceDrillSummary, que TrainerPage lê direto (showSummary é
+  // estado local do componente, fora do alcance do tour). Garante que existe
+  // uma sessão de demo (mesmo range/mãos zeradas dos passos anteriores) pra
+  // "Por range" do resumo ter o que listar mesmo se o usuário pular direto
+  // pra esse passo.
+  function startDrillSummaryDemo() {
+    setPage('drill')
+    if (!useStore.getState().activeDrillRange) startDrillDemo()
+    useStore.setState({ onboardingForceDrillSummary: true })
   }
 
   function startExerciseDemo() {
@@ -186,6 +201,9 @@ export function OnboardingTour() {
     { target: 'drill-settings', run: startDrillSettingsDemo, title: t.tour.drillSettingsTitle, body: t.tour.drillSettingsBody },
     { target: 'drill-handfilter', run: startDrillFilterDemo, title: t.tour.drillHandFilterTitle, body: t.tour.drillHandFilterBody },
     { target: 'drill-active', run: startDrillDemo, title: t.tour.drillActiveTitle, body: t.tour.drillActiveBody },
+    { target: 'drill-scoreboard', run: startDrillDemo, title: t.tour.drillScoreboardTitle, body: t.tour.drillScoreboardBody },
+    { target: 'drill-history', run: startDrillDemo, title: t.tour.drillHistoryTitle, body: t.tour.drillHistoryBody },
+    { target: 'drill-summary', run: startDrillSummaryDemo, title: t.tour.drillSummaryTitle, body: t.tour.drillSummaryBody },
     { target: 'exercise-select', run: () => setPage('exercise'), title: t.tour.exerciseTitle, body: t.tour.exerciseBody },
     { target: 'exercise-active', run: startExerciseDemo, title: t.tour.exerciseActiveTitle, body: t.tour.exerciseActiveBody },
     { target: 'stats-header', run: () => setPage('history'), title: t.tour.historyTitle, body: t.tour.historyBody },
@@ -251,7 +269,7 @@ export function OnboardingTour() {
   function finish() {
     if (startedDrillDemo.current) useStore.getState().stopDrill()
     if (startedBuildDemo.current) useStore.getState().stopBuildSession()
-    useStore.setState({ onboardingStep: null, onboardingDrillOverride: null })
+    useStore.setState({ onboardingStep: null, onboardingDrillOverride: null, onboardingForceDrillSummary: false })
   }
   function next() {
     if (stepIndex + 1 >= total) finish()

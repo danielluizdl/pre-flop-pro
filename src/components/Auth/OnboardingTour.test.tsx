@@ -75,10 +75,10 @@ function renderTour(onboardingStep = 0, extra: Record<string, unknown> = {}) {
 }
 
 describe('OnboardingTour', () => {
-  it('mostra o passo 1 (Dashboard) com o contador 1/24', () => {
+  it('mostra o passo 1 (Dashboard) com o contador 1/27', () => {
     renderTour()
     expect(screen.getByText('Bem-vindo ao Pre-Flop Pro!')).toBeInTheDocument()
-    expect(screen.getByText('1/24')).toBeInTheDocument()
+    expect(screen.getByText('1/27')).toBeInTheDocument()
   })
 
   it('"Próximo" navega de verdade pra próxima página (Meus Ranges)', async () => {
@@ -283,8 +283,39 @@ describe('OnboardingTour', () => {
     expect(useStore.getState().handHistory).toHaveLength(0)
   })
 
+  it('passo do placar mostra o range ativo e os contadores da sessão dentro do quadro da mesa', async () => {
+    renderTour(21, { ranges: [STACKRANGE_DEMO] })
+    await waitFor(() => expect(useStore.getState().activeDrillRange?.id).toBe(1778104119544))
+    expect(screen.getByText('O placar fica dentro da mesa')).toBeInTheDocument()
+    expect(await screen.findByText('BTN vs 3B OOP')).toBeInTheDocument()
+  })
+
+  it('passo do histórico destaca a lista de mãos respondidas ao lado da mesa', async () => {
+    renderTour(22, { ranges: [STACKRANGE_DEMO] })
+    await waitFor(() => expect(useStore.getState().activeDrillRange?.id).toBe(1778104119544))
+    expect(screen.getByText('Histórico ao lado')).toBeInTheDocument()
+    expect(await screen.findByText('Sem mãos ainda')).toBeInTheDocument()
+  })
+
+  it('passo do resumo força a tela de resumo pós-treino, sem perder a sessão de demonstração', async () => {
+    renderTour(23, { ranges: [STACKRANGE_DEMO] })
+    expect(await screen.findByRole('heading', { name: 'Resumo do Treino' })).toBeInTheDocument()
+    expect(screen.getByText('O resumo ao encerrar')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '← Voltar ao treino' })).toBeInTheDocument()
+    expect(useStore.getState().activeDrillRange?.id).toBe(1778104119544)
+  })
+
+  it('"Voltar" do passo de resumo pro histórico volta a mostrar o Drill ativo, sem ficar preso no resumo', async () => {
+    renderTour(23, { ranges: [STACKRANGE_DEMO] })
+    await screen.findByRole('heading', { name: 'Resumo do Treino' })
+    fireEvent.click(screen.getByRole('button', { name: 'Voltar' }))
+    expect(await screen.findByText('Histórico ao lado')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Resumo do Treino' })).not.toBeInTheDocument()
+    expect(useStore.getState().activeDrillRange?.id).toBe(1778104119544)
+  })
+
   it('passo do Range Check ao vivo inicia uma rodada de demonstração pra pintar', async () => {
-    renderTour(21, { ranges: [SIMPLE_RANGE] })
+    renderTour(24, { ranges: [SIMPLE_RANGE] })
     await screen.findByText('Range Check: escolha o que reproduzir')
     fireEvent.click(screen.getByRole('button', { name: 'Próximo' }))
     await waitFor(() => expect(useStore.getState().buildRounds).toHaveLength(1))
@@ -292,9 +323,9 @@ describe('OnboardingTour', () => {
   })
 
   it('último passo (Histórico) mostra "Concluir" e encerra o tour ao clicar', async () => {
-    renderTour(23)
+    renderTour(26)
     expect(await screen.findByText('Seu histórico')).toBeInTheDocument()
-    expect(screen.getByText('24/24')).toBeInTheDocument()
+    expect(screen.getByText('27/27')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Concluir' }))
     expect(useStore.getState().onboardingStep).toBeNull()
   })
@@ -318,7 +349,7 @@ describe('OnboardingTour', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Voltar' }))
     expect(useStore.getState().onboardingStep).toBe(0)
     expect(useStore.getState().page).toBe('dashboard')
-    expect(screen.getByText('1/24')).toBeInTheDocument()
+    expect(screen.getByText('1/27')).toBeInTheDocument()
   })
 
   it('"Pular tutorial" pede confirmação em vez de encerrar na hora', () => {
