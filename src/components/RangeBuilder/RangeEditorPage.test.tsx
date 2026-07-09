@@ -97,6 +97,22 @@ describe('RangeEditorPage', () => {
     expect(screen.getByRole('button', { name: 'Cancelar' })).toBeInTheDocument()
   })
 
+  it('sem clicar em nenhum chip, realça o chip cujo stackRange bate com o carregado no formulário (ex: troca automática do tour)', () => {
+    setup({
+      rangeData: { id: 1, name: 'BTN vs 3B OOP (300+)', grid: makeEmptyGrid(), positions: ['BTN'], tableSize: 8, stackRange: '>300bb' },
+      sessionGrids: [
+        { name: 'BTN vs 3B OOP (250-)', stackRange: '<=250bb', grid: makeEmptyGrid(), positions: ['BTN'] },
+        { name: 'BTN vs 3B OOP (300+)', stackRange: '>300bb', grid: makeEmptyGrid(), positions: ['BTN'] },
+      ],
+    })
+    render(<RangeEditorPage />)
+    // Não clicou em nada (editingIdx continua null) — mesmo assim o chip
+    // cujo stackRange bate com rangeData.stackRange aparece como "editando".
+    expect(screen.getByText('editando')).toBeInTheDocument()
+    const activeChip = screen.getByText('BTN vs 3B OOP (300+)').closest('div')
+    expect(activeChip).toHaveClass('border-brand-600/60')
+  })
+
   it('"PRÓXIMO" com nome e posição vai para o table-editor', () => {
     const initTableConfig = vi.fn()
     const setPage = vi.fn()

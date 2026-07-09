@@ -242,7 +242,7 @@ export function TableEditorPage() {
 
                 {/* Hero raise size input */}
                 {data.isHero && (
-                  <div className="flex items-center gap-2 pl-6 pt-1 border-t border-amber-800/30">
+                  <div data-tour="table-editor-raisefuture" className="flex items-center gap-2 pl-6 pt-1 border-t border-amber-800/30">
                     <label className="text-xs text-amber-400 flex-shrink-0">{t.tableEditor.futureRaise}</label>
                     <input
                       type="number" min={0} step={0.5}

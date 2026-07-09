@@ -133,6 +133,7 @@ export function OnboardingTour() {
     { target: 'editor-stackrange', run: loadStackRangeDemo, title: t.tour.editorStackRangeTitle, body: t.tour.editorStackRangeBody },
     { target: 'editor-prereq', run: loadStackRangeDemo, title: t.tour.editorPrereqTitle, body: t.tour.editorPrereqBody },
     { target: 'table-editor-roles', run: loadTableDemo, title: t.tour.tableEditorRolesTitle, body: t.tour.tableEditorRolesBody },
+    { target: 'table-editor-raisefuture', run: loadTableDemo, title: t.tour.tableEditorRaiseFutureTitle, body: t.tour.tableEditorRaiseFutureBody },
     { target: 'table-editor-table', run: loadTableDemo, title: t.tour.tableEditorTitle, body: t.tour.tableEditorBody },
     { target: 'table-editor-scenarios', run: loadTableDemo, title: t.tour.tableEditorScenariosTitle, body: t.tour.tableEditorScenariosBody },
     { target: 'drill-select', run: () => setPage('drill'), title: t.tour.drillTitle, body: t.tour.drillBody },

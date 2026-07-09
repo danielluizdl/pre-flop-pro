@@ -200,12 +200,19 @@ export function RangeEditorPage() {
             {t.editor.savedThisSession(sessionGrids.length)}
           </p>
           <div className="flex flex-wrap gap-2">
-            {sessionGrids.map((sg, i) => (
+            {sessionGrids.map((sg, i) => {
+              // Fora de uma edição real (editingIdx null — ex: o tour trocando
+              // sozinho entre as faixas), realça o chip cujo stackRange bate com
+              // o que está carregado no formulário agora, pra ficar visível qual
+              // faixa é qual mesmo sem o usuário ter clicado em nada.
+              const isActive = editingIdx === i
+                || (editingIdx === null && sg.stackRange !== '' && rangeData.stackRange === sg.stackRange)
+              return (
               <div
                 key={i}
                 className={[
                   'relative flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 pr-7 border transition-colors cursor-pointer',
-                  editingIdx === i
+                  isActive
                     ? 'bg-brand-900/30 border-brand-600/60 ring-1 ring-brand-600/40'
                     : 'bg-warm-900 border-warm-700 hover:border-warm-500',
                 ].join(' ')}
@@ -218,7 +225,7 @@ export function RangeEditorPage() {
                   </span>
                 )}
                 <span className="text-xs text-warm-500">{countNonFoldHands(sg.grid)} {t.common.hands}</span>
-                {editingIdx === i && <span className="text-[10px] text-brand-400 font-bold ml-1">{t.editor.editing}</span>}
+                {isActive && <span className="text-[10px] text-brand-400 font-bold ml-1">{t.editor.editing}</span>}
                 <button
                   onClick={e => {
                     e.stopPropagation()
@@ -235,7 +242,8 @@ export function RangeEditorPage() {
                   <X size={10} />
                 </button>
               </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}

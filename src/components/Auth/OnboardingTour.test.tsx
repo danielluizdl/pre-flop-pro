@@ -75,10 +75,10 @@ function renderTour(onboardingStep = 0, extra: Record<string, unknown> = {}) {
 }
 
 describe('OnboardingTour', () => {
-  it('mostra o passo 1 (Dashboard) com o contador 1/20', () => {
+  it('mostra o passo 1 (Dashboard) com o contador 1/21', () => {
     renderTour()
     expect(screen.getByText('Bem-vindo ao Pre-Flop Pro!')).toBeInTheDocument()
-    expect(screen.getByText('1/20')).toBeInTheDocument()
+    expect(screen.getByText('1/21')).toBeInTheDocument()
   })
 
   it('"Próximo" navega de verdade pra próxima página (Meus Ranges)', async () => {
@@ -183,8 +183,14 @@ describe('OnboardingTour', () => {
     expect((screen.getByLabelText('Ação de SB') as HTMLSelectElement).value).toBe('3bet')
   })
 
-  it('passo da mesa e passo de cenários continuam mostrando o mesmo cenário real', async () => {
+  it('passo de raise futuro mostra o tamanho real do 4-bet do herói', async () => {
     renderTour(13, { ranges: [STACKRANGE_DEMO, PREREQ_RANGE] })
+    await screen.findByRole('heading', { name: 'Configurar Cenários' })
+    await waitFor(() => expect((screen.getByLabelText('Tamanho do raise futuro') as HTMLInputElement).value).toBe('65'))
+  })
+
+  it('passo da mesa e passo de cenários continuam mostrando o mesmo cenário real', async () => {
+    renderTour(14, { ranges: [STACKRANGE_DEMO, PREREQ_RANGE] })
     await screen.findByRole('heading', { name: 'Configurar Cenários' })
     await waitFor(() => expect((screen.getByLabelText('Ação de BTN') as HTMLSelectElement).value).toBe('open'))
     fireEvent.click(screen.getByRole('button', { name: 'Próximo' }))
@@ -206,7 +212,7 @@ describe('OnboardingTour', () => {
   })
 
   it('passo do Drill ao vivo inicia uma sessão de demonstração com uma mão real', async () => {
-    renderTour(15, { ranges: [STACKRANGE_DEMO] })
+    renderTour(16, { ranges: [STACKRANGE_DEMO] })
     await screen.findByText('Drill: escolha o que treinar')
     fireEvent.click(screen.getByRole('button', { name: 'Próximo' }))
     await waitFor(() => {
@@ -217,7 +223,7 @@ describe('OnboardingTour', () => {
   })
 
   it('passo do Drill ao vivo não reinicia uma sessão real já em andamento', async () => {
-    renderTour(16, {
+    renderTour(17, {
       ranges: [STACKRANGE_DEMO],
       activeDrillRange: STACKRANGE_DEMO,
       activeHand: 'KK',
@@ -235,7 +241,7 @@ describe('OnboardingTour', () => {
   })
 
   it('passo do Range Check ao vivo inicia uma rodada de demonstração pra pintar', async () => {
-    renderTour(17, { ranges: [SIMPLE_RANGE] })
+    renderTour(18, { ranges: [SIMPLE_RANGE] })
     await screen.findByText('Range Check: escolha o que reproduzir')
     fireEvent.click(screen.getByRole('button', { name: 'Próximo' }))
     await waitFor(() => expect(useStore.getState().buildRounds).toHaveLength(1))
@@ -243,15 +249,15 @@ describe('OnboardingTour', () => {
   })
 
   it('último passo (Histórico) mostra "Concluir" e encerra o tour ao clicar', async () => {
-    renderTour(19)
+    renderTour(20)
     expect(await screen.findByText('Seu histórico')).toBeInTheDocument()
-    expect(screen.getByText('20/20')).toBeInTheDocument()
+    expect(screen.getByText('21/21')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Concluir' }))
     expect(useStore.getState().onboardingStep).toBeNull()
   })
 
   it('encerrar o tour depois do passo de Drill ao vivo para a sessão de demonstração que ele criou', async () => {
-    renderTour(16, { ranges: [STACKRANGE_DEMO] })
+    renderTour(17, { ranges: [STACKRANGE_DEMO] })
     await screen.findByRole('button', { name: /FOLD/ })
     fireEvent.click(screen.getByRole('button', { name: 'Pular tutorial' }))
     expect(useStore.getState().activeDrillRange).toBeNull()
@@ -268,7 +274,7 @@ describe('OnboardingTour', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Voltar' }))
     expect(useStore.getState().onboardingStep).toBe(0)
     expect(useStore.getState().page).toBe('dashboard')
-    expect(screen.getByText('1/20')).toBeInTheDocument()
+    expect(screen.getByText('1/21')).toBeInTheDocument()
   })
 
   it('"Pular tutorial" encerra imediatamente em qualquer passo', () => {
