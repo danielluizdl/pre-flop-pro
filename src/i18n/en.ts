@@ -8,6 +8,7 @@ export const en: Messages = {
     wait: 'Please wait...',
     retry: 'Try again',
     loading: 'Loading…',
+    elapsedTime: 'Session time',
     hands: 'hands',
     scenarioCount: (n: number) => `${n} scenario${n !== 1 ? 's' : ''}`,
     actions: {

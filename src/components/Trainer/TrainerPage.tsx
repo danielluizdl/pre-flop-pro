@@ -6,6 +6,7 @@ import { PokerTableEditor } from '../ui/PokerTableEditor'
 import { HandQuickSelect } from '../ui/HandQuickSelect'
 import { RangePreviewModal } from '../ui/RangePreviewModal'
 import { PageTutorialButton } from '../ui/PageTutorialButton'
+import { ElapsedClock } from '../ui/ElapsedClock'
 import { Eye } from 'lucide-react'
 import { RANKS, SUIT_ICONS } from '../../types'
 import { ALL_HANDS, getRngBands, formatRngBands } from '../../utils/hands'
@@ -1051,6 +1052,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
   const incrementConsults      = useStore(s => s.incrementConsults)
   const logConsult             = useStore(s => s.logConsult)
   const stats                  = useStore(s => s.sessionStats)
+  const sessionStartTime       = useStore(s => s.sessionStartTime)
   const setPage                = useStore(s => s.setPage)
 
   const { prompting: awayPrompting, remainingMs: awayRemainingMs, dismiss: dismissAway, getAwayMs } = useAwayGuard({
@@ -1347,6 +1349,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                         {activeDrillStackRange}
                       </span>
                     )}
+                    <ElapsedClock startMs={sessionStartTime} className="ml-auto shrink-0 text-[0.65rem] font-semibold text-warm-400" />
                   </div>
                   <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-center">
                     <div>

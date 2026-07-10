@@ -7,6 +7,7 @@ import { RangeActionGrid } from '../Admin/RangeActionGrid'
 import { ComboCounter } from '../ui/ComboCounter'
 import { HandQuickSelect } from '../ui/HandQuickSelect'
 import { PageTutorialButton } from '../ui/PageTutorialButton'
+import { ElapsedClock } from '../ui/ElapsedClock'
 import { RANKS } from '../../utils/hands'
 import { rangeComboStats, TOTAL_COMBOS } from '../../utils/rangeCombos'
 import { useAwayGuard } from '../../utils/useAwayGuard'
@@ -342,6 +343,7 @@ function ComboDiffPanel({ realGrid, userGrid, extraLabel, extraColor }: {
 function BuildRound() {
   const rounds        = useStore(s => s.buildRounds)
   const roundIdx      = useStore(s => s.buildRoundIdx)
+  const buildSessionId = useStore(s => s.buildSessionId)
   const lastResult    = useStore(s => s.buildLastResult)
   const attempt       = useStore(s => s.buildAttempt)
   const submitRound   = useStore(s => s.submitBuildRound)
@@ -381,8 +383,9 @@ function BuildRound() {
               </span>
             )}
           </h2>
-          <p className="text-warm-400 text-sm">
-            {t.exercise.reproduceLabel} <span className="font-bold text-warm-100">{round.label}</span>
+          <p className="text-warm-400 text-sm flex items-center gap-3 flex-wrap">
+            <span>{t.exercise.reproduceLabel} <span className="font-bold text-warm-100">{round.label}</span></span>
+            <ElapsedClock startMs={buildSessionId} className="text-xs font-semibold text-warm-400" />
           </p>
         </div>
         <button

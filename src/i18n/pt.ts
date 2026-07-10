@@ -6,6 +6,7 @@ export const pt = {
     wait: 'Aguarde...',
     retry: 'Tentar novamente',
     loading: 'Carregando…',
+    elapsedTime: 'Tempo de sessão',
     hands: 'mãos',
     scenarioCount: (n: number) => `${n} cenário${n !== 1 ? 's' : ''}`,
     actions: {

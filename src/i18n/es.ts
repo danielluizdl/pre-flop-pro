@@ -8,6 +8,7 @@ export const es: Messages = {
     wait: 'Espere...',
     retry: 'Reintentar',
     loading: 'Cargando…',
+    elapsedTime: 'Tiempo de sesión',
     hands: 'manos',
     scenarioCount: (n: number) => `${n} escenario${n !== 1 ? 's' : ''}`,
     actions: {
