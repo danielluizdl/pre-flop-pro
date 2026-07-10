@@ -1281,27 +1281,65 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
               )}
             </div>
 
-            {/* Botões de ação + quadrante de acertos/erros no canto */}
-            <div className="flex-shrink-0 grid items-center gap-2 px-4" style={{ gridTemplateColumns: '1fr auto 1fr' }}>
+            {/* Botões de ação + navegação (centro) e quadrante de acertos/erros
+                encostado no canto inferior direito — items-end faz o quadrante
+                (mais alto que a coluna central por causa do nome do range, que
+                nunca é cortado) crescer pra cima em vez de ficar centralizado. */}
+            <div className="flex-shrink-0 grid items-end gap-2 px-4 pb-3" style={{ gridTemplateColumns: '1fr auto 1fr' }}>
               <span aria-hidden="true" />
-              <div className="flex justify-center gap-2 flex-wrap">
-                {actionBtns.map(({ name, sub, action, hotkey }) => (
-                  <DrillActionButton
-                    key={action}
-                    name={name}
-                    sub={sub}
-                    action={action}
-                    hotkey={hotkey}
-                    isPressed={pressedAction === action}
-                    isDisabled={isAnswered}
-                    onClick={() => handleAction(action)}
-                  />
-                ))}
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex justify-center gap-2 flex-wrap">
+                  {actionBtns.map(({ name, sub, action, hotkey }) => (
+                    <DrillActionButton
+                      key={action}
+                      name={name}
+                      sub={sub}
+                      action={action}
+                      hotkey={hotkey}
+                      isPressed={pressedAction === action}
+                      isDisabled={isAnswered}
+                      onClick={() => handleAction(action)}
+                    />
+                  ))}
+                </div>
+                <div className="flex items-center justify-center gap-2">
+                  <button
+                    onClick={doGoNext}
+                    className={[
+                      'px-6 py-2 rounded-xl font-bold text-sm transition-colors',
+                      isAnswered ? 'bg-brand-600 hover:bg-brand-500 text-white' : 'bg-warm-700 hover:bg-warm-600 text-warm-100',
+                    ].join(' ')}
+                  >
+                    {viewingPrev ? t.drill.currentHand : t.drill.nextHand}
+                  </button>
+                  <button
+                    onClick={() => setAutoAdvance(a => !a)}
+                    aria-pressed={autoAdvance}
+                    aria-label="Avanço automático em 2 segundos"
+                    className={[
+                      'relative overflow-hidden px-6 py-2 rounded-xl border font-semibold text-sm transition-colors',
+                      autoAdvance ? 'bg-brand-600/40 border-brand-500 text-brand-300' : 'bg-warm-800 border-warm-600 text-warm-400 hover:bg-warm-700',
+                    ].join(' ')}
+                  >
+                    {autoAdvance && answered && !viewingPrev && (
+                      <span key={activeHand} className="absolute inset-y-0 left-0 bg-brand-500/30"
+                        style={{ animation: 'btn-fill 2s linear forwards' }} />
+                    )}
+                    <span className="relative z-10">2s</span>
+                  </button>
+                  <button
+                    onClick={() => setViewingPrev(true)}
+                    disabled={!prevSnapshot || viewingPrev}
+                    className="px-4 py-2 rounded-xl border border-warm-600 bg-warm-800 text-warm-400 hover:bg-warm-700 font-semibold text-xs transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    {t.drill.prev}
+                  </button>
+                </div>
               </div>
               <div className="flex justify-end">
-                <div data-tour="drill-scoreboard" className="shrink-0 w-full max-w-[190px] bg-warm-900/70 border border-warm-700 rounded-xl px-3 py-2">
-                  <div className="flex items-center gap-1.5 min-w-0 pb-1.5 mb-1.5 border-b border-warm-700/60">
-                    <span className="text-xs font-extrabold text-warm-100 truncate" title={activeDrillRange.name}>
+                <div data-tour="drill-scoreboard" className="shrink-0 w-full max-w-[260px] bg-warm-900/70 border border-warm-700 rounded-xl px-3 py-2.5">
+                  <div className="flex items-start gap-1.5 flex-wrap pb-1.5 mb-1.5 border-b border-warm-700/60">
+                    <span className="text-xs font-extrabold text-warm-100" title={activeDrillRange.name}>
                       {activeDrillRange.name}
                     </span>
                     {!!activeDrillStackRange && (
@@ -1330,41 +1368,6 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Navegação */}
-            <div className="flex-shrink-0 flex items-center justify-center gap-2 py-3">
-              <button
-                onClick={doGoNext}
-                className={[
-                  'px-6 py-2 rounded-xl font-bold text-sm transition-colors',
-                  isAnswered ? 'bg-brand-600 hover:bg-brand-500 text-white' : 'bg-warm-700 hover:bg-warm-600 text-warm-100',
-                ].join(' ')}
-              >
-                {viewingPrev ? t.drill.currentHand : t.drill.nextHand}
-              </button>
-              <button
-                onClick={() => setAutoAdvance(a => !a)}
-                aria-pressed={autoAdvance}
-                aria-label="Avanço automático em 2 segundos"
-                className={[
-                  'relative overflow-hidden px-6 py-2 rounded-xl border font-semibold text-sm transition-colors',
-                  autoAdvance ? 'bg-brand-600/40 border-brand-500 text-brand-300' : 'bg-warm-800 border-warm-600 text-warm-400 hover:bg-warm-700',
-                ].join(' ')}
-              >
-                {autoAdvance && answered && !viewingPrev && (
-                  <span key={activeHand} className="absolute inset-y-0 left-0 bg-brand-500/30"
-                    style={{ animation: 'btn-fill 2s linear forwards' }} />
-                )}
-                <span className="relative z-10">2s</span>
-              </button>
-              <button
-                onClick={() => setViewingPrev(true)}
-                disabled={!prevSnapshot || viewingPrev}
-                className="px-4 py-2 rounded-xl border border-warm-600 bg-warm-800 text-warm-400 hover:bg-warm-700 font-semibold text-xs transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              >
-                {t.drill.prev}
-              </button>
             </div>
           </div>
         </div>
