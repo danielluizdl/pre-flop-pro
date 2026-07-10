@@ -3,79 +3,65 @@ STATUS: EM ANDAMENTO
 # Handoff — rotina auto/fable-routine
 
 Branch: `auto/fable-routine` (criada de `feature/auth-telemetry` em 10/07/2026).
-Estado ao fim do run 1 (10/07): **1114 testes verdes (93 arquivos)**, build verde,
-smoke verde, verificação headless do relógio verde. Tudo pushed.
+Estado ao fim do run 2 (10/07): **1134 testes verdes (96 arquivos)**, build verde,
+smoke verde. Tudo pushed. Falta só abrir o PR final (em andamento neste run).
 
-## Progresso
+## Progresso — OS 4 ITENS DO BACKLOG ESTÃO COMPLETOS
 
-### Item 1 — Painel coach pessoal do jogador: FEITO (commit 1082f5d)
-- **Backend**: `functions/api/me/analytics.js` reusa `runAnalyticsView` (extraído de
-  `functions/api/admin/analytics.js`; onRequest do admin sem mudança de comportamento).
-  Segurança: `playerIds` vem SEMPRE do token; whitelist `PLAYER_VIEWS = [by-range,
-  leaks, consult-by-range, consult-by-range-hand, range-grid]` — nunca team-overview/
-  player-ranges/trend/build-* (não expõe agregados do time nem outros jogadores).
-  Testes endpoint-level com D1 fake em `functions/api/me/analytics.test.js`.
-- **Front**: `src/components/Stats/MyCoachPanel.tsx`, aba "Análise" no Histórico
-  (`StatsPage`), só com `currentUser`. Hooks de `CoachPanel/shared.tsx` ganharam param
-  opcional `endpoint` (default admin — coach intacto); `TeamView.tsx` exporta
-  ComboSummary/severity helpers/CONF_DOT/tipos; `HandDetailCard` ganhou prop
-  `playedLabel` ("Como você jogou esta mão"); `ConsultRangeDetail` ganhou prop
-  `endpoint`. StatsPage perde `max-w-2xl` só na aba Análise.
-- **i18n ×3**: `coach.howYouPlayed`, `coach.actionGridPlayedTitleSelf/SubSelf`,
-  `stats.tabAnalysis`, `stats.analysisIntro`.
-- Sem migração D1 (só leitura de tabelas existentes).
+### Item 1 — Painel coach pessoal do jogador: FEITO (run 1, commit 1082f5d)
+- Backend `functions/api/me/analytics.js` (player-scoped, `playerIds` SEMPRE do
+  token, whitelist PLAYER_VIEWS); front `MyCoachPanel.tsx` na aba "Análise" do
+  Histórico. Detalhes no histórico do git / versão anterior deste handoff.
 
-### Item 2 — Auditoria Histórico + coach via Playwright: FEITO
-Script padrão smoke (serve dist + page.route stubando /api/* com dados realistas +
-localStorage seedado com 25 sessões/6 builds), desktop 1440 e mobile 390, screenshots
-+ detector de overflow + console/pageerror. Cobertos: Histórico (5 abas, detalhe de
-sessão com e sem handPerf), Análise nova (matriz, TopHands, HandDetail), /coach
-(abas Drill e Range Check). O script não foi commitado (`scripts/` é gitignored) —
-existia em `scripts/audit.mjs` no container do run 1.
-- **Corrigido (commit 1fd6152)**: fileira de abas do Histórico estourava no mobile
-  (5 abas → rótulos quebravam em 3 linhas); agora `overflow-x-auto` + `whitespace-
-  nowrap`/`shrink-0`.
-- **Achado, NÃO corrigido (escopo maior, pro Daniel decidir)**: o header do
-  `TopNav` estoura a viewport em 390px em TODAS as páginas (única causa restante de
-  scroll horizontal no mobile). `overflow-x-auto` no header clipparia o popover do
-  menu de perfil (absolute) — precisa de decisão de design de nav mobile.
-- **Achado, relevante pro item 4**: `SessionDetailView` (StatsPage) resolve os
-  ranges da sessão POR NOME contra o catálogo atual — range renomeado/apagado some
-  do detalhe (o cabeçalho lista o nome, mas a caixa da matriz não aparece).
-  `handPerf` novo já é gravado por id (fallback por nome p/ sessões antigas), mas a
-  LISTA de ranges vem de `rangeNames`. Consertar no item 4.
-- Painéis coach/pessoal com dados realistas: sem erro de console, sem clipping,
-  tabelas legíveis nos dois viewports.
+### Item 2 — Auditoria Histórico + coach via Playwright: FEITO (run 1)
+- Corrigido: abas do Histórico no mobile (commit 1fd6152).
+- Achado NÃO corrigido (decisão de design pro Daniel): header do TopNav estoura
+  viewport em 390px em todas as páginas (precisa decisão de nav mobile).
+- Achado "ranges por nome no detalhe da sessão" → corrigido no item 4 (run 2).
 
-### Item 3 — Relógio ao vivo Drill/Range Check: FEITO (commit fb62260)
-- `src/components/ui/ElapsedClock.tsx` (+ teste): formatElapsed puro (mm:ss,
-  h:mm:ss ≥1h), um setInterval por montagem limpo no cleanup, tick local.
-- Drill: no placar (`drill-scoreboard`), fonte `sessionStartTime`. Range Check: no
-  cabeçalho do round, fonte `buildSessionId`. i18n `common.elapsedTime` ×3.
-- Verificado com Playwright headless (script `scripts/clockcheck.mjs`, gitignored):
-  ambos os relógios avançam 00:00 → 00:02 ao vivo. Gotcha aprendido: rotas do
-  Playwright casam na ordem inversa de registro — registrar catch-all `**/api/**`
-  ANTES das específicas, senão o stub de auth/me nunca responde e cai na tela de login.
+### Item 3 — Relógio ao vivo Drill/Range Check: FEITO (run 1, commit fb62260)
+- `ui/ElapsedClock.tsx`, no placar do Drill e no cabeçalho do round do Range Check.
 
-### Item 4 — Replay completo do histórico: NÃO INICIADO
-Gaps já identificados na auditoria (fazer nesta ordem):
-1. `SessionDetailView` deve resolver ranges por id (`TrainingSession` não guarda
-   rangeIds hoje — avaliar gravar `rangeIds` na sessão em `stopDrill` + fallback por
-   nome pra sessões antigas) e mostrar placeholder pra range apagado em vez de sumir.
-2. Replay mão a mão: `handHistory` (cap 50, só em memória) NÃO é persistido na
-   sessão — pra replay por mão seria preciso gravar as entries na TrainingSession
-   (atenção à cota do localStorage; talvez cap por sessão). Avaliar custo.
-3. Range Check: `BuildSession` guarda rounds {label,score,attempt} mas não o grid
-   pintado — replay rodada a rodada precisa gravar o grid do usuário (esparso!) por
-   round. `BuildHistoryPanel` hoje só expande texto.
-4. Paginação: as listas renderizam TODAS as sessões de uma vez (25 seedadas ok;
-   centenas podem pesar) — avaliar "mostrar mais".
+### Item 4 — Replay completo do histórico: FEITO (run 2, 4 fatias)
+1. **Resolução por id + placeholder de range apagado** (commit 02e85aa):
+   `TrainingSession.rangeIds` (paralelo a rangeNames) gravado no upsert ao vivo e
+   no stopDrill; `utils/sessionRanges.ts` (`resolveSessionRanges`: id primeiro,
+   fallback por nome pra sessões antigas) usado no `SessionDetailView` (StatsPage)
+   e no `SessionDetail` (HistoryModal do TrainerPage). Range renomeado mostra o
+   nome novo; range apagado vira linha com badge "Range excluído do catálogo" e
+   heatmap por mão (sobre grid vazio) ainda acessível.
+2. **Replay mão a mão do Drill** (commit a126b73): novo `sessionHandLog` no store
+   (acumula TODAS as respostas da sessão, sem o cap de 50 do handHistory visual),
+   persistido como `TrainingSession.handLog` (cap 500 mãos/sessão — cota do
+   localStorage). Seção colapsável "Mãos da sessão" nos dois detalhes de sessão,
+   via `ui/SessionHandLog.tsx` (HandHistoryItem/MiniCard extraídos do TrainerPage
+   pra lá; prop `showRange` quando a sessão tem >1 range). Sessões antigas sem
+   handLog mostram aviso i18n.
+3. **Replay rodada a rodada do Range Check** (commit fdcb79f): `BuildHistoryRound`
+   ganha `userGrid`/`answerGrid` (ESPARSOS via encodeSparse) + rangeId/stackRange/
+   customAction, gravados em `makeBuildSession` (answerGrid é snapshot do gabarito
+   do momento — range editado/apagado depois não corrompe o replay). No
+   `BuildHistoryPanel`, round com grid gravado vira linha clicável → expande
+   `BuildRoundReplay` (RangeActionGrid "Seu range" vs "Gabarito" + DiffGrid;
+   perHand recomputado via `scoreBuild`). `DiffGrid` extraído de ExercisePage pra
+   `ui/DiffGrid.tsx`.
+4. **Paginação** (commit 6420687): `ui/PagedList.tsx` (`usePagedList` + botão
+   "Mostrar mais (N)", páginas de 20) nas 3 listas: Histórico de Sessões, aba
+   Range Check e HistoryModal do Drill.
+- i18n ×3 em todas as fatias (`stats.rangeDeleted`, `stats.handLog`,
+  `stats.handLogUnavailable`, `stats.showMore`). Sem migração D1 em nada do item 4
+  (tudo localStorage).
 
-## Decisões de design
-- Endpoint pessoal separado em vez de afrouxar o guard do admin.
-- Views pessoais respondem pra qualquer usuário autenticado (coach vê os próprios).
-- Vite gerou chunk compartilhado `TeamView` (StatsPage lazy importa pedaços do
-  CoachPanel) — smoke confirma sem tela branca.
+## Decisões de design (run 2)
+- `handLog` cap 500/sessão e grids do Range Check em esparso: proteção da cota do
+  localStorage; falha de save já cai no banner `storageBlocked` existente.
+- Snapshot do gabarito por round em vez de resolver do catálogo: fidelidade do
+  replay (o range pode mudar depois); pro Drill, o grid vem do catálogo por id
+  (com fallback por nome) porque lá o heatmap da sessão é o dado primário.
+- `openKey: string` (id ou `n:nome`) substitui `openRangeId: number` nos detalhes
+  de sessão pra permitir expandir placeholders de ranges apagados.
 
 ## Bloqueios / dúvidas pro Daniel
-- TopNav mobile (acima). Nenhum outro bloqueio.
+- TopNav mobile (acima) — fora do escopo dos 4 itens.
+- Migração D1: NENHUMA pendente desta branch (o painel pessoal só lê tabelas
+  existentes).
