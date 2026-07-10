@@ -1,10 +1,13 @@
-STATUS: EM ANDAMENTO
+STATUS: DONE
 
 # Handoff — rotina auto/fable-routine
 
 Branch: `auto/fable-routine` (criada de `feature/auth-telemetry` em 10/07/2026).
 Estado ao fim do run 2 (10/07): **1134 testes verdes (96 arquivos)**, build verde,
-smoke verde. Tudo pushed. Falta só abrir o PR final (em andamento neste run).
+smoke verde. Tudo pushed. **PR final aberto: #54**
+(https://github.com/danielluizdl/pre-flop-pro/pull/54, auto/fable-routine →
+feature/auth-telemetry) — aguardando revisão do Daniel; a rotina não faz merge.
+Rotina encerrada: runs futuros devem sair imediatamente ao ler este STATUS.
 
 ## Progresso — OS 4 ITENS DO BACKLOG ESTÃO COMPLETOS
 
