@@ -491,7 +491,7 @@ export function StatsPage() {
       </div>
 
       {/* Abas */}
-      <div className="flex border-b border-warm-700">
+      <div className="flex border-b border-warm-700 overflow-x-auto">
         {([
           ...(currentUser ? [
             { key: 'cloud' as const, label: t.stats.tabCloud },
@@ -505,7 +505,7 @@ export function StatsPage() {
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={[
-              'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors',
+              'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors whitespace-nowrap shrink-0',
               activeTab === tab.key
                 ? 'border-brand-500 text-warm-100'
                 : 'border-transparent text-warm-400 hover:text-warm-200',
