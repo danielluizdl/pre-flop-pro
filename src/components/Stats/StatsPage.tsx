@@ -10,6 +10,7 @@ import { t, dateLocale } from '../../i18n'
 import { downloadText } from '../../utils/download'
 import { buildSessionCsv, sessionCsvFilename } from '../../utils/sessionCsv'
 import { resolveSessionRanges, sessionRangeKey } from '../../utils/sessionRanges'
+import { SessionHandLog } from '../ui/SessionHandLog'
 import { makeEmptyGrid } from '../../utils/hands'
 
 const EMPTY_GRID = makeEmptyGrid()
@@ -209,6 +210,8 @@ function SessionDetailView({ session, ranges, onBack }: {
           })}
         </div>
       )}
+
+      <SessionHandLog handLog={session.handLog} />
     </div>
   )
 }

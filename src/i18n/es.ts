@@ -421,6 +421,8 @@ export const es: Messages = {
     rangesNotFound: 'Ranges de esta sesión no encontrados.',
     perHandUnavailable: 'Datos por mano no disponibles para sesiones anteriores.',
     rangeDeleted: 'Range eliminado del catálogo',
+    handLog: 'Manos de la sesión',
+    handLogUnavailable: 'La repetición mano a mano solo está disponible para sesiones grabadas a partir de esta versión.',
     noName: 'Sin nombre',
     viewDetails: 'Ver detalles',
     exportCsv: 'Exportar CSV',

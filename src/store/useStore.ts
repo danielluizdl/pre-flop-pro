@@ -139,6 +139,10 @@ function saveBuildHistory(sessions: BuildSession[]) {
   trySave(() => localStorage.setItem(BUILD_HISTORY_KEY, JSON.stringify(sessions)))
 }
 
+// Cap do log mão a mão persistido por sessão (replay no Histórico) — protege a
+// cota do localStorage em sessões muito longas; ficam as últimas 500 mãos.
+const HAND_LOG_CAP = 500
+
 // Upsert por id: a sessão em andamento é gravada no histórico a cada resposta
 // (nada se perde se o usuário fechar sem encerrar) e atualizada in-place depois.
 function upsertSession<T extends { id: number }>(list: T[], item: T): T[] {
@@ -266,6 +270,7 @@ interface AppState {
   focusErrors: boolean
   setFocusErrors: (val: boolean) => void
   sessionHandPerf: HandPerfMap
+  sessionHandLog: HandHistoryEntry[]
   sessionSeverity: { grave: number; impreciso: number }
 
   toggleDrillRange: (id: number) => void
@@ -884,6 +889,7 @@ export const useStore = create<AppState>()(
       focusErrors: false,
       setFocusErrors: (val) => set({ focusErrors: val }),
       sessionHandPerf: {},
+      sessionHandLog: [],
       sessionSeverity: { grave: 0, impreciso: 0 },
 
       selectedDrillRangeIds: [],
@@ -934,6 +940,7 @@ export const useStore = create<AppState>()(
           sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 },
           handHistory: [],
           sessionHandPerf: {},
+          sessionHandLog: [],
           sessionSeverity: { grave: 0, impreciso: 0 },
           sessionStartTime: sid,
           sessionUuid: crypto.randomUUID(),
@@ -1156,9 +1163,10 @@ export const useStore = create<AppState>()(
           }
           return next
         }
-        const { handPerformance, sessionHandPerf, sessionSeverity, sessionStartTime, trainingHistory, selectedDrillRangeIds, ranges, currentTableSize } = get()
+        const { handPerformance, sessionHandPerf, sessionHandLog, sessionSeverity, sessionStartTime, trainingHistory, selectedDrillRangeIds, ranges, currentTableSize } = get()
         const newPerf = accumulate(handPerformance)
         const newSessionPerf = accumulate(sessionHandPerf)
+        const newHandLog = [...sessionHandLog, entry].slice(-HAND_LOG_CAP)
         saveHandPerf(newPerf)
 
         // Grava a sessão em andamento no histórico a cada mão (upsert pelo id =
@@ -1177,6 +1185,7 @@ export const useStore = create<AppState>()(
             consults: stats.consults,
             durationSeconds: Math.round((Date.now() - sessionStartTime) / 1000),
             handPerf: JSON.parse(JSON.stringify(newSessionPerf)),
+            handLog: [...newHandLog],
           })
           saveHistory(newTrainingHistory)
         }
@@ -1186,6 +1195,7 @@ export const useStore = create<AppState>()(
           handHistory: [...handHistory, entry].slice(-50),
           handPerformance: newPerf,
           sessionHandPerf: newSessionPerf,
+          sessionHandLog: newHandLog,
           trainingHistory: newTrainingHistory,
           sessionSeverity: severity
             ? { grave: sessionSeverity.grave + (severity === 'grave' ? 1 : 0), impreciso: sessionSeverity.impreciso + (severity === 'impreciso' ? 1 : 0) }
@@ -1226,7 +1236,7 @@ export const useStore = create<AppState>()(
       },
 
       stopDrill: (awayMs = 0) => {
-        const { sessionStats, selectedDrillRangeIds, ranges, currentTableSize, sessionStartTime, trainingHistory, sessionHandPerf } = get()
+        const { sessionStats, selectedDrillRangeIds, ranges, currentTableSize, sessionStartTime, trainingHistory, sessionHandPerf, sessionHandLog } = get()
         let newHistory = trainingHistory
         if (sessionStats.hands > 0) {
           // sessionHandPerf é o acumulador da sessão inteira (não limitado ao cap de 50 do histórico visual),
@@ -1245,6 +1255,7 @@ export const useStore = create<AppState>()(
             consults: sessionStats.consults,
             durationSeconds: sessionStartTime > 0 ? Math.max(0, Math.round((Date.now() - sessionStartTime) / 1000) - Math.round(awayMs / 1000)) : 0,
             handPerf,
+            handLog: [...sessionHandLog],
           }
           newHistory = upsertSession(trainingHistory, session)
           saveHistory(newHistory)

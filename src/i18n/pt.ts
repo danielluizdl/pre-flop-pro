@@ -419,6 +419,8 @@ export const pt = {
     rangesNotFound: 'Ranges desta sessão não encontrados.',
     perHandUnavailable: 'Dados por mão não disponíveis para sessões anteriores.',
     rangeDeleted: 'Range excluído do catálogo',
+    handLog: 'Mãos da sessão',
+    handLogUnavailable: 'Replay mão a mão disponível apenas para sessões gravadas a partir desta versão.',
     noName: 'Sem nome',
     viewDetails: 'Ver detalhes',
     exportCsv: 'Exportar CSV',

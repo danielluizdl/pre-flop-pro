@@ -8,7 +8,8 @@ import { RangePreviewModal } from '../ui/RangePreviewModal'
 import { PageTutorialButton } from '../ui/PageTutorialButton'
 import { ElapsedClock } from '../ui/ElapsedClock'
 import { Eye } from 'lucide-react'
-import { RANKS, SUIT_ICONS } from '../../types'
+import { RANKS } from '../../types'
+import { HandHistoryItem, SessionHandLog } from '../ui/SessionHandLog'
 import { ALL_HANDS, getRngBands, formatRngBands, makeEmptyGrid } from '../../utils/hands'
 import { resolveSessionRanges, sessionRangeKey } from '../../utils/sessionRanges'
 import { useModalA11y } from '../../utils/useModalA11y'
@@ -46,47 +47,6 @@ function bandLabelFor(range: Range, stackGridIdx: number, hand: string): string 
 }
 
 
-
-/* ── Mini card for history ─────────────────────────────────────────────────── */
-function MiniCard({ rank, suit }: { rank: string; suit: string }) {
-  const colorClass: Record<string, string> = {
-    h: 'text-red-400', d: 'text-blue-400', s: 'text-warm-300', c: 'text-emerald-400',
-  }
-  return (
-    <span className={`font-bold ${colorClass[suit] ?? 'text-warm-300'}`}>
-      {rank}{SUIT_ICONS[suit]}
-    </span>
-  )
-}
-
-/* ── Hand history item ──────────────────────────────────────────────────────── */
-function HandHistoryItem({ entry, onClick }: { entry: HandHistoryEntry; onClick?: () => void }) {
-  return (
-    <div
-      onClick={onClick}
-      className={`p-2 rounded-lg border text-xs transition-all ${entry.correct ? 'border-emerald-700/40 bg-emerald-900/10' : 'border-red-700/40 bg-red-900/10'} ${onClick ? 'cursor-pointer hover:brightness-125' : ''}`}
-    >
-      <div className="flex items-center gap-1 mb-0.5">
-        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${entry.correct ? 'bg-emerald-500' : 'bg-red-500'}`} />
-        <MiniCard rank={entry.hand[0]} suit={entry.suits[0]} />
-        <MiniCard rank={entry.hand[1]} suit={entry.suits[1]} />
-        <span className="ml-auto text-warm-500 tabular-nums">{entry.rng}</span>
-      </div>
-      <div className="pl-3.5">
-        {entry.correct ? (
-          <span className="text-emerald-400 font-semibold">{entry.actionTaken}</span>
-        ) : (
-          <>
-            <span className="text-red-400">{entry.actionTaken}</span>
-            <span className="text-warm-500"> → </span>
-            <span className="text-emerald-400">{entry.correctAction}</span>
-          </>
-        )}
-        {!!entry.raiseSize && <span className="text-warm-500"> ({entry.raiseSize})</span>}
-      </div>
-    </div>
-  )
-}
 
 /* ── Hand history sidebar ────────────────────────────────────────────────────── */
 const HandHistorySidebar = memo(function HandHistorySidebar({ onOpenModal, onReplayEntry }: { onOpenModal: () => void; onReplayEntry?: (entry: HandHistoryEntry) => void }) {
@@ -288,6 +248,8 @@ function SessionDetail({ session, ranges }: {
           })}
         </div>
       )}
+
+      <SessionHandLog handLog={session.handLog} />
     </div>
   )
 }

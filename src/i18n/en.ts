@@ -421,6 +421,8 @@ export const en: Messages = {
     rangesNotFound: 'Ranges from this session not found.',
     perHandUnavailable: 'Per-hand data not available for older sessions.',
     rangeDeleted: 'Range deleted from catalog',
+    handLog: 'Session hands',
+    handLogUnavailable: 'Hand-by-hand replay is only available for sessions recorded from this version on.',
     noName: 'No name',
     viewDetails: 'View details',
     exportCsv: 'Export CSV',

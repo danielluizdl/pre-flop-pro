@@ -146,6 +146,8 @@ export interface TrainingSession {
   consults: number
   durationSeconds: number
   handPerf?: Record<string, Record<string, { c: number; t: number }>>
+  // Log mão a mão da sessão (cap 500) — sessões antigas não têm.
+  handLog?: HandHistoryEntry[]
 }
 
 export interface BuildRound {

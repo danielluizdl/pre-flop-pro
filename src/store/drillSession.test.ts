@@ -17,6 +17,7 @@ function drillState(grid: Record<string, HandData>, over: Record<string, unknown
     useRngForFrequency: false,
     handHistory: [],
     sessionHandPerf: {},
+    sessionHandLog: [],
     handPerformance: {},
     sessionStats: { hands: 0, correct: 0, errors: 0, consults: 0 },
     sessionSeverity: { grave: 0, impreciso: 0 },
@@ -67,6 +68,25 @@ describe('checkDrillAnswer — customAction (extra)', () => {
   })
 })
 
+describe('checkDrillAnswer — log mão a mão da sessão', () => {
+  it('acumula a entry em sessionHandLog e persiste handLog na sessão do histórico', () => {
+    const g = makeEmptyGrid()
+    g['AA'] = { fold: 0, call: 0, raise: 100, allin: 0, size: 0 }
+    drillState(g, {
+      activeHand: 'AA',
+      sessionStartTime: Date.now(),
+      trainingHistory: [],
+      selectedDrillRangeIds: [1],
+      ranges: [rangeWith(g)],
+    })
+    useStore.getState().checkDrillAnswer('Raise')
+    const s = useStore.getState()
+    expect(s.sessionHandLog).toHaveLength(1)
+    expect(s.sessionHandLog[0]).toMatchObject({ hand: 'AA', actionTaken: 'Raise', correct: true, rangeId: 1 })
+    expect(s.trainingHistory[0].handLog).toHaveLength(1)
+  })
+})
+
 describe('startDrillSession', () => {
   it('zera stats/histórico e gera um sessionUuid novo', () => {
     useStore.setState({
@@ -98,6 +118,7 @@ describe('stopDrill', () => {
       sessionStartTime: Date.now() - 5000,
       trainingHistory: [],
       sessionHandPerf: { 1: { AA: { c: 1, t: 2 } } },
+      sessionHandLog: [{ id: 9, hand: 'AA', suits: ['h', 's'], actionTaken: 'Raise', correctAction: 'Raise', rng: 50, correct: true, rangeName: 'R', rangeId: 1, stackGridIdx: -1 }],
       sessionStats: { hands: 8, correct: 6, errors: 2, consults: 1 },
       activeDrillRange: rangeWith(makeEmptyGrid()),
     })
@@ -107,6 +128,8 @@ describe('stopDrill', () => {
     expect(s.trainingHistory[0]).toMatchObject({ hands: 8, correct: 6, errors: 2, consults: 1, tableSize: 6 })
     expect(s.trainingHistory[0].rangeNames).toEqual(['R'])
     expect(s.trainingHistory[0].rangeIds).toEqual([1])
+    expect(s.trainingHistory[0].handLog).toHaveLength(1)
+    expect(s.trainingHistory[0].handLog![0]).toMatchObject({ hand: 'AA', actionTaken: 'Raise' })
     expect(s.trainingHistory[0].durationSeconds).toBeGreaterThanOrEqual(4)
     expect(s.activeDrillRange).toBeNull()
     expect(s.page).toBe('drill')
