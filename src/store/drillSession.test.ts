@@ -106,6 +106,7 @@ describe('stopDrill', () => {
     expect(s.trainingHistory).toHaveLength(1)
     expect(s.trainingHistory[0]).toMatchObject({ hands: 8, correct: 6, errors: 2, consults: 1, tableSize: 6 })
     expect(s.trainingHistory[0].rangeNames).toEqual(['R'])
+    expect(s.trainingHistory[0].rangeIds).toEqual([1])
     expect(s.trainingHistory[0].durationSeconds).toBeGreaterThanOrEqual(4)
     expect(s.activeDrillRange).toBeNull()
     expect(s.page).toBe('drill')

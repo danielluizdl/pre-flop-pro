@@ -9,6 +9,10 @@ import { AccuracySparkline } from './AccuracySparkline'
 import { t, dateLocale } from '../../i18n'
 import { downloadText } from '../../utils/download'
 import { buildSessionCsv, sessionCsvFilename } from '../../utils/sessionCsv'
+import { resolveSessionRanges, sessionRangeKey } from '../../utils/sessionRanges'
+import { makeEmptyGrid } from '../../utils/hands'
+
+const EMPTY_GRID = makeEmptyGrid()
 
 const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'EP', 'LJ', 'UTG']
 
@@ -31,23 +35,17 @@ function SessionDetailView({ session, ranges, onBack }: {
   ranges: Range[]
   onBack: () => void
 }) {
-  const [openRangeId, setOpenRangeId] = useState<number | null>(null)
+  const [openKey, setOpenKey]         = useState<string | null>(null)
   const [viewMode, setViewMode]       = useState<'actions' | 'heatmap'>('heatmap')
   const [selectedStack, setSelectedStack] = useState('')
 
-  useEffect(() => { setViewMode('heatmap') }, [openRangeId])
-  useEffect(() => {
-    if (openRangeId !== null) {
-      const r = ranges.find(x => x.id === openRangeId)
-      setSelectedStack(r?.stackGrids && r.stackGrids.length > 1 ? r.stackGrids[0].stackRange : '')
-    } else {
-      setSelectedStack('')
-    }
-  }, [openRangeId])
+  const sessionRanges = resolveSessionRanges(session, ranges)
 
-  const sessionRanges = session.rangeNames
-    .map(name => ranges.find(r => r.name === name))
-    .filter((r): r is Range => r !== undefined)
+  useEffect(() => { setViewMode('heatmap') }, [openKey])
+  useEffect(() => {
+    const r = openKey !== null ? sessionRanges.find(ref => sessionRangeKey(ref) === openKey)?.range : null
+    setSelectedStack(r?.stackGrids && r.stackGrids.length > 1 ? r.stackGrids[0].stackRange : '')
+  }, [openKey])
 
   const acc = session.hands > 0 ? Math.round(session.correct / session.hands * 100) : null
   const sessionPerf = session.handPerf ?? null
@@ -64,7 +62,7 @@ function SessionDetailView({ session, ranges, onBack }: {
             {t.stats.back}
           </button>
           <h2 className="text-xl font-extrabold text-warm-100">{formatDate(session.timestamp)}</h2>
-          <p className="text-warm-400 text-xs">{session.tableSize}-max · {formatDuration(session.durationSeconds)} · {session.rangeNames.join(', ')}</p>
+          <p className="text-warm-400 text-xs">{session.tableSize}-max · {formatDuration(session.durationSeconds)} · {sessionRanges.map(x => x.name).join(', ')}</p>
         </div>
       </div>
 
@@ -87,13 +85,50 @@ function SessionDetailView({ session, ranges, onBack }: {
         <p className="text-warm-500 text-sm text-center py-4">{t.stats.rangesNotFound}</p>
       ) : (
         <div className="space-y-2">
-          {sessionRanges.map(r => {
-            const mergedPerf = sessionPerf?.[String(r.id)] ?? sessionPerf?.[r.name] ?? {}
+          {sessionRanges.map(ref => {
+            const key = sessionRangeKey(ref)
+            const mergedPerf = (ref.id !== null ? sessionPerf?.[String(ref.id)] : undefined) ?? sessionPerf?.[ref.name] ?? {}
             const vals     = Object.values(mergedPerf)
             const total    = vals.reduce((s, v) => s + v.t, 0)
             const correct  = vals.reduce((s, v) => s + v.c, 0)
             const accuracy = total > 0 ? Math.round(correct / total * 100) : null
-            const isOpen   = openRangeId === r.id
+            const isOpen   = openKey === key
+
+            if (ref.range === null) {
+              return (
+                <div key={key} className="border border-warm-700 rounded-xl overflow-hidden">
+                  <button
+                    onClick={() => setOpenKey(isOpen ? null : key)}
+                    disabled={total === 0}
+                    className="w-full flex items-center justify-between px-4 py-3 bg-warm-800/60 transition-colors text-left disabled:cursor-default"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="font-bold text-warm-300 text-sm truncate">{ref.name}</span>
+                      <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-warm-700/60 border border-warm-600 text-warm-400 flex-shrink-0">{t.stats.rangeDeleted}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {accuracy !== null ? (
+                        <span className={`text-sm font-bold ${accuracy >= 80 ? 'text-emerald-400' : accuracy >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+                          {accuracy}%
+                        </span>
+                      ) : (
+                        <span className="text-warm-600 text-xs">{t.stats.noData}</span>
+                      )}
+                      {total > 0 && (
+                        <span className={`text-warm-400 text-lg transition-transform duration-200 inline-block ${isOpen ? 'rotate-180' : ''}`}>›</span>
+                      )}
+                    </div>
+                  </button>
+                  {isOpen && total > 0 && (
+                    <div className="border-t border-warm-700 bg-warm-900/40 p-4">
+                      <HandMatrix readOnly grid={EMPTY_GRID} heatmap={mergedPerf} forceViewMode="heatmap" />
+                    </div>
+                  )}
+                </div>
+              )
+            }
+
+            const r = ref.range
             const stackRanges = r.stackGrids && r.stackGrids.length > 1 ? r.stackGrids.map(sg => sg.stackRange).filter(Boolean) : []
             const activeStack = isOpen && stackRanges.length > 0 ? selectedStack : ''
             const perf     = (activeStack
@@ -103,9 +138,9 @@ function SessionDetailView({ session, ranges, onBack }: {
             const grid     = r.stackGrids && gridIdx >= 0 ? r.stackGrids[gridIdx].grid : (r.stackGrids?.[0]?.grid ?? r.grid)
 
             return (
-              <div key={r.id} className="border border-warm-700 rounded-xl overflow-hidden">
+              <div key={key} className="border border-warm-700 rounded-xl overflow-hidden">
                 <button
-                  onClick={() => setOpenRangeId(isOpen ? null : r.id)}
+                  onClick={() => setOpenKey(isOpen ? null : key)}
                   className="w-full flex items-center justify-between px-4 py-3 bg-warm-800 hover:bg-warm-750 transition-colors text-left"
                 >
                   <div className="flex items-center gap-3">

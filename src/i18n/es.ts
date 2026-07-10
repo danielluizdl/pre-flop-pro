@@ -420,6 +420,7 @@ export const es: Messages = {
     noData: 'sin datos',
     rangesNotFound: 'Ranges de esta sesión no encontrados.',
     perHandUnavailable: 'Datos por mano no disponibles para sesiones anteriores.',
+    rangeDeleted: 'Range eliminado del catálogo',
     noName: 'Sin nombre',
     viewDetails: 'Ver detalles',
     exportCsv: 'Exportar CSV',

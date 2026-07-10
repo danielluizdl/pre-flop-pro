@@ -418,6 +418,7 @@ export const pt = {
     noData: 'sem dados',
     rangesNotFound: 'Ranges desta sessão não encontrados.',
     perHandUnavailable: 'Dados por mão não disponíveis para sessões anteriores.',
+    rangeDeleted: 'Range excluído do catálogo',
     noName: 'Sem nome',
     viewDetails: 'Ver detalhes',
     exportCsv: 'Exportar CSV',

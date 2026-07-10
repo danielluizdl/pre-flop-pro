@@ -420,6 +420,7 @@ export const en: Messages = {
     noData: 'no data',
     rangesNotFound: 'Ranges from this session not found.',
     perHandUnavailable: 'Per-hand data not available for older sessions.',
+    rangeDeleted: 'Range deleted from catalog',
     noName: 'No name',
     viewDetails: 'View details',
     exportCsv: 'Export CSV',

@@ -137,6 +137,8 @@ export interface TrainingSession {
   id: number
   timestamp: number
   rangeNames: string[]
+  // Paralelo a rangeNames (mesmo índice); sessões antigas não têm — resolver por nome.
+  rangeIds?: number[]
   tableSize: number
   hands: number
   correct: number
