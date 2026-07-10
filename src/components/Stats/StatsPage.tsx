@@ -4,6 +4,7 @@ import type { Range, TrainingSession } from '../../types'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import { PageTutorialButton } from '../ui/PageTutorialButton'
 import { MyAccountStats } from './MyAccountStats'
+import { MyCoachPanel } from './MyCoachPanel'
 import { AccuracySparkline } from './AccuracySparkline'
 import { t, dateLocale } from '../../i18n'
 import { downloadText } from '../../utils/download'
@@ -470,7 +471,7 @@ export function StatsPage() {
   const ranges          = useStore(s => s.ranges)
   const currentUser     = useStore(s => s.currentUser)
 
-  const [activeTab, setActiveTab]         = useState<'sessions' | 'build' | 'global' | 'cloud'>('sessions')
+  const [activeTab, setActiveTab]         = useState<'sessions' | 'build' | 'global' | 'cloud' | 'analysis'>('sessions')
   const [selectedSession, setSelectedSession] = useState<TrainingSession | null>(null)
 
   const sessions = [...trainingHistory].reverse()
@@ -479,7 +480,7 @@ export function StatsPage() {
   const globalAccuracy = totalHands > 0 ? Math.round((totalCorrect / totalHands) * 100) : null
 
   return (
-    <div className="space-y-4 max-w-2xl">
+    <div className={activeTab === 'analysis' ? 'space-y-4' : 'space-y-4 max-w-2xl'}>
       {/* Cabeçalho */}
       <div data-tour="stats-header" className="flex items-start justify-between gap-2">
         <div>
@@ -492,7 +493,10 @@ export function StatsPage() {
       {/* Abas */}
       <div className="flex border-b border-warm-700">
         {([
-          ...(currentUser ? [{ key: 'cloud' as const, label: t.stats.tabCloud }] : []),
+          ...(currentUser ? [
+            { key: 'cloud' as const, label: t.stats.tabCloud },
+            { key: 'analysis' as const, label: t.stats.tabAnalysis },
+          ] : []),
           { key: 'sessions' as const, label: t.stats.tabSessions },
           { key: 'build' as const,    label: t.exercise.navLabel },
           { key: 'global' as const,   label: t.stats.tabGlobal },
@@ -515,6 +519,8 @@ export function StatsPage() {
       {/* Conteúdo por aba */}
       {activeTab === 'cloud' ? (
         <MyAccountStats />
+      ) : activeTab === 'analysis' ? (
+        <MyCoachPanel />
       ) : activeTab === 'build' ? (
         <BuildHistoryPanel />
       ) : activeTab === 'sessions' ? (

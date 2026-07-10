@@ -74,6 +74,12 @@ export async function onRequest(context) {
   if (playerIds === null || !pRange.ok || !pDays.ok || !pFrom.ok || !pTo.ok) return json({ error: 'Parâmetro inválido' }, 400)
   const filters = { playerIds, rangeId: pRange.value, days: pDays.value, from: pFrom.value, to: pTo.value }
 
+  return runAnalyticsView(env, url, view, filters)
+}
+
+// Dispatch das views compartilhado com o endpoint player-scoped
+// (functions/api/me/analytics.js), que força playerIds = [usuário do token].
+export async function runAnalyticsView(env, url, view, filters) {
   if (view === 'team-overview') {
     const hf = handFilters(filters)
     const handAgg = await env.DB.prepare(
