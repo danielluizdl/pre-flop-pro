@@ -423,6 +423,7 @@ export const es: Messages = {
     rangeDeleted: 'Range eliminado del catálogo',
     handLog: 'Manos de la sesión',
     handLogUnavailable: 'La repetición mano a mano solo está disponible para sesiones grabadas a partir de esta versión.',
+    showMore: (n: number) => `Mostrar más (${n})`,
     noName: 'Sin nombre',
     viewDetails: 'Ver detalles',
     exportCsv: 'Exportar CSV',

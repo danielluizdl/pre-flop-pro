@@ -11,6 +11,7 @@ import { downloadText } from '../../utils/download'
 import { buildSessionCsv, sessionCsvFilename } from '../../utils/sessionCsv'
 import { resolveSessionRanges, sessionRangeKey } from '../../utils/sessionRanges'
 import { SessionHandLog } from '../ui/SessionHandLog'
+import { usePagedList, ShowMoreButton } from '../ui/PagedList'
 import { makeEmptyGrid } from '../../utils/hands'
 
 const EMPTY_GRID = makeEmptyGrid()
@@ -441,6 +442,7 @@ function BuildHistoryPanel() {
   const [openId, setOpenId] = useState<number | null>(null)
 
   const sessions = [...buildHistory].reverse()
+  const paged = usePagedList(sessions)
 
   if (sessions.length === 0) {
     return (
@@ -453,7 +455,7 @@ function BuildHistoryPanel() {
 
   return (
     <div className="flex flex-col gap-3">
-      {sessions.map(s => {
+      {paged.visible.map(s => {
         const isOpen = openId === s.id
         return (
           <div key={s.id} className="card-surface p-4">
@@ -499,6 +501,7 @@ function BuildHistoryPanel() {
           </div>
         )
       })}
+      <ShowMoreButton remaining={paged.remaining} onClick={paged.showMore} />
     </div>
   )
 }
@@ -513,6 +516,7 @@ export function StatsPage() {
   const [selectedSession, setSelectedSession] = useState<TrainingSession | null>(null)
 
   const sessions = [...trainingHistory].reverse()
+  const pagedSessions = usePagedList(sessions)
   const totalHands   = trainingHistory.reduce((s, x) => s + x.hands, 0)
   const totalCorrect = trainingHistory.reduce((s, x) => s + x.correct, 0)
   const globalAccuracy = totalHands > 0 ? Math.round((totalCorrect / totalHands) * 100) : null
@@ -598,9 +602,10 @@ export function StatsPage() {
               </div>
             ) : (
               <div className="flex flex-col gap-3">
-                {sessions.map(s => (
+                {pagedSessions.visible.map(s => (
                   <SessionCard key={s.id} session={s} onView={() => setSelectedSession(s)} />
                 ))}
+                <ShowMoreButton remaining={pagedSessions.remaining} onClick={pagedSessions.showMore} />
               </div>
             )}
           </div>

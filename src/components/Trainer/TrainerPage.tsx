@@ -10,6 +10,7 @@ import { ElapsedClock } from '../ui/ElapsedClock'
 import { Eye } from 'lucide-react'
 import { RANKS } from '../../types'
 import { HandHistoryItem, SessionHandLog } from '../ui/SessionHandLog'
+import { usePagedList, ShowMoreButton } from '../ui/PagedList'
 import { ALL_HANDS, getRngBands, formatRngBands, makeEmptyGrid } from '../../utils/hands'
 import { resolveSessionRanges, sessionRangeKey } from '../../utils/sessionRanges'
 import { useModalA11y } from '../../utils/useModalA11y'
@@ -269,6 +270,7 @@ function HistoryModal({ onClose }: { onClose: () => void }) {
   }
 
   const sessions = [...trainingHistory].reverse()
+  const paged = usePagedList(sessions)
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
@@ -291,7 +293,7 @@ function HistoryModal({ onClose }: { onClose: () => void }) {
       )}
 
       <div className="space-y-2">
-        {sessions.map((session: TrainingSession) => {
+        {paged.visible.map((session: TrainingSession) => {
           const acc    = session.hands > 0 ? Math.round(session.correct / session.hands * 100) : 0
           const isOpen = openId === session.id
 
@@ -325,6 +327,7 @@ function HistoryModal({ onClose }: { onClose: () => void }) {
             </div>
           )
         })}
+        <ShowMoreButton remaining={paged.remaining} onClick={paged.showMore} />
       </div>
     </div>
   )

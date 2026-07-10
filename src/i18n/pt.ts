@@ -421,6 +421,7 @@ export const pt = {
     rangeDeleted: 'Range excluído do catálogo',
     handLog: 'Mãos da sessão',
     handLogUnavailable: 'Replay mão a mão disponível apenas para sessões gravadas a partir desta versão.',
+    showMore: (n: number) => `Mostrar mais (${n})`,
     noName: 'Sem nome',
     viewDetails: 'Ver detalhes',
     exportCsv: 'Exportar CSV',

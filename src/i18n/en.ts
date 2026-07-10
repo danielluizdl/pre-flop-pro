@@ -423,6 +423,7 @@ export const en: Messages = {
     rangeDeleted: 'Range deleted from catalog',
     handLog: 'Session hands',
     handLogUnavailable: 'Hand-by-hand replay is only available for sessions recorded from this version on.',
+    showMore: (n: number) => `Show more (${n})`,
     noName: 'No name',
     viewDetails: 'View details',
     exportCsv: 'Export CSV',
