@@ -1,13 +1,24 @@
 ﻿import { useState, useEffect } from 'react'
 import { useStore } from '../../store/useStore'
-import type { Range, TrainingSession } from '../../types'
+import type { BuildHistoryRound, Range, TrainingSession } from '../../types'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import { PageTutorialButton } from '../ui/PageTutorialButton'
 import { MyAccountStats } from './MyAccountStats'
+import { MyCoachPanel } from './MyCoachPanel'
 import { AccuracySparkline } from './AccuracySparkline'
 import { t, dateLocale } from '../../i18n'
 import { downloadText } from '../../utils/download'
 import { buildSessionCsv, sessionCsvFilename } from '../../utils/sessionCsv'
+import { resolveSessionRanges, sessionRangeKey } from '../../utils/sessionRanges'
+import { SessionHandLog } from '../ui/SessionHandLog'
+import { usePagedList, ShowMoreButton } from '../ui/PagedList'
+import { RangeActionGrid } from '../Admin/RangeActionGrid'
+import { DiffGrid } from '../ui/DiffGrid'
+import { decodeSparse } from '../../utils/sparseGrid'
+import { scoreBuild } from '../../utils/buildScore'
+import { makeEmptyGrid } from '../../utils/hands'
+
+const EMPTY_GRID = makeEmptyGrid()
 
 const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'EP', 'LJ', 'UTG']
 
@@ -30,23 +41,17 @@ function SessionDetailView({ session, ranges, onBack }: {
   ranges: Range[]
   onBack: () => void
 }) {
-  const [openRangeId, setOpenRangeId] = useState<number | null>(null)
+  const [openKey, setOpenKey]         = useState<string | null>(null)
   const [viewMode, setViewMode]       = useState<'actions' | 'heatmap'>('heatmap')
   const [selectedStack, setSelectedStack] = useState('')
 
-  useEffect(() => { setViewMode('heatmap') }, [openRangeId])
-  useEffect(() => {
-    if (openRangeId !== null) {
-      const r = ranges.find(x => x.id === openRangeId)
-      setSelectedStack(r?.stackGrids && r.stackGrids.length > 1 ? r.stackGrids[0].stackRange : '')
-    } else {
-      setSelectedStack('')
-    }
-  }, [openRangeId])
+  const sessionRanges = resolveSessionRanges(session, ranges)
 
-  const sessionRanges = session.rangeNames
-    .map(name => ranges.find(r => r.name === name))
-    .filter((r): r is Range => r !== undefined)
+  useEffect(() => { setViewMode('heatmap') }, [openKey])
+  useEffect(() => {
+    const r = openKey !== null ? sessionRanges.find(ref => sessionRangeKey(ref) === openKey)?.range : null
+    setSelectedStack(r?.stackGrids && r.stackGrids.length > 1 ? r.stackGrids[0].stackRange : '')
+  }, [openKey])
 
   const acc = session.hands > 0 ? Math.round(session.correct / session.hands * 100) : null
   const sessionPerf = session.handPerf ?? null
@@ -63,7 +68,7 @@ function SessionDetailView({ session, ranges, onBack }: {
             {t.stats.back}
           </button>
           <h2 className="text-xl font-extrabold text-warm-100">{formatDate(session.timestamp)}</h2>
-          <p className="text-warm-400 text-xs">{session.tableSize}-max · {formatDuration(session.durationSeconds)} · {session.rangeNames.join(', ')}</p>
+          <p className="text-warm-400 text-xs">{session.tableSize}-max · {formatDuration(session.durationSeconds)} · {sessionRanges.map(x => x.name).join(', ')}</p>
         </div>
       </div>
 
@@ -86,13 +91,50 @@ function SessionDetailView({ session, ranges, onBack }: {
         <p className="text-warm-500 text-sm text-center py-4">{t.stats.rangesNotFound}</p>
       ) : (
         <div className="space-y-2">
-          {sessionRanges.map(r => {
-            const mergedPerf = sessionPerf?.[String(r.id)] ?? sessionPerf?.[r.name] ?? {}
+          {sessionRanges.map(ref => {
+            const key = sessionRangeKey(ref)
+            const mergedPerf = (ref.id !== null ? sessionPerf?.[String(ref.id)] : undefined) ?? sessionPerf?.[ref.name] ?? {}
             const vals     = Object.values(mergedPerf)
             const total    = vals.reduce((s, v) => s + v.t, 0)
             const correct  = vals.reduce((s, v) => s + v.c, 0)
             const accuracy = total > 0 ? Math.round(correct / total * 100) : null
-            const isOpen   = openRangeId === r.id
+            const isOpen   = openKey === key
+
+            if (ref.range === null) {
+              return (
+                <div key={key} className="border border-warm-700 rounded-xl overflow-hidden">
+                  <button
+                    onClick={() => setOpenKey(isOpen ? null : key)}
+                    disabled={total === 0}
+                    className="w-full flex items-center justify-between px-4 py-3 bg-warm-800/60 transition-colors text-left disabled:cursor-default"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="font-bold text-warm-300 text-sm truncate">{ref.name}</span>
+                      <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-warm-700/60 border border-warm-600 text-warm-400 flex-shrink-0">{t.stats.rangeDeleted}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {accuracy !== null ? (
+                        <span className={`text-sm font-bold ${accuracy >= 80 ? 'text-emerald-400' : accuracy >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+                          {accuracy}%
+                        </span>
+                      ) : (
+                        <span className="text-warm-600 text-xs">{t.stats.noData}</span>
+                      )}
+                      {total > 0 && (
+                        <span className={`text-warm-400 text-lg transition-transform duration-200 inline-block ${isOpen ? 'rotate-180' : ''}`}>›</span>
+                      )}
+                    </div>
+                  </button>
+                  {isOpen && total > 0 && (
+                    <div className="border-t border-warm-700 bg-warm-900/40 p-4">
+                      <HandMatrix readOnly grid={EMPTY_GRID} heatmap={mergedPerf} forceViewMode="heatmap" />
+                    </div>
+                  )}
+                </div>
+              )
+            }
+
+            const r = ref.range
             const stackRanges = r.stackGrids && r.stackGrids.length > 1 ? r.stackGrids.map(sg => sg.stackRange).filter(Boolean) : []
             const activeStack = isOpen && stackRanges.length > 0 ? selectedStack : ''
             const perf     = (activeStack
@@ -102,9 +144,9 @@ function SessionDetailView({ session, ranges, onBack }: {
             const grid     = r.stackGrids && gridIdx >= 0 ? r.stackGrids[gridIdx].grid : (r.stackGrids?.[0]?.grid ?? r.grid)
 
             return (
-              <div key={r.id} className="border border-warm-700 rounded-xl overflow-hidden">
+              <div key={key} className="border border-warm-700 rounded-xl overflow-hidden">
                 <button
-                  onClick={() => setOpenRangeId(isOpen ? null : r.id)}
+                  onClick={() => setOpenKey(isOpen ? null : key)}
                   className="w-full flex items-center justify-between px-4 py-3 bg-warm-800 hover:bg-warm-750 transition-colors text-left"
                 >
                   <div className="flex items-center gap-3">
@@ -173,6 +215,8 @@ function SessionDetailView({ session, ranges, onBack }: {
           })}
         </div>
       )}
+
+      <SessionHandLog handLog={session.handLog} />
     </div>
   )
 }
@@ -397,11 +441,26 @@ function buildScoreColor(s: number): string {
   return s >= 80 ? 'text-brand-500' : s >= 50 ? 'text-gold' : 'text-result-bad'
 }
 
+function BuildRoundReplay({ round }: { round: BuildHistoryRound }) {
+  const userGrid = decodeSparse(round.userGrid)
+  const answerGrid = decodeSparse(round.answerGrid)
+  const { perHand } = scoreBuild(answerGrid, userGrid)
+  return (
+    <div className="mt-2 mb-3 pl-2 border-l-2 border-warm-700/60 space-y-4">
+      <RangeActionGrid title={t.exercise.yourRange} subtitle={t.exercise.yourRangeSub} grid={userGrid} maxWidth={600} />
+      <RangeActionGrid title={t.exercise.answerKey} subtitle={t.exercise.answerKeySub} grid={answerGrid} maxWidth={600} />
+      <DiffGrid perHand={perHand} />
+    </div>
+  )
+}
+
 function BuildHistoryPanel() {
   const buildHistory = useStore(s => s.buildHistory)
   const [openId, setOpenId] = useState<number | null>(null)
+  const [openRound, setOpenRound] = useState<string | null>(null)
 
   const sessions = [...buildHistory].reverse()
+  const paged = usePagedList(sessions)
 
   if (sessions.length === 0) {
     return (
@@ -414,7 +473,7 @@ function BuildHistoryPanel() {
 
   return (
     <div className="flex flex-col gap-3">
-      {sessions.map(s => {
+      {paged.visible.map(s => {
         const isOpen = openId === s.id
         return (
           <div key={s.id} className="card-surface p-4">
@@ -440,26 +499,50 @@ function BuildHistoryPanel() {
             </button>
             {isOpen && (
               <div className="mt-3 pt-3 border-t border-warm-700/60 space-y-1.5">
-                {s.rounds.map((r, i) => (
-                  <div key={i} className="flex items-center justify-between gap-2 text-sm">
-                    <span className="flex items-center gap-2 min-w-0">
-                      <span className="text-warm-200 truncate">{r.label}</span>
-                      {(r.attempt ?? 1) > 1 && (
-                        <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-500/10 border border-brand-500/40 text-brand-400 flex-shrink-0">
-                          {t.exercise.attemptN(r.attempt!)}
-                        </span>
+                {s.rounds.map((r, i) => {
+                  const roundKey = `${s.id}:${i}`
+                  const hasReplay = !!r.userGrid
+                  const isRoundOpen = openRound === roundKey
+                  const row = (
+                    <>
+                      <span className="flex items-center gap-2 min-w-0">
+                        {hasReplay && (
+                          <span className={`text-warm-400 transition-transform duration-200 inline-block flex-shrink-0 ${isRoundOpen ? 'rotate-90' : ''}`}>›</span>
+                        )}
+                        <span className="text-warm-200 truncate">{r.label}</span>
+                        {(r.attempt ?? 1) > 1 && (
+                          <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-500/10 border border-brand-500/40 text-brand-400 flex-shrink-0">
+                            {t.exercise.attemptN(r.attempt!)}
+                          </span>
+                        )}
+                      </span>
+                      <span className={`font-bold tabular-nums flex-shrink-0 ${buildScoreColor(r.score)}`}>
+                        {t.exercise.scoreOf(String(r.score))}
+                      </span>
+                    </>
+                  )
+                  return (
+                    <div key={roundKey}>
+                      {hasReplay ? (
+                        <button
+                          onClick={() => setOpenRound(isRoundOpen ? null : roundKey)}
+                          className="w-full flex items-center justify-between gap-2 text-sm text-left hover:brightness-125 transition-all"
+                        >
+                          {row}
+                        </button>
+                      ) : (
+                        <div className="flex items-center justify-between gap-2 text-sm">{row}</div>
                       )}
-                    </span>
-                    <span className={`font-bold tabular-nums flex-shrink-0 ${buildScoreColor(r.score)}`}>
-                      {t.exercise.scoreOf(String(r.score))}
-                    </span>
-                  </div>
-                ))}
+                      {isRoundOpen && hasReplay && <BuildRoundReplay round={r} />}
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
         )
       })}
+      <ShowMoreButton remaining={paged.remaining} onClick={paged.showMore} />
     </div>
   )
 }
@@ -470,16 +553,17 @@ export function StatsPage() {
   const ranges          = useStore(s => s.ranges)
   const currentUser     = useStore(s => s.currentUser)
 
-  const [activeTab, setActiveTab]         = useState<'sessions' | 'build' | 'global' | 'cloud'>('sessions')
+  const [activeTab, setActiveTab]         = useState<'sessions' | 'build' | 'global' | 'cloud' | 'analysis'>('sessions')
   const [selectedSession, setSelectedSession] = useState<TrainingSession | null>(null)
 
   const sessions = [...trainingHistory].reverse()
+  const pagedSessions = usePagedList(sessions)
   const totalHands   = trainingHistory.reduce((s, x) => s + x.hands, 0)
   const totalCorrect = trainingHistory.reduce((s, x) => s + x.correct, 0)
   const globalAccuracy = totalHands > 0 ? Math.round((totalCorrect / totalHands) * 100) : null
 
   return (
-    <div className="space-y-4 max-w-2xl">
+    <div className={activeTab === 'analysis' ? 'space-y-4' : 'space-y-4 max-w-2xl'}>
       {/* Cabeçalho */}
       <div data-tour="stats-header" className="flex items-start justify-between gap-2">
         <div>
@@ -490,9 +574,12 @@ export function StatsPage() {
       </div>
 
       {/* Abas */}
-      <div className="flex border-b border-warm-700">
+      <div className="flex border-b border-warm-700 overflow-x-auto">
         {([
-          ...(currentUser ? [{ key: 'cloud' as const, label: t.stats.tabCloud }] : []),
+          ...(currentUser ? [
+            { key: 'cloud' as const, label: t.stats.tabCloud },
+            { key: 'analysis' as const, label: t.stats.tabAnalysis },
+          ] : []),
           { key: 'sessions' as const, label: t.stats.tabSessions },
           { key: 'build' as const,    label: t.exercise.navLabel },
           { key: 'global' as const,   label: t.stats.tabGlobal },
@@ -501,7 +588,7 @@ export function StatsPage() {
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={[
-              'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors',
+              'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors whitespace-nowrap shrink-0',
               activeTab === tab.key
                 ? 'border-brand-500 text-warm-100'
                 : 'border-transparent text-warm-400 hover:text-warm-200',
@@ -515,6 +602,8 @@ export function StatsPage() {
       {/* Conteúdo por aba */}
       {activeTab === 'cloud' ? (
         <MyAccountStats />
+      ) : activeTab === 'analysis' ? (
+        <MyCoachPanel />
       ) : activeTab === 'build' ? (
         <BuildHistoryPanel />
       ) : activeTab === 'sessions' ? (
@@ -554,9 +643,10 @@ export function StatsPage() {
               </div>
             ) : (
               <div className="flex flex-col gap-3">
-                {sessions.map(s => (
+                {pagedSessions.visible.map(s => (
                   <SessionCard key={s.id} session={s} onView={() => setSelectedSession(s)} />
                 ))}
+                <ShowMoreButton remaining={pagedSessions.remaining} onClick={pagedSessions.showMore} />
               </div>
             )}
           </div>

@@ -137,6 +137,8 @@ export interface TrainingSession {
   id: number
   timestamp: number
   rangeNames: string[]
+  // Paralelo a rangeNames (mesmo índice); sessões antigas não têm — resolver por nome.
+  rangeIds?: number[]
   tableSize: number
   hands: number
   correct: number
@@ -144,6 +146,8 @@ export interface TrainingSession {
   consults: number
   durationSeconds: number
   handPerf?: Record<string, Record<string, { c: number; t: number }>>
+  // Log mão a mão da sessão (cap 500) — sessões antigas não têm.
+  handLog?: HandHistoryEntry[]
 }
 
 export interface BuildRound {
@@ -168,6 +172,13 @@ export interface BuildHistoryRound {
   label: string
   score: number
   attempt?: number
+  // Replay rodada a rodada — grids persistidos em formato esparso; rounds
+  // antigos não têm.
+  rangeId?: number
+  stackRange?: string
+  customAction?: { label: string; color: string }
+  userGrid?: Record<string, HandData>
+  answerGrid?: Record<string, HandData>
 }
 
 export interface BuildSession {

@@ -13,12 +13,12 @@ import {
   groupRangesByPosition, MultiPlayerSelect, RangeSelect, type CoachUser,
   formatDateShort, formatHours, accColor, confChipBg,
   type Filters, setDateParams, PeriodFilter, useAnalytics, useRangeGrid, usePlayerRanges,
-  Section, TH, THR, TD, TDR,
+  Section, TH, THR, TD, TDR, ADMIN_ANALYTICS,
 } from './shared'
 
 const ACTION_COLOR: Record<string, string> = { Raise: 'text-red-400', Call: 'text-emerald-400', 'All-in': 'text-purple-300', Extra: 'text-brand-300' }
 
-function ComboSummary({ stats }: { stats: ComboStats }) {
+export function ComboSummary({ stats }: { stats: ComboStats }) {
   const pct = (c: number) => (c / TOTAL_COMBOS) * 100
   const items = [
     { label: 'Raise', v: stats.byAction.raise },
@@ -82,7 +82,7 @@ function playedPct(p?: { fold: number; call: number; raise: number; allin: numbe
   return { fold: (p.fold / tot) * 100, call: (p.call / tot) * 100, raise: (p.raise / tot) * 100, allin: (p.allin / tot) * 100, extra: (p.extra / tot) * 100 }
 }
 
-export function HandDetailCard({ cell }: { cell: GridCell }) {
+export function HandDetailCard({ cell, playedLabel }: { cell: GridCell; playedLabel?: string }) {
   const pp = playedPct(cell.played)
   const Stat = ({ label, v, cls }: { label: string; v: number; cls?: string }) => (
     <div className="bg-warm-900/60 rounded-lg px-2.5 py-1.5">
@@ -109,7 +109,7 @@ export function HandDetailCard({ cell }: { cell: GridCell }) {
       </div>
       {pp && (
         <div>
-          <p className="text-[0.7rem] text-warm-400 mb-1">{t.coach.howTeamPlayed}</p>
+          <p className="text-[0.7rem] text-warm-400 mb-1">{playedLabel ?? t.coach.howTeamPlayed}</p>
           <div className="flex h-4 rounded overflow-hidden border border-warm-700">
             {seg(pp.raise, '#ef4444', 'Raise')}
             {seg(pp.call, '#22c55e', 'Call')}
@@ -134,34 +134,34 @@ interface OverviewRow {
   graves: number; imprecisos: number; consults: number; sessions: number
   durationSeconds: number; lastActivity: number
 }
-interface LeakRow { rangeId: number; rangeName: string; hand: string; total: number; correct: number; graves: number; imprecisos: number; accuracy: number }
+export interface LeakRow { rangeId: number; rangeName: string; hand: string; total: number; correct: number; graves: number; imprecisos: number; accuracy: number }
 type LeaksSortKey = 'hand' | 'rangeName' | 'total' | 'accuracyLower' | 'graves' | 'imprecisos' | 'impact'
 type RelativeSortKey = 'name' | 'rangeName' | 'total' | 'playerAcc' | 'teamMean' | 'deviation' | 'z'
 
-const CONF_DOT: Record<Confidence, { cls: string; title: string }> = {
+export const CONF_DOT: Record<Confidence, { cls: string; title: string }> = {
   low: { cls: 'bg-red-400', title: 'Amostra pequena (<15) — pouca confiança' },
   medium: { cls: 'bg-yellow-400', title: 'Amostra média (15–49)' },
   high: { cls: 'bg-emerald-400', title: 'Amostra robusta (≥50)' },
 }
-interface ByRangeRow { rangeId: number; rangeName: string; hands: number; accuracy: number; graves: number; imprecisos: number; consults: number; players: number }
+export interface ByRangeRow { rangeId: number; rangeName: string; hands: number; accuracy: number; graves: number; imprecisos: number; consults: number; players: number }
 
-interface ConsultRangeRow { rangeId: number; rangeName: string; totalConsults: number; totalPlayed: number; rate: number }
+export interface ConsultRangeRow { rangeId: number; rangeName: string; totalConsults: number; totalPlayed: number; rate: number }
 interface ConsultHandRow { hand: string; consults: number; played: number; pct: number }
 type ConsultSortKey = 'rangeName' | 'totalConsults' | 'rate' | 'totalPlayed'
 
-const SEVERITY_CLS: Record<SeverityClass, string> = {
+export const SEVERITY_CLS: Record<SeverityClass, string> = {
   conceitual: 'text-red-300',
   misto: 'text-yellow-300',
   'estrategia-mista': 'text-sky-300',
   na: 'text-warm-600',
 }
-function severityLabel(c: SeverityClass): string {
+export function severityLabel(c: SeverityClass): string {
   return c === 'conceitual' ? t.coach.legendConceptual
     : c === 'misto' ? t.coach.legendMixed
     : c === 'estrategia-mista' ? t.coach.legendMixedStrategy
     : '—'
 }
-function severityHelp(c: SeverityClass): string {
+export function severityHelp(c: SeverityClass): string {
   return c === 'conceitual' ? t.coach.severityHelpConceptual
     : c === 'estrategia-mista' ? t.coach.severityHelpMixedStrategy
     : c === 'misto' ? t.coach.severityHelpMixed
@@ -230,7 +230,7 @@ export function PlayerQuickSummary({ userId, days, from, to, token }: { userId: 
   )
 }
 
-function useConsultHands(rangeId: number | null, playerIds: number[], days: number | null, from: number | null, to: number | null, token: string | null) {
+function useConsultHands(rangeId: number | null, playerIds: number[], days: number | null, from: number | null, to: number | null, token: string | null, endpoint: string) {
   const [rows, setRows] = useState<ConsultHandRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -244,21 +244,21 @@ function useConsultHands(rangeId: number | null, playerIds: number[], days: numb
     const qs = new URLSearchParams({ view: 'consult-by-range-hand', rangeId: String(rangeId) })
     if (idsKey) qs.set('playerIds', idsKey)
     setDateParams(qs, { days, from, to })
-    fetchAnalyticsCached(`/api/admin/analytics?${qs.toString()}`, token)
+    fetchAnalyticsCached(`${endpoint}?${qs.toString()}`, token)
       .then(d => { if (!cancelled) { setRows(d.rows ?? []); setLoading(false) } })
       .catch(e => { if (!cancelled) { captureError(e, { area: 'coach-analytics', view: 'consult-by-range-hand' }); setError(t.coach.loadError); setLoading(false) } })
     return () => { cancelled = true }
-  }, [token, rangeId, idsKey, days, from, to])
+  }, [token, rangeId, idsKey, days, from, to, endpoint])
 
   return { rows, loading, error }
 }
 
 const CONSULT_CHIP_BG = 'rgba(139,92,246,0.9)'
 
-export function ConsultRangeDetail({ rangeId, playerIds, days, from, to, token }: {
-  rangeId: number; playerIds: number[]; days: number | null; from: number | null; to: number | null; token: string | null
+export function ConsultRangeDetail({ rangeId, playerIds, days, from, to, token, endpoint = ADMIN_ANALYTICS }: {
+  rangeId: number; playerIds: number[]; days: number | null; from: number | null; to: number | null; token: string | null; endpoint?: string
 }) {
-  const { rows, loading, error } = useConsultHands(rangeId, playerIds, days, from, to, token)
+  const { rows, loading, error } = useConsultHands(rangeId, playerIds, days, from, to, token, endpoint)
 
   if (loading) return <div className="px-4 py-3 text-xs text-warm-500">{t.coach.loading}</div>
   if (error) return <div className="px-4 py-3 text-xs text-red-400">{error}</div>

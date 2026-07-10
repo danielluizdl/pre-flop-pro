@@ -319,7 +319,9 @@ export function PeriodFilter({ days, from, to, onChange }: {
   )
 }
 
-export function useAnalytics<T>(view: string, filters: Filters, token: string | null) {
+export const ADMIN_ANALYTICS = '/api/admin/analytics'
+
+export function useAnalytics<T>(view: string, filters: Filters, token: string | null, endpoint = ADMIN_ANALYTICS) {
   const [rows, setRows] = useState<T[]>([])
   const [team, setTeam] = useState<Record<string, number> | null>(null)
   const [loading, setLoading] = useState(true)
@@ -336,7 +338,7 @@ export function useAnalytics<T>(view: string, filters: Filters, token: string | 
     if (idsKey) qs.set('playerIds', idsKey)
     if (filters.rangeId !== null) qs.set('rangeId', String(filters.rangeId))
     setDateParams(qs, filters)
-    fetchAnalyticsCached(`/api/admin/analytics?${qs.toString()}`, token)
+    fetchAnalyticsCached(`${endpoint}?${qs.toString()}`, token)
       .then(d => {
         if (cancelled) return
         setRows(d.rows ?? [])
@@ -350,12 +352,12 @@ export function useAnalytics<T>(view: string, filters: Filters, token: string | 
         setLoading(false)
       })
     return () => { cancelled = true }
-  }, [view, token, idsKey, filters.rangeId, filters.days, filters.from, filters.to, tick])
+  }, [view, token, idsKey, filters.rangeId, filters.days, filters.from, filters.to, tick, endpoint])
 
   return { rows, team, loading, error, reload: () => { invalidateAnalyticsCache(); setTick(t => t + 1) } }
 }
 
-export function useRangeGrid(rangeId: number | null, days: number | null, from: number | null, to: number | null, playerIds: number[], stackIdx: number | null, token: string | null) {
+export function useRangeGrid(rangeId: number | null, days: number | null, from: number | null, to: number | null, playerIds: number[], stackIdx: number | null, token: string | null, endpoint = ADMIN_ANALYTICS) {
   const [cells, setCells] = useState<GridCell[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -370,11 +372,11 @@ export function useRangeGrid(rangeId: number | null, days: number | null, from: 
     if (idsKey) qs.set('playerIds', idsKey)
     if (stackIdx !== null) qs.set('stackGridIdx', String(stackIdx))
     setDateParams(qs, { days, from, to })
-    fetchAnalyticsCached(`/api/admin/analytics?${qs.toString()}`, token)
+    fetchAnalyticsCached(`${endpoint}?${qs.toString()}`, token)
       .then(d => { if (!cancelled) { setCells(d.cells ?? []); setLoading(false) } })
       .catch(e => { if (!cancelled) { captureError(e, { area: 'coach-range-grid', view: 'range-grid' }); setError(t.coach.loadError); setLoading(false) } })
     return () => { cancelled = true }
-  }, [token, rangeId, days, from, to, idsKey, stackIdx])
+  }, [token, rangeId, days, from, to, idsKey, stackIdx, endpoint])
 
   return { cells, loading, error }
 }

@@ -6,15 +6,21 @@ import { PokerTableEditor } from '../ui/PokerTableEditor'
 import { HandQuickSelect } from '../ui/HandQuickSelect'
 import { RangePreviewModal } from '../ui/RangePreviewModal'
 import { PageTutorialButton } from '../ui/PageTutorialButton'
+import { ElapsedClock } from '../ui/ElapsedClock'
 import { Eye } from 'lucide-react'
-import { RANKS, SUIT_ICONS } from '../../types'
-import { ALL_HANDS, getRngBands, formatRngBands } from '../../utils/hands'
+import { RANKS } from '../../types'
+import { HandHistoryItem, SessionHandLog } from '../ui/SessionHandLog'
+import { usePagedList, ShowMoreButton } from '../ui/PagedList'
+import { ALL_HANDS, getRngBands, formatRngBands, makeEmptyGrid } from '../../utils/hands'
+import { resolveSessionRanges, sessionRangeKey } from '../../utils/sessionRanges'
 import { useModalA11y } from '../../utils/useModalA11y'
 import { useAwayGuard } from '../../utils/useAwayGuard'
 import { AwayResumeModal } from '../ui/AwayResumeModal'
 import { t, dateLocale } from '../../i18n'
 import type { CSSProperties } from 'react'
 import type { HandData, HandHistoryEntry, Range, TrainingSession } from '../../types'
+
+const EMPTY_SESSION_GRID = makeEmptyGrid()
 
 /* ── Label helpers (compartilhados entre mão atual e replay do histórico) ─── */
 function gridForRange(range: Range, stackGridIdx: number): Record<string, import('../../types').HandData> {
@@ -42,47 +48,6 @@ function bandLabelFor(range: Range, stackGridIdx: number, hand: string): string 
 }
 
 
-
-/* ── Mini card for history ─────────────────────────────────────────────────── */
-function MiniCard({ rank, suit }: { rank: string; suit: string }) {
-  const colorClass: Record<string, string> = {
-    h: 'text-red-400', d: 'text-blue-400', s: 'text-warm-300', c: 'text-emerald-400',
-  }
-  return (
-    <span className={`font-bold ${colorClass[suit] ?? 'text-warm-300'}`}>
-      {rank}{SUIT_ICONS[suit]}
-    </span>
-  )
-}
-
-/* ── Hand history item ──────────────────────────────────────────────────────── */
-function HandHistoryItem({ entry, onClick }: { entry: HandHistoryEntry; onClick?: () => void }) {
-  return (
-    <div
-      onClick={onClick}
-      className={`p-2 rounded-lg border text-xs transition-all ${entry.correct ? 'border-emerald-700/40 bg-emerald-900/10' : 'border-red-700/40 bg-red-900/10'} ${onClick ? 'cursor-pointer hover:brightness-125' : ''}`}
-    >
-      <div className="flex items-center gap-1 mb-0.5">
-        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${entry.correct ? 'bg-emerald-500' : 'bg-red-500'}`} />
-        <MiniCard rank={entry.hand[0]} suit={entry.suits[0]} />
-        <MiniCard rank={entry.hand[1]} suit={entry.suits[1]} />
-        <span className="ml-auto text-warm-500 tabular-nums">{entry.rng}</span>
-      </div>
-      <div className="pl-3.5">
-        {entry.correct ? (
-          <span className="text-emerald-400 font-semibold">{entry.actionTaken}</span>
-        ) : (
-          <>
-            <span className="text-red-400">{entry.actionTaken}</span>
-            <span className="text-warm-500"> → </span>
-            <span className="text-emerald-400">{entry.correctAction}</span>
-          </>
-        )}
-        {!!entry.raiseSize && <span className="text-warm-500"> ({entry.raiseSize})</span>}
-      </div>
-    </div>
-  )
-}
 
 /* ── Hand history sidebar ────────────────────────────────────────────────────── */
 const HandHistorySidebar = memo(function HandHistorySidebar({ onOpenModal, onReplayEntry }: { onOpenModal: () => void; onReplayEntry?: (entry: HandHistoryEntry) => void }) {
@@ -115,23 +80,17 @@ function SessionDetail({ session, ranges }: {
   session: TrainingSession
   ranges: Range[]
 }) {
-  const [openRangeId, setOpenRangeId] = useState<number | null>(null)
+  const [openKey, setOpenKey]         = useState<string | null>(null)
   const [viewMode, setViewMode]       = useState<'actions' | 'heatmap'>('heatmap')
   const [selectedStack, setSelectedStack] = useState('')
 
-  useEffect(() => { setViewMode('heatmap') }, [openRangeId])
-  useEffect(() => {
-    if (openRangeId !== null) {
-      const r = ranges.find(x => x.id === openRangeId)
-      setSelectedStack(r?.stackGrids && r.stackGrids.length > 1 ? r.stackGrids[0].stackRange : '')
-    } else {
-      setSelectedStack('')
-    }
-  }, [openRangeId])
+  const sessionRanges = resolveSessionRanges(session, ranges)
 
-  const sessionRanges = session.rangeNames
-    .map(name => ranges.find(r => r.name === name))
-    .filter((r): r is Range => r !== undefined)
+  useEffect(() => { setViewMode('heatmap') }, [openKey])
+  useEffect(() => {
+    const r = openKey !== null ? sessionRanges.find(ref => sessionRangeKey(ref) === openKey)?.range : null
+    setSelectedStack(r?.stackGrids && r.stackGrids.length > 1 ? r.stackGrids[0].stackRange : '')
+  }, [openKey])
 
   const acc = session.hands > 0 ? Math.round(session.correct / session.hands * 100) : null
   const sessionPerf = session.handPerf ?? null
@@ -165,14 +124,51 @@ function SessionDetail({ session, ranges }: {
         <p className="text-warm-500 text-sm text-center py-2">{t.stats.rangesNotFound}</p>
       ) : (
         <div className="space-y-2">
-          {sessionRanges.map(r => {
+          {sessionRanges.map(ref => {
+            const key = sessionRangeKey(ref)
             // handPerf de sessões novas é chaveado por rangeId; sessões antigas, por rangeName (fallback).
-            const mergedPerf = sessionPerf?.[String(r.id)] ?? sessionPerf?.[r.name] ?? {}
+            const mergedPerf = (ref.id !== null ? sessionPerf?.[String(ref.id)] : undefined) ?? sessionPerf?.[ref.name] ?? {}
             const vals     = Object.values(mergedPerf)
             const total    = vals.reduce((s, v) => s + v.t, 0)
             const correct  = vals.reduce((s, v) => s + v.c, 0)
             const accuracy = total > 0 ? Math.round(correct / total * 100) : null
-            const isOpenR  = openRangeId === r.id
+            const isOpenR  = openKey === key
+
+            if (ref.range === null) {
+              return (
+                <div key={key} className="border border-warm-700/60 rounded-xl overflow-hidden">
+                  <button
+                    onClick={() => setOpenKey(isOpenR ? null : key)}
+                    disabled={total === 0}
+                    className="w-full flex items-center justify-between px-4 py-3 bg-warm-800/40 transition-colors text-left disabled:cursor-default"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="font-bold text-warm-300 text-sm truncate">{ref.name}</span>
+                      <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-warm-700/60 border border-warm-600 text-warm-400 flex-shrink-0">{t.stats.rangeDeleted}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {accuracy !== null ? (
+                        <span className={`text-sm font-bold ${accuracy >= 80 ? 'text-emerald-400' : accuracy >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+                          {accuracy}%
+                        </span>
+                      ) : (
+                        <span className="text-warm-600 text-xs">{t.stats.noData}</span>
+                      )}
+                      {total > 0 && (
+                        <span className={`text-warm-400 text-lg transition-transform duration-200 inline-block ${isOpenR ? 'rotate-180' : ''}`}>›</span>
+                      )}
+                    </div>
+                  </button>
+                  {isOpenR && total > 0 && (
+                    <div className="border-t border-warm-700/60 bg-warm-900/40 p-4">
+                      <HandMatrix readOnly grid={EMPTY_SESSION_GRID} heatmap={mergedPerf} forceViewMode="heatmap" />
+                    </div>
+                  )}
+                </div>
+              )
+            }
+
+            const r = ref.range
             const stackRanges = r.stackGrids && r.stackGrids.length > 1 ? r.stackGrids.map(sg => sg.stackRange).filter(Boolean) : []
             const activeStack = isOpenR && stackRanges.length > 0 ? selectedStack : ''
             const perf     = (activeStack
@@ -182,9 +178,9 @@ function SessionDetail({ session, ranges }: {
             const grid     = r.stackGrids && gridIdx >= 0 ? r.stackGrids[gridIdx].grid : (r.stackGrids?.[0]?.grid ?? r.grid)
 
             return (
-              <div key={r.id} className="border border-warm-700/60 rounded-xl overflow-hidden">
+              <div key={key} className="border border-warm-700/60 rounded-xl overflow-hidden">
                 <button
-                  onClick={() => setOpenRangeId(isOpenR ? null : r.id)}
+                  onClick={() => setOpenKey(isOpenR ? null : key)}
                   className="w-full flex items-center justify-between px-4 py-3 bg-warm-800/60 hover:bg-warm-800 transition-colors text-left"
                 >
                   <div className="flex items-center gap-3">
@@ -253,6 +249,8 @@ function SessionDetail({ session, ranges }: {
           })}
         </div>
       )}
+
+      <SessionHandLog handLog={session.handLog} />
     </div>
   )
 }
@@ -272,6 +270,7 @@ function HistoryModal({ onClose }: { onClose: () => void }) {
   }
 
   const sessions = [...trainingHistory].reverse()
+  const paged = usePagedList(sessions)
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
@@ -294,7 +293,7 @@ function HistoryModal({ onClose }: { onClose: () => void }) {
       )}
 
       <div className="space-y-2">
-        {sessions.map((session: TrainingSession) => {
+        {paged.visible.map((session: TrainingSession) => {
           const acc    = session.hands > 0 ? Math.round(session.correct / session.hands * 100) : 0
           const isOpen = openId === session.id
 
@@ -328,6 +327,7 @@ function HistoryModal({ onClose }: { onClose: () => void }) {
             </div>
           )
         })}
+        <ShowMoreButton remaining={paged.remaining} onClick={paged.showMore} />
       </div>
     </div>
   )
@@ -1051,6 +1051,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
   const incrementConsults      = useStore(s => s.incrementConsults)
   const logConsult             = useStore(s => s.logConsult)
   const stats                  = useStore(s => s.sessionStats)
+  const sessionStartTime       = useStore(s => s.sessionStartTime)
   const setPage                = useStore(s => s.setPage)
 
   const { prompting: awayPrompting, remainingMs: awayRemainingMs, dismiss: dismissAway, getAwayMs } = useAwayGuard({
@@ -1347,6 +1348,7 @@ function DrillActive({ onShowSummary, onShowHistory }: { onShowSummary: () => vo
                         {activeDrillStackRange}
                       </span>
                     )}
+                    <ElapsedClock startMs={sessionStartTime} className="ml-auto shrink-0 text-[0.65rem] font-semibold text-warm-400" />
                   </div>
                   <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-center">
                     <div>

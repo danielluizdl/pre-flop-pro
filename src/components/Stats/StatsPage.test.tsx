@@ -48,7 +48,8 @@ describe('StatsPage', () => {
     render(<StatsPage />)
     fireEvent.click(screen.getByRole('button', { name: 'Ver detalhes' }))
     expect(screen.getByRole('button', { name: /Voltar/ })).toBeInTheDocument()
-    expect(screen.getByText('Ranges desta sessão não encontrados.')).toBeInTheDocument()
+    // range fora do catálogo não some mais: vira placeholder marcado como excluído
+    expect(screen.getByText('Range excluído do catálogo')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Voltar/ }))
     expect(screen.getByText('Histórico de Sessões')).toBeInTheDocument()
   })
@@ -85,6 +86,74 @@ describe('StatsPage', () => {
     expect(screen.getByRole('button', { name: '40-100' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: '40-100' }))
     expect(screen.getByRole('button', { name: '40-100' })).toBeInTheDocument()
+  })
+
+  it('detalhe da sessão: range renomeado é resolvido por rangeId e mostra o nome novo', () => {
+    const range = rangeNamed('BTN RFI (v2)', 42)
+    const withIds: TrainingSession = {
+      ...SESSION, id: 4, rangeNames: ['BTN RFI'], rangeIds: [42],
+      handPerf: { 42: { AA: { c: 8, t: 10 } } },
+    }
+    useStore.setState({ trainingHistory: [withIds], ranges: [range], currentUser: null })
+    render(<StatsPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Ver detalhes' }))
+    expect(screen.getByRole('button', { name: /BTN RFI \(v2\)/ })).toBeInTheDocument()
+  })
+
+  it('detalhe da sessão: range apagado vira placeholder expansível com heatmap', () => {
+    const withDeleted: TrainingSession = {
+      ...SESSION, id: 5, rangeNames: ['Range Sumido'], rangeIds: [99],
+      handPerf: { 99: { AA: { c: 1, t: 2 } } },
+    }
+    useStore.setState({ trainingHistory: [withDeleted], ranges: [], currentUser: null })
+    render(<StatsPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Ver detalhes' }))
+    // a linha não some: aparece com o badge de excluído e a precisão gravada
+    expect(screen.queryByText('Ranges desta sessão não encontrados.')).not.toBeInTheDocument()
+    expect(screen.getByText('Range excluído do catálogo')).toBeInTheDocument()
+    expect(screen.getAllByText('50%').length).toBeGreaterThan(0)
+    const row = screen.getByRole('button', { name: /Range Sumido/ })
+    expect(row).not.toBeDisabled()
+    fireEvent.click(row)
+    // heatmap por mão da sessão continua acessível (matriz renderizada)
+    expect(screen.getAllByText('AA').length).toBeGreaterThan(0)
+  })
+
+  it('detalhe da sessão: range apagado sem dados por mão fica não-clicável', () => {
+    const withDeleted: TrainingSession = {
+      ...SESSION, id: 6, rangeNames: ['Sem Perf'], rangeIds: [77], handPerf: {},
+    }
+    useStore.setState({ trainingHistory: [withDeleted], ranges: [], currentUser: null })
+    render(<StatsPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Ver detalhes' }))
+    expect(screen.getByRole('button', { name: /Sem Perf/ })).toBeDisabled()
+  })
+
+  it('aba Range Check: round com grids gravados expande o replay da rodada', () => {
+    useStore.setState({
+      trainingHistory: [], ranges: [], currentUser: null,
+      buildHistory: [{
+        id: 1, timestamp: Date.now(), rangeNames: ['BTN RFI'], avgScore: 90,
+        rounds: [
+          {
+            label: 'BTN RFI', score: 90, attempt: 1, rangeId: 10,
+            userGrid: { AA: { fold: 0, call: 0, raise: 100, allin: 0 } },
+            answerGrid: { AA: { fold: 0, call: 100, raise: 0, allin: 0 } },
+          },
+          { label: 'Round Antigo', score: 80 },
+        ],
+      }],
+    })
+    render(<StatsPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Range Check' }))
+    // abre a sessão
+    fireEvent.click(screen.getByRole('button', { name: /BTN RFI/ }))
+    // round novo é clicável e expande o replay; round antigo (sem grids) não é botão
+    expect(screen.queryByRole('button', { name: /Round Antigo/ })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /BTN RFI.*90/ }))
+    expect(screen.getByText('Seu range')).toBeInTheDocument()
+    expect(screen.getByText('Gabarito')).toBeInTheDocument()
+    expect(screen.getByText('Diferença por mão')).toBeInTheDocument()
   })
 
   it('aba Desempenho Global: agrupa ranges treinados por posição e expande', () => {
