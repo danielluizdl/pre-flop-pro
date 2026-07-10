@@ -57,7 +57,7 @@ const ActionCell = memo(function ActionCell({ hand, bg, empty, onEnter }: {
   )
 })
 
-export function RangeActionGrid({ title, grid, subtitle }: { title: string; grid: Record<string, ActionFreq>; subtitle?: string }) {
+export function RangeActionGrid({ title, grid, subtitle, maxWidth = 380 }: { title: string; grid: Record<string, ActionFreq>; subtitle?: string; maxWidth?: number }) {
   const [hovered, setHovered] = useState<string | null>(null)
   const [mouse, setMouse] = useState({ x: 0, y: 0 })
   const byHand = useMemo(() => grid, [grid])
@@ -81,7 +81,7 @@ export function RangeActionGrid({ title, grid, subtitle }: { title: string; grid
 
       <div
         className="grid gap-0.5 select-none"
-        style={{ gridTemplateColumns: 'repeat(13, 1fr)', maxWidth: 380 }}
+        style={{ gridTemplateColumns: 'repeat(13, 1fr)', maxWidth }}
         onMouseMove={e => setMouse({ x: e.clientX, y: e.clientY })}
         onMouseLeave={() => setHovered(null)}
       >
