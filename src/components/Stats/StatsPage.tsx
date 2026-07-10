@@ -564,7 +564,7 @@ export function StatsPage() {
   const globalAccuracy = totalHands > 0 ? Math.round((totalCorrect / totalHands) * 100) : null
 
   return (
-    <div className={activeTab === 'analysis' ? 'space-y-4' : 'space-y-4 max-w-2xl'}>
+    <div className="space-y-4">
       {/* Cabeçalho */}
       <div data-tour="stats-header" className="flex items-start justify-between gap-2">
         <div>
@@ -574,8 +574,9 @@ export function StatsPage() {
         <PageTutorialButton scope="stats" />
       </div>
 
-      {/* Abas */}
-      <div className="flex border-b border-warm-700 overflow-x-auto">
+      {/* Abas — no mobile rolam (shrink-0), do sm pra cima se distribuem pela
+          largura toda (flex-1) sem precisar de barra de rolagem. */}
+      <div className="flex border-b border-warm-700 overflow-x-auto sm:overflow-visible">
         {([
           ...(currentUser ? [
             { key: 'cloud' as const, label: t.stats.tabCloud },
@@ -589,7 +590,7 @@ export function StatsPage() {
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={[
-              'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors whitespace-nowrap shrink-0',
+              'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors whitespace-nowrap shrink-0 sm:flex-1 sm:text-center',
               activeTab === tab.key
                 ? 'border-brand-500 text-warm-100'
                 : 'border-transparent text-warm-400 hover:text-warm-200',
@@ -600,72 +601,75 @@ export function StatsPage() {
         ))}
       </div>
 
-      {/* Conteúdo por aba */}
-      {activeTab === 'cloud' ? (
-        <MyAccountStats />
-      ) : activeTab === 'analysis' ? (
-        <MyCoachPanel />
-      ) : activeTab === 'build' ? (
-        <div className="space-y-6">
-          {currentUser && (
-            <div>
-              <div className="eyebrow mb-2">{t.myAccount.buildTitle}</div>
-              <BuildAccountStats />
-            </div>
-          )}
-          <div>
-            {currentUser && <div className="eyebrow mb-2">{t.myAccount.buildLocalTitle}</div>}
-            <BuildHistoryPanel />
-          </div>
-        </div>
-      ) : activeTab === 'sessions' ? (
-        selectedSession ? (
-          <SessionDetailView
-            session={selectedSession}
-            ranges={ranges}
-            onBack={() => setSelectedSession(null)}
-          />
-        ) : (
+      {/* Conteúdo por aba — largura livre só na Análise (precisa das matrizes
+          grandes); as demais mantêm a largura de leitura mais estreita. */}
+      <div className={activeTab === 'analysis' ? undefined : 'max-w-2xl'}>
+        {activeTab === 'cloud' ? (
+          <MyAccountStats />
+        ) : activeTab === 'analysis' ? (
+          <MyCoachPanel />
+        ) : activeTab === 'build' ? (
           <div className="space-y-6">
-            {sessions.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {[
-                  { label: t.stats.statSessions, value: sessions.length.toString(), color: 'text-brand-400' },
-                  { label: t.stats.statTotalHands, value: totalHands.toLocaleString(), color: 'text-blue-400' },
-                  {
-                    label: t.stats.statGlobalAccuracy,
-                    value: globalAccuracy !== null ? `${globalAccuracy}%` : '—',
-                    color: globalAccuracy === null ? 'text-warm-500'
-                         : globalAccuracy >= 70 ? 'text-emerald-400'
-                         : globalAccuracy >= 50 ? 'text-yellow-400' : 'text-red-400',
-                  },
-                ].map(item => (
-                  <div key={item.label} className="card-surface p-5 text-center">
-                    <div className="eyebrow mb-1.5">{item.label}</div>
-                    <div className={`font-display tabular-nums leading-none ${item.color}`} style={{ fontSize:40, letterSpacing:'0.01em' }}>{item.value}</div>
-                  </div>
-                ))}
+            {currentUser && (
+              <div>
+                <div className="eyebrow mb-2">{t.myAccount.buildTitle}</div>
+                <BuildAccountStats />
               </div>
             )}
-            <AccuracySparkline sessions={trainingHistory} />
-            {sessions.length === 0 ? (
-              <div className="text-center py-16">
-                <p className="text-warm-400 text-sm">{t.stats.noSessions}</p>
-                <p className="text-warm-500 text-xs mt-1">{t.stats.completeToSeeHistory}</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {pagedSessions.visible.map(s => (
-                  <SessionCard key={s.id} session={s} onView={() => setSelectedSession(s)} />
-                ))}
-                <ShowMoreButton remaining={pagedSessions.remaining} onClick={pagedSessions.showMore} />
-              </div>
-            )}
+            <div>
+              {currentUser && <div className="eyebrow mb-2">{t.myAccount.buildLocalTitle}</div>}
+              <BuildHistoryPanel />
+            </div>
           </div>
-        )
-      ) : (
-        <GlobalHistoryPanel />
-      )}
+        ) : activeTab === 'sessions' ? (
+          selectedSession ? (
+            <SessionDetailView
+              session={selectedSession}
+              ranges={ranges}
+              onBack={() => setSelectedSession(null)}
+            />
+          ) : (
+            <div className="space-y-6">
+              {sessions.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {[
+                    { label: t.stats.statSessions, value: sessions.length.toString(), color: 'text-brand-400' },
+                    { label: t.stats.statTotalHands, value: totalHands.toLocaleString(), color: 'text-blue-400' },
+                    {
+                      label: t.stats.statGlobalAccuracy,
+                      value: globalAccuracy !== null ? `${globalAccuracy}%` : '—',
+                      color: globalAccuracy === null ? 'text-warm-500'
+                           : globalAccuracy >= 70 ? 'text-emerald-400'
+                           : globalAccuracy >= 50 ? 'text-yellow-400' : 'text-red-400',
+                    },
+                  ].map(item => (
+                    <div key={item.label} className="card-surface p-5 text-center">
+                      <div className="eyebrow mb-1.5">{item.label}</div>
+                      <div className={`font-display tabular-nums leading-none ${item.color}`} style={{ fontSize:40, letterSpacing:'0.01em' }}>{item.value}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <AccuracySparkline sessions={trainingHistory} />
+              {sessions.length === 0 ? (
+                <div className="text-center py-16">
+                  <p className="text-warm-400 text-sm">{t.stats.noSessions}</p>
+                  <p className="text-warm-500 text-xs mt-1">{t.stats.completeToSeeHistory}</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {pagedSessions.visible.map(s => (
+                    <SessionCard key={s.id} session={s} onView={() => setSelectedSession(s)} />
+                  ))}
+                  <ShowMoreButton remaining={pagedSessions.remaining} onClick={pagedSessions.showMore} />
+                </div>
+              )}
+            </div>
+          )
+        ) : (
+          <GlobalHistoryPanel />
+        )}
+      </div>
     </div>
   )
 }
