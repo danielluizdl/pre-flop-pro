@@ -14,7 +14,7 @@ import {
 import { validateRanges } from '../utils/validateRanges'
 import { addBreadcrumb, captureMessage, captureError } from '../utils/sentry'
 import { enqueue, flush } from '../utils/eventQueue'
-import { decodeRanges, encodeRanges } from '../utils/sparseGrid'
+import { decodeRanges, encodeRanges, encodeSparse } from '../utils/sparseGrid'
 import { scoreBuild } from '../utils/buildScore'
 import { DEFAULT_RANGES } from '../data/defaultRanges'
 import { t, setLangDict, type Lang } from '../i18n'
@@ -156,7 +156,23 @@ function makeBuildSession(id: number, rounds: BuildRound[], results: BuildRoundR
     id,
     timestamp: id,
     rangeNames: [...new Set(rounds.map(r => r.rangeName))],
-    rounds: results.map(r => ({ label: r.label, score: Math.round(r.score * 10) / 10, attempt: r.attempt })),
+    rounds: results.map(r => {
+      const round = rounds[r.roundIdx]
+      return {
+        label: r.label,
+        score: Math.round(r.score * 10) / 10,
+        attempt: r.attempt,
+        // Grids esparsos p/ replay da rodada; o gabarito é snapshot do momento
+        // jogado (o range do catálogo pode ser editado/apagado depois).
+        userGrid: encodeSparse(r.userGrid),
+        ...(round ? {
+          rangeId: round.rangeId,
+          stackRange: round.stackRange || undefined,
+          customAction: round.customAction,
+          answerGrid: encodeSparse(round.grid),
+        } : {}),
+      }
+    }),
     avgScore: Math.round(avg * 10) / 10,
   }
 }

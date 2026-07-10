@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from 'react'
 import { useStore } from '../../store/useStore'
-import type { Range, TrainingSession } from '../../types'
+import type { BuildHistoryRound, Range, TrainingSession } from '../../types'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import { PageTutorialButton } from '../ui/PageTutorialButton'
 import { MyAccountStats } from './MyAccountStats'
@@ -12,6 +12,10 @@ import { buildSessionCsv, sessionCsvFilename } from '../../utils/sessionCsv'
 import { resolveSessionRanges, sessionRangeKey } from '../../utils/sessionRanges'
 import { SessionHandLog } from '../ui/SessionHandLog'
 import { usePagedList, ShowMoreButton } from '../ui/PagedList'
+import { RangeActionGrid } from '../Admin/RangeActionGrid'
+import { DiffGrid } from '../ui/DiffGrid'
+import { decodeSparse } from '../../utils/sparseGrid'
+import { scoreBuild } from '../../utils/buildScore'
 import { makeEmptyGrid } from '../../utils/hands'
 
 const EMPTY_GRID = makeEmptyGrid()
@@ -437,9 +441,23 @@ function buildScoreColor(s: number): string {
   return s >= 80 ? 'text-brand-500' : s >= 50 ? 'text-gold' : 'text-result-bad'
 }
 
+function BuildRoundReplay({ round }: { round: BuildHistoryRound }) {
+  const userGrid = decodeSparse(round.userGrid)
+  const answerGrid = decodeSparse(round.answerGrid)
+  const { perHand } = scoreBuild(answerGrid, userGrid)
+  return (
+    <div className="mt-2 mb-3 pl-2 border-l-2 border-warm-700/60 space-y-4">
+      <RangeActionGrid title={t.exercise.yourRange} subtitle={t.exercise.yourRangeSub} grid={userGrid} maxWidth={600} />
+      <RangeActionGrid title={t.exercise.answerKey} subtitle={t.exercise.answerKeySub} grid={answerGrid} maxWidth={600} />
+      <DiffGrid perHand={perHand} />
+    </div>
+  )
+}
+
 function BuildHistoryPanel() {
   const buildHistory = useStore(s => s.buildHistory)
   const [openId, setOpenId] = useState<number | null>(null)
+  const [openRound, setOpenRound] = useState<string | null>(null)
 
   const sessions = [...buildHistory].reverse()
   const paged = usePagedList(sessions)
@@ -481,21 +499,44 @@ function BuildHistoryPanel() {
             </button>
             {isOpen && (
               <div className="mt-3 pt-3 border-t border-warm-700/60 space-y-1.5">
-                {s.rounds.map((r, i) => (
-                  <div key={i} className="flex items-center justify-between gap-2 text-sm">
-                    <span className="flex items-center gap-2 min-w-0">
-                      <span className="text-warm-200 truncate">{r.label}</span>
-                      {(r.attempt ?? 1) > 1 && (
-                        <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-500/10 border border-brand-500/40 text-brand-400 flex-shrink-0">
-                          {t.exercise.attemptN(r.attempt!)}
-                        </span>
+                {s.rounds.map((r, i) => {
+                  const roundKey = `${s.id}:${i}`
+                  const hasReplay = !!r.userGrid
+                  const isRoundOpen = openRound === roundKey
+                  const row = (
+                    <>
+                      <span className="flex items-center gap-2 min-w-0">
+                        {hasReplay && (
+                          <span className={`text-warm-400 transition-transform duration-200 inline-block flex-shrink-0 ${isRoundOpen ? 'rotate-90' : ''}`}>›</span>
+                        )}
+                        <span className="text-warm-200 truncate">{r.label}</span>
+                        {(r.attempt ?? 1) > 1 && (
+                          <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-500/10 border border-brand-500/40 text-brand-400 flex-shrink-0">
+                            {t.exercise.attemptN(r.attempt!)}
+                          </span>
+                        )}
+                      </span>
+                      <span className={`font-bold tabular-nums flex-shrink-0 ${buildScoreColor(r.score)}`}>
+                        {t.exercise.scoreOf(String(r.score))}
+                      </span>
+                    </>
+                  )
+                  return (
+                    <div key={roundKey}>
+                      {hasReplay ? (
+                        <button
+                          onClick={() => setOpenRound(isRoundOpen ? null : roundKey)}
+                          className="w-full flex items-center justify-between gap-2 text-sm text-left hover:brightness-125 transition-all"
+                        >
+                          {row}
+                        </button>
+                      ) : (
+                        <div className="flex items-center justify-between gap-2 text-sm">{row}</div>
                       )}
-                    </span>
-                    <span className={`font-bold tabular-nums flex-shrink-0 ${buildScoreColor(r.score)}`}>
-                      {t.exercise.scoreOf(String(r.score))}
-                    </span>
-                  </div>
-                ))}
+                      {isRoundOpen && hasReplay && <BuildRoundReplay round={r} />}
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>

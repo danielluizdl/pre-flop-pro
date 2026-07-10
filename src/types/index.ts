@@ -172,6 +172,13 @@ export interface BuildHistoryRound {
   label: string
   score: number
   attempt?: number
+  // Replay rodada a rodada — grids persistidos em formato esparso; rounds
+  // antigos não têm.
+  rangeId?: number
+  stackRange?: string
+  customAction?: { label: string; color: string }
+  userGrid?: Record<string, HandData>
+  answerGrid?: Record<string, HandData>
 }
 
 export interface BuildSession {

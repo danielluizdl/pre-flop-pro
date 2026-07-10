@@ -129,6 +129,33 @@ describe('StatsPage', () => {
     expect(screen.getByRole('button', { name: /Sem Perf/ })).toBeDisabled()
   })
 
+  it('aba Range Check: round com grids gravados expande o replay da rodada', () => {
+    useStore.setState({
+      trainingHistory: [], ranges: [], currentUser: null,
+      buildHistory: [{
+        id: 1, timestamp: Date.now(), rangeNames: ['BTN RFI'], avgScore: 90,
+        rounds: [
+          {
+            label: 'BTN RFI', score: 90, attempt: 1, rangeId: 10,
+            userGrid: { AA: { fold: 0, call: 0, raise: 100, allin: 0 } },
+            answerGrid: { AA: { fold: 0, call: 100, raise: 0, allin: 0 } },
+          },
+          { label: 'Round Antigo', score: 80 },
+        ],
+      }],
+    })
+    render(<StatsPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Range Check' }))
+    // abre a sessão
+    fireEvent.click(screen.getByRole('button', { name: /BTN RFI/ }))
+    // round novo é clicável e expande o replay; round antigo (sem grids) não é botão
+    expect(screen.queryByRole('button', { name: /Round Antigo/ })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /BTN RFI.*90/ }))
+    expect(screen.getByText('Seu range')).toBeInTheDocument()
+    expect(screen.getByText('Gabarito')).toBeInTheDocument()
+    expect(screen.getByText('Diferença por mão')).toBeInTheDocument()
+  })
+
   it('aba Desempenho Global: agrupa ranges treinados por posição e expande', () => {
     const range = rangeNamed('BTN RFI', 42)
     useStore.setState({ trainingHistory: [SESSION], ranges: [range], handPerformance: { 42: { AA: { c: 8, t: 10 } } }, currentUser: null })
