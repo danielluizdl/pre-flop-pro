@@ -138,6 +138,20 @@ describe('submitBuildRound', () => {
     expect(typeof b.client_event_id).toBe('string')
   })
 
+  it('inclui wrongHands na telemetria com a fração de combos errados por mão', () => {
+    useStore.getState().submitBuildRound()
+    const b = vi.mocked(enqueue).mock.calls[0][1] as Record<string, unknown>
+    expect(b.wrongHands).toEqual({ AA: 1 })
+  })
+
+  it('omite wrongHands quando a grade está perfeita', () => {
+    const { rangeData } = useStore.getState()
+    useStore.setState({ rangeData: { ...rangeData, grid: gridWith({ AA: { raise: 100 } }) } })
+    useStore.getState().submitBuildRound()
+    const b = vi.mocked(enqueue).mock.calls[0][1] as Record<string, unknown>
+    expect(b.wrongHands).toBeUndefined()
+  })
+
   it('não reenvia se o round já foi submetido', () => {
     useStore.getState().submitBuildRound()
     useStore.getState().submitBuildRound()
@@ -228,6 +242,35 @@ describe('nextBuildRound / stopBuildSession', () => {
     useStore.getState().stopBuildSession()
     expect(useStore.getState().buildHistory).toHaveLength(0)
     expect(localStorage.getItem('pfp-build-history-v1')).toBeNull()
+  })
+
+  it('stopBuildSession envia build-session-end com rounds distintos, nota média e uuid', () => {
+    const uuid = useStore.getState().buildSessionUuid
+    const { rangeData } = useStore.getState()
+    useStore.setState({ rangeData: { ...rangeData, grid: gridWith({ KK: { allin: 100 } }) } })
+    useStore.getState().submitBuildRound()
+    useStore.getState().retryBuildRound()
+    useStore.getState().submitBuildRound()
+    useStore.getState().nextBuildRound()
+    useStore.getState().submitBuildRound()
+    useStore.getState().stopBuildSession()
+    const calls = vi.mocked(enqueue).mock.calls
+    const end = calls.find(c => c[0] === 'build-session-end')
+    expect(end).toBeDefined()
+    const b = end![1] as Record<string, unknown>
+    expect(b.roundsTotal).toBe(2)
+    expect(b.roundsPlayed).toBe(2)
+    expect(b.session_uuid).toBe(uuid)
+    expect(typeof b.avgScore).toBe('number')
+    expect(typeof b.durationSeconds).toBe('number')
+    expect(typeof b.startedAt).toBe('number')
+    expect(end![2]).toBe('tok')
+  })
+
+  it('stopBuildSession sem resultados não envia build-session-end', () => {
+    useStore.getState().stopBuildSession()
+    const calls = vi.mocked(enqueue).mock.calls
+    expect(calls.some(c => c[0] === 'build-session-end')).toBe(false)
   })
 })
 

@@ -1395,6 +1395,11 @@ export const useStore = create<AppState>()(
           buildSessionId: sid,
           buildHistory: newHistory,
         })
+        const wrongHands: Record<string, number> = {}
+        Object.entries(perHand).forEach(([h, v]) => {
+          const r = Math.min(Math.round(v * 1000) / 1000, 1)
+          if (r > 0) wrongHands[h] = r
+        })
         fireEvent('range-build', {
           rangeId: round.rangeId,
           rangeName: round.rangeName,
@@ -1404,6 +1409,7 @@ export const useStore = create<AppState>()(
           roundsTotal: buildRounds.length,
           session_uuid: get().buildSessionUuid || null,
           client_event_id: crypto.randomUUID(),
+          ...(Object.keys(wrongHands).length > 0 ? { wrongHands } : {}),
         }, get().authToken)
       },
 
@@ -1451,6 +1457,14 @@ export const useStore = create<AppState>()(
           newHistory = upsertSession(buildHistory, session)
           saveBuildHistory(newHistory)
           addBreadcrumb('build', 'stop', { rounds: buildResults.length, avg: session.avgScore })
+          fireEvent('build-session-end', {
+            roundsTotal: buildRounds.length,
+            roundsPlayed: new Set(buildResults.map(r => r.roundIdx)).size,
+            avgScore: session.avgScore,
+            durationSeconds: Math.max(0, Math.round((Date.now() - sid) / 1000)),
+            startedAt: Math.floor(sid / 1000),
+            session_uuid: get().buildSessionUuid || null,
+          }, get().authToken)
         }
         set({
           buildRounds: [],
