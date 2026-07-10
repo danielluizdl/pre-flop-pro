@@ -256,7 +256,7 @@ function DiffGrid({ perHand }: { perHand: Record<string, number> }) {
         <h4 className="text-xs font-semibold text-warm-200">{t.exercise.diffTitle}</h4>
         <p className="text-[0.7rem] text-warm-500">{t.exercise.diffLegend}</p>
       </div>
-      <div className="grid gap-0.5 select-none" style={{ gridTemplateColumns: 'repeat(13, 1fr)', maxWidth: 520 }}>
+      <div className="grid gap-0.5 select-none" style={{ gridTemplateColumns: 'repeat(13, 1fr)', maxWidth: 600 }}>
         {Array.from({ length: 13 }, (_, i) =>
           Array.from({ length: 13 }, (_, j) => {
             const hand = i === j ? RANKS[i] + RANKS[j] : i < j ? RANKS[i] + RANKS[j] + 's' : RANKS[j] + RANKS[i] + 'o'
@@ -370,7 +370,7 @@ function BuildRound() {
   }
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto">
+    <div className="space-y-4 max-w-[1600px] mx-auto">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">
@@ -422,8 +422,8 @@ function BuildRound() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 items-start">
-            <RangeActionGrid title={t.exercise.yourRange} subtitle={t.exercise.yourRangeSub} grid={lastResult.userGrid} maxWidth={520} />
-            <RangeActionGrid title={t.exercise.answerKey} subtitle={t.exercise.answerKeySub} grid={round.grid} maxWidth={520} />
+            <RangeActionGrid title={t.exercise.yourRange} subtitle={t.exercise.yourRangeSub} grid={lastResult.userGrid} maxWidth={600} />
+            <RangeActionGrid title={t.exercise.answerKey} subtitle={t.exercise.answerKeySub} grid={round.grid} maxWidth={600} />
             <DiffGrid perHand={lastResult.perHand} />
           </div>
 
@@ -469,7 +469,7 @@ function BuildSummary() {
     : null
 
   return (
-    <div data-tour="exercise-summary" className="space-y-4 max-w-7xl mx-auto">
+    <div data-tour="exercise-summary" className="space-y-4 max-w-[1600px] mx-auto">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-display uppercase text-warm-100 mb-1 text-[28px] leading-none tracking-wide">{t.exercise.summaryTitle}</h2>
@@ -519,8 +519,8 @@ function BuildSummary() {
               {isOpen && round && (
                 <div className="border-t border-warm-700 bg-warm-900/40 p-4 space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 items-start">
-                    <RangeActionGrid title={t.exercise.yourRange} subtitle={t.exercise.yourRangeSub} grid={r.userGrid} maxWidth={520} />
-                    <RangeActionGrid title={t.exercise.answerKey} subtitle={t.exercise.answerKeySub} grid={round.grid} maxWidth={520} />
+                    <RangeActionGrid title={t.exercise.yourRange} subtitle={t.exercise.yourRangeSub} grid={r.userGrid} maxWidth={600} />
+                    <RangeActionGrid title={t.exercise.answerKey} subtitle={t.exercise.answerKeySub} grid={round.grid} maxWidth={600} />
                     <DiffGrid perHand={r.perHand} />
                   </div>
                   <div className="max-w-sm">
