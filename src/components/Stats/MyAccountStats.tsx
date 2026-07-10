@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { Skeleton } from '../ui/Skeleton'
+import { BuildAccountStats } from './BuildAccountStats'
 import { captureError } from '../../utils/sentry'
 import { t, dateLocale } from '../../i18n'
 import type { DeviceSession } from '../../types'
@@ -288,6 +289,11 @@ export function MyAccountStats() {
             </table>
           </div>
         )}
+      </div>
+
+      <div>
+        <div className="eyebrow mb-2">{t.myAccount.buildTitle}</div>
+        <BuildAccountStats />
       </div>
 
       <DevicesSection />

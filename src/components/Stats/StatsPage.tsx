@@ -4,6 +4,7 @@ import type { BuildHistoryRound, Range, TrainingSession } from '../../types'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import { PageTutorialButton } from '../ui/PageTutorialButton'
 import { MyAccountStats } from './MyAccountStats'
+import { BuildAccountStats } from './BuildAccountStats'
 import { MyCoachPanel } from './MyCoachPanel'
 import { AccuracySparkline } from './AccuracySparkline'
 import { t, dateLocale } from '../../i18n'
@@ -605,7 +606,18 @@ export function StatsPage() {
       ) : activeTab === 'analysis' ? (
         <MyCoachPanel />
       ) : activeTab === 'build' ? (
-        <BuildHistoryPanel />
+        <div className="space-y-6">
+          {currentUser && (
+            <div>
+              <div className="eyebrow mb-2">{t.myAccount.buildTitle}</div>
+              <BuildAccountStats />
+            </div>
+          )}
+          <div>
+            {currentUser && <div className="eyebrow mb-2">{t.myAccount.buildLocalTitle}</div>}
+            <BuildHistoryPanel />
+          </div>
+        </div>
       ) : activeTab === 'sessions' ? (
         selectedSession ? (
           <SessionDetailView
