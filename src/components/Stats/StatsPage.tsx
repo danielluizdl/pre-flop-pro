@@ -833,7 +833,7 @@ export function StatsPage() {
               </div>
             )}
             <div>
-              {currentUser && <div className="eyebrow mb-2">{t.myAccount.buildLocalTitle}</div>}
+              {currentUser && <div className="eyebrow mb-2">{t.myAccount.buildReplayTitle}</div>}
               <BuildHistoryPanel />
             </div>
           </div>

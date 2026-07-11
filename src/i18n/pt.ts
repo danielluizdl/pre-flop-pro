@@ -399,7 +399,7 @@ export const pt = {
     colAttempts: 'Tentativas',
     colCorrect: 'Acertos',
     buildTitle: 'Range Check (conta)',
-    buildLocalTitle: 'Histórico neste dispositivo',
+    buildReplayTitle: 'Sessões e replay',
     buildNoData: 'Sem dados de Range Check na conta ainda.',
     buildCardRounds: 'Rounds',
     buildCardAvg: 'Nota média',

@@ -401,7 +401,7 @@ export const es: Messages = {
     colAttempts: 'Intentos',
     colCorrect: 'Aciertos',
     buildTitle: 'Range Check (cuenta)',
-    buildLocalTitle: 'Historial en este dispositivo',
+    buildReplayTitle: 'Sesiones y replay',
     buildNoData: 'Aún no hay datos de Range Check en tu cuenta.',
     buildCardRounds: 'Rondas',
     buildCardAvg: 'Nota media',

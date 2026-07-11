@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:www.freebetrange.com)"
+      "WebFetch(domain:www.freebetrange.com)",
+      "Bash(curl -s \"https://feature-auth-telemetry.pre-flop-pro.pages.dev/assets/StatsPage-BsCzb37j.js\")",
+      "Bash(node -e ' *)"
     ]
   }
 }
