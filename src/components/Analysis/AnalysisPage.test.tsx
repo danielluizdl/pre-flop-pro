@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { axe } from 'jest-axe'
-import { MyCoachPanel } from './MyCoachPanel'
-import { StatsPage } from './StatsPage'
+import { AnalysisPage } from './AnalysisPage'
+import { StatsPage } from '../Stats/StatsPage'
 import { useStore } from '../../store/useStore'
 import { invalidateAnalyticsCache } from '../../utils/analyticsCache'
 
@@ -23,10 +23,10 @@ function mockApi() {
 
 afterEach(() => { vi.restoreAllMocks(); invalidateAnalyticsCache() })
 
-describe('MyCoachPanel', () => {
+describe('AnalysisPage', () => {
   it('renderiza filtros de período/range e as seções pessoais, sem filtro de jogadores', async () => {
     mockApi()
-    render(<MyCoachPanel />)
+    render(<AnalysisPage />)
     expect(await screen.findByText('Por range')).toBeInTheDocument()
     expect(screen.getByText('Maiores leaks')).toBeInTheDocument()
     expect(screen.getByText('Consulta no drill')).toBeInTheDocument()
@@ -37,7 +37,7 @@ describe('MyCoachPanel', () => {
 
   it('busca dados no endpoint pessoal, nunca no de admin', async () => {
     const urls = mockApi()
-    render(<MyCoachPanel />)
+    render(<AnalysisPage />)
     await screen.findByText('Por range')
     const apiCalls = urls.filter(u => u.includes('/api/'))
     expect(apiCalls.length).toBeGreaterThan(0)
@@ -48,27 +48,33 @@ describe('MyCoachPanel', () => {
     }
   })
 
+  it('deslogado: mostra estado vazio pedindo login, sem chamar a API', () => {
+    const urls: string[] = []
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      urls.push(String(input))
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ rows: [] }) } as unknown as Response)
+    })
+    useStore.setState({ authToken: null, currentUser: null })
+    render(<AnalysisPage />)
+    expect(screen.getByText('Entre na sua conta para ver sua análise')).toBeInTheDocument()
+    expect(screen.queryByText('Por range')).not.toBeInTheDocument()
+    expect(urls.filter(u => u.includes('/api/'))).toEqual([])
+  })
+
   it('não tem violações de acessibilidade', async () => {
     mockApi()
-    const { container } = render(<MyCoachPanel />)
+    const { container } = render(<AnalysisPage />)
     await screen.findByText('Por range')
     expect((await axe(container)).violations).toEqual([])
   })
 })
 
-describe('StatsPage — aba Análise', () => {
-  it('esconde a aba Análise para visitante deslogado', () => {
-    useStore.setState({ trainingHistory: [], currentUser: null, authToken: null })
-    render(<StatsPage />)
-    expect(screen.queryByRole('button', { name: 'Análise' })).not.toBeInTheDocument()
-  })
-
-  it('mostra a aba Análise para usuário logado e abre o painel pessoal', async () => {
+describe('StatsPage — sem aba Análise', () => {
+  it('logado, o Histórico não mostra mais a aba Análise (virou página própria)', async () => {
     mockApi()
     useStore.setState({ trainingHistory: [] })
     render(<StatsPage />)
-    fireEvent.click(screen.getByRole('button', { name: 'Análise' }))
-    expect(await screen.findByText('Por range')).toBeInTheDocument()
-    expect(screen.getByText('Maiores leaks')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Meus dados na nuvem' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Análise' })).not.toBeInTheDocument()
   })
 })

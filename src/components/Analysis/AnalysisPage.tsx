@@ -1,4 +1,5 @@
 import { Fragment, useCallback, useMemo, useState } from 'react'
+import { BarChart3 } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { RangeHeatGrid } from '../Admin/RangeHeatGrid'
 import { RangeActionGrid, type ActionFreq } from '../Admin/RangeActionGrid'
@@ -22,7 +23,30 @@ type ByRangeSortKey = 'hands' | 'accuracy' | 'graves' | 'consults'
 type LeaksSortKey = 'hand' | 'rangeName' | 'total' | 'accuracyLower' | 'graves' | 'imprecisos' | 'impact'
 type ConsultSortKey = 'rangeName' | 'totalConsults' | 'rate' | 'totalPlayed'
 
-export function MyCoachPanel() {
+export function AnalysisPage() {
+  const currentUser = useStore(s => s.currentUser)
+  const authToken = useStore(s => s.authToken)
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h1 className="font-display uppercase text-warm-100 text-[28px] leading-none tracking-wide">{t.analysis.title}</h1>
+        <p className="text-xs text-warm-400 mt-1">{t.analysis.intro}</p>
+      </div>
+      {currentUser && authToken ? (
+        <AnalysisContent />
+      ) : (
+        <div className="text-center py-20 max-w-md mx-auto">
+          <BarChart3 size={32} className="mx-auto text-warm-600 mb-4" aria-hidden />
+          <p className="text-warm-200 text-sm font-semibold">{t.analysis.loggedOutTitle}</p>
+          <p className="text-warm-500 text-xs mt-1.5">{t.analysis.loggedOutHint}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AnalysisContent() {
   const ranges = useStore(s => s.ranges)
   const token = useStore(s => s.authToken)
   const [filters, setFilters] = useState<Filters>({ playerIds: [], rangeId: null, days: null, from: null, to: null })
@@ -144,8 +168,6 @@ export function MyCoachPanel() {
 
   return (
     <div className="flex flex-col gap-6">
-      <p className="text-xs text-warm-400">{t.stats.analysisIntro}</p>
-
       <div className="rounded-xl border border-warm-700 bg-warm-900/30 p-4 flex flex-wrap gap-6">
         <div>
           <p className="text-xs font-semibold text-warm-400 uppercase tracking-wide mb-1.5">{t.coach.period}:</p>
@@ -163,9 +185,9 @@ export function MyCoachPanel() {
       </div>
 
       <div>
-        <h3 className="text-sm font-semibold text-warm-200 mb-2">
+        <h2 className="text-sm font-semibold text-warm-200 mb-2">
           {t.coach.matrixTitle} {selectedRangeName ? <span className="text-brand-400">· {selectedRangeName}</span> : ''}
-        </h3>
+        </h2>
         {filters.rangeId !== null && selectedStackGrids.length > 1 && (
           <div className="flex flex-wrap items-center gap-1.5 mb-3">
             <span className="text-xs text-warm-500 mr-1">{t.coach.effectiveStack}</span>
@@ -221,7 +243,7 @@ export function MyCoachPanel() {
               </div>
               <div className="flex flex-wrap xl:flex-nowrap items-start gap-4 xl:shrink-0">
                 <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
-                  <h4 className="text-xs font-semibold text-warm-200 mb-2">{t.coach.accuracyErrors}</h4>
+                  <h3 className="text-xs font-semibold text-warm-200 mb-2">{t.coach.accuracyErrors}</h3>
                   <RangeHeatGrid cells={grid.cells} />
                 </div>
                 <TopHandsPanel cells={grid.cells} selected={detailHand} onSelect={h => setDetailHand(h === detailHand ? null : h)} />
