@@ -83,7 +83,26 @@ try {
   await page.waitForFunction(() => (document.getElementById('root')?.children.length ?? 0) > 0, undefined, { timeout: 10000 })
   if (!page.url().includes('/historico')) problems.push(`F5 em /historico terminou em ${page.url()} (RouterSync dessincronizou)`)
 
-  // 4. Drill de verdade: seleciona ranges seedados, inicia e responde uma mão.
+  // 4. Página Análise: navegação TopNav→Análise, F5 na rota e rota deslogada.
+  await page.goto(`${BASE}/dashboard`, { waitUntil: 'networkidle' })
+  await page.getByRole('button', { name: 'Análise' }).first().click()
+  await page.waitForURL('**/analise', { timeout: 5000 }).catch(() => problems.push('clicar em Análise não levou a /analise (RouterSync store→URL)'))
+  await page.getByText('Por range').first().waitFor({ timeout: 8000 })
+    .catch(() => problems.push('página Análise não renderizou as seções pessoais'))
+  await page.goto(`${BASE}/analise`, { waitUntil: 'networkidle' })
+  await page.waitForFunction(() => (document.getElementById('root')?.children.length ?? 0) > 0, undefined, { timeout: 10000 })
+  if (!page.url().includes('/analise')) problems.push(`F5 em /analise terminou em ${page.url()} (RouterSync dessincronizou)`)
+
+  const loggedOut = await page.context().browser().newPage()
+  loggedOut.on('pageerror', e => problems.push(`analise deslogado pageerror: ${e.message}`))
+  await loggedOut.route(u => !u.href.startsWith(BASE), r => r.abort())
+  await loggedOut.route('**/api/**', r => r.fulfill({ json: {} }))
+  await loggedOut.goto(`${BASE}/analise`, { waitUntil: 'networkidle' })
+  await loggedOut.waitForFunction(() => (document.getElementById('root')?.children.length ?? 0) > 0, undefined, { timeout: 10000 })
+    .catch(() => problems.push('/analise deslogado não montou nada (tela branca)'))
+  await loggedOut.close()
+
+  // 5. Drill de verdade: seleciona ranges seedados, inicia e responde uma mão.
   await page.goto(`${BASE}/drill`, { waitUntil: 'networkidle' })
   try {
     await page.getByRole('button', { name: /^STR/ }).first().click()
@@ -97,7 +116,7 @@ try {
     problems.push(`fluxo do drill quebrou: ${e.message.split('\n')[0]}`)
   }
 
-  // 5. Painel do coach com analytics stubado.
+  // 6. Painel do coach com analytics stubado.
   const coach = await page.context().browser().newPage()
   coach.on('pageerror', e => problems.push(`coach pageerror: ${e.message}`))
   await coach.route(u => !u.href.startsWith(BASE), r => r.abort())
@@ -125,4 +144,4 @@ if (problems.length > 0) {
   for (const p of problems) console.error(` - ${p}`)
   process.exit(1)
 }
-console.log('SMOKE OK — render, navegação/F5, drill completo e painel do coach íntegros no browser.')
+console.log('SMOKE OK — render, navegação/F5, página Análise, drill completo e painel do coach íntegros no browser.')

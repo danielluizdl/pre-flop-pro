@@ -36,6 +36,8 @@ describe('TopNav', () => {
     render(<TopNav />)
     fireEvent.click(screen.getByRole('button', { name: 'Drill' }))
     expect(setPage).toHaveBeenCalledWith('drill')
+    fireEvent.click(screen.getByRole('button', { name: 'Análise' }))
+    expect(setPage).toHaveBeenCalledWith('analysis')
     fireEvent.click(screen.getByRole('button', { name: /Novo Range/ }))
     expect(setPage).toHaveBeenCalledWith('range-setup')
   })

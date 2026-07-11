@@ -8,6 +8,7 @@ const PAGE_TO_PATH: Record<Page, string> = {
   ranges: '/ranges',
   drill: '/drill',
   exercise: '/montar-range',
+  analysis: '/analise',
   history: '/historico',
   admin: '/coach',
   'range-setup': '/range-setup',

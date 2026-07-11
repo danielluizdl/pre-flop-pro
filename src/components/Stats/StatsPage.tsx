@@ -5,7 +5,6 @@ import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import { PageTutorialButton } from '../ui/PageTutorialButton'
 import { MyAccountStats } from './MyAccountStats'
 import { BuildAccountStats } from './BuildAccountStats'
-import { MyCoachPanel } from './MyCoachPanel'
 import { AccuracySparkline } from './AccuracySparkline'
 import { Skeleton } from '../ui/Skeleton'
 import { t, dateLocale } from '../../i18n'
@@ -740,7 +739,7 @@ export function StatsPage() {
   const currentUser     = useStore(s => s.currentUser)
   const authToken       = useStore(s => s.authToken)
 
-  const [activeTab, setActiveTab]         = useState<'sessions' | 'build' | 'global' | 'cloud' | 'analysis'>('sessions')
+  const [activeTab, setActiveTab]         = useState<'sessions' | 'build' | 'global' | 'cloud'>('sessions')
   const [selectedSession, setSelectedSession] = useState<TrainingSession | null>(null)
 
   // Pra quem está logado, a lista vem do servidor (permanente, entre
@@ -796,7 +795,6 @@ export function StatsPage() {
         {([
           ...(currentUser ? [
             { key: 'cloud' as const, label: t.stats.tabCloud },
-            { key: 'analysis' as const, label: t.stats.tabAnalysis },
           ] : []),
           { key: 'sessions' as const, label: t.stats.tabSessions },
           { key: 'build' as const,    label: t.exercise.navLabel },
@@ -817,13 +815,9 @@ export function StatsPage() {
         ))}
       </div>
 
-      {/* Conteúdo por aba — largura livre só na Análise (precisa das matrizes
-          grandes); as demais mantêm a largura de leitura mais estreita. */}
-      <div className={activeTab === 'analysis' ? undefined : 'max-w-2xl'}>
+      <div className="max-w-2xl">
         {activeTab === 'cloud' ? (
           <MyAccountStats />
-        ) : activeTab === 'analysis' ? (
-          <MyCoachPanel />
         ) : activeTab === 'build' ? (
           <div className="space-y-6">
             {currentUser && (

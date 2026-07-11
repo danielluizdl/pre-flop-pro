@@ -14,6 +14,7 @@ import { t } from '../../i18n'
 const TrainerPage = lazy(() => import('../Trainer/TrainerPage').then(m => ({ default: m.TrainerPage })))
 const ExercisePage = lazy(() => import('../Exercise/ExercisePage').then(m => ({ default: m.ExercisePage })))
 const StatsPage = lazy(() => import('../Stats/StatsPage').then(m => ({ default: m.StatsPage })))
+const AnalysisPage = lazy(() => import('../Analysis/AnalysisPage').then(m => ({ default: m.AnalysisPage })))
 const CoachPanel = lazy(() => import('../Admin/CoachPanel'))
 // Fluxo de criação/edição de range e detalhe de categoria não estão na carga
 // inicial (só via navegação) → lazy para enxugar o chunk principal.
@@ -47,6 +48,7 @@ export function AppLayout() {
       case 'table-editor': return <TableEditorPage />
       case 'drill':        return <TrainerPage />
       case 'exercise':     return <ExercisePage />
+      case 'analysis':     return <AnalysisPage />
       case 'history':         return <StatsPage />
       case 'category-detail': return <CategoryDetailPage />
       case 'account':         return <AccountPage />
