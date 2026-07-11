@@ -1233,6 +1233,8 @@ export const useStore = create<AppState>()(
           stackGridIdx: activeDrillStackGridIdx,
           session_uuid: get().sessionUuid || null,
           client_event_id: crypto.randomUUID(),
+          suits: currentHandSuits,
+          raiseSize: d?.size ?? null,
         }, get().authToken)
 
         const rngTag = useRngForFrequency ? t.feedback.rngTag(currentRng) : ''
@@ -1284,6 +1286,7 @@ export const useStore = create<AppState>()(
             durationSeconds: session.durationSeconds,
             startedAt: Math.floor(sessionStartTime / 1000),
             session_uuid: get().sessionUuid || null,
+            tableSize: session.tableSize,
           }, get().authToken)
         }
         set({
@@ -1409,6 +1412,8 @@ export const useStore = create<AppState>()(
           roundsTotal: buildRounds.length,
           session_uuid: get().buildSessionUuid || null,
           client_event_id: crypto.randomUUID(),
+          userGrid: encodeSparse(userGrid),
+          answerGrid: encodeSparse(round.grid),
           ...(Object.keys(wrongHands).length > 0 ? { wrongHands } : {}),
         }, get().authToken)
       },

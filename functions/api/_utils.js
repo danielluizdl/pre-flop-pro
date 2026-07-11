@@ -93,6 +93,28 @@ export function isShortStr(v, max) {
   return typeof v === 'string' && v.length <= max
 }
 
+// Valida um grid esparso (só as mãos jogáveis, formato de src/utils/sparseGrid.ts)
+// vindo do cliente antes de gravar em D1 — usado pelo replay do Range Check
+// (userGrid/answerGrid). Cada célula tem fold/call/raise/allin numéricos
+// 0-100, extra opcional e size opcional (número ou texto curto do raise).
+export function validateSparseGrid(v) {
+  if (v === null || v === undefined) return true
+  if (typeof v !== 'object' || Array.isArray(v)) return false
+  const keys = Object.keys(v)
+  if (keys.length > 169) return false
+  for (const k of keys) {
+    if (!isHand(k)) return false
+    const cell = v[k]
+    if (!cell || typeof cell !== 'object') return false
+    for (const f of ['fold', 'call', 'raise', 'allin']) {
+      if (typeof cell[f] !== 'number' || !Number.isFinite(cell[f]) || cell[f] < 0 || cell[f] > 100) return false
+    }
+    if (cell.extra !== undefined && (typeof cell.extra !== 'number' || !Number.isFinite(cell.extra) || cell.extra < 0 || cell.extra > 100)) return false
+    if (cell.size !== undefined && typeof cell.size !== 'number' && !isShortStr(cell.size, 20)) return false
+  }
+  return true
+}
+
 // Rate limit em memória (Map no escopo do módulo): best-effort, reseta a cada
 // novo isolate do Pages Functions. Complementar com WAF/Turnstile no Cloudflare.
 const RATE_LIMIT_MAX = 8

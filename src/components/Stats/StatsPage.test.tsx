@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { axe } from 'jest-axe'
 import { StatsPage } from './StatsPage'
@@ -11,9 +11,16 @@ const SESSION: TrainingSession = {
   hands: 50, correct: 44, errors: 6, consults: 2, durationSeconds: 300,
 }
 
+const CLOUD_USER = { id: 1, username: 'p1', name: 'P1', email: '', role: 'player' as const, firstLogin: false, tier: '', turma: null }
+
 function rangeNamed(name: string, id: number, extra: Partial<Range> = {}): Range {
   return { id, name, positions: ['BTN'], grid: makeEmptyGrid(), scenarios: [], tableSize: 6, ...extra }
 }
+
+afterEach(() => {
+  vi.restoreAllMocks()
+  useStore.setState({ authToken: null })
+})
 
 describe('StatsPage', () => {
   it('mostra o cabeçalho e o estado vazio sem sessões', () => {
@@ -250,5 +257,78 @@ describe('StatsPage', () => {
     useStore.setState({ trainingHistory: [SESSION], currentUser: null })
     const { container } = render(<StatsPage />)
     expect((await axe(container)).violations).toEqual([])
+  })
+
+  it('logado: a lista de sessões do Drill vem do servidor, e o detalhe busca o replay sob demanda', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('view=sessions')) {
+        return Promise.resolve({ json: () => Promise.resolve({ rows: [{
+          id: 9, range_names: JSON.stringify(['BTN RFI']), table_size: 8,
+          hands: 1, correct: 1, errors: 0, consults: 0, duration_seconds: 30,
+          started_at: 1720000000, session_uuid: 'sess-uuid-1',
+        }] }) }) as unknown as Promise<Response>
+      }
+      if (url.includes('view=session-hands')) {
+        return Promise.resolve({ json: () => Promise.resolve({ rows: [{
+          hand: 'AKs', actionTaken: 'Raise', correctAction: 'Raise', isCorrect: 1,
+          severity: null, rng: 50, stackRange: null, stackGridIdx: -1, suits: 'hd',
+          raiseSize: null, rangeId: 42, rangeName: 'BTN RFI', createdAt: 1720000001,
+        }] }) }) as unknown as Promise<Response>
+      }
+      return Promise.resolve({ json: () => Promise.resolve({ rows: [] }) }) as unknown as Promise<Response>
+    })
+    useStore.setState({ trainingHistory: [], ranges: [], currentUser: CLOUD_USER, authToken: 'tok' })
+    render(<StatsPage />)
+
+    expect(await screen.findByText('BTN RFI')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Ver detalhes' }))
+    // "Mãos da sessão" e "(1)" ficam em spans separados — casa pelo textContent do pai.
+    expect(await screen.findByText((_, node) => node?.textContent === 'Mãos da sessão (1)')).toBeInTheDocument()
+  })
+
+  it('logado: erro ao carregar sessões do Drill mostra retry que recarrega', async () => {
+    let attempt = 0
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => {
+      attempt++
+      if (attempt === 1) return Promise.reject(new Error('network'))
+      return Promise.resolve({ json: () => Promise.resolve({ rows: [] }) }) as unknown as Promise<Response>
+    })
+    useStore.setState({ trainingHistory: [], ranges: [], currentUser: CLOUD_USER, authToken: 'tok' })
+    render(<StatsPage />)
+
+    const retry = await screen.findByRole('button', { name: 'Tentar novamente' })
+    fireEvent.click(retry)
+    expect(await screen.findByText('Nenhuma sessão registrada ainda.')).toBeInTheDocument()
+  })
+
+  it('logado: Range Check busca a lista e os rounds da nuvem ao abrir a sessão', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('view=build-sessions')) {
+        return Promise.resolve({ json: () => Promise.resolve({ rows: [{
+          sessionUuid: 'build-uuid-1', rounds: 1, avgScore: 91.5, startedAt: 1720000000,
+          rangeNames: 'STR SQZ vs RFI', durationSeconds: 60, roundsTotal: 1,
+        }] }) }) as unknown as Promise<Response>
+      }
+      if (url.includes('view=build-session-rounds')) {
+        return Promise.resolve({ json: () => Promise.resolve({ rows: [{
+          rangeId: 5, rangeName: 'STR SQZ vs RFI', stackRange: null, score: 91.5, attempt: 1,
+          userGrid: JSON.stringify({ AA: { fold: 0, call: 0, raise: 100, allin: 0 } }),
+          answerGrid: JSON.stringify({ AA: { fold: 0, call: 0, raise: 100, allin: 0 } }),
+          createdAt: 1720000001,
+        }] }) }) as unknown as Promise<Response>
+      }
+      return Promise.resolve({ json: () => Promise.resolve({ rows: [] }) }) as unknown as Promise<Response>
+    })
+    useStore.setState({ trainingHistory: [], buildHistory: [], ranges: [], currentUser: CLOUD_USER, authToken: 'tok' })
+    render(<StatsPage />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Range Check' }))
+    expect(await screen.findByText('91.5')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('91.5'))
+    // "91.5/100" só aparece na linha do round depois de buscar os rounds da
+    // nuvem — prova que a hidratação sob demanda funcionou.
+    expect(await screen.findByText('91.5/100')).toBeInTheDocument()
   })
 })

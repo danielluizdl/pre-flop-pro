@@ -1,4 +1,4 @@
-import { getAuthUser, json, handleOptions, isUuidOrNull, isShortStr, isHand } from '../_utils.js'
+import { getAuthUser, json, handleOptions, isUuidOrNull, isShortStr, isHand, validateSparseGrid } from '../_utils.js'
 
 export function validateWrongHands(v) {
   if (v === null || v === undefined) return true
@@ -23,6 +23,8 @@ export function validateRangeBuildPayload(body) {
   if (!isUuidOrNull(body.session_uuid)) return false
   if (!isUuidOrNull(body.client_event_id)) return false
   if (!validateWrongHands(body.wrongHands)) return false
+  if (!validateSparseGrid(body.userGrid)) return false
+  if (!validateSparseGrid(body.answerGrid)) return false
   return true
 }
 
@@ -44,27 +46,39 @@ export async function onRequest(context) {
 
   const { rangeId, rangeName, stackRange, score, attempt, roundsTotal } = body
   const wrongHands = body.wrongHands && Object.keys(body.wrongHands).length > 0 ? JSON.stringify(body.wrongHands) : null
+  const userGrid = body.userGrid && Object.keys(body.userGrid).length > 0 ? JSON.stringify(body.userGrid) : null
+  const answerGrid = body.answerGrid && Object.keys(body.answerGrid).length > 0 ? JSON.stringify(body.answerGrid) : null
 
   // Fail-open enquanto as migrações não forem aplicadas: um 500 aqui travaria
-  // a fila FIFO de telemetria do cliente (flush para em erro != 400). Se a
-  // coluna wrong_hands (schema_v8) ainda não existir, regrava sem ela.
+  // a fila FIFO de telemetria do cliente (flush para em erro != 400). Se as
+  // colunas novas (wrong_hands do schema_v8, user_grid/answer_grid do
+  // schema_v9) ainda não existirem, regrava sem elas.
   try {
     await env.DB.prepare(
-      'INSERT OR IGNORE INTO range_build_events (user_id, range_id, range_name, stack_range, score, attempt, rounds_total, session_uuid, client_event_id, wrong_hands) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      'INSERT OR IGNORE INTO range_build_events (user_id, range_id, range_name, stack_range, score, attempt, rounds_total, session_uuid, client_event_id, wrong_hands, user_grid, answer_grid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     ).bind(
       user.id, rangeId, String(rangeName ?? ''), stackRange ?? null, score, attempt ?? 1, roundsTotal ?? null,
-      body.session_uuid ?? null, body.client_event_id ?? null, wrongHands
+      body.session_uuid ?? null, body.client_event_id ?? null, wrongHands, userGrid, answerGrid
     ).run()
   } catch {
     try {
       await env.DB.prepare(
-        'INSERT OR IGNORE INTO range_build_events (user_id, range_id, range_name, stack_range, score, attempt, rounds_total, session_uuid, client_event_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        'INSERT OR IGNORE INTO range_build_events (user_id, range_id, range_name, stack_range, score, attempt, rounds_total, session_uuid, client_event_id, wrong_hands) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
       ).bind(
         user.id, rangeId, String(rangeName ?? ''), stackRange ?? null, score, attempt ?? 1, roundsTotal ?? null,
-        body.session_uuid ?? null, body.client_event_id ?? null
+        body.session_uuid ?? null, body.client_event_id ?? null, wrongHands
       ).run()
     } catch {
-      return json({ ok: false, code: 'db_error' })
+      try {
+        await env.DB.prepare(
+          'INSERT OR IGNORE INTO range_build_events (user_id, range_id, range_name, stack_range, score, attempt, rounds_total, session_uuid, client_event_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        ).bind(
+          user.id, rangeId, String(rangeName ?? ''), stackRange ?? null, score, attempt ?? 1, roundsTotal ?? null,
+          body.session_uuid ?? null, body.client_event_id ?? null
+        ).run()
+      } catch {
+        return json({ ok: false, code: 'db_error' })
+      }
     }
   }
 

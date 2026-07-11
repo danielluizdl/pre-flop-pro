@@ -8,7 +8,8 @@ export async function onRequest(context) {
   const user = await getAuthUser(request, env)
   if (!user) return json({ error: 'Unauthorized' }, 401)
 
-  const view = new URL(request.url).searchParams.get('view') ?? 'overview'
+  const url = new URL(request.url)
+  const view = url.searchParams.get('view') ?? 'overview'
   const uid = user.id
 
   if (view === 'overview') {
@@ -84,6 +85,25 @@ export async function onRequest(context) {
     return json({ view, rows: r.results ?? [] })
   }
 
+  // Replay mão a mão de uma sessão de Drill específica — sob demanda (o
+  // detalhe só é buscado quando o jogador abre a sessão na lista).
+  if (view === 'session-hands') {
+    const sessionUuid = url.searchParams.get('session_uuid')
+    if (!sessionUuid) return json({ error: 'session_uuid obrigatório' }, 400)
+    try {
+      const r = await env.DB.prepare(
+        `SELECT hand, action_taken AS actionTaken, correct_action AS correctAction, is_correct AS isCorrect,
+          severity, rng, stack_range AS stackRange, stack_grid_idx AS stackGridIdx, suits, raise_size AS raiseSize,
+          range_id AS rangeId, range_name AS rangeName, created_at AS createdAt
+         FROM hand_events WHERE user_id = ? AND session_uuid = ?
+         ORDER BY created_at ASC, id ASC`
+      ).bind(uid, sessionUuid).all()
+      return json({ view, rows: r.results ?? [] })
+    } catch {
+      return json({ view, rows: [] })
+    }
+  }
+
   // Views do modo Range Check. Fail-open: range_build_events (schema_v4) e
   // range_build_sessions (schema_v8) podem não existir — devolve zeros/vazio.
   if (view === 'build-overview') {
@@ -139,7 +159,8 @@ export async function onRequest(context) {
     try {
       const r = await env.DB.prepare(
         `SELECT session_uuid AS sessionUuid, COUNT(*) AS rounds,
-          ROUND(AVG(score), 1) AS avgScore, MIN(created_at) AS startedAt
+          ROUND(AVG(score), 1) AS avgScore, MIN(created_at) AS startedAt,
+          GROUP_CONCAT(DISTINCT range_name) AS rangeNames
          FROM range_build_events WHERE user_id = ? AND session_uuid IS NOT NULL
          GROUP BY session_uuid ORDER BY startedAt DESC LIMIT 100`
       ).bind(uid).all()
@@ -158,6 +179,24 @@ export async function onRequest(context) {
       })
     } catch { /* tabela ausente: sessões saem sem duração */ }
     return json({ view, rows })
+  }
+
+  // Replay rodada a rodada de uma sessão de Range Check específica — sob
+  // demanda, igual ao session-hands do Drill.
+  if (view === 'build-session-rounds') {
+    const sessionUuid = url.searchParams.get('session_uuid')
+    if (!sessionUuid) return json({ error: 'session_uuid obrigatório' }, 400)
+    try {
+      const r = await env.DB.prepare(
+        `SELECT range_id AS rangeId, range_name AS rangeName, stack_range AS stackRange, score, attempt,
+          user_grid AS userGrid, answer_grid AS answerGrid, created_at AS createdAt
+         FROM range_build_events WHERE user_id = ? AND session_uuid = ?
+         ORDER BY created_at ASC, id ASC`
+      ).bind(uid, sessionUuid).all()
+      return json({ view, rows: r.results ?? [] })
+    } catch {
+      return json({ view, rows: [] })
+    }
   }
 
   return json({ error: 'view inválida' }, 400)

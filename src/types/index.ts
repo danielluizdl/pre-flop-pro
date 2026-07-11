@@ -148,6 +148,9 @@ export interface TrainingSession {
   handPerf?: Record<string, Record<string, { c: number; t: number }>>
   // Log mão a mão da sessão (cap 500) — sessões antigas não têm.
   handLog?: HandHistoryEntry[]
+  // Sessão vinda da nuvem (functions/api/me/stats view=sessions) — usado pra
+  // buscar o replay (view=session-hands) sob demanda ao abrir o detalhe.
+  sessionUuid?: string
 }
 
 export interface BuildRound {
@@ -187,6 +190,9 @@ export interface BuildSession {
   rangeNames: string[]
   rounds: BuildHistoryRound[]
   avgScore: number
+  // Sessão vinda da nuvem (functions/api/me/stats view=build-sessions) — usado
+  // pra buscar os rounds (view=build-session-rounds) sob demanda ao abrir.
+  sessionUuid?: string
 }
 
 // ── Table position definitions ───────────────────────────────────────────────

@@ -1,12 +1,13 @@
 ﻿import { useState, useEffect } from 'react'
 import { useStore } from '../../store/useStore'
-import type { BuildHistoryRound, Range, TrainingSession } from '../../types'
+import type { BuildHistoryRound, BuildSession, HandData, HandHistoryEntry, Range, TrainingSession } from '../../types'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import { PageTutorialButton } from '../ui/PageTutorialButton'
 import { MyAccountStats } from './MyAccountStats'
 import { BuildAccountStats } from './BuildAccountStats'
 import { MyCoachPanel } from './MyCoachPanel'
 import { AccuracySparkline } from './AccuracySparkline'
+import { Skeleton } from '../ui/Skeleton'
 import { t, dateLocale } from '../../i18n'
 import { downloadText } from '../../utils/download'
 import { buildSessionCsv, sessionCsvFilename } from '../../utils/sessionCsv'
@@ -34,6 +35,120 @@ function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60)
   const s = seconds % 60
   return m > 0 ? `${m}m ${s}s` : `${s}s`
+}
+
+/* ── Histórico na nuvem — a lista vem do servidor pra quem está logado
+   (functions/api/me/stats), o replay de cada sessão é buscado sob demanda
+   só quando abre o detalhe, pra não pesar a lista inteira de uma vez. ────── */
+
+function mapCloudSession(row: Record<string, unknown>): TrainingSession {
+  let rangeNames: string[] = []
+  try { rangeNames = JSON.parse(String(row.range_names ?? '[]')) } catch { /* mantém vazio */ }
+  return {
+    id: Number(row.id),
+    timestamp: Number(row.started_at ?? 0) * 1000,
+    rangeNames,
+    tableSize: Number(row.table_size ?? 8),
+    hands: Number(row.hands ?? 0),
+    correct: Number(row.correct ?? 0),
+    errors: Number(row.errors ?? 0),
+    consults: Number(row.consults ?? 0),
+    durationSeconds: Number(row.duration_seconds ?? 0),
+    sessionUuid: (row.session_uuid as string | null) ?? undefined,
+  }
+}
+
+function mapCloudHandRow(row: Record<string, unknown>): HandHistoryEntry {
+  const suits = typeof row.suits === 'string' ? row.suits : ''
+  return {
+    id: Number(row.createdAt ?? Date.now()),
+    hand: String(row.hand),
+    suits: [suits[0] ?? 's', suits[1] ?? 'h'],
+    actionTaken: String(row.actionTaken),
+    correctAction: String(row.correctAction),
+    rng: Number(row.rng ?? 0),
+    correct: row.isCorrect === 1,
+    rangeName: String(row.rangeName ?? ''),
+    rangeId: Number(row.rangeId),
+    stackGridIdx: Number(row.stackGridIdx ?? -1),
+    raiseSize: (row.raiseSize as string | null) ?? undefined,
+    stackRange: (row.stackRange as string | null) ?? undefined,
+    severity: (row.severity as 'grave' | 'impreciso' | null) ?? undefined,
+  }
+}
+
+// Deriva handPerf (heatmap por range/mão) direto do log — mais preciso que
+// guardar um agregado à parte, já que vem da mesma fonte de verdade.
+function computeHandPerf(handLog: HandHistoryEntry[]): Record<string, Record<string, { c: number; t: number }>> {
+  const map: Record<string, Record<string, { c: number; t: number }>> = {}
+  const bump = (key: string, hand: string, correct: boolean) => {
+    if (!map[key]) map[key] = {}
+    const prev = map[key][hand] ?? { c: 0, t: 0 }
+    map[key][hand] = { c: prev.c + (correct ? 1 : 0), t: prev.t + 1 }
+  }
+  for (const e of handLog) {
+    bump(String(e.rangeId), e.hand, e.correct)
+    if (e.stackRange) bump(`${e.rangeId}|||${e.stackRange}`, e.hand, e.correct)
+  }
+  return map
+}
+
+// rangeIds não vem no registro da sessão em si (só rangeNames) — resolve pelo
+// primeiro hand_event de cada nome, na mesma ordem de rangeNames.
+function deriveRangeIds(rangeNames: string[], handLog: HandHistoryEntry[]): number[] {
+  const ids: number[] = []
+  for (const name of rangeNames) {
+    const found = handLog.find(e => e.rangeName === name)
+    if (found) ids.push(found.rangeId)
+  }
+  return ids
+}
+
+async function fetchSessionHandLog(sessionUuid: string, authToken: string): Promise<HandHistoryEntry[]> {
+  const res = await fetch(`/api/me/stats?view=session-hands&session_uuid=${encodeURIComponent(sessionUuid)}`, {
+    headers: { Authorization: `Bearer ${authToken}` },
+  })
+  const data = await res.json()
+  return ((data.rows ?? []) as Record<string, unknown>[]).map(mapCloudHandRow)
+}
+
+function mapCloudBuildSession(row: Record<string, unknown>): BuildSession {
+  const rangeNames = typeof row.rangeNames === 'string' ? row.rangeNames.split(',') : []
+  const startedAt = Number(row.startedAt ?? 0)
+  return {
+    id: startedAt || Date.now(),
+    timestamp: startedAt * 1000,
+    rangeNames,
+    rounds: [],
+    avgScore: Number(row.avgScore ?? 0),
+    sessionUuid: (row.sessionUuid as string | null) ?? undefined,
+  }
+}
+
+function mapCloudBuildRound(row: Record<string, unknown>): BuildHistoryRound {
+  let userGrid: Record<string, HandData> | undefined
+  let answerGrid: Record<string, HandData> | undefined
+  try { userGrid = row.userGrid ? JSON.parse(String(row.userGrid)) : undefined } catch { /* sem replay */ }
+  try { answerGrid = row.answerGrid ? JSON.parse(String(row.answerGrid)) : undefined } catch { /* sem replay */ }
+  const rangeName = String(row.rangeName ?? '')
+  const stackRange = (row.stackRange as string | null) ?? undefined
+  return {
+    label: stackRange ? `${rangeName} — ${stackRange}` : rangeName,
+    score: Number(row.score ?? 0),
+    attempt: Number(row.attempt ?? 1),
+    rangeId: Number(row.rangeId),
+    stackRange,
+    userGrid,
+    answerGrid,
+  }
+}
+
+async function fetchBuildSessionRounds(sessionUuid: string, authToken: string): Promise<BuildHistoryRound[]> {
+  const res = await fetch(`/api/me/stats?view=build-session-rounds&session_uuid=${encodeURIComponent(sessionUuid)}`, {
+    headers: { Authorization: `Bearer ${authToken}` },
+  })
+  const data = await res.json()
+  return ((data.rows ?? []) as Record<string, unknown>[]).map(mapCloudBuildRound)
 }
 
 /* ── Detalhe de sessão ─────────────────────────────────────────────────────── */
@@ -457,11 +572,75 @@ function BuildRoundReplay({ round }: { round: BuildHistoryRound }) {
 
 function BuildHistoryPanel() {
   const buildHistory = useStore(s => s.buildHistory)
+  const currentUser   = useStore(s => s.currentUser)
+  const authToken     = useStore(s => s.authToken)
+
   const [openId, setOpenId] = useState<number | null>(null)
   const [openRound, setOpenRound] = useState<string | null>(null)
 
-  const sessions = [...buildHistory].reverse()
+  const [cloudSessions, setCloudSessions]       = useState<BuildSession[] | null>(null)
+  const [cloudRoundCounts, setCloudRoundCounts] = useState<Record<number, number>>({})
+  const [cloudError, setCloudError]             = useState(false)
+  const [cloudRetry, setCloudRetry]             = useState(0)
+  const [hydrated, setHydrated]                 = useState<Record<number, BuildHistoryRound[]>>({})
+  const [loadingRounds, setLoadingRounds]       = useState<Set<number>>(new Set())
+
+  useEffect(() => {
+    if (!currentUser || !authToken) { setCloudSessions(null); return }
+    let cancelled = false
+    setCloudError(false)
+    fetch('/api/me/stats?view=build-sessions', { headers: { Authorization: `Bearer ${authToken}` } })
+      .then(r => r.json())
+      .then(data => {
+        if (cancelled) return
+        const rows = (data.rows ?? []) as Record<string, unknown>[]
+        const mapped = rows.map(mapCloudBuildSession)
+        const counts: Record<number, number> = {}
+        rows.forEach((row, i) => { counts[mapped[i].id] = Number(row.rounds ?? 0) })
+        setCloudSessions(mapped)
+        setCloudRoundCounts(counts)
+      })
+      .catch(() => { if (!cancelled) { setCloudError(true); setCloudSessions([]) } })
+    return () => { cancelled = true }
+  }, [currentUser, authToken, cloudRetry])
+
+  const sessions = currentUser ? (cloudSessions ?? []) : [...buildHistory].reverse()
+  const loading  = !!currentUser && cloudSessions === null && !cloudError
   const paged = usePagedList(sessions)
+
+  async function handleOpenSession(s: BuildSession) {
+    const isOpen = openId === s.id
+    setOpenId(isOpen ? null : s.id)
+    if (isOpen || !currentUser || !authToken || !s.sessionUuid || hydrated[s.id]) return
+    setLoadingRounds(prev => new Set(prev).add(s.id))
+    try {
+      const rounds = await fetchBuildSessionRounds(s.sessionUuid, authToken)
+      setHydrated(prev => ({ ...prev, [s.id]: rounds }))
+    } catch { /* sem replay — a sessão continua mostrando nota/data normalmente */ }
+    setLoadingRounds(prev => { const next = new Set(prev); next.delete(s.id); return next })
+  }
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-3" role="status" aria-busy="true" aria-label={t.myAccount.loadingCloud}>
+        {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
+      </div>
+    )
+  }
+
+  if (cloudError && sessions.length === 0) {
+    return (
+      <div className="py-8 text-center space-y-3">
+        <p className="text-red-400 text-sm">{t.myAccount.statsLoadError}</p>
+        <button
+          onClick={() => setCloudRetry(n => n + 1)}
+          className="text-sm font-semibold px-4 py-2 rounded-lg border border-warm-600 bg-warm-800 text-warm-200 hover:bg-warm-700 transition-colors"
+        >
+          {t.common.retry}
+        </button>
+      </div>
+    )
+  }
 
   if (sessions.length === 0) {
     return (
@@ -475,11 +654,13 @@ function BuildHistoryPanel() {
   return (
     <div className="flex flex-col gap-3">
       {paged.visible.map(s => {
-        const isOpen = openId === s.id
+        const isOpen  = openId === s.id
+        const rounds  = currentUser ? (hydrated[s.id] ?? []) : s.rounds
+        const roundsN = currentUser ? (cloudRoundCounts[s.id] ?? rounds.length) : s.rounds.length
         return (
           <div key={s.id} className="card-surface p-4">
             <button
-              onClick={() => setOpenId(isOpen ? null : s.id)}
+              onClick={() => { void handleOpenSession(s) }}
               aria-expanded={isOpen}
               className="w-full flex gap-4 items-start text-left"
             >
@@ -490,7 +671,7 @@ function BuildHistoryPanel() {
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span className="text-xs text-warm-400">{formatDate(s.timestamp)}</span>
                   <span className="text-xs text-warm-600">·</span>
-                  <span className="text-xs text-warm-400">{t.exercise.roundsCount(s.rounds.length)}</span>
+                  <span className="text-xs text-warm-400">{t.exercise.roundsCount(roundsN)}</span>
                 </div>
                 <div className="font-display uppercase text-warm-100 truncate leading-none" style={{ fontSize:18, letterSpacing:'0.03em' }}>
                   {s.rangeNames.join(' · ') || t.stats.noName}
@@ -500,44 +681,48 @@ function BuildHistoryPanel() {
             </button>
             {isOpen && (
               <div className="mt-3 pt-3 border-t border-warm-700/60 space-y-1.5">
-                {s.rounds.map((r, i) => {
-                  const roundKey = `${s.id}:${i}`
-                  const hasReplay = !!r.userGrid
-                  const isRoundOpen = openRound === roundKey
-                  const row = (
-                    <>
-                      <span className="flex items-center gap-2 min-w-0">
-                        {hasReplay && (
-                          <span className={`text-warm-400 transition-transform duration-200 inline-block flex-shrink-0 ${isRoundOpen ? 'rotate-90' : ''}`}>›</span>
+                {loadingRounds.has(s.id) ? (
+                  <p className="text-warm-500 text-xs py-2 text-center">{t.common.loading}</p>
+                ) : (
+                  rounds.map((r, i) => {
+                    const roundKey = `${s.id}:${i}`
+                    const hasReplay = !!r.userGrid
+                    const isRoundOpen = openRound === roundKey
+                    const row = (
+                      <>
+                        <span className="flex items-center gap-2 min-w-0">
+                          {hasReplay && (
+                            <span className={`text-warm-400 transition-transform duration-200 inline-block flex-shrink-0 ${isRoundOpen ? 'rotate-90' : ''}`}>›</span>
+                          )}
+                          <span className="text-warm-200 truncate">{r.label}</span>
+                          {(r.attempt ?? 1) > 1 && (
+                            <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-500/10 border border-brand-500/40 text-brand-400 flex-shrink-0">
+                              {t.exercise.attemptN(r.attempt!)}
+                            </span>
+                          )}
+                        </span>
+                        <span className={`font-bold tabular-nums flex-shrink-0 ${buildScoreColor(r.score)}`}>
+                          {t.exercise.scoreOf(String(r.score))}
+                        </span>
+                      </>
+                    )
+                    return (
+                      <div key={roundKey}>
+                        {hasReplay ? (
+                          <button
+                            onClick={() => setOpenRound(isRoundOpen ? null : roundKey)}
+                            className="w-full flex items-center justify-between gap-2 text-sm text-left hover:brightness-125 transition-all"
+                          >
+                            {row}
+                          </button>
+                        ) : (
+                          <div className="flex items-center justify-between gap-2 text-sm">{row}</div>
                         )}
-                        <span className="text-warm-200 truncate">{r.label}</span>
-                        {(r.attempt ?? 1) > 1 && (
-                          <span className="px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold bg-brand-500/10 border border-brand-500/40 text-brand-400 flex-shrink-0">
-                            {t.exercise.attemptN(r.attempt!)}
-                          </span>
-                        )}
-                      </span>
-                      <span className={`font-bold tabular-nums flex-shrink-0 ${buildScoreColor(r.score)}`}>
-                        {t.exercise.scoreOf(String(r.score))}
-                      </span>
-                    </>
-                  )
-                  return (
-                    <div key={roundKey}>
-                      {hasReplay ? (
-                        <button
-                          onClick={() => setOpenRound(isRoundOpen ? null : roundKey)}
-                          className="w-full flex items-center justify-between gap-2 text-sm text-left hover:brightness-125 transition-all"
-                        >
-                          {row}
-                        </button>
-                      ) : (
-                        <div className="flex items-center justify-between gap-2 text-sm">{row}</div>
-                      )}
-                      {isRoundOpen && hasReplay && <BuildRoundReplay round={r} />}
-                    </div>
-                  )
-                })}
+                        {isRoundOpen && hasReplay && <BuildRoundReplay round={r} />}
+                      </div>
+                    )
+                  })
+                )}
               </div>
             )}
           </div>
@@ -553,15 +738,46 @@ export function StatsPage() {
   const trainingHistory = useStore(s => s.trainingHistory)
   const ranges          = useStore(s => s.ranges)
   const currentUser     = useStore(s => s.currentUser)
+  const authToken       = useStore(s => s.authToken)
 
   const [activeTab, setActiveTab]         = useState<'sessions' | 'build' | 'global' | 'cloud' | 'analysis'>('sessions')
   const [selectedSession, setSelectedSession] = useState<TrainingSession | null>(null)
 
-  const sessions = [...trainingHistory].reverse()
+  // Pra quem está logado, a lista vem do servidor (permanente, entre
+  // navegadores) em vez do localStorage — o replay de cada sessão é buscado
+  // sob demanda em handleViewSession, só quando abre o detalhe.
+  const [cloudSessions, setCloudSessions] = useState<TrainingSession[] | null>(null)
+  const [cloudError, setCloudError]       = useState(false)
+  const [cloudRetry, setCloudRetry]       = useState(0)
+
+  useEffect(() => {
+    if (!currentUser || !authToken) { setCloudSessions(null); return }
+    let cancelled = false
+    setCloudError(false)
+    fetch('/api/me/stats?view=sessions', { headers: { Authorization: `Bearer ${authToken}` } })
+      .then(r => r.json())
+      .then(data => { if (!cancelled) setCloudSessions(((data.rows ?? []) as Record<string, unknown>[]).map(mapCloudSession)) })
+      .catch(() => { if (!cancelled) { setCloudError(true); setCloudSessions([]) } })
+    return () => { cancelled = true }
+  }, [currentUser, authToken, cloudRetry])
+
+  const sessions = currentUser ? (cloudSessions ?? []) : [...trainingHistory].reverse()
+  const sessionsLoading = !!currentUser && cloudSessions === null && !cloudError
   const pagedSessions = usePagedList(sessions)
-  const totalHands   = trainingHistory.reduce((s, x) => s + x.hands, 0)
-  const totalCorrect = trainingHistory.reduce((s, x) => s + x.correct, 0)
+  const totalHands   = sessions.reduce((s, x) => s + x.hands, 0)
+  const totalCorrect = sessions.reduce((s, x) => s + x.correct, 0)
   const globalAccuracy = totalHands > 0 ? Math.round((totalCorrect / totalHands) * 100) : null
+
+  async function handleViewSession(s: TrainingSession) {
+    setSelectedSession(s)
+    if (!currentUser || !authToken || !s.sessionUuid) return
+    try {
+      const handLog = await fetchSessionHandLog(s.sessionUuid, authToken)
+      const handPerf = computeHandPerf(handLog)
+      const rangeIds = deriveRangeIds(s.rangeNames, handLog)
+      setSelectedSession(prev => (prev && prev.id === s.id ? { ...prev, handLog, handPerf, rangeIds } : prev))
+    } catch { /* mantém sem replay — SessionDetailView já trata esse caso */ }
+  }
 
   return (
     <div className="space-y-4">
@@ -650,8 +866,22 @@ export function StatsPage() {
                   ))}
                 </div>
               )}
-              <AccuracySparkline sessions={trainingHistory} />
-              {sessions.length === 0 ? (
+              <AccuracySparkline sessions={[...sessions].reverse()} />
+              {sessionsLoading ? (
+                <div className="flex flex-col gap-3" role="status" aria-busy="true" aria-label={t.myAccount.loadingCloud}>
+                  {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
+                </div>
+              ) : cloudError && sessions.length === 0 ? (
+                <div className="py-8 text-center space-y-3">
+                  <p className="text-red-400 text-sm">{t.myAccount.statsLoadError}</p>
+                  <button
+                    onClick={() => setCloudRetry(n => n + 1)}
+                    className="text-sm font-semibold px-4 py-2 rounded-lg border border-warm-600 bg-warm-800 text-warm-200 hover:bg-warm-700 transition-colors"
+                  >
+                    {t.common.retry}
+                  </button>
+                </div>
+              ) : sessions.length === 0 ? (
                 <div className="text-center py-16">
                   <p className="text-warm-400 text-sm">{t.stats.noSessions}</p>
                   <p className="text-warm-500 text-xs mt-1">{t.stats.completeToSeeHistory}</p>
@@ -659,7 +889,7 @@ export function StatsPage() {
               ) : (
                 <div className="flex flex-col gap-3">
                   {pagedSessions.visible.map(s => (
-                    <SessionCard key={s.id} session={s} onView={() => setSelectedSession(s)} />
+                    <SessionCard key={s.id} session={s} onView={() => { void handleViewSession(s) }} />
                   ))}
                   <ShowMoreButton remaining={pagedSessions.remaining} onClick={pagedSessions.showMore} />
                 </div>

@@ -11,6 +11,7 @@ import {
   isAllowedOrigin,
   escapeHtml,
   logAdminAction,
+  validateSparseGrid,
 } from './_utils.js'
 
 describe('hashPassword', () => {
@@ -165,6 +166,49 @@ describe('escapeHtml', () => {
   it('lida com null/undefined sem lançar', () => {
     expect(escapeHtml(null)).toBe('')
     expect(escapeHtml(undefined)).toBe('')
+  })
+})
+
+describe('validateSparseGrid', () => {
+  it('aceita ausente/nulo e objeto vazio', () => {
+    expect(validateSparseGrid(undefined)).toBe(true)
+    expect(validateSparseGrid(null)).toBe(true)
+    expect(validateSparseGrid({})).toBe(true)
+  })
+
+  it('aceita grid esparso válido com extra e size', () => {
+    expect(validateSparseGrid({
+      AKs: { fold: 0, call: 50, raise: 50, allin: 0 },
+      QQ: { fold: 20, call: 0, raise: 60, allin: 0, extra: 20, size: '65bb' },
+      '22': { fold: 100, call: 0, raise: 0, allin: 0, size: 3.5 },
+    })).toBe(true)
+  })
+
+  it('rejeita não-objeto e array', () => {
+    expect(validateSparseGrid('x')).toBe(false)
+    expect(validateSparseGrid([{ AKs: { fold: 0, call: 0, raise: 0, allin: 0 } }])).toBe(false)
+  })
+
+  it('rejeita chave que não é mão', () => {
+    expect(validateSparseGrid({ XYZ: { fold: 0, call: 0, raise: 0, allin: 0 } })).toBe(false)
+  })
+
+  it('rejeita célula sem fold/call/raise/allin numéricos válidos', () => {
+    expect(validateSparseGrid({ AKs: { fold: 0, call: 0, raise: 0 } })).toBe(false)
+    expect(validateSparseGrid({ AKs: { fold: '0', call: 0, raise: 0, allin: 0 } })).toBe(false)
+    expect(validateSparseGrid({ AKs: { fold: -1, call: 0, raise: 0, allin: 0 } })).toBe(false)
+    expect(validateSparseGrid({ AKs: { fold: 101, call: 0, raise: 0, allin: 0 } })).toBe(false)
+  })
+
+  it('rejeita extra/size inválidos', () => {
+    expect(validateSparseGrid({ AKs: { fold: 0, call: 0, raise: 0, allin: 0, extra: 101 } })).toBe(false)
+    expect(validateSparseGrid({ AKs: { fold: 0, call: 0, raise: 0, allin: 0, size: {} } })).toBe(false)
+  })
+
+  it('rejeita mais de 169 entradas (checagem de tamanho vem antes da validação de cada mão)', () => {
+    const big = {}
+    for (let i = 0; i < 170; i++) big[`k${i}`] = { fold: 0, call: 0, raise: 0, allin: 0 }
+    expect(validateSparseGrid(big)).toBe(false)
   })
 })
 

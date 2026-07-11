@@ -69,6 +69,14 @@ describe('validateRangeBuildPayload', () => {
     expect(validateRangeBuildPayload({ ...valid, wrongHands: null })).toBe(true)
     expect(validateRangeBuildPayload({ ...valid, wrongHands: { XYZ: 0.5 } })).toBe(false)
   })
+
+  it('aceita userGrid/answerGrid válidos ou ausentes (replay) e rejeita inválido', () => {
+    const grid = { AKs: { fold: 0, call: 50, raise: 50, allin: 0 } }
+    expect(validateRangeBuildPayload({ ...valid, userGrid: grid, answerGrid: grid })).toBe(true)
+    expect(validateRangeBuildPayload({ ...valid, userGrid: null, answerGrid: undefined })).toBe(true)
+    expect(validateRangeBuildPayload({ ...valid, userGrid: { XYZ: { fold: 0, call: 0, raise: 0, allin: 0 } } })).toBe(false)
+    expect(validateRangeBuildPayload({ ...valid, answerGrid: 'x' })).toBe(false)
+  })
 })
 
 describe('validateWrongHands', () => {
