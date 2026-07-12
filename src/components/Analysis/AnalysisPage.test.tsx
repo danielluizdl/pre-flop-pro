@@ -5,6 +5,8 @@ import { AnalysisPage } from './AnalysisPage'
 import { StatsPage } from '../Stats/StatsPage'
 import { useStore } from '../../store/useStore'
 import { invalidateAnalyticsCache } from '../../utils/analyticsCache'
+import { makeEmptyGrid } from '../../utils/hands'
+import type { Range } from '../../types'
 
 const PLAYER = { id: 7, username: 'p1', name: 'Jogador Um', email: '', role: 'player' as const, firstLogin: false, tier: 'main', turma: null }
 
@@ -107,6 +109,60 @@ describe('AnalysisPage — abas Drill/Range Check', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Range Check' }))
     await screen.findByText('Matriz do range')
     expect((await axe(container)).violations).toEqual([])
+  })
+})
+
+describe('AnalysisPage — Range Check, Por range com acertos/erros por mão', () => {
+  function mockBuildByRange() {
+    const urls: string[] = []
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      urls.push(url)
+      if (url.includes('view=build-by-range')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            rows: [{ rangeId: 1, rangeName: 'RFI CO', attempts: 12, avgScore: 87.4, correctHands: 1680, wrongHands: 348 }],
+          }),
+        } as unknown as Response)
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ rows: [], team: null, cells: [], overview: null, devices: [] }),
+      } as unknown as Response)
+    })
+    const grid = makeEmptyGrid()
+    grid['AA'] = { fold: 0, call: 0, raise: 100, allin: 0 }
+    useStore.setState({
+      authToken: 'tok',
+      currentUser: PLAYER,
+      ranges: [{ id: 1, name: 'RFI CO', positions: ['CO'], grid, scenarios: [], tableSize: 6 } as Range],
+    })
+    return urls
+  }
+
+  it('mostra tentativas/acertos/erros por mão/nota média somados de todas as tentativas do range', async () => {
+    mockBuildByRange()
+    render(<AnalysisPage />)
+    await screen.findByText('Por range')
+    fireEvent.click(screen.getByRole('button', { name: 'Range Check' }))
+    await screen.findByText('RFI CO')
+    expect(screen.getByText('12')).toBeInTheDocument()
+    expect(screen.getByText('1680')).toBeInTheDocument()
+    expect(screen.getByText('348')).toBeInTheDocument()
+    expect(screen.getByText('87.4')).toBeInTheDocument()
+  })
+
+  it('clicar na linha do range carrega a matriz (build-range-grid) daquele range', async () => {
+    const urls = mockBuildByRange()
+    render(<AnalysisPage />)
+    await screen.findByText('Por range')
+    fireEvent.click(screen.getByRole('button', { name: 'Range Check' }))
+    fireEvent.click(await screen.findByText('RFI CO'))
+    await screen.findByText((_, el) => el?.tagName === 'H2' && !!el.textContent?.includes('RFI CO'))
+    const gridCalls = urls.filter(u => u.includes('view=build-range-grid'))
+    expect(gridCalls.length).toBeGreaterThan(0)
+    expect(gridCalls[0]).toContain('rangeId=1')
   })
 })
 

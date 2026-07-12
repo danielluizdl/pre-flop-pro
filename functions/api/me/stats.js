@@ -1,4 +1,5 @@
 import { getAuthUser, json, handleOptions } from '../_utils.js'
+import { buildRangeGridCells } from '../admin/analytics.js'
 
 export async function onRequest(context) {
   const { request, env } = context
@@ -140,6 +141,7 @@ export async function onRequest(context) {
   }
 
   if (view === 'build-by-range') {
+    let rows
     try {
       const r = await env.DB.prepare(
         `SELECT range_id AS rangeId, MAX(range_name) AS rangeName, COUNT(*) AS attempts,
@@ -148,10 +150,39 @@ export async function onRequest(context) {
          FROM range_build_events WHERE user_id = ?
          GROUP BY range_id ORDER BY attempts DESC`
       ).bind(uid).all()
-      return json({ view, rows: r.results ?? [] })
+      rows = r.results ?? []
     } catch {
       return json({ view, rows: [] })
     }
+
+    // Acertos/erros por mão somados em todas as tentativas de cada range —
+    // reaproveita a mesma agregação da Matriz do range (build-range-grid),
+    // só que agrupada por range em vez de rodar pra um range só. Fail-open:
+    // wrong_hands/user_grid (schema_v9) podem não existir ainda.
+    try {
+      const raw = await env.DB.prepare(
+        'SELECT range_id AS rangeId, wrong_hands AS wrongHands, user_grid AS userGrid FROM range_build_events WHERE user_id = ?'
+      ).bind(uid).all()
+      const byRange = new Map()
+      for (const row of raw.results ?? []) {
+        const list = byRange.get(row.rangeId) ?? []
+        list.push({
+          wrongHands: row.wrongHands ? JSON.parse(row.wrongHands) : {},
+          userGrid: row.userGrid ? JSON.parse(row.userGrid) : {},
+        })
+        byRange.set(row.rangeId, list)
+      }
+      rows = rows.map(row => {
+        const cells = buildRangeGridCells(byRange.get(row.rangeId) ?? [])
+        return {
+          ...row,
+          correctHands: cells.reduce((s, c) => s + c.correct, 0),
+          wrongHands: cells.reduce((s, c) => s + (c.total - c.correct), 0),
+        }
+      })
+    } catch { /* segue sem acertos/erros por mão */ }
+
+    return json({ view, rows })
   }
 
   if (view === 'build-sessions') {

@@ -391,6 +391,8 @@ export const en: Messages = {
     colHand: 'Hand',
     colAttempts: 'Attempts',
     colCorrect: 'Correct',
+    colCorrectHands: 'Correct (hands)',
+    colWrongHands: 'Wrong (hands)',
     buildTitle: 'Range Check (account)',
     buildReplayTitle: 'Sessions & replay',
     buildNoData: 'No Range Check data on your account yet.',

@@ -48,7 +48,7 @@ function scoreColor(s: number): string {
   return s >= 80 ? 'text-emerald-400' : s >= 50 ? 'text-yellow-400' : 'text-red-400'
 }
 
-export function BuildAccountStats() {
+export function BuildAccountStats({ hideByRangeTable = false }: { hideByRangeTable?: boolean } = {}) {
   const authToken = useStore(s => s.authToken)
   const [overview, setOverview] = useState<BuildOverview | null>(null)
   const [rangeRows, setRangeRows] = useState<BuildRangeRow[]>([])
@@ -134,37 +134,39 @@ export function BuildAccountStats() {
         ))}
       </div>
 
-      <div>
-        <div className="eyebrow mb-2">{t.myAccount.buildByRange}</div>
-        {rangeRows.length === 0 ? (
-          <p className="text-warm-500 text-sm">{t.myAccount.noDataYet}</p>
-        ) : (
-          <div className="overflow-x-auto rounded-xl border border-warm-700">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-warm-800 text-warm-400 text-xs uppercase">
-                  <th className="text-left font-semibold px-3 py-2">{t.myAccount.colRange}</th>
-                  <th className="text-right font-semibold px-3 py-2">{t.myAccount.colAttempts}</th>
-                  <th className="text-right font-semibold px-3 py-2">{t.myAccount.colAvgScore}</th>
-                  <th className="text-right font-semibold px-3 py-2">{t.myAccount.colBestScore}</th>
-                  <th className="text-right font-semibold px-3 py-2">{t.myAccount.colLast}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rangeRows.map(r => (
-                  <tr key={r.rangeId} className="border-t border-warm-700/60">
-                    <td className="px-3 py-2 text-warm-100 font-semibold">{r.rangeName}</td>
-                    <td className="px-3 py-2 text-right tabular-nums text-warm-300">{r.attempts}</td>
-                    <td className={`px-3 py-2 text-right tabular-nums font-bold ${scoreColor(r.avgScore)}`}>{r.avgScore}</td>
-                    <td className="px-3 py-2 text-right tabular-nums text-brand-400">{r.bestScore}</td>
-                    <td className="px-3 py-2 text-right tabular-nums text-warm-500">{formatDate(r.lastActivity)}</td>
+      {!hideByRangeTable && (
+        <div>
+          <div className="eyebrow mb-2">{t.myAccount.buildByRange}</div>
+          {rangeRows.length === 0 ? (
+            <p className="text-warm-500 text-sm">{t.myAccount.noDataYet}</p>
+          ) : (
+            <div className="overflow-x-auto rounded-xl border border-warm-700">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-warm-800 text-warm-400 text-xs uppercase">
+                    <th className="text-left font-semibold px-3 py-2">{t.myAccount.colRange}</th>
+                    <th className="text-right font-semibold px-3 py-2">{t.myAccount.colAttempts}</th>
+                    <th className="text-right font-semibold px-3 py-2">{t.myAccount.colAvgScore}</th>
+                    <th className="text-right font-semibold px-3 py-2">{t.myAccount.colBestScore}</th>
+                    <th className="text-right font-semibold px-3 py-2">{t.myAccount.colLast}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                </thead>
+                <tbody>
+                  {rangeRows.map(r => (
+                    <tr key={r.rangeId} className="border-t border-warm-700/60">
+                      <td className="px-3 py-2 text-warm-100 font-semibold">{r.rangeName}</td>
+                      <td className="px-3 py-2 text-right tabular-nums text-warm-300">{r.attempts}</td>
+                      <td className={`px-3 py-2 text-right tabular-nums font-bold ${scoreColor(r.avgScore)}`}>{r.avgScore}</td>
+                      <td className="px-3 py-2 text-right tabular-nums text-brand-400">{r.bestScore}</td>
+                      <td className="px-3 py-2 text-right tabular-nums text-warm-500">{formatDate(r.lastActivity)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       <div>
         <div className="eyebrow mb-2">{t.myAccount.buildRecentSessions}</div>

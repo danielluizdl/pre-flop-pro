@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { BarChart3 } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { RangeHeatGrid, type GridCell } from '../Admin/RangeHeatGrid'
@@ -6,6 +6,7 @@ import { RangeActionGrid, type ActionFreq } from '../Admin/RangeActionGrid'
 import { BuildAccountStats } from '../Stats/BuildAccountStats'
 import { rangeComboStats } from '../../utils/rangeCombos'
 import { rankLeaks } from '../../utils/coachStats'
+import { captureError } from '../../utils/sentry'
 import { t } from '../../i18n'
 import {
   groupRangesByPosition, RangeSelect, accColor,
@@ -23,6 +24,42 @@ const ME_ANALYTICS = '/api/me/analytics'
 type ByRangeSortKey = 'hands' | 'accuracy' | 'graves' | 'consults'
 type LeaksSortKey = 'hand' | 'rangeName' | 'total' | 'accuracyLower' | 'graves' | 'imprecisos' | 'impact'
 type ConsultSortKey = 'rangeName' | 'totalConsults' | 'rate' | 'totalPlayed'
+
+interface BuildByRangeRow {
+  rangeId: number
+  rangeName: string
+  attempts: number
+  avgScore: number
+  correctHands?: number
+  wrongHands?: number
+}
+type BuildByRangeSortKey = 'attempts' | 'correctHands' | 'wrongHands' | 'avgScore'
+
+function useBuildByRangeRows(token: string | null) {
+  const [rows, setRows] = useState<BuildByRangeRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [tick, setTick] = useState(0)
+
+  useEffect(() => {
+    if (!token) return
+    let cancelled = false
+    setLoading(true)
+    setError('')
+    fetch('/api/me/stats?view=build-by-range', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => { if (!cancelled) { setRows(d.rows ?? []); setLoading(false) } })
+      .catch(e => {
+        if (cancelled) return
+        captureError(e, { area: 'analysis-build-by-range' })
+        setError(t.coach.loadError)
+        setLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [token, tick])
+
+  return { rows, loading, error, reload: () => setTick(n => n + 1) }
+}
 type AnalysisTab = 'drill' | 'buildcheck'
 
 // Reconstrói o "range jogado" a partir das somas de played (cell.played) — usado
@@ -45,6 +82,16 @@ function computePlayedGrid(cells: GridCell[]): Record<string, ActionFreq> {
   }
   return out
 }
+
+const sortBtn = (active: boolean, dir: 'asc' | 'desc', label: string, onClick: () => void, alignRight = true) => (
+  <button
+    onClick={onClick}
+    className={`inline-flex items-center gap-1 hover:text-warm-100 transition-colors ${alignRight ? 'flex-row-reverse' : ''} ${active ? 'text-brand-300' : ''}`}
+  >
+    {label}
+    <span className="text-[0.6rem] w-2">{active ? (dir === 'asc' ? '▲' : '▼') : ''}</span>
+  </button>
+)
 
 export function AnalysisPage() {
   const currentUser = useStore(s => s.currentUser)
@@ -182,16 +229,6 @@ function DrillAnalysisContent() {
     if (key === consultSortKey) setConsultSortDir(d => (d === 'asc' ? 'desc' : 'asc'))
     else { setConsultSortKey(key); setConsultSortDir(key === 'rangeName' ? 'asc' : 'desc') }
   }
-
-  const sortBtn = (active: boolean, dir: 'asc' | 'desc', label: string, onClick: () => void, alignRight = true) => (
-    <button
-      onClick={onClick}
-      className={`inline-flex items-center gap-1 hover:text-warm-100 transition-colors ${alignRight ? 'flex-row-reverse' : ''} ${active ? 'text-brand-300' : ''}`}
-    >
-      {label}
-      <span className="text-[0.6rem] w-2">{active ? (dir === 'asc' ? '▲' : '▼') : ''}</span>
-    </button>
-  )
 
   return (
     <div className="flex flex-col gap-6">
@@ -425,8 +462,11 @@ function RangeCheckAnalysisContent() {
   const [filters, setFilters] = useState<Filters>({ playerIds: [], rangeId: null, days: null, from: null, to: null })
   const [stackIdx, setStackIdx] = useState<number | null>(null)
   const [detailHand, setDetailHand] = useState<string | null>(null)
+  const [bcSortKey, setBcSortKey] = useState<BuildByRangeSortKey>('attempts')
+  const [bcSortDir, setBcSortDir] = useState<'asc' | 'desc'>('desc')
 
   const rangeGroups = useMemo(() => groupRangesByPosition(ranges), [ranges])
+  const buildByRange = useBuildByRangeRows(token)
 
   const selectedRange = ranges.find(r => r.id === filters.rangeId)
   const selectedRangeName = selectedRange?.name ?? ''
@@ -455,9 +495,23 @@ function RangeCheckAnalysisContent() {
   const comboPlayed = useMemo(() => rangeComboStats(playedGrid), [playedGrid])
   const detailCell = detailHand ? grid.cells.find(c => c.hand === detailHand) : undefined
 
+  const sortedBuildByRange = useMemo(() => {
+    const rows = [...buildByRange.rows]
+    rows.sort((a, b) => {
+      const av = a[bcSortKey] ?? 0, bv = b[bcSortKey] ?? 0
+      return bcSortDir === 'asc' ? av - bv : bv - av
+    })
+    return rows
+  }, [buildByRange.rows, bcSortKey, bcSortDir])
+
+  function handleBcSort(key: BuildByRangeSortKey) {
+    if (key === bcSortKey) setBcSortDir(d => (d === 'asc' ? 'desc' : 'asc'))
+    else { setBcSortKey(key); setBcSortDir('desc') }
+  }
+
   return (
     <div className="flex flex-col gap-6">
-      <BuildAccountStats />
+      <BuildAccountStats hideByRangeTable />
 
       <div>
         <h2 className="text-sm font-semibold text-warm-200 mb-2">
@@ -546,6 +600,41 @@ function RangeCheckAnalysisContent() {
           </div>
         )}
       </div>
+
+      <Section title={t.coach.sectionByRange} defaultOpen loading={buildByRange.loading} error={buildByRange.error} empty={buildByRange.rows.length === 0} onRetry={buildByRange.reload}>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-warm-800 text-warm-400 text-xs uppercase select-none">
+              <th className={TH}>{t.myAccount.colRange}</th>
+              {([
+                { k: 'attempts', label: t.myAccount.colAttempts },
+                { k: 'correctHands', label: t.myAccount.colCorrectHands },
+                { k: 'wrongHands', label: t.myAccount.colWrongHands },
+                { k: 'avgScore', label: t.myAccount.colAvgScore },
+              ] as { k: BuildByRangeSortKey; label: string }[]).map(col => (
+                <th key={col.k} className={THR}>
+                  {sortBtn(bcSortKey === col.k, bcSortDir, col.label, () => handleBcSort(col.k))}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sortedBuildByRange.map(r => (
+              <tr
+                key={r.rangeId}
+                onClick={() => setRangeId(r.rangeId)}
+                className={`border-t border-warm-700/60 cursor-pointer hover:bg-warm-800/50 ${filters.rangeId === r.rangeId ? 'bg-warm-800/70' : ''}`}
+              >
+                <td className={`${TD} text-warm-100 font-semibold whitespace-nowrap`}>{r.rangeName}</td>
+                <td className={`${TDR} text-warm-300`}>{r.attempts}</td>
+                <td className={`${TDR} text-emerald-300`}>{r.correctHands ?? 0}</td>
+                <td className={`${TDR} text-red-400`}>{r.wrongHands ?? 0}</td>
+                <td className={`${TDR} font-bold ${accColor(r.avgScore)}`}>{r.avgScore}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Section>
     </div>
   )
 }

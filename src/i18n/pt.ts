@@ -389,6 +389,8 @@ export const pt = {
     colHand: 'Mão',
     colAttempts: 'Tentativas',
     colCorrect: 'Acertos',
+    colCorrectHands: 'Acertos (mãos)',
+    colWrongHands: 'Erros (mãos)',
     buildTitle: 'Range Check (conta)',
     buildReplayTitle: 'Sessões e replay',
     buildNoData: 'Sem dados de Range Check na conta ainda.',
