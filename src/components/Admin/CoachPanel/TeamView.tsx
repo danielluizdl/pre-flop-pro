@@ -7,7 +7,7 @@ import { RangeHeatGrid, type GridCell } from '../RangeHeatGrid'
 import { RangeActionGrid, type ActionFreq } from '../RangeActionGrid'
 import { rangeComboStats, TOTAL_COMBOS, type ComboStats } from '../../../utils/rangeCombos'
 import { t } from '../../../i18n'
-import { rankLeaks, severityProfile, type Confidence, type SeverityClass } from '../../../utils/coachStats'
+import { rankLeaks, type Confidence } from '../../../utils/coachStats'
 import { buildRelativeLeaks, type PlayerRangeStat } from '../../../utils/coachRelative'
 import {
   groupRangesByPosition, MultiPlayerSelect, RangeSelect, type CoachUser,
@@ -148,25 +148,6 @@ export interface ByRangeRow { rangeId: number; rangeName: string; hands: number;
 export interface ConsultRangeRow { rangeId: number; rangeName: string; totalConsults: number; totalPlayed: number; rate: number }
 interface ConsultHandRow { hand: string; consults: number; played: number; pct: number }
 type ConsultSortKey = 'rangeName' | 'totalConsults' | 'rate' | 'totalPlayed'
-
-export const SEVERITY_CLS: Record<SeverityClass, string> = {
-  conceitual: 'text-red-300',
-  misto: 'text-yellow-300',
-  'estrategia-mista': 'text-sky-300',
-  na: 'text-warm-600',
-}
-export function severityLabel(c: SeverityClass): string {
-  return c === 'conceitual' ? t.coach.legendConceptual
-    : c === 'misto' ? t.coach.legendMixed
-    : c === 'estrategia-mista' ? t.coach.legendMixedStrategy
-    : '—'
-}
-export function severityHelp(c: SeverityClass): string {
-  return c === 'conceitual' ? t.coach.severityHelpConceptual
-    : c === 'estrategia-mista' ? t.coach.severityHelpMixedStrategy
-    : c === 'misto' ? t.coach.severityHelpMixed
-    : ''
-}
 
 export function PlayerQuickSummary({ userId, days, from, to, token }: { userId: number; days: number | null; from: number | null; to: number | null; token: string | null }) {
   const [rows, setRows] = useState<ByRangeRow[]>([])
@@ -375,7 +356,6 @@ const ByRangeTableRow = memo(function ByRangeTableRow({ row: r, selected, onSele
   onSelect: (rangeId: number) => void
 }) {
   countRender('byRangeRow')
-  const sev = severityProfile(r.graves, r.imprecisos)
   return (
     <tr
       onClick={() => onSelect(r.rangeId)}
@@ -385,12 +365,6 @@ const ByRangeTableRow = memo(function ByRangeTableRow({ row: r, selected, onSele
       <td className={`${TDR} text-warm-300`}>{r.hands}</td>
       <td className={`${TDR} font-bold ${accColor(r.accuracy)}`}>{r.accuracy}%</td>
       <td className={`${TDR} text-red-400`}>{r.graves}</td>
-      <td className={`${TD} whitespace-nowrap`} title={severityHelp(sev.classification) || undefined}>
-        <span className={`font-semibold ${SEVERITY_CLS[sev.classification]}`}>{severityLabel(sev.classification)}</span>
-        {sev.classification !== 'na' && (
-          <span className="block text-[0.65rem] text-warm-500">{t.coach.blundersImprecise(r.graves, r.imprecisos)}</span>
-        )}
-      </td>
       <td className={`${TDR} text-warm-400`}>{r.consults}</td>
       <td className={`${TDR} text-warm-400`}>{r.players}</td>
     </tr>
@@ -681,13 +655,7 @@ export function TeamView({ token }: { token: string | null }) {
       </div>
 
       <Section title={t.coach.sectionByRange} defaultOpen={false} loading={byRange.loading} error={byRange.error} empty={byRange.rows.length === 0} onRetry={byRange.reload}>
-        <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60 leading-relaxed">
-          {t.coach.byRangeLegendIntro}
-          <span className="text-red-300 font-semibold">{t.coach.legendConceptual}</span>{t.coach.legendConceptualDesc}
-          <span className="text-sky-300 font-semibold">{t.coach.legendMixedStrategy}</span>{t.coach.legendMixedStrategyDesc}
-          <span className="text-yellow-300 font-semibold">{t.coach.legendMixed}</span>{t.coach.legendMixedDesc}
-        </div>
-        <table className="text-sm">
+        <table className="w-full text-sm">
           <thead>
             <tr className="bg-warm-800 text-warm-400 text-xs uppercase select-none">
               <th className={TH}>{t.coach.colRange}</th>
@@ -706,7 +674,6 @@ export function TeamView({ token }: { token: string | null }) {
                   </button>
                 </th>
               ))}
-              <th className={TH}>{t.coach.colErrorType}</th>
               {([
                 { k: 'consults', label: t.coach.colConsults },
                 { k: 'players', label: t.coach.colPlayers },

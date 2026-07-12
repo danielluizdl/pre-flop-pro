@@ -4,7 +4,7 @@ import { useStore } from '../../store/useStore'
 import { RangeHeatGrid } from '../Admin/RangeHeatGrid'
 import { RangeActionGrid, type ActionFreq } from '../Admin/RangeActionGrid'
 import { rangeComboStats } from '../../utils/rangeCombos'
-import { rankLeaks, severityProfile } from '../../utils/coachStats'
+import { rankLeaks } from '../../utils/coachStats'
 import { t } from '../../i18n'
 import {
   groupRangesByPosition, RangeSelect, accColor,
@@ -13,7 +13,7 @@ import {
 } from '../Admin/CoachPanel/shared'
 import {
   ComboSummary, TopHandsPanel, HandDetailCard, ConsultRangeDetail,
-  SEVERITY_CLS, severityLabel, severityHelp, CONF_DOT,
+  CONF_DOT,
   type LeakRow, type ByRangeRow, type ConsultRangeRow,
 } from '../Admin/CoachPanel/TeamView'
 
@@ -257,13 +257,7 @@ function AnalysisContent() {
       </div>
 
       <Section title={t.coach.sectionByRange} defaultOpen loading={byRange.loading} error={byRange.error} empty={byRange.rows.length === 0} onRetry={byRange.reload}>
-        <div className="px-3 py-1.5 text-[11px] text-warm-500 bg-warm-800/30 border-b border-warm-700/60 leading-relaxed">
-          {t.coach.byRangeLegendIntro}
-          <span className="text-red-300 font-semibold">{t.coach.legendConceptual}</span>{t.coach.legendConceptualDesc}
-          <span className="text-sky-300 font-semibold">{t.coach.legendMixedStrategy}</span>{t.coach.legendMixedStrategyDesc}
-          <span className="text-yellow-300 font-semibold">{t.coach.legendMixed}</span>{t.coach.legendMixedDesc}
-        </div>
-        <table className="text-sm">
+        <table className="w-full text-sm">
           <thead>
             <tr className="bg-warm-800 text-warm-400 text-xs uppercase select-none">
               <th className={TH}>{t.coach.colRange}</th>
@@ -271,40 +265,28 @@ function AnalysisContent() {
                 { k: 'hands', label: t.coach.colHands },
                 { k: 'accuracy', label: t.coach.colAccuracy },
                 { k: 'graves', label: t.coach.colBlunder },
+                { k: 'consults', label: t.coach.colConsults },
               ] as { k: ByRangeSortKey; label: string }[]).map(col => (
                 <th key={col.k} className={THR}>
                   {sortBtn(brSortKey === col.k, brSortDir, col.label, () => handleBrSort(col.k))}
                 </th>
               ))}
-              <th className={TH}>{t.coach.colErrorType}</th>
-              <th className={THR}>
-                {sortBtn(brSortKey === 'consults', brSortDir, t.coach.colConsults, () => handleBrSort('consults'))}
-              </th>
             </tr>
           </thead>
           <tbody>
-            {sortedByRange.map(r => {
-              const sev = severityProfile(r.graves, r.imprecisos)
-              return (
-                <tr
-                  key={r.rangeId}
-                  onClick={() => setRangeId(r.rangeId)}
-                  className={`border-t border-warm-700/60 cursor-pointer hover:bg-warm-800/50 ${filters.rangeId === r.rangeId ? 'bg-warm-800/70' : ''}`}
-                >
-                  <td className={`${TD} text-warm-100 font-semibold whitespace-nowrap`}>{r.rangeName}</td>
-                  <td className={`${TDR} text-warm-300`}>{r.hands}</td>
-                  <td className={`${TDR} font-bold ${accColor(r.accuracy)}`}>{r.accuracy}%</td>
-                  <td className={`${TDR} text-red-400`}>{r.graves}</td>
-                  <td className={`${TD} whitespace-nowrap`} title={severityHelp(sev.classification) || undefined}>
-                    <span className={`font-semibold ${SEVERITY_CLS[sev.classification]}`}>{severityLabel(sev.classification)}</span>
-                    {sev.classification !== 'na' && (
-                      <span className="block text-[0.65rem] text-warm-500">{t.coach.blundersImprecise(r.graves, r.imprecisos)}</span>
-                    )}
-                  </td>
-                  <td className={`${TDR} text-warm-400`}>{r.consults}</td>
-                </tr>
-              )
-            })}
+            {sortedByRange.map(r => (
+              <tr
+                key={r.rangeId}
+                onClick={() => setRangeId(r.rangeId)}
+                className={`border-t border-warm-700/60 cursor-pointer hover:bg-warm-800/50 ${filters.rangeId === r.rangeId ? 'bg-warm-800/70' : ''}`}
+              >
+                <td className={`${TD} text-warm-100 font-semibold whitespace-nowrap`}>{r.rangeName}</td>
+                <td className={`${TDR} text-warm-300`}>{r.hands}</td>
+                <td className={`${TDR} font-bold ${accColor(r.accuracy)}`}>{r.accuracy}%</td>
+                <td className={`${TDR} text-red-400`}>{r.graves}</td>
+                <td className={`${TDR} text-warm-400`}>{r.consults}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </Section>
