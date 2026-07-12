@@ -412,9 +412,11 @@ describe('CoachPanel', () => {
           team: { attempts: 12, avgScore: 84.5, bestScore: 97.2, ranges: 3, lastActivity: 1750000000 },
         }
       } else if (url.includes('view=build-by-range')) {
-        data = { rows: [{ rangeId: 5, rangeName: 'BTN RFI', attempts: 12, avgScore: 84.5, bestScore: 97.2, players: 1, lastActivity: 1750000000 }] }
+        data = { rows: [{ rangeId: 5, rangeName: 'BTN RFI', attempts: 12, avgScore: 84.5, bestScore: 97.2, players: 1, lastActivity: 1750000000, correctHands: 340, wrongHands: 28 }] }
       } else if (url.includes('view=build-events')) {
         data = { rows: [{ userId: 1, playerName: 'Ana', rangeId: 5, rangeName: 'BTN RFI', stackRange: '40bb+', score: 91.3, attempt: 2, createdAt: 1750000000 }] }
+      } else if (url.includes('view=build-range-grid')) {
+        data = { cells: [{ hand: 'AA', total: 12, correct: 12, accuracy: 100, graves: 0, consults: 0, correctAction: null, topWrong: null, played: { fold: 0, call: 0, raise: 1200, allin: 0, extra: 0 } }] }
       }
       return Promise.resolve({ ok: true, json: () => Promise.resolve(data) } as unknown as Response)
     })
@@ -446,6 +448,41 @@ describe('CoachPanel', () => {
     render(<CoachPanel />)
     fireEvent.click(await screen.findByRole('button', { name: 'Range Check' }))
     expect((await screen.findAllByText('Sem dados.')).length).toBe(3)
+  })
+
+  it('Range Check: tabela Por range mostra acertos/erros por mão somados de todas as tentativas', async () => {
+    mockRecallApi()
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Range Check' }))
+    expect(await screen.findByText('340')).toBeInTheDocument()
+    expect(screen.getByText('28')).toBeInTheDocument()
+  })
+
+  it('Range Check: clicar na linha do Por range carrega a Matriz do range do time (todos os jogadores)', async () => {
+    useStore.setState({ ranges: [{ id: 5, name: 'BTN RFI', positions: ['BTN'], grid: makeEmptyGrid(), scenarios: [], tableSize: 6 } as Range] })
+    const urls: string[] = []
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      urls.push(url)
+      let data: unknown = { rows: [], team: null, cells: [], users: [] }
+      if (url.includes('/admin/users')) data = { users: [] }
+      else if (url.includes('view=build-by-range')) {
+        data = { rows: [{ rangeId: 5, rangeName: 'BTN RFI', attempts: 12, avgScore: 84.5, bestScore: 97.2, players: 1, lastActivity: 1750000000, correctHands: 340, wrongHands: 28 }] }
+      } else if (url.includes('view=build-range-grid')) {
+        data = { cells: [{ hand: 'AA', total: 12, correct: 12, accuracy: 100, graves: 0, consults: 0, correctAction: null, topWrong: null, played: { fold: 0, call: 0, raise: 1200, allin: 0, extra: 0 } }] }
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(data) } as unknown as Response)
+    })
+    useStore.setState({ authToken: 'tok' })
+
+    render(<CoachPanel />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Range Check' }))
+    fireEvent.click(await screen.findByText('BTN RFI'))
+    await screen.findByText('Range real (gabarito)')
+    const gridCalls = urls.filter(u => u.includes('view=build-range-grid'))
+    expect(gridCalls.length).toBeGreaterThan(0)
+    expect(gridCalls[0]).toContain('rangeId=5')
+    expect(gridCalls[0]).not.toContain('playerIds')
   })
 
   // --- Fatia: ordenação da tabela "Por range" ---

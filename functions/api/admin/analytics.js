@@ -573,6 +573,7 @@ export async function runAnalyticsView(env, url, view, filters) {
 
   if (view === 'build-by-range') {
     const hf = handFilters(filters)
+    let rows
     try {
       const res = await env.DB.prepare(
         `SELECT range_id AS rangeId, MAX(range_name) AS rangeName, COUNT(*) AS attempts,
@@ -580,10 +581,41 @@ export async function runAnalyticsView(env, url, view, filters) {
           COUNT(DISTINCT user_id) AS players, MAX(created_at) AS lastActivity
          FROM range_build_events ${hf.clause} GROUP BY range_id ORDER BY attempts DESC`
       ).bind(...hf.binds).all()
-      return json({ view, rows: res.results ?? [] })
+      rows = res.results ?? []
     } catch {
       return json({ view, rows: [] })
     }
+
+    // Acertos/erros por mão somados em todas as tentativas de cada range,
+    // honrando o filtro de jogadores do coach — mesmo padrão de me/stats.js,
+    // mas agregando o time (ou os jogadores selecionados) em vez de 1 pessoa só.
+    // user_grid IS NOT NULL exclui tentativas de antes do schema_v9 (sem grid
+    // salvo), senão elas entram como {} (tudo fold) na média.
+    try {
+      const raw = await env.DB.prepare(
+        `SELECT range_id AS rangeId, wrong_hands AS wrongHands, user_grid AS userGrid
+         FROM range_build_events ${hf.clause} AND user_grid IS NOT NULL`
+      ).bind(...hf.binds).all()
+      const byRange = new Map()
+      for (const row of raw.results ?? []) {
+        const list = byRange.get(row.rangeId) ?? []
+        list.push({
+          wrongHands: row.wrongHands ? JSON.parse(row.wrongHands) : {},
+          userGrid: row.userGrid ? JSON.parse(row.userGrid) : {},
+        })
+        byRange.set(row.rangeId, list)
+      }
+      rows = rows.map(row => {
+        const cells = buildRangeGridCells(byRange.get(row.rangeId) ?? [])
+        return {
+          ...row,
+          correctHands: cells.reduce((s, c) => s + c.correct, 0),
+          wrongHands: cells.reduce((s, c) => s + (c.total - c.correct), 0),
+        }
+      })
+    } catch { /* segue sem acertos/erros por mão */ }
+
+    return json({ view, rows })
   }
 
   if (view === 'build-events') {

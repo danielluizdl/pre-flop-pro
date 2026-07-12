@@ -1,12 +1,16 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useStore } from '../../../store/useStore'
 import { t } from '../../../i18n'
+import { RangeHeatGrid } from '../RangeHeatGrid'
+import { RangeActionGrid, type ActionFreq } from '../RangeActionGrid'
+import { rangeComboStats } from '../../../utils/rangeCombos'
 import {
   groupRangesByPosition, MultiPlayerSelect, RangeSelect, type CoachUser,
-  formatDate, formatDateShort, accColor,
-  type Filters, PeriodFilter, useAnalytics,
+  formatDate, formatDateShort, accColor, computePlayedGrid,
+  type Filters, PeriodFilter, useAnalytics, useBuildRangeGrid,
   Section, TH, THR, TD, TDR,
 } from './shared'
+import { ComboSummary, TopHandsPanel, HandDetailCard } from './TeamView'
 
 interface RecallOverviewRow {
   userId: number; username: string; name: string
@@ -15,6 +19,7 @@ interface RecallOverviewRow {
 interface RecallByRangeRow {
   rangeId: number; rangeName: string
   attempts: number; avgScore: number; bestScore: number; players: number; lastActivity: number
+  correctHands?: number; wrongHands?: number
 }
 interface RecallEventRow {
   userId: number; playerName: string; rangeId: number; rangeName: string
@@ -25,6 +30,8 @@ export function RecallView({ token }: { token: string | null }) {
   const ranges = useStore(s => s.ranges)
   const [users, setUsers] = useState<CoachUser[]>([])
   const [filters, setFilters] = useState<Filters>({ playerIds: [], rangeId: null, days: null, from: null, to: null })
+  const [stackIdx, setStackIdx] = useState<number | null>(null)
+  const [detailHand, setDetailHand] = useState<string | null>(null)
 
   useEffect(() => {
     if (!token) return
@@ -47,6 +54,31 @@ export function RecallView({ token }: { token: string | null }) {
   )
   const team = overview.team
 
+  const selectedRange = ranges.find(r => r.id === filters.rangeId)
+  const selectedRangeName = selectedRange?.name ?? ''
+  const selectedStackGrids = selectedRange?.stackGrids ?? []
+  // stack_range salvo no evento é a label (ex. "250bb"), não o índice.
+  const stackRangeParam = stackIdx !== null ? (selectedStackGrids[stackIdx]?.stackRange ?? '') : null
+
+  const grid = useBuildRangeGrid(filters.rangeId, stackRangeParam, filters.days, filters.from, filters.to, filters.playerIds, token)
+
+  const setRangeId = useCallback((rangeId: number | null) => {
+    setFilters(f => ({ ...f, rangeId }))
+    setStackIdx(null)
+    setDetailHand(null)
+  }, [])
+
+  const realGrid = useMemo<Record<string, ActionFreq>>(() => {
+    if (!selectedRange) return {}
+    const sg = stackIdx !== null ? selectedRange.stackGrids?.[stackIdx]?.grid : undefined
+    return (sg ?? selectedRange.grid ?? {}) as Record<string, ActionFreq>
+  }, [selectedRange, stackIdx])
+
+  const playedGrid = useMemo(() => computePlayedGrid(grid.cells), [grid.cells])
+  const comboReal = useMemo(() => rangeComboStats(realGrid), [realGrid])
+  const comboPlayed = useMemo(() => rangeComboStats(playedGrid), [playedGrid])
+  const detailCell = detailHand ? grid.cells.find(c => c.hand === detailHand) : undefined
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap gap-3">
@@ -58,7 +90,7 @@ export function RecallView({ token }: { token: string | null }) {
         <RangeSelect
           groups={rangeGroups}
           value={filters.rangeId}
-          onChange={id => setFilters(f => ({ ...f, rangeId: id }))}
+          onChange={setRangeId}
         />
         <PeriodFilter
           days={filters.days}
@@ -66,6 +98,79 @@ export function RecallView({ token }: { token: string | null }) {
           to={filters.to}
           onChange={d => setFilters(f => ({ ...f, ...d }))}
         />
+      </div>
+
+      <div>
+        <h2 className="text-sm font-semibold text-warm-200 mb-2">
+          {t.coach.matrixTitle} {selectedRangeName ? <span className="text-brand-400">· {selectedRangeName}</span> : ''}
+        </h2>
+        {filters.rangeId !== null && selectedStackGrids.length > 1 && (
+          <div className="flex flex-wrap items-center gap-1.5 mb-3">
+            <span className="text-xs text-warm-500 mr-1">{t.coach.effectiveStack}</span>
+            <button
+              onClick={() => { setStackIdx(null); setDetailHand(null) }}
+              className={[
+                'px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors',
+                stackIdx === null ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:text-warm-200',
+              ].join(' ')}
+            >
+              {t.coach.matrixAll}
+            </button>
+            {selectedStackGrids.map((sg, i) => (
+              <button
+                key={i}
+                onClick={() => { setStackIdx(i); setDetailHand(null) }}
+                className={[
+                  'px-2.5 py-1 rounded-full text-xs font-medium border transition-colors',
+                  stackIdx === i ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:text-warm-200',
+                ].join(' ')}
+              >
+                {sg.name || sg.stackRange}
+              </button>
+            ))}
+          </div>
+        )}
+        {filters.rangeId === null ? (
+          <p className="text-sm text-warm-500">{t.coach.selectRangeForMatrix}</p>
+        ) : grid.loading ? (
+          <p className="text-sm text-warm-500">{t.coach.loading}</p>
+        ) : grid.error ? (
+          <p className="text-sm text-red-400">{grid.error}</p>
+        ) : grid.cells.length === 0 ? (
+          <p className="text-sm text-warm-500">{t.coach.noRangeData}</p>
+        ) : (
+          <div className="space-y-5">
+            <div className="flex items-center gap-3 text-[0.7rem] text-warm-400">
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded" style={{ background: '#ef4444' }} />{t.coach.legendRaise}</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded" style={{ background: '#22c55e' }} />{t.coach.legendCall}</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded" style={{ background: '#6b2d0d' }} />{t.coach.legendAllin}</span>
+              <span className="text-warm-600">{t.coach.legendFold}</span>
+            </div>
+            <div className="flex flex-col xl:flex-row items-start gap-6">
+              <div className="flex flex-wrap items-start gap-6 flex-1 min-w-0">
+                <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
+                  <RangeActionGrid title={t.coach.actionGridRealTitle} subtitle={t.coach.actionGridRealSub} grid={realGrid} />
+                  <ComboSummary stats={comboReal} />
+                </div>
+                <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
+                  <RangeActionGrid title={t.coach.actionGridBuildPlayedTitle} subtitle={t.coach.actionGridBuildPlayedSub} grid={playedGrid} />
+                  <ComboSummary stats={comboPlayed} />
+                </div>
+              </div>
+              <div className="flex flex-wrap xl:flex-nowrap items-start gap-4 xl:shrink-0">
+                <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
+                  <h3 className="text-xs font-semibold text-warm-200 mb-1">{t.coach.accuracyErrors}</h3>
+                  <p className="text-[0.65rem] text-warm-500 mb-2 max-w-[280px]">{t.coach.buildAccuracyCaption}</p>
+                  <RangeHeatGrid cells={grid.cells} showConsults={false} />
+                </div>
+                <TopHandsPanel cells={grid.cells} selected={detailHand} onSelect={h => setDetailHand(h === detailHand ? null : h)} showConsults={false} />
+                <div className="w-[270px] shrink-0">
+                  {detailCell && <HandDetailCard cell={detailCell} playedLabel={t.coach.howTeamPlayed} showConsults={false} />}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <Section title={t.coach.recallByPlayer} loading={overview.loading} error={overview.error} empty={overviewRows.length === 0} onRetry={overview.reload}>
@@ -111,6 +216,8 @@ export function RecallView({ token }: { token: string | null }) {
             <tr className="bg-warm-800 text-warm-400 text-xs uppercase select-none">
               <th className={TH}>{t.coach.colRange}</th>
               <th className={THR}>{t.coach.recallColAttempts}</th>
+              <th className={THR}>{t.myAccount.colCorrectHands}</th>
+              <th className={THR}>{t.myAccount.colWrongHands}</th>
               <th className={THR}>{t.coach.recallColAvg}</th>
               <th className={THR}>{t.coach.recallColBest}</th>
               <th className={THR}>{t.coach.colPlayers}</th>
@@ -119,9 +226,15 @@ export function RecallView({ token }: { token: string | null }) {
           </thead>
           <tbody>
             {byRange.rows.map(r => (
-              <tr key={r.rangeId} className="border-t border-warm-700/60">
+              <tr
+                key={r.rangeId}
+                onClick={() => setRangeId(r.rangeId)}
+                className={`border-t border-warm-700/60 cursor-pointer hover:bg-warm-800/50 ${filters.rangeId === r.rangeId ? 'bg-warm-800/70' : ''}`}
+              >
                 <td className={`${TD} text-warm-100 font-semibold whitespace-nowrap`}>{r.rangeName}</td>
                 <td className={`${TDR} text-warm-300`}>{r.attempts}</td>
+                <td className={`${TDR} text-emerald-300`}>{r.correctHands ?? 0}</td>
+                <td className={`${TDR} text-red-400`}>{r.wrongHands ?? 0}</td>
                 <td className={`${TDR} font-bold ${accColor(r.avgScore)}`}>{r.avgScore}</td>
                 <td className={`${TDR} text-warm-300`}>{r.bestScore}</td>
                 <td className={`${TDR} text-warm-400`}>{r.players}</td>

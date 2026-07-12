@@ -4,8 +4,30 @@ import { captureError } from '../../../utils/sentry'
 import { fetchAnalyticsCached, invalidateAnalyticsCache } from '../../../utils/analyticsCache'
 import { t } from '../../../i18n'
 import type { GridCell } from '../RangeHeatGrid'
+import type { ActionFreq } from '../RangeActionGrid'
 
 export const POSITION_ORDER = ['STR', 'BB', 'SB', 'BTN', 'CO', 'HJ', 'MP', 'EP', 'LJ', 'UTG']
+
+// Reconstrói o "range jogado" a partir das somas de played (cell.played) — usado
+// tanto pelo Drill (contagens de vezes que cada ação foi escolhida) quanto pelo
+// Range Check (soma de % por tentativa, que normalizada dá a média corretamente).
+export function computePlayedGrid(cells: GridCell[]): Record<string, ActionFreq> {
+  const out: Record<string, ActionFreq> = {}
+  for (const c of cells) {
+    const p = c.played
+    if (!p) continue
+    const tot = p.fold + p.call + p.raise + p.allin + p.extra
+    if (tot <= 0) continue
+    out[c.hand] = {
+      fold: (p.fold / tot) * 100,
+      call: (p.call / tot) * 100,
+      raise: (p.raise / tot) * 100,
+      allin: (p.allin / tot) * 100,
+      extra: (p.extra / tot) * 100,
+    }
+  }
+  return out
+}
 
 export interface RangeOpt { id: number; name: string; positions?: string[]; stackGrids?: { stackRange: string; name?: string }[] }
 export function groupRangesByPosition(ranges: RangeOpt[]) {

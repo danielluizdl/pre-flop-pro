@@ -1,7 +1,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { BarChart3 } from 'lucide-react'
 import { useStore } from '../../store/useStore'
-import { RangeHeatGrid, type GridCell } from '../Admin/RangeHeatGrid'
+import { RangeHeatGrid } from '../Admin/RangeHeatGrid'
 import { RangeActionGrid, type ActionFreq } from '../Admin/RangeActionGrid'
 import { BuildAccountStats } from '../Stats/BuildAccountStats'
 import { rangeComboStats } from '../../utils/rangeCombos'
@@ -9,7 +9,7 @@ import { rankLeaks } from '../../utils/coachStats'
 import { captureError } from '../../utils/sentry'
 import { t } from '../../i18n'
 import {
-  groupRangesByPosition, RangeSelect, accColor,
+  groupRangesByPosition, RangeSelect, accColor, computePlayedGrid,
   type Filters, PeriodFilter, useAnalytics, useRangeGrid, useBuildRangeGrid,
   Section, TH, THR, TD, TDR,
 } from '../Admin/CoachPanel/shared'
@@ -61,27 +61,6 @@ function useBuildByRangeRows(token: string | null) {
   return { rows, loading, error, reload: () => setTick(n => n + 1) }
 }
 type AnalysisTab = 'drill' | 'buildcheck'
-
-// Reconstrói o "range jogado" a partir das somas de played (cell.played) — usado
-// tanto pelo Drill (contagens de vezes que cada ação foi escolhida) quanto pelo
-// Range Check (soma de % por tentativa, que normalizada dá a média corretamente).
-function computePlayedGrid(cells: GridCell[]): Record<string, ActionFreq> {
-  const out: Record<string, ActionFreq> = {}
-  for (const c of cells) {
-    const p = c.played
-    if (!p) continue
-    const tot = p.fold + p.call + p.raise + p.allin + p.extra
-    if (tot <= 0) continue
-    out[c.hand] = {
-      fold: (p.fold / tot) * 100,
-      call: (p.call / tot) * 100,
-      raise: (p.raise / tot) * 100,
-      allin: (p.allin / tot) * 100,
-      extra: (p.extra / tot) * 100,
-    }
-  }
-  return out
-}
 
 const sortBtn = (active: boolean, dir: 'asc' | 'desc', label: string, onClick: () => void, alignRight = true) => (
   <button
@@ -581,7 +560,7 @@ function RangeCheckAnalysisContent() {
                   <ComboSummary stats={comboReal} />
                 </div>
                 <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
-                  <RangeActionGrid title={t.coach.actionGridBuildPlayedTitle} subtitle={t.coach.actionGridBuildPlayedSub} grid={playedGrid} />
+                  <RangeActionGrid title={t.coach.actionGridBuildPlayedTitleSelf} subtitle={t.coach.actionGridBuildPlayedSubSelf} grid={playedGrid} />
                   <ComboSummary stats={comboPlayed} />
                 </div>
               </div>

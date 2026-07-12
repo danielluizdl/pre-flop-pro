@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseIntParam, parsePlayerIds, playerCond, dateCond, handFilters, ACC, buildRangeGridCells } from './analytics.js'
+import { parseIntParam, parsePlayerIds, playerCond, dateCond, handFilters, ACC, buildRangeGridCells, runAnalyticsView } from './analytics.js'
 
 describe('parseIntParam', () => {
   it('aceita ausente/vazio como null', () => {
@@ -149,5 +149,48 @@ describe('buildRangeGridCells', () => {
     expect(cells[0].consults).toBe(0)
     expect(cells[0].correctAction).toBeNull()
     expect(cells[0].topWrong).toBeNull()
+  })
+})
+
+describe('runAnalyticsView — build-by-range (coach, time)', () => {
+  function fakeDB({ aggRows, rawRows }) {
+    return {
+      prepare(sql) {
+        return {
+          bind: (...binds) => ({
+            all: async () => {
+              if (sql.includes('GROUP BY range_id')) return { results: aggRows }
+              if (sql.includes('wrong_hands AS wrongHands')) {
+                // Confirma que o filtro de jogadores do coach chega na query bruta também.
+                expect(sql).toContain('user_id IN')
+                expect(binds).toEqual(expect.arrayContaining([1, 2]))
+                return { results: rawRows }
+              }
+              return { results: [] }
+            },
+          }),
+        }
+      },
+    }
+  }
+
+  it('soma acertos/erros por mão do time (jogadores filtrados) por range', async () => {
+    const env = {
+      DB: fakeDB({
+        aggRows: [{ rangeId: 1, rangeName: 'RFI BTN', attempts: 2, avgScore: 93.5, bestScore: 100, players: 2, lastActivity: 1 }],
+        rawRows: [
+          { rangeId: 1, wrongHands: JSON.stringify({ AKs: 0.6 }), userGrid: JSON.stringify({ AKs: { call: 0, raise: 100, allin: 0, extra: 0 } }) },
+          { rangeId: 1, wrongHands: null, userGrid: JSON.stringify({ AKs: { call: 0, raise: 100, allin: 0, extra: 0 } }) },
+        ],
+      }),
+    }
+    const url = new URL('https://x.test/api/admin/analytics?view=build-by-range&playerIds=1,2')
+    const filters = { playerIds: [1, 2], rangeId: null, days: null, from: null, to: null }
+    const res = await runAnalyticsView(env, url, 'build-by-range', filters)
+    const body = await res.json()
+    expect(body.rows).toHaveLength(1)
+    expect(body.rows[0].players).toBe(2)
+    expect(body.rows[0].correctHands).toBe(1)
+    expect(body.rows[0].wrongHands).toBe(1)
   })
 })
