@@ -3,7 +3,7 @@ import { parseIntParam, runAnalyticsView } from '../admin/analytics.js'
 
 // Views seguras para o jogador: todas filtram por user_id e nunca expõem
 // dados de outros jogadores nem agregados do time.
-export const PLAYER_VIEWS = ['by-range', 'leaks', 'consult-by-range', 'consult-by-range-hand', 'range-grid']
+export const PLAYER_VIEWS = ['by-range', 'leaks', 'consult-by-range', 'consult-by-range-hand', 'range-grid', 'build-range-grid']
 
 export async function onRequest(context) {
   const { request, env } = context

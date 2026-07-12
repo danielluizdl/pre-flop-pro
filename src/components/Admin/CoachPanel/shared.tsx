@@ -381,6 +381,32 @@ export function useRangeGrid(rangeId: number | null, days: number | null, from: 
   return { cells, loading, error }
 }
 
+// stackRange (não é índice, é a label salva em range_build_events.stack_range,
+// ex. "250bb") null = sem filtro de stack (todas as faixas).
+export function useBuildRangeGrid(rangeId: number | null, stackRange: string | null, days: number | null, from: number | null, to: number | null, playerIds: number[], token: string | null, endpoint = ADMIN_ANALYTICS) {
+  const [cells, setCells] = useState<GridCell[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const idsKey = playerIds.join(',')
+
+  useEffect(() => {
+    if (!token || rangeId === null) { setCells([]); return }
+    let cancelled = false
+    setLoading(true)
+    setError('')
+    const qs = new URLSearchParams({ view: 'build-range-grid', rangeId: String(rangeId) })
+    if (idsKey) qs.set('playerIds', idsKey)
+    if (stackRange !== null) qs.set('stackRange', stackRange)
+    setDateParams(qs, { days, from, to })
+    fetchAnalyticsCached(`${endpoint}?${qs.toString()}`, token)
+      .then(d => { if (!cancelled) { setCells(d.cells ?? []); setLoading(false) } })
+      .catch(e => { if (!cancelled) { captureError(e, { area: 'coach-build-range-grid', view: 'build-range-grid' }); setError(t.coach.loadError); setLoading(false) } })
+    return () => { cancelled = true }
+  }, [token, rangeId, stackRange, days, from, to, idsKey, endpoint])
+
+  return { cells, loading, error }
+}
+
 export interface UserOpt { id: number; username: string; name: string }
 
 export interface PlayerRangeApiRow { userId: number; rangeId: number; rangeName: string; total: number; correct: number }

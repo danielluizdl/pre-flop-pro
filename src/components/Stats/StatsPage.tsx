@@ -4,7 +4,6 @@ import type { BuildHistoryRound, BuildSession, HandData, HandHistoryEntry, Range
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import { PageTutorialButton } from '../ui/PageTutorialButton'
 import { MyAccountStats } from './MyAccountStats'
-import { BuildAccountStats } from './BuildAccountStats'
 import { AccuracySparkline } from './AccuracySparkline'
 import { Skeleton } from '../ui/Skeleton'
 import { t, dateLocale } from '../../i18n'
@@ -820,12 +819,6 @@ export function StatsPage() {
           <MyAccountStats />
         ) : activeTab === 'build' ? (
           <div className="space-y-6">
-            {currentUser && (
-              <div>
-                <div className="eyebrow mb-2">{t.myAccount.buildTitle}</div>
-                <BuildAccountStats />
-              </div>
-            )}
             <div>
               {currentUser && <div className="eyebrow mb-2">{t.myAccount.buildReplayTitle}</div>}
               <BuildHistoryPanel />

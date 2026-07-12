@@ -38,19 +38,21 @@ export function ComboSummary({ stats }: { stats: ComboStats }) {
   )
 }
 
-export function TopHandsPanel({ cells, selected, onSelect }: { cells: GridCell[]; selected: string | null; onSelect: (hand: string) => void }) {
+export function TopHandsPanel({ cells, selected, onSelect, showConsults = true }: { cells: GridCell[]; selected: string | null; onSelect: (hand: string) => void; showConsults?: boolean }) {
   const [tab, setTab] = useState<'errors' | 'consults'>('errors')
   const errors = [...cells].filter(c => c.total >= 3).sort((a, b) => a.accuracy - b.accuracy).slice(0, 20)
-  const consults = [...cells].filter(c => c.consults > 0).sort((a, b) => b.consults - a.consults).slice(0, 20)
+  const consults = showConsults ? [...cells].filter(c => c.consults > 0).sort((a, b) => b.consults - a.consults).slice(0, 20) : []
   const list = tab === 'errors' ? errors : consults
   const tabCls = (on: boolean) => `flex-1 px-2 py-1 rounded-md text-[0.7rem] font-semibold border transition-colors ${on ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:text-warm-200'}`
 
   return (
     <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-3 w-[260px] shrink-0">
-      <div className="flex gap-1 mb-1.5">
-        <button onClick={() => setTab('errors')} className={tabCls(tab === 'errors')}>{t.coach.top20errors}</button>
-        <button onClick={() => setTab('consults')} className={tabCls(tab === 'consults')}>{t.coach.top20consults}</button>
-      </div>
+      {showConsults && (
+        <div className="flex gap-1 mb-1.5">
+          <button onClick={() => setTab('errors')} className={tabCls(tab === 'errors')}>{t.coach.top20errors}</button>
+          <button onClick={() => setTab('consults')} className={tabCls(tab === 'consults')}>{t.coach.top20consults}</button>
+        </div>
+      )}
       <p className="text-[0.62rem] text-warm-500 mb-1.5">{t.coach.clickHandDetail}</p>
       <div className="space-y-0.5 max-h-[460px] overflow-y-auto pr-1">
         {list.length === 0 ? (
@@ -82,7 +84,7 @@ function playedPct(p?: { fold: number; call: number; raise: number; allin: numbe
   return { fold: (p.fold / tot) * 100, call: (p.call / tot) * 100, raise: (p.raise / tot) * 100, allin: (p.allin / tot) * 100, extra: (p.extra / tot) * 100 }
 }
 
-export function HandDetailCard({ cell, playedLabel }: { cell: GridCell; playedLabel?: string }) {
+export function HandDetailCard({ cell, playedLabel, showConsults = true }: { cell: GridCell; playedLabel?: string; showConsults?: boolean }) {
   const pp = playedPct(cell.played)
   const Stat = ({ label, v, cls }: { label: string; v: number; cls?: string }) => (
     <div className="bg-warm-900/60 rounded-lg px-2.5 py-1.5">
@@ -97,11 +99,11 @@ export function HandDetailCard({ cell, playedLabel }: { cell: GridCell; playedLa
         <span className="px-2.5 py-1 rounded text-base font-bold text-white" style={{ background: confChipBg(cell.accuracy), textShadow: '0 0 3px rgba(0,0,0,0.6)' }}>{cell.hand}</span>
         <span className={`text-lg font-bold ${accColor(cell.accuracy)}`}>{cell.accuracy}%</span>
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className={showConsults ? 'grid grid-cols-2 gap-2' : 'grid grid-cols-3 gap-2'}>
         <Stat label={t.coach.detailAttempts} v={cell.total} />
         <Stat label={t.coach.detailCorrect} v={cell.correct} cls="text-emerald-300" />
         <Stat label={t.coach.detailBlunder} v={cell.graves} cls="text-red-400" />
-        <Stat label={t.coach.detailConsults} v={cell.consults} cls="text-purple-300" />
+        {showConsults && <Stat label={t.coach.detailConsults} v={cell.consults} cls="text-purple-300" />}
       </div>
       <div className="text-xs space-y-0.5">
         <div className="text-emerald-300">{t.coach.detailCorrectPrefix}{cell.correctAction ?? '—'}</div>

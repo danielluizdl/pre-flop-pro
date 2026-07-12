@@ -54,6 +54,68 @@ export function handFilters(filters) {
 
 export const ACC = (correct, total) => (total > 0 ? Math.round((correct / total) * 1000) / 10 : 0)
 
+// Mais da metade dos combos da mão foram alocados errado numa tentativa de
+// Range Check — marca de "grave", espelhando o conceito de blunder do Drill
+// (que lá é binário: 0% de frequência na mão respondida).
+const BUILD_GRAVE_THRESHOLD = 0.5
+
+// Agrega tentativas de Range Check (wrong_hands/user_grid já decodificados de
+// JSON) em GridCell[] compatível com RangeHeatGrid/TopHandsPanel/HandDetailCard.
+// Cada tentativa pinta a grade 13x13 inteira, então total é o mesmo p/ todas as
+// mãos (nº de tentativas filtradas) — diferente do Drill, onde total varia por
+// mão conforme quantas vezes ela foi sorteada. A mão ausente em wrong_hands
+// numa tentativa significa acerto perfeito nela (fração de erro implícita 0);
+// ausente em user_grid significa fold:100 legítimo (mesmo default de
+// decodeSparse). played soma (não tira média) as 5 frequências por tentativa —
+// o client já normaliza por total ao montar o "range jogado" (mesmo cálculo
+// usado hoje para o Drill), então somar % em vez de médias dá o resultado certo.
+export function buildRangeGridCells(rows) {
+  const total = rows.length
+  const hands = new Set()
+  for (const row of rows) {
+    for (const h of Object.keys(row.wrongHands ?? {})) hands.add(h)
+    for (const h of Object.keys(row.userGrid ?? {})) hands.add(h)
+  }
+
+  const acc = new Map()
+  for (const hand of hands) acc.set(hand, { errSum: 0, correct: 0, graves: 0, played: { fold: 0, call: 0, raise: 0, allin: 0, extra: 0 } })
+
+  for (const row of rows) {
+    const wrongHands = row.wrongHands ?? {}
+    const userGrid = row.userGrid ?? {}
+    for (const [hand, cur] of acc) {
+      const err = wrongHands[hand] ?? 0
+      cur.errSum += err
+      if (err === 0) cur.correct += 1
+      if (err >= BUILD_GRAVE_THRESHOLD) cur.graves += 1
+
+      const d = userGrid[hand]
+      const call = d?.call ?? 0
+      const raise = d?.raise ?? 0
+      const allin = d?.allin ?? 0
+      const extra = d?.extra ?? 0
+      const fold = d ? Math.max(0, 100 - call - raise - allin - extra) : 100
+      cur.played.fold += fold
+      cur.played.call += call
+      cur.played.raise += raise
+      cur.played.allin += allin
+      cur.played.extra += extra
+    }
+  }
+
+  return [...acc.entries()].map(([hand, cur]) => ({
+    hand,
+    total,
+    correct: cur.correct,
+    accuracy: total > 0 ? Math.max(0, Math.min(100, Math.round(100 * (1 - cur.errSum / total)))) : 0,
+    graves: cur.graves,
+    consults: 0,
+    correctAction: null,
+    topWrong: null,
+    played: cur.played,
+  }))
+}
+
 export async function onRequest(context) {
   const { request, env } = context
   if (request.method === 'OPTIONS') return handleOptions()
@@ -537,6 +599,36 @@ export async function runAnalyticsView(env, url, view, filters) {
       return json({ view, rows: res.results ?? [] })
     } catch {
       return json({ view, rows: [] })
+    }
+  }
+
+  if (view === 'build-range-grid') {
+    if (filters.rangeId === null) return json({ error: 'rangeId obrigatório' }, 400)
+
+    const hf = handFilters(filters)
+    let clause = hf.clause
+    const binds = [...hf.binds]
+    // stack_range é a label salva pelo cliente (ex.: "250bb"), não um índice como
+    // o stackGridIdx do Drill. Ausência do parâmetro = sem filtro (todas as
+    // faixas); presente mas vazio = "stack_range IS NULL" — NUNCA "= ?" com bind
+    // vazio, porque NULL = NULL não é verdadeiro em SQL.
+    if (url.searchParams.has('stackRange')) {
+      const sr = url.searchParams.get('stackRange')
+      if (sr) { clause += ' AND stack_range = ?'; binds.push(sr) }
+      else { clause += ' AND stack_range IS NULL' }
+    }
+
+    try {
+      const res = await env.DB.prepare(
+        `SELECT wrong_hands AS wrongHands, user_grid AS userGrid FROM range_build_events ${clause}`
+      ).bind(...binds).all()
+      const rows = (res.results ?? []).map(r => ({
+        wrongHands: r.wrongHands ? JSON.parse(r.wrongHands) : {},
+        userGrid: r.userGrid ? JSON.parse(r.userGrid) : {},
+      }))
+      return json({ view, cells: buildRangeGridCells(rows) })
+    } catch {
+      return json({ view, cells: [] })
     }
   }
 

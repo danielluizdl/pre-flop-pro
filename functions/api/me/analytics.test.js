@@ -46,7 +46,7 @@ describe('/api/me/analytics', () => {
 
   it('aceita todas as views da whitelist', async () => {
     for (const view of PLAYER_VIEWS) {
-      const qs = view === 'consult-by-range-hand' || view === 'range-grid' ? `view=${view}&rangeId=1` : `view=${view}`
+      const qs = view === 'consult-by-range-hand' || view === 'range-grid' || view === 'build-range-grid' ? `view=${view}&rangeId=1` : `view=${view}`
       const { context } = makeContext(qs)
       const res = await onRequest(context)
       expect(res.status, view).toBe(200)

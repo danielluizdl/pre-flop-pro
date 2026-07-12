@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { axe } from 'jest-axe'
 import { AnalysisPage } from './AnalysisPage'
 import { StatsPage } from '../Stats/StatsPage'
@@ -65,6 +65,47 @@ describe('AnalysisPage', () => {
     mockApi()
     const { container } = render(<AnalysisPage />)
     await screen.findByText('Por range')
+    expect((await axe(container)).violations).toEqual([])
+  })
+})
+
+describe('AnalysisPage — abas Drill/Range Check', () => {
+  it('mostra as duas abas e o Drill fica ativo por padrão', async () => {
+    mockApi()
+    render(<AnalysisPage />)
+    await screen.findByText('Por range')
+    expect(screen.getByRole('button', { name: 'Drill' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Range Check' })).toBeInTheDocument()
+    expect(screen.getByText('Maiores leaks')).toBeInTheDocument()
+  })
+
+  it('trocar para a aba Range Check mostra a matriz e some com as seções do Drill', async () => {
+    mockApi()
+    render(<AnalysisPage />)
+    await screen.findByText('Por range')
+    fireEvent.click(screen.getByRole('button', { name: 'Range Check' }))
+    expect(await screen.findByText('Matriz do range')).toBeInTheDocument()
+    expect(screen.queryByText('Maiores leaks')).not.toBeInTheDocument()
+    expect(screen.queryByText('Consulta no drill')).not.toBeInTheDocument()
+  })
+
+  it('aba Range Check nunca busca no endpoint de admin', async () => {
+    const urls = mockApi()
+    render(<AnalysisPage />)
+    await screen.findByText('Por range')
+    fireEvent.click(screen.getByRole('button', { name: 'Range Check' }))
+    await screen.findByText('Matriz do range')
+    const apiCalls = urls.filter(u => u.includes('/api/'))
+    expect(apiCalls.length).toBeGreaterThan(0)
+    for (const u of apiCalls) expect(u).not.toContain('/api/admin/')
+  })
+
+  it('não tem violações de acessibilidade na aba Range Check', async () => {
+    mockApi()
+    const { container } = render(<AnalysisPage />)
+    await screen.findByText('Por range')
+    fireEvent.click(screen.getByRole('button', { name: 'Range Check' }))
+    await screen.findByText('Matriz do range')
     expect((await axe(container)).violations).toEqual([])
   })
 })

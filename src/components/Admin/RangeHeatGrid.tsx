@@ -77,7 +77,8 @@ const HeatCell = memo(function HeatCell({ hand, color, hasData, onEnter }: {
   )
 })
 
-export function RangeHeatGrid({ cells }: { cells: GridCell[] }) {
+export function RangeHeatGrid({ cells, showConsults = true }: { cells: GridCell[]; showConsults?: boolean }) {
+  const metricKeys = showConsults ? METRIC_KEYS : METRIC_KEYS.filter(m => m !== 'consults')
   const [metric, setMetric] = useState<Metric>('accuracy')
   const [hovered, setHovered] = useState<string | null>(null)
   const [mouse, setMouse] = useState({ x: 0, y: 0 })
@@ -96,7 +97,7 @@ export function RangeHeatGrid({ cells }: { cells: GridCell[] }) {
   return (
     <div className="relative">
       <div className="flex gap-1 mb-3">
-        {METRIC_KEYS.map(m => (
+        {metricKeys.map(m => (
           <button
             key={m}
             onClick={() => setMetric(m)}
@@ -116,7 +117,7 @@ export function RangeHeatGrid({ cells }: { cells: GridCell[] }) {
           style={{ left: mouse.x + 14, top: mouse.y - 38 }}
         >
           <div><span className="font-bold text-warm-200 mr-1">{hCell.hand}</span>{hCell.correct}/{hCell.total} · {hCell.accuracy}%</div>
-          <div className="text-warm-400">graves {hCell.graves} · consultas {hCell.consults}</div>
+          <div className="text-warm-400">graves {hCell.graves}{showConsults ? ` · consultas ${hCell.consults}` : ''}</div>
           {hCell.topWrong && (
             <div className="text-warm-400">correto {hCell.correctAction ?? '—'} · erram mais <span className="text-red-300">{hCell.topWrong.action}</span> ({hCell.topWrong.n}x)</div>
           )}

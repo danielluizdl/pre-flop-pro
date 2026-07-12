@@ -1,14 +1,15 @@
 import { Fragment, useCallback, useMemo, useState } from 'react'
 import { BarChart3 } from 'lucide-react'
 import { useStore } from '../../store/useStore'
-import { RangeHeatGrid } from '../Admin/RangeHeatGrid'
+import { RangeHeatGrid, type GridCell } from '../Admin/RangeHeatGrid'
 import { RangeActionGrid, type ActionFreq } from '../Admin/RangeActionGrid'
+import { BuildAccountStats } from '../Stats/BuildAccountStats'
 import { rangeComboStats } from '../../utils/rangeCombos'
 import { rankLeaks } from '../../utils/coachStats'
 import { t } from '../../i18n'
 import {
   groupRangesByPosition, RangeSelect, accColor,
-  type Filters, PeriodFilter, useAnalytics, useRangeGrid,
+  type Filters, PeriodFilter, useAnalytics, useRangeGrid, useBuildRangeGrid,
   Section, TH, THR, TD, TDR,
 } from '../Admin/CoachPanel/shared'
 import {
@@ -22,10 +23,33 @@ const ME_ANALYTICS = '/api/me/analytics'
 type ByRangeSortKey = 'hands' | 'accuracy' | 'graves' | 'consults'
 type LeaksSortKey = 'hand' | 'rangeName' | 'total' | 'accuracyLower' | 'graves' | 'imprecisos' | 'impact'
 type ConsultSortKey = 'rangeName' | 'totalConsults' | 'rate' | 'totalPlayed'
+type AnalysisTab = 'drill' | 'buildcheck'
+
+// Reconstrói o "range jogado" a partir das somas de played (cell.played) — usado
+// tanto pelo Drill (contagens de vezes que cada ação foi escolhida) quanto pelo
+// Range Check (soma de % por tentativa, que normalizada dá a média corretamente).
+function computePlayedGrid(cells: GridCell[]): Record<string, ActionFreq> {
+  const out: Record<string, ActionFreq> = {}
+  for (const c of cells) {
+    const p = c.played
+    if (!p) continue
+    const tot = p.fold + p.call + p.raise + p.allin + p.extra
+    if (tot <= 0) continue
+    out[c.hand] = {
+      fold: (p.fold / tot) * 100,
+      call: (p.call / tot) * 100,
+      raise: (p.raise / tot) * 100,
+      allin: (p.allin / tot) * 100,
+      extra: (p.extra / tot) * 100,
+    }
+  }
+  return out
+}
 
 export function AnalysisPage() {
   const currentUser = useStore(s => s.currentUser)
   const authToken = useStore(s => s.authToken)
+  const [tab, setTab] = useState<AnalysisTab>('drill')
 
   return (
     <div className="space-y-4">
@@ -34,7 +58,26 @@ export function AnalysisPage() {
         <p className="text-xs text-warm-400 mt-1">{t.analysis.intro}</p>
       </div>
       {currentUser && authToken ? (
-        <AnalysisContent />
+        <>
+          <div className="flex border-b border-warm-700">
+            {([
+              { key: 'drill' as const, label: t.drill.title },
+              { key: 'buildcheck' as const, label: t.exercise.navLabel },
+            ]).map(tb => (
+              <button
+                key={tb.key}
+                onClick={() => setTab(tb.key)}
+                className={[
+                  'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors',
+                  tab === tb.key ? 'border-brand-500 text-warm-100' : 'border-transparent text-warm-400 hover:text-warm-200',
+                ].join(' ')}
+              >
+                {tb.label}
+              </button>
+            ))}
+          </div>
+          {tab === 'drill' ? <DrillAnalysisContent /> : <RangeCheckAnalysisContent />}
+        </>
       ) : (
         <div className="text-center py-20 max-w-md mx-auto">
           <BarChart3 size={32} className="mx-auto text-warm-600 mb-4" aria-hidden />
@@ -46,7 +89,7 @@ export function AnalysisPage() {
   )
 }
 
-function AnalysisContent() {
+function DrillAnalysisContent() {
   const ranges = useStore(s => s.ranges)
   const token = useStore(s => s.authToken)
   const [filters, setFilters] = useState<Filters>({ playerIds: [], rangeId: null, days: null, from: null, to: null })
@@ -83,23 +126,7 @@ function AnalysisContent() {
     return (sg ?? selectedRange.grid ?? {}) as Record<string, ActionFreq>
   }, [selectedRange, stackIdx])
 
-  const playedGrid = useMemo<Record<string, ActionFreq>>(() => {
-    const out: Record<string, ActionFreq> = {}
-    for (const c of grid.cells) {
-      const p = c.played
-      if (!p) continue
-      const tot = p.fold + p.call + p.raise + p.allin + p.extra
-      if (tot <= 0) continue
-      out[c.hand] = {
-        fold: (p.fold / tot) * 100,
-        call: (p.call / tot) * 100,
-        raise: (p.raise / tot) * 100,
-        allin: (p.allin / tot) * 100,
-        extra: (p.extra / tot) * 100,
-      }
-    }
-    return out
-  }, [grid.cells])
+  const playedGrid = useMemo(() => computePlayedGrid(grid.cells), [grid.cells])
 
   const comboReal = useMemo(() => rangeComboStats(realGrid), [realGrid])
   const comboPlayed = useMemo(() => rangeComboStats(playedGrid), [playedGrid])
@@ -388,6 +415,137 @@ function AnalysisContent() {
           </tbody>
         </table>
       </Section>
+    </div>
+  )
+}
+
+function RangeCheckAnalysisContent() {
+  const ranges = useStore(s => s.ranges)
+  const token = useStore(s => s.authToken)
+  const [filters, setFilters] = useState<Filters>({ playerIds: [], rangeId: null, days: null, from: null, to: null })
+  const [stackIdx, setStackIdx] = useState<number | null>(null)
+  const [detailHand, setDetailHand] = useState<string | null>(null)
+
+  const rangeGroups = useMemo(() => groupRangesByPosition(ranges), [ranges])
+
+  const selectedRange = ranges.find(r => r.id === filters.rangeId)
+  const selectedRangeName = selectedRange?.name ?? ''
+  const selectedStackGrids = selectedRange?.stackGrids ?? []
+  // stack_range salvo no evento é a label (ex. "250bb"), não o índice — traduz
+  // o índice escolhido na aba de UI pra label na hora de consultar o back-end.
+  const stackRangeParam = stackIdx !== null ? (selectedStackGrids[stackIdx]?.stackRange ?? '') : null
+
+  const grid = useBuildRangeGrid(filters.rangeId, stackRangeParam, filters.days, filters.from, filters.to, [], token, ME_ANALYTICS)
+
+  const setRangeId = useCallback((rangeId: number | null) => {
+    setFilters(f => ({ ...f, rangeId }))
+    setStackIdx(null)
+    setDetailHand(null)
+  }, [])
+
+  const realGrid = useMemo<Record<string, ActionFreq>>(() => {
+    if (!selectedRange) return {}
+    const sg = stackIdx !== null ? selectedRange.stackGrids?.[stackIdx]?.grid : undefined
+    return (sg ?? selectedRange.grid ?? {}) as Record<string, ActionFreq>
+  }, [selectedRange, stackIdx])
+
+  const playedGrid = useMemo(() => computePlayedGrid(grid.cells), [grid.cells])
+
+  const comboReal = useMemo(() => rangeComboStats(realGrid), [realGrid])
+  const comboPlayed = useMemo(() => rangeComboStats(playedGrid), [playedGrid])
+  const detailCell = detailHand ? grid.cells.find(c => c.hand === detailHand) : undefined
+
+  return (
+    <div className="flex flex-col gap-6">
+      <BuildAccountStats />
+
+      <div>
+        <h2 className="text-sm font-semibold text-warm-200 mb-2">
+          {t.coach.matrixTitle} {selectedRangeName ? <span className="text-brand-400">· {selectedRangeName}</span> : ''}
+        </h2>
+        <div className="rounded-xl border border-warm-700 bg-warm-900/30 p-4 flex flex-wrap gap-6 mb-3">
+          <div>
+            <p className="text-xs font-semibold text-warm-400 uppercase tracking-wide mb-1.5">{t.coach.period}:</p>
+            <PeriodFilter
+              days={filters.days}
+              from={filters.from}
+              to={filters.to}
+              onChange={d => setFilters(f => ({ ...f, ...d }))}
+            />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-warm-400 uppercase tracking-wide mb-1.5">{t.coach.colRanges}:</p>
+            <RangeSelect groups={rangeGroups} value={filters.rangeId} onChange={setRangeId} />
+          </div>
+        </div>
+        {filters.rangeId !== null && selectedStackGrids.length > 1 && (
+          <div className="flex flex-wrap items-center gap-1.5 mb-3">
+            <span className="text-xs text-warm-500 mr-1">{t.coach.effectiveStack}</span>
+            <button
+              onClick={() => { setStackIdx(null); setDetailHand(null) }}
+              className={[
+                'px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors',
+                stackIdx === null ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:text-warm-200',
+              ].join(' ')}
+            >
+              {t.coach.matrixAll}
+            </button>
+            {selectedStackGrids.map((sg, i) => (
+              <button
+                key={i}
+                onClick={() => { setStackIdx(i); setDetailHand(null) }}
+                className={[
+                  'px-2.5 py-1 rounded-full text-xs font-medium border transition-colors',
+                  stackIdx === i ? 'bg-brand-600 border-brand-500 text-white' : 'bg-warm-800 border-warm-600 text-warm-400 hover:text-warm-200',
+                ].join(' ')}
+              >
+                {sg.name || sg.stackRange}
+              </button>
+            ))}
+          </div>
+        )}
+        {filters.rangeId === null ? (
+          <p className="text-sm text-warm-500">{t.coach.selectRangeForMatrix}</p>
+        ) : grid.loading ? (
+          <p className="text-sm text-warm-500">{t.coach.loading}</p>
+        ) : grid.error ? (
+          <p className="text-sm text-red-400">{grid.error}</p>
+        ) : grid.cells.length === 0 ? (
+          <p className="text-sm text-warm-500">{t.coach.noRangeData}</p>
+        ) : (
+          <div className="space-y-5">
+            <div className="flex items-center gap-3 text-[0.7rem] text-warm-400">
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded" style={{ background: '#ef4444' }} />{t.coach.legendRaise}</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded" style={{ background: '#22c55e' }} />{t.coach.legendCall}</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded" style={{ background: '#6b2d0d' }} />{t.coach.legendAllin}</span>
+              <span className="text-warm-600">{t.coach.legendFold}</span>
+            </div>
+            <div className="flex flex-col xl:flex-row items-start gap-6">
+              <div className="flex flex-wrap items-start gap-6 flex-1 min-w-0">
+                <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
+                  <RangeActionGrid title={t.coach.actionGridRealTitle} subtitle={t.coach.actionGridRealSub} grid={realGrid} />
+                  <ComboSummary stats={comboReal} />
+                </div>
+                <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
+                  <RangeActionGrid title={t.coach.actionGridBuildPlayedTitle} subtitle={t.coach.actionGridBuildPlayedSub} grid={playedGrid} />
+                  <ComboSummary stats={comboPlayed} />
+                </div>
+              </div>
+              <div className="flex flex-wrap xl:flex-nowrap items-start gap-4 xl:shrink-0">
+                <div className="rounded-xl border border-warm-700 bg-warm-900/40 p-4">
+                  <h3 className="text-xs font-semibold text-warm-200 mb-1">{t.coach.accuracyErrors}</h3>
+                  <p className="text-[0.65rem] text-warm-500 mb-2 max-w-[280px]">{t.coach.buildAccuracyCaption}</p>
+                  <RangeHeatGrid cells={grid.cells} showConsults={false} />
+                </div>
+                <TopHandsPanel cells={grid.cells} selected={detailHand} onSelect={h => setDetailHand(h === detailHand ? null : h)} showConsults={false} />
+                <div className="w-[270px] shrink-0">
+                  {detailCell && <HandDetailCard cell={detailCell} playedLabel={t.coach.howYouPlayed} showConsults={false} />}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
