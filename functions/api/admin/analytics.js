@@ -619,8 +619,12 @@ export async function runAnalyticsView(env, url, view, filters) {
     }
 
     try {
+      // user_grid IS NOT NULL exclui tentativas de antes do schema_v9 (sem o
+      // grid pintado salvo) — sem isso, essas tentativas entram como {} (tudo
+      // fold) na média em vez de simplesmente não contar, derrubando o "range
+      // médio jogado" mesmo em mãos sem nenhum erro registrado.
       const res = await env.DB.prepare(
-        `SELECT wrong_hands AS wrongHands, user_grid AS userGrid FROM range_build_events ${clause}`
+        `SELECT wrong_hands AS wrongHands, user_grid AS userGrid FROM range_build_events ${clause} AND user_grid IS NOT NULL`
       ).bind(...binds).all()
       const rows = (res.results ?? []).map(r => ({
         wrongHands: r.wrongHands ? JSON.parse(r.wrongHands) : {},

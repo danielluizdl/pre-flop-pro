@@ -158,10 +158,12 @@ export async function onRequest(context) {
     // Acertos/erros por mão somados em todas as tentativas de cada range —
     // reaproveita a mesma agregação da Matriz do range (build-range-grid),
     // só que agrupada por range em vez de rodar pra um range só. Fail-open:
-    // wrong_hands/user_grid (schema_v9) podem não existir ainda.
+    // wrong_hands/user_grid (schema_v9) podem não existir ainda. user_grid IS
+    // NOT NULL exclui tentativas de antes do schema_v9 (sem grid salvo) — sem
+    // isso elas entram como {} (tudo fold) na média em vez de não contar.
     try {
       const raw = await env.DB.prepare(
-        'SELECT range_id AS rangeId, wrong_hands AS wrongHands, user_grid AS userGrid FROM range_build_events WHERE user_id = ?'
+        'SELECT range_id AS rangeId, wrong_hands AS wrongHands, user_grid AS userGrid FROM range_build_events WHERE user_id = ? AND user_grid IS NOT NULL'
       ).bind(uid).all()
       const byRange = new Map()
       for (const row of raw.results ?? []) {
