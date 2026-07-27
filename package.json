@@ -12,12 +12,12 @@
     "smoke": "vite build && node smoke/smoke.mjs"
   },
   "dependencies": {
-    "@sentry/react": "^10.63.0",
-    "@tailwindcss/vite": "^4.3.2",
+    "@sentry/react": "^10.68.0",
+    "@tailwindcss/vite": "^4.3.3",
     "clsx": "^2.1.1",
-    "lucide-react": "^1.23.0",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
+    "lucide-react": "^1.27.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.1",
     "zustand": "^5.0.14"
   },
