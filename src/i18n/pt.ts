@@ -330,6 +330,8 @@ export const pt = {
     confirmBack: 'Voltar',
     roundOf: (i: number, n: number) => `Round ${i}/${n}`,
     reproduceLabel: 'Reproduza de memória:',
+    roundTimeLabel: 'Tempo',
+    totalTimeLabel: 'Tempo total',
     paintIntro: 'Pinte a matriz com as frequências que você lembra. O gabarito só aparece depois de enviar.',
     submit: 'Enviar resposta',
     finishExercise: 'Encerrar exercício',

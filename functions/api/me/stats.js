@@ -219,16 +219,28 @@ export async function onRequest(context) {
   if (view === 'build-session-rounds') {
     const sessionUuid = url.searchParams.get('session_uuid')
     if (!sessionUuid) return json({ error: 'session_uuid obrigatório' }, 400)
+    // Tenta com duration_seconds (schema_v10); se a coluna ainda não existir,
+    // refaz sem ela em vez de devolver a lista vazia inteira.
     try {
       const r = await env.DB.prepare(
         `SELECT range_id AS rangeId, range_name AS rangeName, stack_range AS stackRange, score, attempt,
-          user_grid AS userGrid, answer_grid AS answerGrid, created_at AS createdAt
+          user_grid AS userGrid, answer_grid AS answerGrid, duration_seconds AS durationSeconds, created_at AS createdAt
          FROM range_build_events WHERE user_id = ? AND session_uuid = ?
          ORDER BY created_at ASC, id ASC`
       ).bind(uid, sessionUuid).all()
       return json({ view, rows: r.results ?? [] })
     } catch {
-      return json({ view, rows: [] })
+      try {
+        const r = await env.DB.prepare(
+          `SELECT range_id AS rangeId, range_name AS rangeName, stack_range AS stackRange, score, attempt,
+            user_grid AS userGrid, answer_grid AS answerGrid, created_at AS createdAt
+           FROM range_build_events WHERE user_id = ? AND session_uuid = ?
+           ORDER BY created_at ASC, id ASC`
+        ).bind(uid, sessionUuid).all()
+        return json({ view, rows: r.results ?? [] })
+      } catch {
+        return json({ view, rows: [] })
+      }
     }
   }
 

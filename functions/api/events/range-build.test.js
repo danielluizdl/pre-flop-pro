@@ -59,6 +59,15 @@ describe('validateRangeBuildPayload', () => {
     expect(validateRangeBuildPayload({ ...valid, roundsTotal: 2.5 })).toBe(false)
   })
 
+  it('aceita durationSeconds válido ou ausente e rejeita inválido', () => {
+    expect(validateRangeBuildPayload({ ...valid, durationSeconds: 0 })).toBe(true)
+    expect(validateRangeBuildPayload({ ...valid, durationSeconds: 120 })).toBe(true)
+    expect(validateRangeBuildPayload({ ...valid, durationSeconds: null })).toBe(true)
+    expect(validateRangeBuildPayload({ ...valid, durationSeconds: -1 })).toBe(false)
+    expect(validateRangeBuildPayload({ ...valid, durationSeconds: 1.5 })).toBe(false)
+    expect(validateRangeBuildPayload({ ...valid, durationSeconds: 20000 })).toBe(false)
+  })
+
   it('rejeita uuids malformados', () => {
     expect(validateRangeBuildPayload({ ...valid, session_uuid: 'abc' })).toBe(false)
     expect(validateRangeBuildPayload({ ...valid, client_event_id: 'abc' })).toBe(false)

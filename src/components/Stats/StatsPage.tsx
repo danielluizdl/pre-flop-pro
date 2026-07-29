@@ -11,6 +11,7 @@ import { downloadText } from '../../utils/download'
 import { buildSessionCsv, sessionCsvFilename } from '../../utils/sessionCsv'
 import { resolveSessionRanges, sessionRangeKey } from '../../utils/sessionRanges'
 import { SessionHandLog } from '../ui/SessionHandLog'
+import { formatElapsed } from '../ui/ElapsedClock'
 import { usePagedList, ShowMoreButton } from '../ui/PagedList'
 import { RangeActionGrid } from '../Admin/RangeActionGrid'
 import { DiffGrid } from '../ui/DiffGrid'
@@ -119,6 +120,7 @@ function mapCloudBuildSession(row: Record<string, unknown>): BuildSession {
     rangeNames,
     rounds: [],
     avgScore: Number(row.avgScore ?? 0),
+    durationSeconds: row.durationSeconds != null ? Number(row.durationSeconds) : undefined,
     sessionUuid: (row.sessionUuid as string | null) ?? undefined,
   }
 }
@@ -138,6 +140,7 @@ function mapCloudBuildRound(row: Record<string, unknown>): BuildHistoryRound {
     stackRange,
     userGrid,
     answerGrid,
+    durationSeconds: row.durationSeconds != null ? Number(row.durationSeconds) : undefined,
   }
 }
 
@@ -670,6 +673,12 @@ function BuildHistoryPanel() {
                   <span className="text-xs text-warm-400">{formatDate(s.timestamp)}</span>
                   <span className="text-xs text-warm-600">·</span>
                   <span className="text-xs text-warm-400">{t.exercise.roundsCount(roundsN)}</span>
+                  {s.durationSeconds != null && (
+                    <>
+                      <span className="text-xs text-warm-600">·</span>
+                      <span className="text-xs text-warm-400">{formatElapsed(s.durationSeconds)}</span>
+                    </>
+                  )}
                 </div>
                 <div className="font-display uppercase text-warm-100 truncate leading-none" style={{ fontSize:18, letterSpacing:'0.03em' }}>
                   {s.rangeNames.join(' · ') || t.stats.noName}
@@ -699,8 +708,13 @@ function BuildHistoryPanel() {
                             </span>
                           )}
                         </span>
-                        <span className={`font-bold tabular-nums flex-shrink-0 ${buildScoreColor(r.score)}`}>
-                          {t.exercise.scoreOf(String(r.score))}
+                        <span className="flex items-center gap-2 flex-shrink-0">
+                          {r.durationSeconds != null && (
+                            <span className="text-xs font-semibold tabular-nums text-warm-500">{formatElapsed(r.durationSeconds)}</span>
+                          )}
+                          <span className={`font-bold tabular-nums ${buildScoreColor(r.score)}`}>
+                            {t.exercise.scoreOf(String(r.score))}
+                          </span>
                         </span>
                       </>
                     )

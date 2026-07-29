@@ -169,6 +169,7 @@ export interface BuildRoundResult {
   attempt: number
   userGrid: Record<string, HandData>
   perHand: Record<string, number>
+  durationSeconds: number
 }
 
 export interface BuildHistoryRound {
@@ -182,6 +183,8 @@ export interface BuildHistoryRound {
   customAction?: { label: string; color: string }
   userGrid?: Record<string, HandData>
   answerGrid?: Record<string, HandData>
+  // Tempo gasto pintando esse round; rounds salvos antes dessa feature não têm.
+  durationSeconds?: number
 }
 
 export interface BuildSession {
@@ -190,6 +193,9 @@ export interface BuildSession {
   rangeNames: string[]
   rounds: BuildHistoryRound[]
   avgScore: number
+  // Soma dos rounds (local) ou tempo de parede da sessão vindo do servidor
+  // (cloud, range_build_sessions) — sessões salvas antes dessa feature não têm.
+  durationSeconds?: number
   // Sessão vinda da nuvem (functions/api/me/stats view=build-sessions) — usado
   // pra buscar os rounds (view=build-session-rounds) sob demanda ao abrir.
   sessionUuid?: string

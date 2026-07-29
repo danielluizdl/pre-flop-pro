@@ -181,6 +181,20 @@ describe('submitBuildRound', () => {
     useStore.getState().retryBuildRound()
     expect(useStore.getState().buildAttempt).toBe(1)
   })
+
+  it('grava a duração do round (cronômetro) no resultado, na telemetria e reseta ao tentar de novo', () => {
+    useStore.getState().submitBuildRound()
+    let s = useStore.getState()
+    expect(typeof s.buildResults[0].durationSeconds).toBe('number')
+    expect(s.buildResults[0].durationSeconds).toBeGreaterThanOrEqual(0)
+    const b = vi.mocked(enqueue).mock.calls[0][1] as Record<string, unknown>
+    expect(typeof b.durationSeconds).toBe('number')
+
+    const startMsBefore = s.buildRoundStartMs
+    useStore.getState().retryBuildRound()
+    s = useStore.getState()
+    expect(s.buildRoundStartMs).toBeGreaterThanOrEqual(startMsBefore)
+  })
 })
 
 describe('nextBuildRound / stopBuildSession', () => {
@@ -234,6 +248,10 @@ describe('nextBuildRound / stopBuildSession', () => {
     expect(session.rounds[0].answerGrid).toEqual({ KK: expect.objectContaining({ allin: 100 }) })
     expect(session.rounds[1].userGrid).toEqual({})
     expect(session.rounds[1].answerGrid).toEqual({ QQ: expect.objectContaining({ raise: 100 }) })
+    // cronômetro por round: cada round guarda sua duração e a sessão soma o total
+    expect(typeof session.rounds[0].durationSeconds).toBe('number')
+    expect(typeof session.rounds[1].durationSeconds).toBe('number')
+    expect(session.durationSeconds).toBe(session.rounds[0].durationSeconds! + session.rounds[1].durationSeconds!)
     const saved = JSON.parse(localStorage.getItem('pfp-build-history-v1') ?? '[]')
     expect(saved).toHaveLength(1)
   })

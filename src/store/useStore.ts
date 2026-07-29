@@ -162,6 +162,7 @@ function makeBuildSession(id: number, rounds: BuildRound[], results: BuildRoundR
         label: r.label,
         score: Math.round(r.score * 10) / 10,
         attempt: r.attempt,
+        durationSeconds: r.durationSeconds,
         // Grids esparsos p/ replay da rodada; o gabarito é snapshot do momento
         // jogado (o range do catálogo pode ser editado/apagado depois).
         userGrid: encodeSparse(r.userGrid),
@@ -174,6 +175,7 @@ function makeBuildSession(id: number, rounds: BuildRound[], results: BuildRoundR
       }
     }),
     avgScore: Math.round(avg * 10) / 10,
+    durationSeconds: results.reduce((s, r) => s + (r.durationSeconds || 0), 0),
   }
 }
 
@@ -308,6 +310,7 @@ interface AppState {
   buildLastResult: { score: number; perHand: Record<string, number>; userGrid: Record<string, HandData> } | null
   buildSessionUuid: string
   buildSessionId: number
+  buildRoundStartMs: number
   buildConfirmed: boolean
   buildAttempt: number
   buildHistory: BuildSession[]
@@ -1317,6 +1320,7 @@ export const useStore = create<AppState>()(
       buildLastResult: null,
       buildSessionUuid: '',
       buildSessionId: 0,
+      buildRoundStartMs: 0,
       buildConfirmed: false,
       buildAttempt: 1,
       buildHistory: loadBuildHistory(),
@@ -1380,15 +1384,16 @@ export const useStore = create<AppState>()(
         return true
       },
 
-      confirmBuildSession: () => set({ buildConfirmed: true }),
+      confirmBuildSession: () => set({ buildConfirmed: true, buildRoundStartMs: Date.now() }),
 
       submitBuildRound: () => {
-        const { buildRounds, buildRoundIdx, buildResults, buildLastResult, buildAttempt, rangeData, buildSessionId, buildHistory } = get()
+        const { buildRounds, buildRoundIdx, buildResults, buildLastResult, buildAttempt, rangeData, buildSessionId, buildHistory, buildRoundStartMs } = get()
         const round = buildRounds[buildRoundIdx]
         if (!round || buildLastResult) return
         const userGrid: Record<string, HandData> = JSON.parse(JSON.stringify(rangeData.grid))
         const { score, perHand } = scoreBuild(round.grid, userGrid)
-        const newResults = [...buildResults, { roundIdx: buildRoundIdx, label: round.label, score, attempt: buildAttempt, userGrid, perHand }]
+        const durationSeconds = Math.max(0, Math.round((Date.now() - (buildRoundStartMs || Date.now())) / 1000))
+        const newResults = [...buildResults, { roundIdx: buildRoundIdx, label: round.label, score, attempt: buildAttempt, userGrid, perHand, durationSeconds }]
         const sid = buildSessionId || Date.now()
         const newHistory = upsertSession(buildHistory, makeBuildSession(sid, buildRounds, newResults))
         saveBuildHistory(newHistory)
@@ -1414,6 +1419,7 @@ export const useStore = create<AppState>()(
           client_event_id: crypto.randomUUID(),
           userGrid: encodeSparse(userGrid),
           answerGrid: encodeSparse(round.grid),
+          durationSeconds,
           ...(Object.keys(wrongHands).length > 0 ? { wrongHands } : {}),
         }, get().authToken)
       },
@@ -1425,6 +1431,7 @@ export const useStore = create<AppState>()(
         set({
           buildLastResult: null,
           buildAttempt: buildAttempt + 1,
+          buildRoundStartMs: Date.now(),
           rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: [], tableSize: currentTableSize, stackRange: '' },
           brush: {
             ...brush, call: 0, raise: 0, allin: 0, extra: 0,
@@ -1443,6 +1450,7 @@ export const useStore = create<AppState>()(
           buildLastResult: null,
           buildAttempt: 1,
           ...(next ? {
+            buildRoundStartMs: Date.now(),
             rangeData: { id: null, name: '', grid: makeEmptyGrid(), positions: [], tableSize: currentTableSize, stackRange: '' },
             brush: {
               ...brush, call: 0, raise: 0, allin: 0, extra: 0,
@@ -1478,6 +1486,7 @@ export const useStore = create<AppState>()(
           buildLastResult: null,
           buildSessionUuid: '',
           buildSessionId: 0,
+          buildRoundStartMs: 0,
           buildConfirmed: false,
           buildAttempt: 1,
           buildHistory: newHistory,

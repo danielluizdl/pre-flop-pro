@@ -332,6 +332,8 @@ export const es: Messages = {
     confirmBack: 'Volver',
     roundOf: (i: number, n: number) => `Round ${i}/${n}`,
     reproduceLabel: 'Reproduce de memoria:',
+    roundTimeLabel: 'Tiempo',
+    totalTimeLabel: 'Tiempo total',
     paintIntro: 'Pinta la matriz con las frecuencias que recuerdes. La respuesta correcta solo aparece después de enviar.',
     submit: 'Enviar respuesta',
     finishExercise: 'Terminar ejercicio',

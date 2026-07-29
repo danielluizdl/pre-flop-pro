@@ -190,7 +190,7 @@ export function OnboardingTour() {
     const userGrid: Record<string, HandData> = JSON.parse(JSON.stringify(round.grid))
     const { score, perHand } = scoreBuild(round.grid, userGrid)
     useStore.setState({
-      buildResults: [...s.buildResults, { roundIdx: s.buildRoundIdx, label: round.label, score, attempt: s.buildAttempt, userGrid, perHand }],
+      buildResults: [...s.buildResults, { roundIdx: s.buildRoundIdx, label: round.label, score, attempt: s.buildAttempt, userGrid, perHand, durationSeconds: 0 }],
       buildLastResult: { score, perHand, userGrid },
     })
   }

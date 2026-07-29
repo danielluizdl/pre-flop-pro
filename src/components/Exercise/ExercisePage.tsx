@@ -7,7 +7,7 @@ import { RangeActionGrid } from '../Admin/RangeActionGrid'
 import { ComboCounter } from '../ui/ComboCounter'
 import { HandQuickSelect } from '../ui/HandQuickSelect'
 import { PageTutorialButton } from '../ui/PageTutorialButton'
-import { ElapsedClock } from '../ui/ElapsedClock'
+import { ElapsedClock, formatElapsed } from '../ui/ElapsedClock'
 import { DiffGrid } from '../ui/DiffGrid'
 import { rangeComboStats, TOTAL_COMBOS } from '../../utils/rangeCombos'
 import { useAwayGuard } from '../../utils/useAwayGuard'
@@ -302,7 +302,7 @@ function ComboDiffPanel({ realGrid, userGrid, extraLabel, extraColor }: {
 function BuildRound() {
   const rounds        = useStore(s => s.buildRounds)
   const roundIdx      = useStore(s => s.buildRoundIdx)
-  const buildSessionId = useStore(s => s.buildSessionId)
+  const buildRoundStartMs = useStore(s => s.buildRoundStartMs)
   const lastResult    = useStore(s => s.buildLastResult)
   const attempt       = useStore(s => s.buildAttempt)
   const submitRound   = useStore(s => s.submitBuildRound)
@@ -344,7 +344,12 @@ function BuildRound() {
           </h2>
           <p className="text-warm-400 text-sm flex items-center gap-3 flex-wrap">
             <span>{t.exercise.reproduceLabel} <span className="font-bold text-warm-100">{round.label}</span></span>
-            <ElapsedClock startMs={buildSessionId} className="text-xs font-semibold text-warm-400" />
+            {!lastResult && (
+              <span className="inline-flex items-center gap-1.5">
+                <span className="text-[0.65rem] font-bold uppercase tracking-wider text-warm-500">{t.exercise.roundTimeLabel}</span>
+                <ElapsedClock startMs={buildRoundStartMs} className="text-xs font-semibold text-warm-400" />
+              </span>
+            )}
           </p>
         </div>
         <button
@@ -381,6 +386,14 @@ function BuildRound() {
             <span className={`text-3xl font-extrabold tabular-nums ${scoreColor(lastResult.score)}`}>
               {t.exercise.scoreOf(fmtScore(lastResult.score))}
             </span>
+            {buildResults.length > 0 && (
+              <span className="inline-flex items-center gap-1.5 pl-3 border-l border-warm-700">
+                <span className="text-xs font-bold text-warm-400 uppercase tracking-wider">{t.exercise.roundTimeLabel}</span>
+                <span className="text-sm font-semibold text-warm-300 tabular-nums">
+                  {formatElapsed(buildResults[buildResults.length - 1].durationSeconds)}
+                </span>
+              </span>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 items-start">
@@ -429,6 +442,7 @@ function BuildSummary() {
   const avg = buildResults.length > 0
     ? buildResults.reduce((s, r) => s + r.score, 0) / buildResults.length
     : null
+  const totalDuration = buildResults.reduce((s, r) => s + (r.durationSeconds || 0), 0)
 
   return (
     <div data-tour="exercise-summary" className="space-y-4 max-w-[1600px] mx-auto">
@@ -445,11 +459,19 @@ function BuildSummary() {
         </button>
       </div>
 
-      <div className="bg-warm-800 border border-warm-700 rounded-xl p-4 text-center">
-        <div className={`text-3xl font-extrabold tabular-nums ${avg !== null ? scoreColor(avg) : 'text-warm-600'}`}>
-          {avg !== null ? t.exercise.scoreOf(fmtScore(avg)) : '—'}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-warm-800 border border-warm-700 rounded-xl p-4 text-center">
+          <div className={`text-3xl font-extrabold tabular-nums ${avg !== null ? scoreColor(avg) : 'text-warm-600'}`}>
+            {avg !== null ? t.exercise.scoreOf(fmtScore(avg)) : '—'}
+          </div>
+          <div className="text-xs text-warm-400 mt-1">{t.exercise.avgScore}</div>
         </div>
-        <div className="text-xs text-warm-400 mt-1">{t.exercise.avgScore}</div>
+        <div className="bg-warm-800 border border-warm-700 rounded-xl p-4 text-center">
+          <div className="text-3xl font-extrabold tabular-nums text-warm-100">
+            {buildResults.length > 0 ? formatElapsed(totalDuration) : '—'}
+          </div>
+          <div className="text-xs text-warm-400 mt-1">{t.exercise.totalTimeLabel}</div>
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -472,6 +494,9 @@ function BuildSummary() {
                   )}
                 </span>
                 <span className="flex items-center gap-3">
+                  <span className="text-xs font-semibold tabular-nums text-warm-500">
+                    {formatElapsed(r.durationSeconds)}
+                  </span>
                   <span className={`text-sm font-bold tabular-nums ${scoreColor(r.score)}`}>
                     {t.exercise.scoreOf(fmtScore(r.score))}
                   </span>
