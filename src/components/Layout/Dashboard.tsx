@@ -2,8 +2,6 @@ import { useStore } from '../../store/useStore'
 import { countNonFoldHands } from '../../utils/hands'
 import { RangeMark } from '../ui/RangeMark'
 import { PageTutorialButton } from '../ui/PageTutorialButton'
-import { MyAccountStats } from '../Stats/MyAccountStats'
-import { AccuracySparkline } from '../Stats/AccuracySparkline'
 import { t } from '../../i18n'
 
 const CATEGORY_POSITIONS: Record<string, string[]> = {
@@ -19,7 +17,6 @@ export function Dashboard() {
   const setActiveCategory   = useStore(s => s.setActiveCategory)
   const trainingHistory = useStore(s => s.trainingHistory)
   const handPerformance = useStore(s => s.handPerformance)
-  const currentUser     = useStore(s => s.currentUser)
 
   const totalHands   = trainingHistory.reduce((s, x) => s + x.hands, 0)
   const totalCorrect = trainingHistory.reduce((s, x) => s + x.correct, 0)
@@ -100,14 +97,6 @@ export function Dashboard() {
           </div>
         ))}
       </section>
-
-      {/* Dados na nuvem do jogador */}
-      {currentUser && (
-        <section className="mb-8 space-y-4">
-          {trainingHistory.length >= 2 && <AccuracySparkline sessions={trainingHistory} />}
-          <MyAccountStats />
-        </section>
-      )}
 
       {/* Category grid */}
       <div className="flex items-baseline justify-between mb-4">
