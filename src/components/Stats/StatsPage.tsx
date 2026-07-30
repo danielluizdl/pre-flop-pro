@@ -570,8 +570,8 @@ function BuildRoundReplay({ round, onClose }: { round: BuildHistoryRound; onClos
       >
         <X size={16} />
       </button>
-      <RangeActionGrid title={t.exercise.yourRange} subtitle={t.exercise.yourRangeSub} grid={userGrid} maxWidth={380} />
-      <RangeActionGrid title={t.exercise.answerKey} subtitle={t.exercise.answerKeySub} grid={answerGrid} maxWidth={380} />
+      <RangeActionGrid title={t.exercise.yourRange} subtitle={t.exercise.yourRangeSub} grid={userGrid} maxWidth={475} />
+      <RangeActionGrid title={t.exercise.answerKey} subtitle={t.exercise.answerKeySub} grid={answerGrid} maxWidth={475} />
     </div>
   )
 }
@@ -841,7 +841,7 @@ export function StatsPage() {
         ))}
       </div>
 
-      <div className={activeTab === 'build' ? 'max-w-4xl' : 'max-w-2xl'}>
+      <div className={activeTab === 'build' ? 'max-w-6xl' : 'max-w-2xl'}>
         {activeTab === 'cloud' ? (
           <MyAccountStats />
         ) : activeTab === 'build' ? (
