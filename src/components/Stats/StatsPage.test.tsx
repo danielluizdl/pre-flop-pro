@@ -163,6 +163,40 @@ describe('StatsPage', () => {
     expect(screen.queryByText('Diferença por mão')).not.toBeInTheDocument()
   })
 
+  it('aba Range Check: mais de um round pode ficar expandido ao mesmo tempo, e o X fecha só aquele', () => {
+    useStore.setState({
+      trainingHistory: [], ranges: [], currentUser: null,
+      buildHistory: [{
+        id: 1, timestamp: Date.now(), rangeNames: ['BTN RFI', 'SB 3bet'], avgScore: 90,
+        rounds: [
+          {
+            label: 'BTN RFI', score: 90, attempt: 1, rangeId: 10,
+            userGrid: { AA: { fold: 0, call: 0, raise: 100, allin: 0 } },
+            answerGrid: { AA: { fold: 0, call: 100, raise: 0, allin: 0 } },
+          },
+          {
+            label: 'SB 3bet', score: 80, attempt: 1, rangeId: 11,
+            userGrid: { KK: { fold: 0, call: 0, raise: 100, allin: 0 } },
+            answerGrid: { KK: { fold: 0, call: 100, raise: 0, allin: 0 } },
+          },
+        ],
+      }],
+    })
+    render(<StatsPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Range Check' }))
+    fireEvent.click(screen.getByRole('button', { name: /BTN RFI · SB 3bet/ }))
+    fireEvent.click(screen.getByRole('button', { name: /BTN RFI.*90/ }))
+    fireEvent.click(screen.getByRole('button', { name: /SB 3bet.*80/ }))
+    // os dois replays ficam abertos ao mesmo tempo
+    expect(screen.getAllByText('Seu range')).toHaveLength(2)
+    expect(screen.getAllByText('Gabarito')).toHaveLength(2)
+
+    // fechar um pelo X não fecha o outro
+    fireEvent.click(screen.getAllByRole('button', { name: 'Fechar' })[0])
+    expect(screen.getAllByText('Seu range')).toHaveLength(1)
+    expect(screen.getAllByText('Gabarito')).toHaveLength(1)
+  })
+
   it('aba Desempenho Global: agrupa ranges treinados por posição e expande', () => {
     const range = rangeNamed('BTN RFI', 42)
     useStore.setState({ trainingHistory: [SESSION], ranges: [range], handPerformance: { 42: { AA: { c: 8, t: 10 } } }, currentUser: null })

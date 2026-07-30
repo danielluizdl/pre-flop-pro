@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect } from 'react'
+import { X } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import type { BuildHistoryRound, BuildSession, HandData, HandHistoryEntry, Range, TrainingSession } from '../../types'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
@@ -556,13 +557,21 @@ function buildScoreColor(s: number): string {
   return s >= 80 ? 'text-brand-500' : s >= 50 ? 'text-gold' : 'text-result-bad'
 }
 
-function BuildRoundReplay({ round }: { round: BuildHistoryRound }) {
+function BuildRoundReplay({ round, onClose }: { round: BuildHistoryRound; onClose: () => void }) {
   const userGrid = decodeSparse(round.userGrid)
   const answerGrid = decodeSparse(round.answerGrid)
   return (
-    <div className="mt-2 mb-3 pl-2 border-l-2 border-warm-700/60 flex flex-wrap gap-4">
-      <RangeActionGrid title={t.exercise.yourRange} subtitle={t.exercise.yourRangeSub} grid={userGrid} maxWidth={300} />
-      <RangeActionGrid title={t.exercise.answerKey} subtitle={t.exercise.answerKeySub} grid={answerGrid} maxWidth={300} />
+    <div className="relative mt-2 mb-3 pl-2 pr-8 border-l-2 border-warm-700/60 flex flex-wrap gap-4">
+      <button
+        onClick={onClose}
+        aria-label={t.common.close}
+        title={t.common.close}
+        className="absolute top-0 right-0 text-warm-500 hover:text-warm-200 transition-colors p-1"
+      >
+        <X size={16} />
+      </button>
+      <RangeActionGrid title={t.exercise.yourRange} subtitle={t.exercise.yourRangeSub} grid={userGrid} maxWidth={380} />
+      <RangeActionGrid title={t.exercise.answerKey} subtitle={t.exercise.answerKeySub} grid={answerGrid} maxWidth={380} />
     </div>
   )
 }
@@ -573,7 +582,15 @@ function BuildHistoryPanel() {
   const authToken     = useStore(s => s.authToken)
 
   const [openId, setOpenId] = useState<number | null>(null)
-  const [openRound, setOpenRound] = useState<string | null>(null)
+  const [openRounds, setOpenRounds] = useState<Set<string>>(new Set())
+
+  function toggleRound(roundKey: string) {
+    setOpenRounds(prev => {
+      const next = new Set(prev)
+      next.has(roundKey) ? next.delete(roundKey) : next.add(roundKey)
+      return next
+    })
+  }
 
   const [cloudSessions, setCloudSessions]       = useState<BuildSession[] | null>(null)
   const [cloudRoundCounts, setCloudRoundCounts] = useState<Record<number, number>>({})
@@ -690,7 +707,7 @@ function BuildHistoryPanel() {
                   rounds.map((r, i) => {
                     const roundKey = `${s.id}:${i}`
                     const hasReplay = !!r.userGrid
-                    const isRoundOpen = openRound === roundKey
+                    const isRoundOpen = openRounds.has(roundKey)
                     const row = (
                       <>
                         <span className="flex items-center gap-2 min-w-0">
@@ -718,7 +735,7 @@ function BuildHistoryPanel() {
                       <div key={roundKey}>
                         {hasReplay ? (
                           <button
-                            onClick={() => setOpenRound(isRoundOpen ? null : roundKey)}
+                            onClick={() => toggleRound(roundKey)}
                             className="w-full flex items-center justify-between gap-2 text-sm text-left hover:brightness-125 transition-all"
                           >
                             {row}
@@ -726,7 +743,7 @@ function BuildHistoryPanel() {
                         ) : (
                           <div className="flex items-center justify-between gap-2 text-sm">{row}</div>
                         )}
-                        {isRoundOpen && hasReplay && <BuildRoundReplay round={r} />}
+                        {isRoundOpen && hasReplay && <BuildRoundReplay round={r} onClose={() => toggleRound(roundKey)} />}
                       </div>
                     )
                   })
@@ -824,7 +841,7 @@ export function StatsPage() {
         ))}
       </div>
 
-      <div className="max-w-2xl">
+      <div className={activeTab === 'build' ? 'max-w-4xl' : 'max-w-2xl'}>
         {activeTab === 'cloud' ? (
           <MyAccountStats />
         ) : activeTab === 'build' ? (
