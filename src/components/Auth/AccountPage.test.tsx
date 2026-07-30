@@ -101,4 +101,52 @@ describe('AccountPage', () => {
     const { container } = render(<AccountPage />)
     expect((await axe(container)).violations).toEqual([])
   })
+
+  describe('Sessões ativas', () => {
+    function mockDevices(over: { revokeDevice?: () => Promise<{ ok: boolean }>; revokeOtherDevices?: () => Promise<{ ok: boolean }> } = {}) {
+      setup({
+        listDevices: async () => ({ ok: true, devices: [
+          { id: 1, current: true, createdAt: 1700000000, expiresAt: 1800000000 },
+          { id: 2, current: false, createdAt: 1700000000, expiresAt: 1800000000 },
+        ] }),
+        ...over,
+      })
+    }
+
+    it('lista sessões e marca a sessão atual', async () => {
+      mockDevices()
+      render(<AccountPage />)
+      expect(await screen.findByText('Sessão #1')).toBeInTheDocument()
+      expect(screen.getByText('Esta sessão')).toBeInTheDocument()
+    })
+
+    it('encerra outra sessão chamando revokeDevice com o id', async () => {
+      const revokeDevice = vi.fn(async () => ({ ok: true }))
+      mockDevices({ revokeDevice })
+      render(<AccountPage />)
+      await screen.findByText('Sessão #1')
+      fireEvent.click(screen.getByRole('button', { name: 'Encerrar' }))
+      expect(revokeDevice).toHaveBeenCalledWith(2)
+    })
+
+    it('"Encerrar as outras" chama revokeOtherDevices', async () => {
+      const revokeOtherDevices = vi.fn(async () => ({ ok: true }))
+      mockDevices({ revokeOtherDevices })
+      render(<AccountPage />)
+      await screen.findByText('Sessão #1')
+      fireEvent.click(screen.getByRole('button', { name: /Encerrar as outras/ }))
+      expect(revokeOtherDevices).toHaveBeenCalled()
+    })
+
+    it('erro ao listar sessões mostra mensagem com botão de tentar novamente', async () => {
+      let ok = false
+      setup({ listDevices: async () => (ok ? { ok: true, devices: [] } : { ok: false }) })
+      render(<AccountPage />)
+      const retry = await screen.findByRole('button', { name: 'Tentar novamente' })
+      expect(screen.getByText(/Não foi possível carregar as sessões/)).toBeInTheDocument()
+      ok = true
+      fireEvent.click(retry)
+      expect(await screen.findByText('Nenhuma sessão ativa.')).toBeInTheDocument()
+    })
+  })
 })

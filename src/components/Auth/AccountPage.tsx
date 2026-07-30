@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useStore } from '../../store/useStore'
-import { t } from '../../i18n'
+import { t, dateLocale } from '../../i18n'
+import type { DeviceSession } from '../../types'
 
 type Tier = 'fundamentals' | 'evolution' | 'metamorphosis' | 'main'
 type Turma = 'A' | 'B' | 'C' | 'D'
@@ -16,6 +17,101 @@ function optionCls(active: boolean): string {
       ? 'bg-brand-600 border-brand-500 text-white'
       : 'bg-warm-800 border-warm-600 text-warm-400 hover:border-warm-500 hover:text-warm-200',
   ].join(' ')
+}
+
+function formatDate(ts: number): string {
+  if (!ts) return '—'
+  return new Date(ts * 1000).toLocaleDateString(dateLocale(), { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+function formatDateTime(ts: number): string {
+  if (!ts) return '—'
+  return new Date(ts * 1000).toLocaleString(dateLocale(), { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
+
+function DevicesSection() {
+  const listDevices = useStore(s => s.listDevices)
+  const revokeDevice = useStore(s => s.revokeDevice)
+  const revokeOtherDevices = useStore(s => s.revokeOtherDevices)
+  const [devices, setDevices] = useState<DeviceSession[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  const reload = useCallback(async () => {
+    const res = await listDevices()
+    if (res.ok) { setDevices(res.devices ?? []); setError(false) }
+    else setError(true)
+    setLoading(false)
+  }, [listDevices])
+
+  useEffect(() => { void reload() }, [reload])
+
+  const handleRevoke = async (id: number) => {
+    setBusy(true)
+    await revokeDevice(id)
+    await reload()
+    setBusy(false)
+  }
+
+  const handleRevokeOthers = async () => {
+    setBusy(true)
+    await revokeOtherDevices()
+    await reload()
+    setBusy(false)
+  }
+
+  const others = devices.filter(d => !d.current).length
+
+  return (
+    <div className="space-y-4 bg-warm-900 border border-warm-700/50 rounded-2xl p-5">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-warm-100">{t.myAccount.activeSessions}</h2>
+        {others > 0 && (
+          <button
+            onClick={handleRevokeOthers}
+            disabled={busy}
+            className="text-xs font-semibold text-red-400 hover:text-red-300 disabled:opacity-50"
+          >
+            {t.myAccount.endOthers(others)}
+          </button>
+        )}
+      </div>
+      {loading ? (
+        <p className="text-warm-500 text-sm">{t.myAccount.loadingSessions}</p>
+      ) : error ? (
+        <p className="text-red-400 text-sm">
+          {t.myAccount.sessionsLoadError}{' '}
+          <button onClick={() => { setLoading(true); void reload() }} className="underline font-semibold hover:text-red-300">{t.common.retry}</button>
+        </p>
+      ) : devices.length === 0 ? (
+        <p className="text-warm-500 text-sm">{t.myAccount.noActiveSessions}</p>
+      ) : (
+        <ul className="rounded-xl border border-warm-700 divide-y divide-warm-700/60">
+          {devices.map(d => (
+            <li key={d.id} className="flex items-center justify-between gap-3 px-3 py-2.5">
+              <div className="min-w-0">
+                <div className="text-sm text-warm-100 font-semibold flex items-center gap-2">
+                  {t.myAccount.session(d.id)}
+                  {d.current && <span className="text-[10px] uppercase font-bold text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded">{t.myAccount.thisSession}</span>}
+                </div>
+                <div className="text-xs text-warm-500">{t.myAccount.startedExpires(formatDateTime(d.createdAt), formatDate(d.expiresAt))}</div>
+              </div>
+              {!d.current && (
+                <button
+                  onClick={() => handleRevoke(d.id)}
+                  disabled={busy}
+                  className="shrink-0 text-xs font-semibold text-red-400 hover:text-red-300 disabled:opacity-50"
+                >
+                  {t.myAccount.end}
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
 }
 
 export function AccountPage() {
@@ -203,6 +299,8 @@ export function AccountPage() {
           {pwSaving ? t.changePassword.submitting : t.changePassword.submit}
         </button>
       </div>
+
+      <DevicesSection />
     </div>
   )
 }

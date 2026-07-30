@@ -167,11 +167,12 @@ describe('AnalysisPage — Range Check, Por range com acertos/erros por mão', (
 })
 
 describe('StatsPage — sem aba Análise', () => {
-  it('logado, o Histórico não mostra mais a aba Análise (virou página própria)', async () => {
+  it('logado, o Histórico não mostra mais a aba Análise (virou página própria) nem "Meus dados na nuvem"', async () => {
     mockApi()
     useStore.setState({ trainingHistory: [] })
     render(<StatsPage />)
-    expect(screen.getByRole('button', { name: 'Meus dados na nuvem' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Histórico de Sessões' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Análise' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Meus dados na nuvem' })).not.toBeInTheDocument()
   })
 })

@@ -40,7 +40,7 @@ describe('StatsPage', () => {
   it('alterna para a aba Desempenho Global sem quebrar', () => {
     useStore.setState({ trainingHistory: [SESSION], currentUser: null })
     render(<StatsPage />)
-    fireEvent.click(screen.getByRole('button', { name: 'Desempenho Global' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Desempenho Global em Drill' }))
     expect(screen.queryByText('Nenhuma sessão registrada ainda.')).not.toBeInTheDocument()
   })
 
@@ -201,7 +201,7 @@ describe('StatsPage', () => {
     const range = rangeNamed('BTN RFI', 42)
     useStore.setState({ trainingHistory: [SESSION], ranges: [range], handPerformance: { 42: { AA: { c: 8, t: 10 } } }, currentUser: null })
     render(<StatsPage />)
-    fireEvent.click(screen.getByRole('button', { name: 'Desempenho Global' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Desempenho Global em Drill' }))
     // grupo por posição BTN
     fireEvent.click(screen.getByRole('button', { name: /BTN/ }))
     expect(screen.getByText('BTN RFI')).toBeInTheDocument()
@@ -225,7 +225,7 @@ describe('StatsPage', () => {
       },
     })
     render(<StatsPage />)
-    fireEvent.click(screen.getByRole('button', { name: 'Desempenho Global' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Desempenho Global em Drill' }))
     fireEvent.click(screen.getByRole('button', { name: /^BTN/ }))
     // abre o acordeão do range
     fireEvent.click(screen.getByRole('button', { name: /BTN multi/ }))
@@ -278,13 +278,35 @@ describe('StatsPage', () => {
     expect(screen.getByText('Tentativa 2')).toBeInTheDocument()
   })
 
-  it('só mostra a aba de nuvem quando há usuário logado', () => {
+  it('não mostra mais a aba "Meus dados na nuvem" (virou cards em Desempenho Global em Drill)', () => {
     useStore.setState({ trainingHistory: [SESSION], currentUser: null })
     const { rerender } = render(<StatsPage />)
     expect(screen.queryByRole('button', { name: 'Meus dados na nuvem' })).not.toBeInTheDocument()
     useStore.setState({ currentUser: { id: 1, username: 'p1', name: 'P1', email: '', role: 'player', firstLogin: false, tier: '', turma: null } })
     rerender(<StatsPage />)
-    expect(screen.getByRole('button', { name: 'Meus dados na nuvem' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Meus dados na nuvem' })).not.toBeInTheDocument()
+  })
+
+  it('aba Desempenho Global em Drill mostra os cards de dados na nuvem só quando logado', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('view=overview')) {
+        return Promise.resolve({ json: () => Promise.resolve({
+          overview: { hands: 900, correct: 833, errors: 67, accuracy: 92.6, graves: 67, imprecisos: 0, consults: 43, sessions: 5, durationSeconds: 2820 },
+        }) }) as unknown as Promise<Response>
+      }
+      return Promise.resolve({ json: () => Promise.resolve({ rows: [] }) }) as unknown as Promise<Response>
+    })
+    useStore.setState({ trainingHistory: [], ranges: [], currentUser: null })
+    const { rerender } = render(<StatsPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Desempenho Global em Drill' }))
+    expect(screen.queryByText('900')).not.toBeInTheDocument()
+
+    useStore.setState({ currentUser: { id: 1, username: 'p1', name: 'P1', email: '', role: 'player', firstLogin: false, tier: '', turma: null }, authToken: 'tok' })
+    rerender(<StatsPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Desempenho Global em Drill' }))
+    expect(await screen.findByText('900')).toBeInTheDocument()
+    expect(screen.getByText('92.6%')).toBeInTheDocument()
   })
 
   it('não tem violações de acessibilidade (axe)', async () => {

@@ -4,7 +4,7 @@ import { useStore } from '../../store/useStore'
 import type { BuildHistoryRound, BuildSession, HandData, HandHistoryEntry, Range, TrainingSession } from '../../types'
 import { HandMatrix } from '../RangeBuilder/HandMatrix'
 import { PageTutorialButton } from '../ui/PageTutorialButton'
-import { MyAccountStats } from './MyAccountStats'
+import { BuildAccountStats } from './BuildAccountStats'
 import { AccuracySparkline } from './AccuracySparkline'
 import { Skeleton } from '../ui/Skeleton'
 import { t, dateLocale } from '../../i18n'
@@ -17,6 +17,7 @@ import { usePagedList, ShowMoreButton } from '../ui/PagedList'
 import { RangeActionGrid } from '../Admin/RangeActionGrid'
 import { decodeSparse } from '../../utils/sparseGrid'
 import { makeEmptyGrid } from '../../utils/hands'
+import { captureError } from '../../utils/sentry'
 
 const EMPTY_GRID = makeEmptyGrid()
 
@@ -396,9 +397,114 @@ function SessionCard({ session, onView }: { session: TrainingSession; onView: ()
 }
 
 /* ── Desempenho global ─────────────────────────────────────────────────────── */
+
+interface DrillOverview {
+  hands: number
+  correct: number
+  errors: number
+  accuracy: number
+  graves: number
+  imprecisos: number
+  consults: number
+  sessions: number
+  durationSeconds: number
+}
+
+function formatTrainedDuration(seconds: number): string {
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  if (h > 0) return `${h}h ${m}m`
+  if (m > 0) return `${m}m`
+  return `${seconds}s`
+}
+
+function drillAccColor(acc: number): string {
+  return acc >= 80 ? 'text-emerald-400' : acc >= 50 ? 'text-yellow-400' : 'text-red-400'
+}
+
+// Cards agregados da conta (drill), vindos de functions/api/me/stats?view=overview —
+// só faz sentido pra quem está logado (dados permanentes no D1).
+function DrillCloudCards() {
+  const authToken = useStore(s => s.authToken)
+  const [overview, setOverview] = useState<DrillOverview | null>(null)
+  const [loading, setLoading]   = useState(true)
+  const [error, setError]       = useState('')
+  const [retry, setRetry]       = useState(0)
+
+  useEffect(() => {
+    if (!authToken) return
+    let cancelled = false
+    setLoading(true)
+    setError('')
+    fetch('/api/me/stats?view=overview', { headers: { Authorization: `Bearer ${authToken}` } })
+      .then(r => r.json())
+      .then(data => {
+        if (cancelled) return
+        setOverview(data.overview ?? null)
+        setLoading(false)
+      })
+      .catch(e => {
+        if (cancelled) return
+        captureError(e, { area: 'me-stats-overview' })
+        setError(t.myAccount.statsLoadError)
+        setLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [authToken, retry])
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3" role="status" aria-busy="true" aria-label={t.myAccount.loadingCloud}>
+        {Array.from({ length: 7 }).map((_, i) => (
+          <div key={i} className="card-surface p-4 flex flex-col items-center gap-2">
+            <Skeleton className="h-2.5 w-12" />
+            <Skeleton className="h-6 w-16" />
+          </div>
+        ))}
+      </div>
+    )
+  }
+  if (error) {
+    return (
+      <div className="py-6 text-center space-y-3">
+        <p className="text-red-400 text-sm">{error}</p>
+        <button
+          onClick={() => setRetry(n => n + 1)}
+          className="text-sm font-semibold px-4 py-2 rounded-lg border border-warm-600 bg-warm-800 text-warm-200 hover:bg-warm-700 transition-colors"
+        >
+          {t.common.retry}
+        </button>
+      </div>
+    )
+  }
+  if (!overview) return null
+
+  const cards = [
+    { label: t.myAccount.cardHands, value: overview.hands.toLocaleString(), color: 'text-warm-100' },
+    { label: t.myAccount.cardAccuracy, value: `${overview.accuracy}%`, color: drillAccColor(overview.accuracy) },
+    { label: t.myAccount.cardBlunders, value: String(overview.graves), color: 'text-red-400' },
+    { label: t.myAccount.cardImprecise, value: String(overview.imprecisos), color: 'text-yellow-400' },
+    { label: t.myAccount.cardConsults, value: String(overview.consults), color: 'text-warm-300' },
+    { label: t.myAccount.cardSessions, value: String(overview.sessions), color: 'text-brand-400' },
+    { label: t.myAccount.cardTimeTrained, value: formatTrainedDuration(overview.durationSeconds), color: 'text-blue-400' },
+  ]
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {cards.map(c => (
+        <div key={c.label} className="card-surface p-4 text-center">
+          <div className="eyebrow mb-1">{c.label}</div>
+          <div className={`font-display tabular-nums leading-none ${c.color}`} style={{ fontSize: 26, letterSpacing: '0.01em' }}>{c.value}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function GlobalHistoryPanel() {
   const ranges          = useStore(s => s.ranges)
   const handPerformance = useStore(s => s.handPerformance)
+  const currentUser      = useStore(s => s.currentUser)
 
   const [openPositions, setOpenPositions] = useState<Set<string>>(new Set())
   const [openRangeId, setOpenRangeId] = useState<number | null>(null)
@@ -442,15 +548,20 @@ function GlobalHistoryPanel() {
 
   if (orderedKeys.length === 0) {
     return (
-      <div className="text-center py-16">
-        <p className="text-warm-400 text-sm">{t.stats.noTrainingData}</p>
-        <p className="text-warm-500 text-xs mt-1">{t.stats.completeToSeePerf}</p>
+      <div className="space-y-6">
+        {currentUser && <DrillCloudCards />}
+        <div className="text-center py-16">
+          <p className="text-warm-400 text-sm">{t.stats.noTrainingData}</p>
+          <p className="text-warm-500 text-xs mt-1">{t.stats.completeToSeePerf}</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-2 max-w-2xl">
+    <div className="space-y-6">
+      {currentUser && <DrillCloudCards />}
+      <div className="space-y-2 max-w-2xl">
       {orderedKeys.map(pos => {
         const group     = grouped[pos]
         const isPosOpen = openPositions.has(pos)
@@ -548,6 +659,7 @@ function GlobalHistoryPanel() {
           </div>
         )
       })}
+      </div>
     </div>
   )
 }
@@ -765,7 +877,7 @@ export function StatsPage() {
   const currentUser     = useStore(s => s.currentUser)
   const authToken       = useStore(s => s.authToken)
 
-  const [activeTab, setActiveTab]         = useState<'sessions' | 'build' | 'global' | 'cloud'>('sessions')
+  const [activeTab, setActiveTab]         = useState<'sessions' | 'build' | 'global'>('sessions')
   const [selectedSession, setSelectedSession] = useState<TrainingSession | null>(null)
 
   // Pra quem está logado, a lista vem do servidor (permanente, entre
@@ -819,9 +931,6 @@ export function StatsPage() {
           largura toda (flex-1) sem precisar de barra de rolagem. */}
       <div className="flex border-b border-warm-700 overflow-x-auto sm:overflow-visible">
         {([
-          ...(currentUser ? [
-            { key: 'cloud' as const, label: t.stats.tabCloud },
-          ] : []),
           { key: 'sessions' as const, label: t.stats.tabSessions },
           { key: 'build' as const,    label: t.exercise.navLabel },
           { key: 'global' as const,   label: t.stats.tabGlobal },
@@ -842,10 +951,14 @@ export function StatsPage() {
       </div>
 
       <div className={activeTab === 'build' ? 'max-w-6xl' : 'max-w-2xl'}>
-        {activeTab === 'cloud' ? (
-          <MyAccountStats />
-        ) : activeTab === 'build' ? (
+        {activeTab === 'build' ? (
           <div className="space-y-6">
+            {currentUser && (
+              <div>
+                <div className="eyebrow mb-2">{t.myAccount.buildTitle}</div>
+                <BuildAccountStats />
+              </div>
+            )}
             <div>
               {currentUser && <div className="eyebrow mb-2">{t.myAccount.buildReplayTitle}</div>}
               <BuildHistoryPanel />
