@@ -160,7 +160,7 @@ describe('StatsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /BTN RFI.*90/ }))
     expect(screen.getByText('Seu range')).toBeInTheDocument()
     expect(screen.getByText('Gabarito')).toBeInTheDocument()
-    expect(screen.getByText('Diferença por mão')).toBeInTheDocument()
+    expect(screen.queryByText('Diferença por mão')).not.toBeInTheDocument()
   })
 
   it('aba Desempenho Global: agrupa ranges treinados por posição e expande', () => {

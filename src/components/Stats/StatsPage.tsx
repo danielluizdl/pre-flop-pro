@@ -14,9 +14,7 @@ import { SessionHandLog } from '../ui/SessionHandLog'
 import { formatElapsed } from '../ui/ElapsedClock'
 import { usePagedList, ShowMoreButton } from '../ui/PagedList'
 import { RangeActionGrid } from '../Admin/RangeActionGrid'
-import { DiffGrid } from '../ui/DiffGrid'
 import { decodeSparse } from '../../utils/sparseGrid'
-import { scoreBuild } from '../../utils/buildScore'
 import { makeEmptyGrid } from '../../utils/hands'
 
 const EMPTY_GRID = makeEmptyGrid()
@@ -561,12 +559,10 @@ function buildScoreColor(s: number): string {
 function BuildRoundReplay({ round }: { round: BuildHistoryRound }) {
   const userGrid = decodeSparse(round.userGrid)
   const answerGrid = decodeSparse(round.answerGrid)
-  const { perHand } = scoreBuild(answerGrid, userGrid)
   return (
-    <div className="mt-2 mb-3 pl-2 border-l-2 border-warm-700/60 space-y-4">
-      <RangeActionGrid title={t.exercise.yourRange} subtitle={t.exercise.yourRangeSub} grid={userGrid} maxWidth={600} />
-      <RangeActionGrid title={t.exercise.answerKey} subtitle={t.exercise.answerKeySub} grid={answerGrid} maxWidth={600} />
-      <DiffGrid perHand={perHand} />
+    <div className="mt-2 mb-3 pl-2 border-l-2 border-warm-700/60 flex flex-wrap gap-4">
+      <RangeActionGrid title={t.exercise.yourRange} subtitle={t.exercise.yourRangeSub} grid={userGrid} maxWidth={300} />
+      <RangeActionGrid title={t.exercise.answerKey} subtitle={t.exercise.answerKeySub} grid={answerGrid} maxWidth={300} />
     </div>
   )
 }
